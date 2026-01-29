@@ -1,13 +1,13 @@
 package top.thexiaola.dreamhwhub;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
+@MapperScan("top.thexiaola.dreamhwhub.mapper")
 public class DreamHwhubApplication {
-
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(DreamHwhubApplication.class, args);
     }
-
 }
