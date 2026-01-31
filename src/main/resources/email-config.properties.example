@@ -1,5 +1,5 @@
 # 邮件服务器配置示例文件
-# 请复制此文件为 mail-config.properties 并填写真实配置信息
+# 请复制此文件为 email-config.properties 并填写真实配置信息
 
 # SMTP服务器配置
 spring.mail.host=smtp.example.com
