@@ -153,11 +153,6 @@ spring.mail.password=xxxxxx         # 邮箱授权码
 spring.mail.properties.mail.from.nickname=发信人昵称  # 发件人显示名称
 ```
 
-### 安全注意事项
-- 敏感配置信息存储在本地配置文件中
-- 示例文件不包含真实凭据
-- Git自动忽略本地配置文件
-
 ## 项目结构
 
 ```
@@ -174,7 +169,7 @@ src/
 │   │   └── DreamHwhubApplication.java  # 主应用类
 │   └── resources/
 │       ├── application.properties      # 应用配置
-│       ├── mail-config.properties      # 邮件本地配置
+│       ├── mail-config.properties      # 邮件配置
 │       ├── logback-spring.xml         # 日志配置
 │       └── schema.sql                 # 数据库初始化脚本
 ```
