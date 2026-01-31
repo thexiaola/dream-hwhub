@@ -52,11 +52,11 @@ spring.datasource.password=root
 #### 3.1 获取示例配置
 ```bash
 # 复制示例配置文件
-cp src/main/resources/mail-config.properties src/main/resources/mail-config.properties.local
+cp src/main/resources/mail-config.properties src/main/resources/mail-config.properties.example
 ```
 
 #### 3.2 配置邮件参数
-编辑 `mail-config.properties.local` 文件，填入真实的邮件配置：
+编辑 `mail-config.properties.example` 文件，填入真实的邮件配置：
 
 ```properties
 # 邮件服务器配置
@@ -70,8 +70,8 @@ spring.mail.properties.mail.smtp.ssl.enable=true
 ```
 
 #### 3.3 配置文件说明
-- `mail-config.properties` - Git跟踪的示例配置文件（不含敏感信息）
-- `mail-config.properties.local` - 本地使用的实际配置文件（Git忽略）
+- `mail-config.properties.example` - Git跟踪的示例配置文件（不含敏感信息）
+- `mail-config.properties` - 本地使用的实际配置文件（Git忽略）
 
 ### 4. 启动应用
 
@@ -138,9 +138,9 @@ spring.mail.properties.mail.smtp.ssl.enable=true
 ### 配置文件结构
 ```
 src/main/resources/
-├── mail-config.properties          # 示例配置文件（Git跟踪）
-├── mail-config.properties.local    # 本地配置文件（Git忽略）
-└── application.properties         # 主配置文件
+├── mail-config.properties            # 本地配置文件（Git跟踪）
+├── mail-config.properties.example    # 示例配置文件（Git忽略）
+└── application.properties            # 主配置文件
 ```
 
 ### 配置项说明
