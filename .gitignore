@@ -5,7 +5,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 logs/
-src/main/resources/email-config.properties
+src/main/resources/mail-config.properties
 
 ### STS ###
 .apt_generated
