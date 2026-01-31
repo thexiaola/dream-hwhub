@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 
 // 日志工具类
 public class LogUtil {
-    
+
     /**
      * 获取用户信息字符串
      * @param user 用户对象
@@ -13,14 +13,38 @@ public class LogUtil {
      */
     public static String getUserInfo(User user) {
         if (user == null) {
-            return "id: null, user_no: null, username: null, email: null, permission: null";
+            return "";
         }
-        return String.format("id: %s, user_no: %s, username: %s, email: %s, permission: %s", 
-                           user.getId(), 
-                           user.getUserNo(), 
-                           user.getUsername(), 
-                           user.getEmail(), 
-                           user.getPermission());
+        
+        StringBuilder sb = new StringBuilder();
+        
+        // 添加非空字段
+        if (user.getId() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("id: ").append(user.getId());
+        }
+        
+        if (user.getUserNo() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("user_no: ").append(user.getUserNo());
+        }
+        
+        if (user.getUsername() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("username: ").append(user.getUsername());
+        }
+        
+        if (user.getEmail() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("email: ").append(user.getEmail());
+        }
+        
+        if (user.getPermission() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("permission: ").append(user.getPermission());
+        }
+        
+        return sb.toString();
     }
     
     /**
@@ -76,10 +100,8 @@ public class LogUtil {
      * @return IP信息
      */
     public static String getIpOnly(jakarta.servlet.http.HttpServletRequest request) {
-        return "id: null, user_no: null, username: null, email: null, permission: null, ip: " + getClientIp(request);
+        return "ip: " + getClientIp(request);
     }
-    
-    // 以下方法提供便捷的日志记录方式
     
     public static void info(Logger logger, String message, User user, jakarta.servlet.http.HttpServletRequest request) {
         logger.info("[{}] {}", getUserInfoWithIp(user, request), message);

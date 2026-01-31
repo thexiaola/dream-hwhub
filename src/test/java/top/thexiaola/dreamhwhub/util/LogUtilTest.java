@@ -23,7 +23,35 @@ public class LogUtilTest {
         
         // 测试null用户
         String nullUserInfo = LogUtil.getUserInfo(null);
-        String expectedNull = "id: null, user_no: null, username: null, email: null, permission: null";
-        assertEquals(expectedNull, nullUserInfo);
+        assertEquals("", nullUserInfo);
+        
+        // 测试部分字段为null的情况
+        User partialUser = new User();
+        partialUser.setId(2);
+        partialUser.setUserNo("2021002");
+        // username, email, permission 为 null
+        
+        String partialUserInfo = LogUtil.getUserInfo(partialUser);
+        String expectedPartial = "id: 2, user_no: 2021002";
+        assertEquals(expectedPartial, partialUserInfo);
+        
+        // 测试字符串"null"的情况
+        User stringNullUser = new User();
+        stringNullUser.setId(3);
+        stringNullUser.setUserNo("null");
+        stringNullUser.setUsername("null");
+        stringNullUser.setEmail("test@example.com");
+        stringNullUser.setPermission((short) 0);
+        
+        String stringNullUserInfo = LogUtil.getUserInfo(stringNullUser);
+        String expectedStringNull = "id: 3, user_no: null, username: null, email: test@example.com, permission: 0";
+        assertEquals(expectedStringNull, stringNullUserInfo);
+    }
+    
+    @Test
+    void testGetIpOnly() {
+        // 验证返回格式
+        String ipInfo = LogUtil.getIpOnly(null);
+        assertTrue(ipInfo.startsWith("ip: "));
     }
 }
