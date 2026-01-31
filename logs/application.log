@@ -2542,3 +2542,7 @@ Failed message 1: org.eclipse.angus.mail.smtp.SMTPSendFailedException: 501 Mail 
 2026-01-30 01:33:53.761 [http-nio-8080-exec-1] INFO  t.t.dreamhwhub.service.impl.EmailServiceImpl - 验证码发送流程完成，邮箱: 167291828@qq.com
 2026-01-30 01:33:53.761 [http-nio-8080-exec-1] INFO  t.t.dreamhwhub.service.impl.UserServiceImpl - 验证码发送成功，邮箱: 167291828@qq.com
 2026-01-30 01:33:53.761 [http-nio-8080-exec-1] INFO  t.thexiaola.dreamhwhub.controller.UserController - 验证码发送请求处理完成，邮箱: 167291828@qq.com
+2026-01-30 02:14:54.602 [SpringApplicationShutdownHook] INFO  org.springframework.boot.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-01-30 02:14:54.604 [tomcat-shutdown] INFO  org.springframework.boot.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-01-30 02:14:54.607 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-01-30 02:14:54.609 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.domain.User;
 import top.thexiaola.dreamhwhub.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.service.EmailService;
 import top.thexiaola.dreamhwhub.service.IUserService;
+import top.thexiaola.dreamhwhub.util.LogUtil;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
@@ -158,10 +159,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         User existingUser = this.checkUserExists(userNo, email);
         if (existingUser != null) {
             if (existingUser.getUserNo().equals(userNo)) {
-                logger.warn("发送验证码失败：学号已被注册，学号: {}", userNo);
+                logger.warn("发送验证码失败：学号已被注册，{}", LogUtil.getUserInfo(existingUser));
                 throw new RuntimeException("学号已被注册");
             } else if (existingUser.getEmail().equals(email)) {
-                logger.warn("发送验证码失败：邮箱已被注册，邮箱: {}", email);
+                logger.warn("发送验证码失败：邮箱已被注册，{}", LogUtil.getUserInfo(existingUser));
                 throw new RuntimeException("邮箱已被注册");
             }
         }

@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import top.thexiaola.dreamhwhub.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.dto.RegisterRequest;
 import top.thexiaola.dreamhwhub.service.EmailService;
 import top.thexiaola.dreamhwhub.service.IUserService;
+import top.thexiaola.dreamhwhub.util.LogUtil;
 
 @RestController
 @RequestMapping("/api/users")
@@ -46,8 +48,8 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ApiResponse<User> register(@RequestBody RegisterRequest registerRequest) {
-        logger.info("收到注册请求，学号: {}, 邮箱: {}", registerRequest.getUserNo(), registerRequest.getEmail());
+    public ApiResponse<User> register(@RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
+        LogUtil.infoAnonymous(logger, String.format("收到注册请求，学号: %s, 邮箱: %s", registerRequest.getUserNo(), registerRequest.getEmail()), request);
         
         try {
             // 将RegisterRequest转换为User对象
@@ -58,24 +60,24 @@ public class UserController {
             user.setPassword(registerRequest.getPassword());
             
             User registeredUser = userService.register(user, registerRequest.getVerificationCode(), registerRequest.getInvitationCode());
-            logger.info("注册成功，用户ID: {}", registeredUser.getId());
+            LogUtil.info(logger, "注册成功", registeredUser, request);
             return ApiResponse.success(registeredUser, "注册成功");
         } catch (Exception e) {
-            logger.error("注册失败: {}", e.getMessage());
+            LogUtil.errorAnonymous(logger, String.format("注册失败: %s", e.getMessage()), request);
             return ApiResponse.error(400, e.getMessage());
         }
     }
     
     @PostMapping("/getregcode")
-    public ApiResponse<String> sendVerificationCode(@RequestBody RegisterRequest registerRequest) {
-        logger.info("收到发送验证码请求，学号: {}, 邮箱: {}", registerRequest.getUserNo(), registerRequest.getEmail());
+    public ApiResponse<String> sendVerificationCode(@RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
+        LogUtil.infoAnonymous(logger, String.format("收到发送验证码请求，学号: %s, 邮箱: %s", registerRequest.getUserNo(), registerRequest.getEmail()), request);
         
         try {
             userService.sendVerificationCode(registerRequest.getUserNo(), registerRequest.getEmail());
-            logger.info("验证码发送请求处理完成，邮箱: {}", registerRequest.getEmail());
+            LogUtil.infoAnonymous(logger, String.format("验证码发送请求处理完成，邮箱: %s", registerRequest.getEmail()), request);
             return ApiResponse.success(null, "验证码已发送");
         } catch (Exception e) {
-            logger.error("发送验证码失败: {}", e.getMessage());
+            LogUtil.errorAnonymous(logger, String.format("发送验证码失败: %s", e.getMessage()), request);
             return ApiResponse.error(400, e.getMessage());
         }
     }
