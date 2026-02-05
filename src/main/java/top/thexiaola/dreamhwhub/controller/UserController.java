@@ -28,7 +28,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<User> login(@RequestBody LoginRequest loginRequest) {
+    public ApiResponse<User> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
         logger.info("收到登录请求，学号: {}, 邮箱: {}", loginRequest.getUserNo(), loginRequest.getEmail());
         
         try {
@@ -39,10 +39,10 @@ public class UserController {
             user.setPassword(loginRequest.getPassword());
             
             User loggedInUser = userService.login(user);
-            logger.info("登录成功，用户ID: {}", loggedInUser.getId());
+            LogUtil.info(logger, "登录成功", loggedInUser, request);
             return ApiResponse.success(loggedInUser, "登录成功");
         } catch (Exception e) {
-            logger.error("登录失败: {}", e.getMessage());
+            LogUtil.errorAnonymous(logger, "登录失败: " + e.getMessage(), request);
             return ApiResponse.error(401, e.getMessage());
         }
     }

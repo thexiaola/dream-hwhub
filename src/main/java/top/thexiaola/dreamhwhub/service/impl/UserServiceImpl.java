@@ -9,6 +9,7 @@ import org.springframework.util.DigestUtils;
 import top.thexiaola.dreamhwhub.domain.User;
 import top.thexiaola.dreamhwhub.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.service.EmailService;
+import top.thexiaola.dreamhwhub.service.IInvitationCodeService;
 import top.thexiaola.dreamhwhub.service.IUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
@@ -18,9 +19,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     
     private final EmailService emailService;
+    private final IInvitationCodeService invitationCodeService;
 
-    public UserServiceImpl(EmailService emailService) {
+    public UserServiceImpl(EmailService emailService, IInvitationCodeService invitationCodeService) {
         this.emailService = emailService;
+        this.invitationCodeService = invitationCodeService;
     }
 
     @Override
@@ -115,8 +118,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         
         // 验证邀请码
         if (invitationCode != null && !invitationCode.isEmpty()) {
-            logger.debug("邀请码验证待实现，邀请码: {}", invitationCode);
-            // TODO: 邀请码验证
+            logger.info("验证邀请码，邀请码: {}", invitationCode);
+            if (!invitationCodeService.validateInvitationCode(invitationCode)) {
+                logger.warn("注册失败：邀请码无效，邀请码: {}", invitationCode);
+                throw new RuntimeException("邀请码无效或已过期");
+            }
+            // 使用邀请码
+            invitationCodeService.useInvitationCode(invitationCode);
+            logger.info("邀请码验证通过并已使用，邀请码: {}", invitationCode);
         }
         
         // 对密码进行加密
@@ -153,7 +162,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     
     @Override
     public String sendVerificationCode(String userNo, String email) {
-        logger.info("发送验证码请求，学号: {}, 邮箱: {}", userNo, email);
+        logger.debug("发送验证码请求，学号: {}, 邮箱: {}", userNo, email);
         
         // 验证学号和邮箱是否已存在
         User existingUser = this.checkUserExists(userNo, email);
@@ -169,7 +178,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         
         // 发送验证码
         emailService.sendVerificationCode(email);
-        logger.info("验证码发送成功，邮箱: {}", email);
+        logger.debug("验证码发送成功，邮箱: {}", email);
         return "验证码已发送";
     }
 }

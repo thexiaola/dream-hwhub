@@ -40,7 +40,7 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendVerificationCode(String email) {
-        logger.info("正在为邮箱 {} 发送验证码", email);
+        logger.debug("正在为邮箱 {} 发送验证码", email);
         
         // 生成6位随机数字验证码
         Random random = new Random();
@@ -55,7 +55,7 @@ public class EmailServiceImpl implements EmailService {
         // 发送邮件
         sendEmail(email, code);
 
-        logger.info("验证码发送流程完成，邮箱: {}", email);
+        logger.debug("验证码发送流程完成，邮箱: {}", email);
     }
 
     @Override
@@ -106,7 +106,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setFrom(senderEmail, senderNickname);
             
             mailSender.send(message);
-            logger.info("验证码邮件已成功发送至: {}", email);
+            logger.debug("验证码邮件已成功发送至: {}", email);
         } catch (Exception e) {
             // 如果邮件发送失败，记录错误但继续执行
             logger.error("邮件发送失败: {}, 邮箱: {}, 验证码: {}", e.getMessage(), email, code, e);
