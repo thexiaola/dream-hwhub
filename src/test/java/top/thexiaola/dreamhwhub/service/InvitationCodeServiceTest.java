@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import top.thexiaola.dreamhwhub.domain.InvitationCode;
-import top.thexiaola.dreamhwhub.domain.User;
 
 import java.util.List;
 
@@ -27,7 +26,7 @@ public class InvitationCodeServiceTest {
         assertNotNull(codes);
         assertEquals(3, codes.size());
         
-        String code = codes.get(0);
+        String code = codes.getFirst();
         assertEquals(8, code.length());
         
         // 验证邀请码
@@ -53,7 +52,7 @@ public class InvitationCodeServiceTest {
     @Test
     public void testDeleteInvitationCode() {
         List<String> codes = invitationCodeService.generateInvitationCodes(1, 1, 7);
-        String code = codes.get(0);
+        String code = codes.getFirst();
         
         // 删除邀请码
         boolean deleted = invitationCodeService.deleteInvitationCode(code);
