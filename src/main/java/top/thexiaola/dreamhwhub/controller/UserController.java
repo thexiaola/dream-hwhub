@@ -8,7 +8,6 @@ import top.thexiaola.dreamhwhub.common.ApiResponse;
 import top.thexiaola.dreamhwhub.domain.User;
 import top.thexiaola.dreamhwhub.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.dto.RegisterRequest;
-import top.thexiaola.dreamhwhub.service.EmailService;
 import top.thexiaola.dreamhwhub.service.IUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
@@ -19,12 +18,9 @@ public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     
     private final IUserService userService;
-    
-    private final EmailService emailService;
 
-    public UserController(IUserService userService, EmailService emailService) {
+    public UserController(IUserService userService) {
         this.userService = userService;
-        this.emailService = emailService;
     }
 
     @PostMapping("/login")
@@ -73,9 +69,9 @@ public class UserController {
         LogUtil.infoAnonymous(logger, String.format("收到发送验证码请求，学号: %s, 邮箱: %s", registerRequest.getUserNo(), registerRequest.getEmail()), request);
         
         try {
-            userService.sendVerificationCode(registerRequest.getUserNo(), registerRequest.getEmail());
+            String result = userService.sendVerificationCode(registerRequest.getUserNo(), registerRequest.getEmail());
             LogUtil.infoAnonymous(logger, String.format("验证码发送请求处理完成，邮箱: %s", registerRequest.getEmail()), request);
-            return ApiResponse.success(null, "验证码已发送");
+            return ApiResponse.success(null, result);
         } catch (Exception e) {
             LogUtil.errorAnonymous(logger, String.format("发送验证码失败: %s", e.getMessage()), request);
             return ApiResponse.error(400, e.getMessage());
