@@ -10,8 +10,7 @@ public class MailConfig {
     
     @Bean
     public JavaMailSender javaMailSender() {
-        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         // 实际配置从application.properties和mail-config.properties中加载
-        return mailSender;
+        return new JavaMailSenderImpl();
     }
 }

@@ -1,11 +1,14 @@
 package top.thexiaola.dreamhwhub.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import top.thexiaola.dreamhwhub.dto.PageResult;
+import top.thexiaola.dreamhwhub.dto.UserQueryRequest;
 import top.thexiaola.dreamhwhub.domain.User;
 import top.thexiaola.dreamhwhub.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.service.EmailService;
@@ -180,5 +183,184 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         emailService.sendVerificationCode(email);
         logger.debug("验证码发送成功，邮箱: {}", email);
         return "验证码已发送";
+    }
+    
+    @Override
+    public User adminCreateUser(User user) {
+        logger.info("管理员创建用户请求，学号: {}, 邮箱: {}", user.getUserNo(), user.getEmail());
+        
+        // 验证必填字段
+        if (user.getUserNo() == null || user.getUserNo().isEmpty()) {
+            logger.warn("创建用户失败：学号为空");
+            throw new RuntimeException("学号不能为空");
+        }
+        if (user.getUsername() == null || user.getUsername().isEmpty()) {
+            logger.warn("创建用户失败：用户名为空");
+            throw new RuntimeException("用户名不能为空");
+        }
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            logger.warn("创建用户失败：邮箱为空");
+            throw new RuntimeException("邮箱不能为空");
+        }
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            logger.warn("创建用户失败：密码为空");
+            throw new RuntimeException("密码不能为空");
+        }
+        
+        // 验证用户是否已存在
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_no", user.getUserNo()).or().eq("email", user.getEmail());
+        User existingUser = this.getOne(queryWrapper);
+        
+        if (existingUser != null) {
+            if (existingUser.getUserNo().equals(user.getUserNo())) {
+                logger.warn("创建用户失败：学号已被注册，学号: {}", user.getUserNo());
+                throw new RuntimeException("学号已被注册");
+            } else if (existingUser.getEmail().equals(user.getEmail())) {
+                logger.warn("创建用户失败：邮箱已被注册，邮箱: {}", user.getEmail());
+                throw new RuntimeException("邮箱已被注册");
+            }
+        }
+        
+        // 对密码进行加密
+        String encryptedPassword = DigestUtils.md5DigestAsHex(user.getPassword().getBytes());
+        user.setPassword(encryptedPassword);
+        
+        // ID由数据库自增管理，不显式指定
+        user.setId(null);
+        
+        boolean result = this.save(user);
+        if (result) {
+            logger.info("管理员创建用户成功，用户ID: {}", user.getId());
+        } else {
+            logger.error("管理员创建用户失败，保存数据库失败，邮箱: {}", user.getEmail());
+            throw new RuntimeException("创建用户失败");
+        }
+        
+        return user;
+    }
+    
+    @Override
+    public User adminUpdateUser(Integer id, User user) {
+        logger.info("管理员更新用户请求，用户ID: {}, 学号: {}", id, user.getUserNo());
+        
+        // 检查用户是否存在
+        User existingUser = this.getById(id);
+        if (existingUser == null) {
+            logger.warn("更新用户失败：用户不存在，用户ID: {}", id);
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 如果修改了学号或邮箱，需要检查是否与其他用户冲突
+        if ((user.getUserNo() != null && !user.getUserNo().equals(existingUser.getUserNo())) ||
+            (user.getEmail() != null && !user.getEmail().equals(existingUser.getEmail()))) {
+            
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            if (user.getUserNo() != null && !user.getUserNo().equals(existingUser.getUserNo())) {
+                queryWrapper.eq("user_no", user.getUserNo());
+            }
+            if (user.getEmail() != null && !user.getEmail().equals(existingUser.getEmail())) {
+                if (!queryWrapper.getSqlSegment().isEmpty()) {
+                    queryWrapper.or().eq("email", user.getEmail());
+                } else {
+                    queryWrapper.eq("email", user.getEmail());
+                }
+            }
+            
+            User conflictUser = this.getOne(queryWrapper);
+            if (conflictUser != null) {
+                if (user.getUserNo() != null && conflictUser.getUserNo().equals(user.getUserNo())) {
+                    logger.warn("更新用户失败：学号已被其他用户注册，学号: {}", user.getUserNo());
+                    throw new RuntimeException("学号已被其他用户注册");
+                }
+                if (user.getEmail() != null && conflictUser.getEmail().equals(user.getEmail())) {
+                    logger.warn("更新用户失败：邮箱已被其他用户注册，邮箱: {}", user.getEmail());
+                    throw new RuntimeException("邮箱已被其他用户注册");
+                }
+            }
+        }
+        
+        // 如果提供了新密码，则加密
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            String encryptedPassword = DigestUtils.md5DigestAsHex(user.getPassword().getBytes());
+            user.setPassword(encryptedPassword);
+        }
+        
+        // 保持原有ID不变
+        user.setId(id);
+        
+        boolean result = this.updateById(user);
+        if (result) {
+            logger.info("管理员更新用户成功，用户ID: {}", id);
+            return this.getById(id);
+        } else {
+            logger.error("管理员更新用户失败，用户ID: {}", id);
+            throw new RuntimeException("更新用户失败");
+        }
+    }
+    
+    @Override
+    public boolean adminDeleteUser(Integer id) {
+        logger.info("管理员删除用户请求，用户ID: {}", id);
+        
+        // 检查用户是否存在
+        User existingUser = this.getById(id);
+        if (existingUser == null) {
+            logger.warn("删除用户失败：用户不存在，用户ID: {}", id);
+            throw new RuntimeException("用户不存在");
+        }
+        
+        boolean result = this.removeById(id);
+        if (result) {
+            logger.info("管理员删除用户成功，用户ID: {}", id);
+        } else {
+            logger.error("管理员删除用户失败，用户ID: {}", id);
+            throw new RuntimeException("删除用户失败");
+        }
+        
+        return result;
+    }
+    
+    @Override
+    public PageResult<User> adminListUsers(UserQueryRequest queryRequest) {
+        logger.info("管理员查询用户列表请求，页码: {}, 大小: {}", queryRequest.getPage(), queryRequest.getSize());
+        
+        // 创建分页对象
+        Page<User> page = new Page<>(queryRequest.getPage(), queryRequest.getSize());
+        
+        // 构建查询条件
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        
+        // 关键词搜索
+        if (queryRequest.getKeyword() != null && !queryRequest.getKeyword().isEmpty()) {
+            queryWrapper.and(wrapper -> wrapper
+                .like("user_no", queryRequest.getKeyword())
+                .or().like("username", queryRequest.getKeyword())
+                .or().like("email", queryRequest.getKeyword()));
+        }
+        
+        // 权限筛选
+        if (queryRequest.getPermission() != null) {
+            queryWrapper.eq("permission", queryRequest.getPermission());
+        }
+        
+        // 按ID降序排列（最新的用户在前面）
+        queryWrapper.orderByDesc("id");
+        
+        // 执行分页查询
+        Page<User> resultPage = this.page(page, queryWrapper);
+        
+        // 构造返回结果
+        PageResult<User> pageResult = new PageResult<>(
+            resultPage.getRecords(),
+            resultPage.getTotal(),
+            (int) resultPage.getCurrent(),
+            (int) resultPage.getSize()
+        );
+        
+        logger.info("管理员查询用户列表成功，总记录数: {}, 总页数: {}", 
+                   resultPage.getTotal(), resultPage.getPages());
+        
+        return pageResult;
     }
 }

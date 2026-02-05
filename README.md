@@ -132,6 +132,164 @@ spring.mail.properties.mail.smtp.ssl.enable=true
   }
   ```
 
+### 管理员用户管理接口（权限等级>50）
+
+#### 4. 创建用户
+**POST** `/api/admin/users`
+
+**请求头:**
+- `Authorization: Bearer {admin_token}`
+
+**请求体:**
+```json
+{
+  "userNo": "学号/工号",
+  "username": "用户名",
+  "email": "邮箱",
+  "password": "密码",
+  "permission": 10
+}
+```
+
+**权限要求:** 权限等级 > 50
+
+**示例请求:**
+```bash
+curl -X POST "http://localhost:8080/api/admin/users" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -d '{
+    "userNo": "STU001",
+    "username": "张三",
+    "email": "zhangsan@example.com",
+    "password": "123456",
+    "permission": 10
+  }'
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "用户创建成功",
+  "data": {
+    "id": 1,
+    "userNo": "STU001",
+    "username": "张三",
+    "email": "zhangsan@example.com",
+    "permission": 10
+  }
+}
+```
+
+#### 5. 更新用户
+**PUT** `/api/admin/users/{id}`
+
+**路径参数:**
+- `id`: 用户ID
+
+**请求体:**
+```json
+{
+  "userNo": "学号/工号",
+  "username": "用户名",
+  "email": "邮箱",
+  "password": "新密码(可选)",
+  "permission": 20
+}
+```
+
+**权限要求:** 权限等级 > 50
+
+**示例请求:**
+```bash
+curl -X PUT "http://localhost:8080/api/admin/users/1" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -d '{
+    "username": "李四",
+    "permission": 20
+  }'
+```
+
+#### 6. 删除用户
+**DELETE** `/api/admin/users/{id}`
+
+**路径参数:**
+- `id`: 用户ID
+
+**权限要求:** 权限等级 > 50
+
+**示例请求:**
+```bash
+curl -X DELETE "http://localhost:8080/api/admin/users/1" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+#### 7. 查询用户列表（分页）
+**POST** `/api/admin/users/list`
+
+**请求体:**
+```json
+{
+  "page": 1,
+  "size": 30,
+  "keyword": "搜索关键词",
+  "permission": 10
+}
+```
+
+**参数说明:**
+- `page`: 页码（默认1）
+- `size`: 每页大小（默认30，最大100）
+- `keyword`: 搜索关键词（可搜索学号、用户名、邮箱）
+- `permission`: 权限筛选
+
+**权限要求:** 权限等级 > 50
+
+**示例请求:**
+```bash
+curl -X POST "http://localhost:8080/api/admin/users/list" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -d '{
+    "page": 1,
+    "size": 30,
+    "keyword": "张三"
+  }'
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "查询成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "userNo": "STU001",
+        "username": "张三",
+        "email": "zhangsan@example.com",
+        "permission": 10
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "size": 30,
+    "pages": 1
+  }
+}
+```
+
+### 管理员功能重要说明
+
+- **用户ID管理**: 用户ID由数据库自增管理，创建用户时不能显式指定
+- **权限控制**: 所有管理员API都需要权限等级大于50
+- **分页机制**: 默认每页30条记录，支持最大每页100条记录
+- **数据验证**: 学号和邮箱具有唯一性约束，自动检查重复
+- **安全措施**: 密码在存储前会进行MD5加密，所有操作都有详细日志记录
+
 ### 邀请码相关接口（仅限管理员，权限等级>50）
 
 #### 4. 批量生成邀请码
