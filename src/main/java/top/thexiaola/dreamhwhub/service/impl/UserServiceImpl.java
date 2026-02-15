@@ -100,7 +100,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         
         // 验证用户是否已存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_no", user.getUserNo()).or().eq("email", user.getEmail());
+        queryWrapper.eq("user_no", user.getUserNo())
+                   .or().eq("email", user.getEmail())
+                   .or().eq("username", user.getUsername());
         User existingUser = this.getOne(queryWrapper);
         
         if (existingUser != null) {
@@ -110,6 +112,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             } else if (existingUser.getEmail().equals(user.getEmail())) {
                 logger.warn("注册失败：邮箱已被注册，邮箱: {}", user.getEmail());
                 throw new RuntimeException("邮箱已被注册");
+            } else if (existingUser.getUsername().equals(user.getUsername())) {
+                logger.warn("注册失败：用户名已被注册，用户名: {}", user.getUsername());
+                throw new RuntimeException("用户名已被注册");
             }
         }
         
@@ -209,7 +214,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         
         // 验证用户是否已存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_no", user.getUserNo()).or().eq("email", user.getEmail());
+        queryWrapper.eq("user_no", user.getUserNo())
+                   .or().eq("email", user.getEmail())
+                   .or().eq("username", user.getUsername());
         User existingUser = this.getOne(queryWrapper);
         
         if (existingUser != null) {
@@ -219,6 +226,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             } else if (existingUser.getEmail().equals(user.getEmail())) {
                 logger.warn("创建用户失败：邮箱已被注册，邮箱: {}", user.getEmail());
                 throw new RuntimeException("邮箱已被注册");
+            } else if (existingUser.getUsername().equals(user.getUsername())) {
+                logger.warn("创建用户失败：用户名已被注册，用户名: {}", user.getUsername());
+                throw new RuntimeException("用户名已被注册");
             }
         }
         
@@ -251,9 +261,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             throw new RuntimeException("用户不存在");
         }
         
-        // 如果修改了学号或邮箱，需要检查是否与其他用户冲突
+        // 如果修改了学号、邮箱或用户名，需要检查是否与其他用户冲突
         if ((user.getUserNo() != null && !user.getUserNo().equals(existingUser.getUserNo())) ||
-            (user.getEmail() != null && !user.getEmail().equals(existingUser.getEmail()))) {
+            (user.getEmail() != null && !user.getEmail().equals(existingUser.getEmail())) ||
+            (user.getUsername() != null && !user.getUsername().equals(existingUser.getUsername()))) {
             
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             if (user.getUserNo() != null && !user.getUserNo().equals(existingUser.getUserNo())) {
@@ -266,6 +277,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                     queryWrapper.eq("email", user.getEmail());
                 }
             }
+            if (user.getUsername() != null && !user.getUsername().equals(existingUser.getUsername())) {
+                if (!queryWrapper.getSqlSegment().isEmpty()) {
+                    queryWrapper.or().eq("username", user.getUsername());
+                } else {
+                    queryWrapper.eq("username", user.getUsername());
+                }
+            }
             
             User conflictUser = this.getOne(queryWrapper);
             if (conflictUser != null) {
@@ -276,6 +294,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 if (user.getEmail() != null && conflictUser.getEmail().equals(user.getEmail())) {
                     logger.warn("更新用户失败：邮箱已被其他用户注册，邮箱: {}", user.getEmail());
                     throw new RuntimeException("邮箱已被其他用户注册");
+                }
+                if (user.getUsername() != null && conflictUser.getUsername().equals(user.getUsername())) {
+                    logger.warn("更新用户失败：用户名已被其他用户注册，用户名: {}", user.getUsername());
+                    throw new RuntimeException("用户名已被其他用户注册");
                 }
             }
         }
