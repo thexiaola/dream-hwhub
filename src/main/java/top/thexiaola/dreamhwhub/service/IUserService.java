@@ -12,8 +12,8 @@ public interface IUserService extends IService<User> {
     String sendVerificationCode(String userNo, String email);
     
     // 管理员功能
-    User adminCreateUser(User user);
-    User adminUpdateUser(Integer id, User user);
-    boolean adminDeleteUser(Integer id);
-    PageResult<User> adminListUsers(UserQueryRequest queryRequest);
+    User adminCreateUser(User currentUser, User user);
+    User adminUpdateUser(User currentUser, Integer id, User user);
+    boolean adminDeleteUser(User currentUser, Integer id);
+    PageResult<User> adminListUsers(User currentUser, UserQueryRequest queryRequest);
 }

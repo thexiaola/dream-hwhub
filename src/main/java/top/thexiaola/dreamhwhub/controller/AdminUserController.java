@@ -34,12 +34,6 @@ public class AdminUserController {
         LogUtil.info(logger, "收到管理员创建用户请求", currentUser, request);
         
         try {
-            // 权限检查
-            if (currentUser.getPermission() <= 50) {
-                LogUtil.warn(logger, "权限不足，无法创建用户", currentUser, request);
-                return ApiResponse.error(403, "权限不足，需要权限等级大于50");
-            }
-            
             // 将AdminUserRequest转换为User对象
             User user = new User();
             user.setUserNo(adminUserRequest.getUserNo());
@@ -48,7 +42,7 @@ public class AdminUserController {
             user.setPassword(adminUserRequest.getPassword());
             user.setPermission(adminUserRequest.getPermission());
             
-            User createdUser = userService.adminCreateUser(user);
+            User createdUser = userService.adminCreateUser(currentUser, user);
             LogUtil.info(logger, "管理员创建用户成功", currentUser, request);
             return ApiResponse.success(createdUser, "用户创建成功");
         } catch (Exception e) {
@@ -68,12 +62,6 @@ public class AdminUserController {
         LogUtil.info(logger, "收到管理员更新用户请求，用户ID: " + id, currentUser, request);
         
         try {
-            // 权限检查
-            if (currentUser.getPermission() <= 50) {
-                LogUtil.warn(logger, "权限不足，无法更新用户", currentUser, request);
-                return ApiResponse.error(403, "权限不足，需要权限等级大于50");
-            }
-            
             // 将AdminUserRequest转换为User对象
             User user = new User();
             user.setUserNo(adminUserRequest.getUserNo());
@@ -82,7 +70,7 @@ public class AdminUserController {
             user.setPassword(adminUserRequest.getPassword());
             user.setPermission(adminUserRequest.getPermission());
             
-            User updatedUser = userService.adminUpdateUser(id, user);
+            User updatedUser = userService.adminUpdateUser(currentUser, id, user);
             LogUtil.info(logger, "管理员更新用户成功", currentUser, request);
             return ApiResponse.success(updatedUser, "用户更新成功");
         } catch (Exception e) {
@@ -101,13 +89,7 @@ public class AdminUserController {
         LogUtil.info(logger, "收到管理员删除用户请求，用户ID: " + id, currentUser, request);
         
         try {
-            // 权限检查
-            if (currentUser.getPermission() <= 50) {
-                LogUtil.warn(logger, "权限不足，无法删除用户", currentUser, request);
-                return ApiResponse.error(403, "权限不足，需要权限等级大于50");
-            }
-            
-            boolean result = userService.adminDeleteUser(id);
+            boolean result = userService.adminDeleteUser(currentUser, id);
             if (result) {
                 LogUtil.info(logger, "管理员删除用户成功", currentUser, request);
                 return ApiResponse.success(null, "用户删除成功");
@@ -131,12 +113,6 @@ public class AdminUserController {
         LogUtil.info(logger, "收到管理员查询用户列表请求", currentUser, request);
         
         try {
-            // 权限检查
-            if (currentUser.getPermission() <= 50) {
-                LogUtil.warn(logger, "权限不足，无法查询用户列表", currentUser, request);
-                return ApiResponse.error(403, "权限不足，需要权限等级大于50");
-            }
-            
             // 设置默认分页参数
             if (queryRequest.getPage() == null || queryRequest.getPage() < 1) {
                 queryRequest.setPage(1);
@@ -148,7 +124,7 @@ public class AdminUserController {
                 queryRequest.setSize(100); // 限制最大每页100条
             }
             
-            PageResult<User> pageResult = userService.adminListUsers(queryRequest);
+            PageResult<User> pageResult = userService.adminListUsers(currentUser, queryRequest);
             LogUtil.info(logger, "管理员查询用户列表成功，总记录数: " + pageResult.getTotal(), currentUser, request);
             return ApiResponse.success(pageResult, "查询成功");
         } catch (Exception e) {

@@ -19,7 +19,12 @@ public class AdminUserServiceTest {
 
     @Test
     public void testAdminCreateUser() {
-        // 创建测试用户
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
+        // 创建目标用户
         User user = new User();
         user.setUserNo("TEST001");
         user.setUsername("测试用户");
@@ -27,7 +32,7 @@ public class AdminUserServiceTest {
         user.setPassword("123456");
         user.setPermission((short) 10);
 
-        User createdUser = userService.adminCreateUser(user);
+        User createdUser = userService.adminCreateUser(currentUser, user);
         
         assertNotNull(createdUser.getId());
         assertEquals("TEST001", createdUser.getUserNo());
@@ -40,6 +45,11 @@ public class AdminUserServiceTest {
 
     @Test
     public void testAdminUpdateUser() {
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
         // 先创建用户
         User user = new User();
         user.setUserNo("TEST002");
@@ -48,7 +58,7 @@ public class AdminUserServiceTest {
         user.setPassword("123456");
         user.setPermission((short) 10);
         
-        User createdUser = userService.adminCreateUser(user);
+        User createdUser = userService.adminCreateUser(currentUser, user);
         
         // 更新用户信息
         User updateUser = new User();
@@ -56,7 +66,7 @@ public class AdminUserServiceTest {
         updateUser.setPermission((short) 20);
         // 不设置密码，应该保持原密码
         
-        User updatedUser = userService.adminUpdateUser(createdUser.getId(), updateUser);
+        User updatedUser = userService.adminUpdateUser(currentUser, createdUser.getId(), updateUser);
         
         assertEquals("更新后的用户名", updatedUser.getUsername());
         assertEquals(Short.valueOf((short) 20), updatedUser.getPermission());
@@ -65,6 +75,11 @@ public class AdminUserServiceTest {
 
     @Test
     public void testAdminDeleteUser() {
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
         // 先创建用户
         User user = new User();
         user.setUserNo("TEST003");
@@ -73,11 +88,11 @@ public class AdminUserServiceTest {
         user.setPassword("123456");
         user.setPermission((short) 10);
         
-        User createdUser = userService.adminCreateUser(user);
+        User createdUser = userService.adminCreateUser(currentUser, user);
         Integer userId = createdUser.getId();
         
         // 删除用户
-        boolean result = userService.adminDeleteUser(userId);
+        boolean result = userService.adminDeleteUser(currentUser, userId);
         assertTrue(result);
         
         // 验证用户已删除
@@ -87,12 +102,17 @@ public class AdminUserServiceTest {
 
     @Test
     public void testAdminListUsers() {
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
         // 查询用户列表（即使没有数据也应该返回空列表而不是null）
         UserQueryRequest queryRequest = new UserQueryRequest();
         queryRequest.setPage(1);
         queryRequest.setSize(30);
         
-        PageResult<User> pageResult = userService.adminListUsers(queryRequest);
+        PageResult<User> pageResult = userService.adminListUsers(currentUser, queryRequest);
         
         assertNotNull(pageResult);
         assertNotNull(pageResult.getRecords());
@@ -102,6 +122,11 @@ public class AdminUserServiceTest {
 
     @Test
     public void testAdminListUsersWithKeywordSearch() {
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
         // 创建测试用户
         User user = new User();
         user.setUserNo("SEARCH001");
@@ -109,7 +134,7 @@ public class AdminUserServiceTest {
         user.setEmail("search@test.com");
         user.setPassword("123456");
         user.setPermission((short) 10);
-        userService.adminCreateUser(user);
+        userService.adminCreateUser(currentUser, user);
         
         // 使用关键词搜索
         UserQueryRequest queryRequest = new UserQueryRequest();
@@ -117,7 +142,7 @@ public class AdminUserServiceTest {
         queryRequest.setPage(1);
         queryRequest.setSize(10);
         
-        PageResult<User> pageResult = userService.adminListUsers(queryRequest);
+        PageResult<User> pageResult = userService.adminListUsers(currentUser, queryRequest);
         
         assertNotNull(pageResult);
         assertFalse(pageResult.getRecords().isEmpty());
@@ -135,6 +160,11 @@ public class AdminUserServiceTest {
 
     @Test
     public void testAdminListUsersWithPermissionFilter() {
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
         // 创建不同权限的测试用户
         User user1 = new User();
         user1.setUserNo("PERM001");
@@ -142,7 +172,7 @@ public class AdminUserServiceTest {
         user1.setEmail("perm1@test.com");
         user1.setPassword("123456");
         user1.setPermission((short) 10);
-        userService.adminCreateUser(user1);
+        userService.adminCreateUser(currentUser, user1);
         
         User user2 = new User();
         user2.setUserNo("PERM002");
@@ -150,7 +180,7 @@ public class AdminUserServiceTest {
         user2.setEmail("perm2@test.com");
         user2.setPassword("123456");
         user2.setPermission((short) 50);
-        userService.adminCreateUser(user2);
+        userService.adminCreateUser(currentUser, user2);
         
         // 按权限筛选
         UserQueryRequest queryRequest = new UserQueryRequest();
@@ -158,7 +188,7 @@ public class AdminUserServiceTest {
         queryRequest.setPage(1);
         queryRequest.setSize(10);
         
-        PageResult<User> pageResult = userService.adminListUsers(queryRequest);
+        PageResult<User> pageResult = userService.adminListUsers(currentUser, queryRequest);
         
         assertNotNull(pageResult);
         assertFalse(pageResult.getRecords().isEmpty());

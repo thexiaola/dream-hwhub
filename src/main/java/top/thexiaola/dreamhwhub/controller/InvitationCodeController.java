@@ -42,19 +42,13 @@ public class InvitationCodeController {
         LogUtil.info(logger, "收到批量生成邀请码请求，数量: " + count, currentUser, request);
         
         try {
-            // 权限检查
-            if (currentUser.getPermission() <= 50) {
-                LogUtil.warn(logger, "权限不足，无法生成邀请码", currentUser, request);
-                return ApiResponse.error(403, "权限不足，需要权限等级大于50");
-            }
-            
             // 限制单次生成数量
             if (count <= 0 || count > 100) {
                 return ApiResponse.error(400, "生成数量必须在1-100之间");
             }
             
             List<String> codes = invitationCodeService.generateInvitationCodes(
-                currentUser.getId(), count, expireDays);
+                currentUser, count, expireDays);
             
             LogUtil.info(logger, "批量生成邀请码成功，数量: " + codes.size(), currentUser, request);
             return ApiResponse.success(codes, "邀请码生成成功");
@@ -77,13 +71,7 @@ public class InvitationCodeController {
         LogUtil.info(logger, "收到查看所有邀请码请求", currentUser, request);
         
         try {
-            // 权限检查
-            if (currentUser.getPermission() <= 50) {
-                LogUtil.warn(logger, "权限不足，无法查看所有邀请码", currentUser, request);
-                return ApiResponse.error(403, "权限不足，需要权限等级大于50");
-            }
-            
-            List<InvitationCode> codes = invitationCodeService.getAllInvitationCodes();
+            List<InvitationCode> codes = invitationCodeService.getAllInvitationCodes(currentUser);
             LogUtil.info(logger, "获取所有邀请码成功", currentUser, request);
             return ApiResponse.success(codes, "获取成功");
         } catch (Exception e) {
@@ -104,13 +92,7 @@ public class InvitationCodeController {
         LogUtil.info(logger, "收到删除邀请码请求，邀请码: " + code, currentUser, request);
         
         try {
-            // 权限检查
-            if (currentUser.getPermission() <= 50) {
-                LogUtil.warn(logger, "权限不足，无法删除邀请码", currentUser, request);
-                return ApiResponse.error(403, "权限不足，需要权限等级大于50");
-            }
-            
-            boolean result = invitationCodeService.deleteInvitationCode(code);
+            boolean result = invitationCodeService.deleteInvitationCode(currentUser, code);
             if (result) {
                 LogUtil.info(logger, "邀请码删除成功", currentUser, request);
                 return ApiResponse.success(null, "邀请码删除成功");

@@ -191,8 +191,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
     
     @Override
-    public User adminCreateUser(User user) {
-        logger.info("管理员创建用户请求，学号: {}, 邮箱: {}", user.getUserNo(), user.getEmail());
+    public User adminCreateUser(User currentUser, User user) {
+        logger.info("管理员创建用户请求，操作用户ID: {}, 目标用户学号: {}", currentUser.getId(), user.getUserNo());
+        
+        // 权限检查
+        if (currentUser.getPermission() <= 50) {
+            logger.warn("权限不足，无法创建用户，操作用户ID: {}, 权限等级: {}", currentUser.getId(), currentUser.getPermission());
+            throw new RuntimeException("权限不足，需要权限等级大于50");
+        }
         
         // 验证必填字段
         if (user.getUserNo() == null || user.getUserNo().isEmpty()) {
@@ -251,8 +257,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
     
     @Override
-    public User adminUpdateUser(Integer id, User user) {
-        logger.info("管理员更新用户请求，用户ID: {}, 学号: {}", id, user.getUserNo());
+    public User adminUpdateUser(User currentUser, Integer id, User user) {
+        logger.info("管理员更新用户请求，操作用户ID: {}, 目标用户ID: {}, 学号: {}", currentUser.getId(), id, user.getUserNo());
+        
+        // 权限检查
+        if (currentUser.getPermission() <= 50) {
+            logger.warn("权限不足，无法更新用户，操作用户ID: {}, 权限等级: {}", currentUser.getId(), currentUser.getPermission());
+            throw new RuntimeException("权限不足，需要权限等级大于50");
+        }
         
         // 检查用户是否存在
         User existingUser = this.getById(id);
@@ -322,8 +334,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
     
     @Override
-    public boolean adminDeleteUser(Integer id) {
-        logger.info("管理员删除用户请求，用户ID: {}", id);
+    public boolean adminDeleteUser(User currentUser, Integer id) {
+        logger.info("管理员删除用户请求，操作用户ID: {}, 目标用户ID: {}", currentUser.getId(), id);
+        
+        // 权限检查
+        if (currentUser.getPermission() <= 50) {
+            logger.warn("权限不足，无法删除用户，操作用户ID: {}, 权限等级: {}", currentUser.getId(), currentUser.getPermission());
+            throw new RuntimeException("权限不足，需要权限等级大于50");
+        }
         
         // 检查用户是否存在
         User existingUser = this.getById(id);
@@ -344,8 +362,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
     
     @Override
-    public PageResult<User> adminListUsers(UserQueryRequest queryRequest) {
-        logger.info("管理员查询用户列表请求，页码: {}, 大小: {}", queryRequest.getPage(), queryRequest.getSize());
+    public PageResult<User> adminListUsers(User currentUser, UserQueryRequest queryRequest) {
+        logger.info("管理员查询用户列表请求，操作用户ID: {}, 页码: {}, 大小: {}", currentUser.getId(), queryRequest.getPage(), queryRequest.getSize());
+        
+        // 权限检查
+        if (currentUser.getPermission() <= 50) {
+            logger.warn("权限不足，无法查询用户列表，操作用户ID: {}, 权限等级: {}", currentUser.getId(), currentUser.getPermission());
+            throw new RuntimeException("权限不足，需要权限等级大于50");
+        }
         
         // 创建分页对象
         Page<User> page = new Page<>(queryRequest.getPage(), queryRequest.getSize());
@@ -385,4 +409,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         
         return pageResult;
     }
+    
+
 }

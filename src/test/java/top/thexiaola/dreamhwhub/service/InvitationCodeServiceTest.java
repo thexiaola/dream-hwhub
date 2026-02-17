@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import top.thexiaola.dreamhwhub.domain.InvitationCode;
+import top.thexiaola.dreamhwhub.domain.User;
 
 import java.util.List;
 
@@ -20,8 +21,12 @@ public class InvitationCodeServiceTest {
 
     @Test
     public void testGenerateAndValidateInvitationCode() {
-        // 创建测试用户（假设已存在权限>50的用户，ID为1）
-        List<String> codes = invitationCodeService.generateInvitationCodes(1, 3, 7);
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
+        List<String> codes = invitationCodeService.generateInvitationCodes(currentUser, 3, 7);
         
         assertNotNull(codes);
         assertEquals(3, codes.size());
@@ -51,11 +56,16 @@ public class InvitationCodeServiceTest {
 
     @Test
     public void testDeleteInvitationCode() {
-        List<String> codes = invitationCodeService.generateInvitationCodes(1, 1, 7);
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
+        List<String> codes = invitationCodeService.generateInvitationCodes(currentUser, 1, 7);
         String code = codes.getFirst();
         
         // 删除邀请码
-        boolean deleted = invitationCodeService.deleteInvitationCode(code);
+        boolean deleted = invitationCodeService.deleteInvitationCode(currentUser, code);
         assertTrue(deleted);
         
         // 验证删除后的邀请码应该不存在
@@ -65,12 +75,17 @@ public class InvitationCodeServiceTest {
 
     @Test
     public void testGetAllInvitationCodes() {
+        // 创建操作用户（权限足够）
+        User currentUser = new User();
+        currentUser.setId(1);
+        currentUser.setPermission((short) 60);
+        
         // 生成几个邀请码
-        invitationCodeService.generateInvitationCodes(1, 2, 7);
-        invitationCodeService.generateInvitationCodes(1, 3, 14);
+        invitationCodeService.generateInvitationCodes(currentUser, 2, 7);
+        invitationCodeService.generateInvitationCodes(currentUser, 3, 14);
         
         // 获取所有邀请码
-        List<InvitationCode> codes = invitationCodeService.getAllInvitationCodes();
+        List<InvitationCode> codes = invitationCodeService.getAllInvitationCodes(currentUser);
         assertTrue(codes.size() >= 5);
         
         // 验证数据正确性
