@@ -1,7 +1,7 @@
 package top.thexiaola.dreamhwhub.util;
 
 import org.junit.jupiter.api.Test;
-import top.thexiaola.dreamhwhub.domain.User;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
 
 import static org.junit.jupiter.api.Assertions.*;
 

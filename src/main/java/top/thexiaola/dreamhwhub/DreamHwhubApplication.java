@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("top.thexiaola.dreamhwhub.mapper")
+@MapperScan("top.thexiaola.dreamhwhub.module.login.mapper")
 public class DreamHwhubApplication {
     static void main(String[] args) {
         SpringApplication.run(DreamHwhubApplication.class, args);

@@ -3,8 +3,10 @@ package top.thexiaola.dreamhwhub.service;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import top.thexiaola.dreamhwhub.domain.InvitationCode;
-import top.thexiaola.dreamhwhub.domain.User;
+import top.thexiaola.dreamhwhub.module.login.domain.InvitationCode;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.adminuser.service.AdminUserService;
+import top.thexiaola.dreamhwhub.module.login.service.InvitationCodeService;
 
 import java.util.List;
 
@@ -14,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.*;
 public class InvitationCodeServiceTest {
 
     @Autowired
-    private IInvitationCodeService invitationCodeService;
+    private InvitationCodeService invitationCodeService;
     
     @Autowired
-    private IUserService userService;
+    private AdminUserService userService;
 
     @Test
     public void testGenerateAndValidateInvitationCode() {

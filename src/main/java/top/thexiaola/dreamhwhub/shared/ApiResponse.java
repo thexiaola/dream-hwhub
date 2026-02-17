@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.common;
+package top.thexiaola.dreamhwhub.shared;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

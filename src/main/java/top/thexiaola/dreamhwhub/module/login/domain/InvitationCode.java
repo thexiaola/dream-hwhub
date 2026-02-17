@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.domain;
+package top.thexiaola.dreamhwhub.module.login.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -18,11 +18,14 @@ public class InvitationCode {
     @TableField(value = "creator_id")
     private Integer creatorId;
     
+    @TableField(exist = false)
+    private User creator;
+    
     @TableField(value = "used_count")
     private Integer usedCount;
     
     @TableField(value = "max_usage")
-    private Integer maxUsage = 1;
+    private Integer maxUsage;
     
     @TableField(value = "created_time")
     private LocalDateTime createdTime;
@@ -32,10 +35,6 @@ public class InvitationCode {
     
     @TableField(value = "is_active")
     private Boolean isActive;
-
-    // 关联的创建者用户信息（非数据库字段）
-    @TableField(exist = false)
-    private User creator;
 
     public Integer getId() {
         return id;
@@ -59,6 +58,14 @@ public class InvitationCode {
 
     public void setCreatorId(Integer creatorId) {
         this.creatorId = creatorId;
+    }
+
+    public User getCreator() {
+        return creator;
+    }
+
+    public void setCreator(User creator) {
+        this.creator = creator;
     }
 
     public Integer getUsedCount() {
@@ -99,13 +106,5 @@ public class InvitationCode {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
-    }
-
-    public User getCreator() {
-        return creator;
-    }
-
-    public void setCreator(User creator) {
-        this.creator = creator;
     }
 }

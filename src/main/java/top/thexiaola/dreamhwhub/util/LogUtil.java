@@ -1,6 +1,6 @@
 package top.thexiaola.dreamhwhub.util;
 
-import top.thexiaola.dreamhwhub.domain.User;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
 import org.slf4j.Logger;
 
 // 日志工具类

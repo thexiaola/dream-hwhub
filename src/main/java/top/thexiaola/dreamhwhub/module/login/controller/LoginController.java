@@ -1,26 +1,26 @@
-package top.thexiaola.dreamhwhub.controller;
+package top.thexiaola.dreamhwhub.module.login.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-import top.thexiaola.dreamhwhub.common.ApiResponse;
-import top.thexiaola.dreamhwhub.domain.User;
-import top.thexiaola.dreamhwhub.dto.LoginRequest;
-import top.thexiaola.dreamhwhub.dto.RegisterRequest;
-import top.thexiaola.dreamhwhub.service.IUserService;
+import top.thexiaola.dreamhwhub.shared.ApiResponse;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
+import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
 @RestController
 @RequestMapping("/api/users")
-public class UserController {
+public class LoginController {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
     
-    private final IUserService userService;
+    private final LoginUserService loginUserService;
 
-    public UserController(IUserService userService) {
-        this.userService = userService;
+    public LoginController(LoginUserService loginUserService) {
+        this.loginUserService = loginUserService;
     }
 
     @PostMapping("/login")
@@ -34,7 +34,7 @@ public class UserController {
             user.setEmail(loginRequest.getEmail());
             user.setPassword(loginRequest.getPassword());
             
-            User loggedInUser = userService.login(user);
+            User loggedInUser = loginUserService.login(user);
             LogUtil.info(logger, "登录成功", loggedInUser, request);
             return ApiResponse.success(loggedInUser, "登录成功");
         } catch (Exception e) {
@@ -55,7 +55,7 @@ public class UserController {
             user.setEmail(registerRequest.getEmail());
             user.setPassword(registerRequest.getPassword());
             
-            User registeredUser = userService.register(user, registerRequest.getVerificationCode(), registerRequest.getInvitationCode());
+            User registeredUser = loginUserService.register(user, registerRequest.getVerificationCode(), registerRequest.getInvitationCode());
             LogUtil.info(logger, "注册成功", registeredUser, request);
             return ApiResponse.success(registeredUser, "注册成功");
         } catch (Exception e) {
@@ -69,7 +69,7 @@ public class UserController {
         LogUtil.infoAnonymous(logger, String.format("收到发送验证码请求，学号: %s, 邮箱: %s", registerRequest.getUserNo(), registerRequest.getEmail()), request);
         
         try {
-            String result = userService.sendVerificationCode(registerRequest.getUserNo(), registerRequest.getEmail());
+            String result = loginUserService.sendVerificationCode(registerRequest.getUserNo(), registerRequest.getEmail());
             LogUtil.infoAnonymous(logger, String.format("验证码发送请求处理完成，邮箱: %s", registerRequest.getEmail()), request);
             return ApiResponse.success(null, result);
         } catch (Exception e) {

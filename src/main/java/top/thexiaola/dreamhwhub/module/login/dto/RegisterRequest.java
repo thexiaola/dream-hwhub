@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.dto;
+package top.thexiaola.dreamhwhub.module.login.dto;
 
 public class RegisterRequest {
     private String userNo;          // 学号

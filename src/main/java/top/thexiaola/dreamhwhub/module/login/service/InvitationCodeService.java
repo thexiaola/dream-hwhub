@@ -1,12 +1,12 @@
-package top.thexiaola.dreamhwhub.service;
+package top.thexiaola.dreamhwhub.module.login.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.thexiaola.dreamhwhub.domain.InvitationCode;
-import top.thexiaola.dreamhwhub.domain.User;
+import top.thexiaola.dreamhwhub.module.login.domain.InvitationCode;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
 
 import java.util.List;
 
-public interface IInvitationCodeService extends IService<InvitationCode> {
+public interface InvitationCodeService extends IService<InvitationCode> {
     
     /**
      * 生成邀请码（管理员功能，带权限检查）
@@ -45,6 +45,4 @@ public interface IInvitationCodeService extends IService<InvitationCode> {
      * @return 邀请码列表
      */
     List<InvitationCode> getAllInvitationCodes(User currentUser);
-    
-
 }

@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.service;
+package top.thexiaola.dreamhwhub.module.login.service;
 
 public interface EmailService {
     void sendVerificationCode(String email);

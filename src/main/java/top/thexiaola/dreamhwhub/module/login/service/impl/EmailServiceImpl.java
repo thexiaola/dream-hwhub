@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.service.impl;
+package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,7 +8,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.stereotype.Service;
-import top.thexiaola.dreamhwhub.service.EmailService;
+import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 
 import java.util.Map;
 import java.util.Random;

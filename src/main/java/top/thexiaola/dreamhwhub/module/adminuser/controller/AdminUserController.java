@@ -1,15 +1,15 @@
-package top.thexiaola.dreamhwhub.controller;
+package top.thexiaola.dreamhwhub.module.adminuser.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-import top.thexiaola.dreamhwhub.common.ApiResponse;
-import top.thexiaola.dreamhwhub.domain.User;
-import top.thexiaola.dreamhwhub.dto.AdminUserRequest;
+import top.thexiaola.dreamhwhub.shared.ApiResponse;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.adminuser.dto.AdminUserRequest;
 import top.thexiaola.dreamhwhub.dto.PageResult;
 import top.thexiaola.dreamhwhub.dto.UserQueryRequest;
-import top.thexiaola.dreamhwhub.service.IUserService;
+import top.thexiaola.dreamhwhub.module.adminuser.service.AdminUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
 @RestController
@@ -18,10 +18,10 @@ public class AdminUserController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
     
-    private final IUserService userService;
+    private final AdminUserService adminUserService;
 
-    public AdminUserController(IUserService userService) {
-        this.userService = userService;
+    public AdminUserController(AdminUserService adminUserService) {
+        this.adminUserService = adminUserService;
     }
 
     /**
@@ -42,7 +42,7 @@ public class AdminUserController {
             user.setPassword(adminUserRequest.getPassword());
             user.setPermission(adminUserRequest.getPermission());
             
-            User createdUser = userService.adminCreateUser(currentUser, user);
+            User createdUser = adminUserService.adminCreateUser(currentUser, user);
             LogUtil.info(logger, "管理员创建用户成功", currentUser, request);
             return ApiResponse.success(createdUser, "用户创建成功");
         } catch (Exception e) {
@@ -70,7 +70,7 @@ public class AdminUserController {
             user.setPassword(adminUserRequest.getPassword());
             user.setPermission(adminUserRequest.getPermission());
             
-            User updatedUser = userService.adminUpdateUser(currentUser, id, user);
+            User updatedUser = adminUserService.adminUpdateUser(currentUser, id, user);
             LogUtil.info(logger, "管理员更新用户成功", currentUser, request);
             return ApiResponse.success(updatedUser, "用户更新成功");
         } catch (Exception e) {
@@ -89,7 +89,7 @@ public class AdminUserController {
         LogUtil.info(logger, "收到管理员删除用户请求，用户ID: " + id, currentUser, request);
         
         try {
-            boolean result = userService.adminDeleteUser(currentUser, id);
+            boolean result = adminUserService.adminDeleteUser(currentUser, id);
             if (result) {
                 LogUtil.info(logger, "管理员删除用户成功", currentUser, request);
                 return ApiResponse.success(null, "用户删除成功");
@@ -124,7 +124,7 @@ public class AdminUserController {
                 queryRequest.setSize(100); // 限制最大每页100条
             }
             
-            PageResult<User> pageResult = userService.adminListUsers(currentUser, queryRequest);
+            PageResult<User> pageResult = adminUserService.adminListUsers(currentUser, queryRequest);
             LogUtil.info(logger, "管理员查询用户列表成功，总记录数: " + pageResult.getTotal(), currentUser, request);
             return ApiResponse.success(pageResult, "查询成功");
         } catch (Exception e) {
