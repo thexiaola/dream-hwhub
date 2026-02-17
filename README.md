@@ -86,12 +86,29 @@ spring.mail.properties.mail.smtp.ssl.enable=true
 
 ## API 接口
 
+### 响应格式规范
+
+所有API接口都遵循统一的响应格式：
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {}
+}
+```
+
+**字段说明：**
+- `code`: 状态码（200成功，400参数错误，401未授权，403权限不足，500服务器错误）
+- `message`: 响应消息
+- `data`: 响应数据（无数据时为null）
+
 ### 用户相关接口
 
 #### 1. 用户登录
 
 - **POST** `/api/users/login`
-- 请求体：
+- **请求体：**
   ```json
   {
     "userNo": "学号/工号",
@@ -99,11 +116,28 @@ spring.mail.properties.mail.smtp.ssl.enable=true
     "password": "密码"
   }
   ```
+- **响应示例：**
+  ```json
+  {
+    "code": 200,
+    "message": "登录成功",
+    "data": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "user": {
+        "id": 1,
+        "userNo": "STU001",
+        "username": "张三",
+        "email": "zhangsan@example.com",
+        "permission": 10
+      }
+    }
+  }
+  ```
 
 #### 2. 用户注册
 
 - **POST** `/api/users/register`
-- 请求体：
+- **请求体：**
   ```json
   {
     "userNo": "学号/工号",
@@ -114,18 +148,32 @@ spring.mail.properties.mail.smtp.ssl.enable=true
     "invitationCode": "邀请码(可选)"
   }
   ```
+- **响应示例：**
+  ```json
+  {
+    "code": 200,
+    "message": "注册成功",
+    "data": {
+      "id": 1,
+      "userNo": "STU001",
+      "username": "张三",
+      "email": "zhangsan@example.com",
+      "permission": 10
+    }
+  }
+  ```
 
 #### 3. 发送注册验证码
 
 - **POST** `/api/users/getregcode`
-- 请求体：
+- **请求体：**
   ```json
   {
     "userNo": "学号/工号",
     "email": "邮箱"
   }
   ```
-- 响应：
+- **响应：**
   ```json
   {
     "code": 200,
@@ -190,6 +238,9 @@ curl -X POST "http://localhost:8080/api/admin/users" \
 **路径参数:**
 - `id`: 用户ID
 
+**请求头:**
+- `Authorization: Bearer {admin_token}`
+
 **请求体:**
 ```json
 {
@@ -214,11 +265,29 @@ curl -X PUT "http://localhost:8080/api/admin/users/1" \
   }'
 ```
 
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "用户更新成功",
+  "data": {
+    "id": 1,
+    "userNo": "STU001",
+    "username": "李四",
+    "email": "zhangsan@example.com",
+    "permission": 20
+  }
+}
+```
+
 #### 6. 删除用户
 **DELETE** `/api/admin/users/{id}`
 
 **路径参数:**
 - `id`: 用户ID
+
+**请求头:**
+- `Authorization: Bearer {admin_token}`
 
 **权限要求:** 权限等级 > 50
 
@@ -228,8 +297,20 @@ curl -X DELETE "http://localhost:8080/api/admin/users/1" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "用户删除成功",
+  "data": null
+}
+```
+
 #### 7. 查询用户列表（分页）
 **POST** `/api/admin/users/list`
+
+**请求头:**
+- `Authorization: Bearer {admin_token}`
 
 **请求体:**
 ```json
@@ -284,6 +365,40 @@ curl -X POST "http://localhost:8080/api/admin/users/list" \
 }
 ```
 
+#### 8. 获取用户详情
+**GET** `/api/admin/users/{id}`
+
+**路径参数:**
+- `id`: 用户ID
+
+**请求头:**
+- `Authorization: Bearer {admin_token}`
+
+**权限要求:** 权限等级 > 50
+
+**示例请求:**
+```bash
+curl -X GET "http://localhost:8080/api/admin/users/1" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "查询成功",
+  "data": {
+    "id": 1,
+    "userNo": "STU001",
+    "username": "张三",
+    "email": "zhangsan@example.com",
+    "permission": 10,
+    "createdTime": "2024-01-01T10:00:00",
+    "updatedTime": "2024-01-01T10:00:00"
+  }
+}
+```
+
 ### 管理员功能重要说明
 
 - **用户ID管理**: 用户ID由数据库自增管理，创建用户时不能显式指定
@@ -294,8 +409,11 @@ curl -X POST "http://localhost:8080/api/admin/users/list" \
 
 ### 邀请码相关接口（仅限管理员，权限等级>50）
 
-#### 4. 批量生成邀请码
+#### 9. 批量生成邀请码
 **POST** `/api/invitations/generate`
+
+**请求头:**
+- `Authorization: Bearer {admin_token}`
 
 **请求参数:**
 - `count` (Integer, 必填): 生成数量（1-100）
@@ -307,7 +425,7 @@ curl -X POST "http://localhost:8080/api/admin/users/list" \
 ```bash
 curl -X POST "http://localhost:8080/api/invitations/generate?count=5&expireDays=30" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 **响应示例:**
@@ -325,15 +443,18 @@ curl -X POST "http://localhost:8080/api/invitations/generate?count=5&expireDays=
 }
 ```
 
-#### 5. 查看所有邀请码
+#### 10. 查看所有邀请码
 **GET** `/api/invitations/all`
+
+**请求头:**
+- `Authorization: Bearer {admin_token}`
 
 **权限要求:** 权限等级 > 50
 
 **示例请求:**
 ```bash
 curl -X GET "http://localhost:8080/api/invitations/all" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 **响应示例:**
@@ -356,18 +477,21 @@ curl -X GET "http://localhost:8080/api/invitations/all" \
 }
 ```
 
-#### 6. 删除邀请码
+#### 11. 删除邀请码
 **DELETE** `/api/invitations/{code}`
 
 **路径参数:**
 - `code` (String, 必填): 要删除的邀请码
+
+**请求头:**
+- `Authorization: Bearer {admin_token}`
 
 **权限要求:** 权限等级 > 50
 
 **示例请求:**
 ```bash
 curl -X DELETE "http://localhost:8080/api/invitations/A1B2C3D4" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 **响应示例:**
@@ -379,7 +503,7 @@ curl -X DELETE "http://localhost:8080/api/invitations/A1B2C3D4" \
 }
 ```
 
-#### 7. 验证邀请码（公开接口）
+#### 12. 验证邀请码（公开接口）
 **GET** `/api/invitations/validate/{code}`
 
 **路径参数:**
@@ -416,7 +540,89 @@ curl -X GET "http://localhost:8080/api/invitations/validate/A1B2C3D4"
 
 注册时在请求体中包含 `invitationCode` 字段即可。
 
-## 邮件配置
+## 错误码说明
+
+| 错误码 | 说明 | 场景 |
+|--------|------|------|
+| 200 | 成功 | 操作成功执行 |
+| 400 | 参数错误 | 请求参数格式不正确或缺失 |
+| 401 | 未授权 | Token无效或已过期 |
+| 403 | 权限不足 | 权限等级不够 |
+| 404 | 资源不存在 | 请求的资源未找到 |
+| 500 | 服务器错误 | 系统内部错误 |
+
+## 使用示例
+
+### 完整的用户注册流程
+
+1. **发送验证码**
+```bash
+curl -X POST "http://localhost:8080/api/users/getregcode" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userNo": "STU2024001",
+    "email": "student@example.com"
+  }'
+```
+
+2. **用户注册**
+```bash
+curl -X POST "http://localhost:8080/api/users/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userNo": "STU2024001",
+    "username": "学生甲",
+    "email": "student@example.com",
+    "password": "123456",
+    "verificationCode": "123456"
+  }'
+```
+
+### 管理员操作示例
+
+1. **管理员登录获取Token**
+```bash
+curl -X POST "http://localhost:8080/api/users/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userNo": "ADMIN001",
+    "email": "admin@example.com",
+    "password": "admin123"
+  }'
+```
+
+2. **使用Token创建用户**
+```bash
+curl -X POST "http://localhost:8080/api/admin/users" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{
+    "userNo": "STU2024002",
+    "username": "学生乙",
+    "email": "student2@example.com",
+    "password": "123456",
+    "permission": 10
+  }'
+```
+
+### 邀请码管理示例
+
+1. **生成邀请码**
+```bash
+curl -X POST "http://localhost:8080/api/invitations/generate?count=3&expireDays=7" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+2. **验证邀请码**
+```bash
+curl -X GET "http://localhost:8080/api/invitations/validate/ABC123DE"
+```
+
+3. **查看所有邀请码**
+```bash
+curl -X GET "http://localhost:8080/api/invitations/all" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
 
 项目集成了邮件服务，用于发送验证码。配置文件采用安全管理模式：
 

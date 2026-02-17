@@ -7,9 +7,11 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.InternetAddress;
 import org.springframework.stereotype.Service;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +26,7 @@ public class EmailServiceImpl implements EmailService {
     
     // 存储验证码及其过期时间
     private final Map<String, VerificationCodeInfo> verificationCodes = new ConcurrentHashMap<>();
-    
+
     @Value("${app.verification-code.expiry-minutes:30}")
     private int expiryMinutes;
     
@@ -33,6 +35,23 @@ public class EmailServiceImpl implements EmailService {
     
     @Value("${spring.mail.properties.mail.from.nickname}")
     private String senderNickname;
+    
+    /**
+     * ISO-8859-1 编码转换 UTF-8 编码
+     * @param text ISO-8859-1 编码的文本
+     * @return UTF-8 编码的文本
+     */
+    private String ISO_to_UTF8(String text) {
+        if (text == null) return null;
+        try {
+            // 尝试用ISO-8859-1解码再用UTF-8编码
+            byte[] bytes = text.getBytes(StandardCharsets.ISO_8859_1);
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            // 如果转换失败，返回原文本
+            return text;
+        }
+    }
 
     public EmailServiceImpl(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -95,16 +114,19 @@ public class EmailServiceImpl implements EmailService {
             return;
         }
         
+        // 验证邮箱格式
+        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            logger.warn("邮箱格式不正确: {}", email);
+            return;
+        }
+        
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-            
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(new InternetAddress(senderEmail, ISO_to_UTF8(senderNickname), "UTF-8"));
             helper.setTo(email);
             helper.setSubject("验证码");
             helper.setText("您的验证码是：" + code + "，有效期" + expiryMinutes + "分钟");
-            // 设置发件人地址和昵称
-            helper.setFrom(senderEmail, senderNickname);
-            
             mailSender.send(message);
             logger.debug("验证码邮件已成功发送至: {}", email);
         } catch (Exception e) {

@@ -1,15 +1,17 @@
-# 邮件服务器配置示例文件
-# 请复制此文件为 mail-config.properties 并填写真实配置信息
+# Example Mail Server Configuration File
+# Please copy this file to mail-config.properties and fill in the actual configuration information.
 
-# SMTP服务器配置
+#SMTP Server Configuration
 spring.mail.host=smtp.example.com
-spring.mail.port=587
+spring.mail.port=465
 spring.mail.username=your-email@example.com
 spring.mail.password=your-app-password
 
-# 邮件属性配置
+# Mail Properties Configuration
 spring.mail.properties.mail.smtp.charset=UTF-8
-spring.mail.properties.mail.from.nickname=\u60A8\u7684\u53D1\u4FE1\u4EBA\u6635\u79F0
+spring.mail.properties.mail.from.nickname=您的发信人昵称
 spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.ssl.enable=true
+spring.mail.properties.mail.smtp.socketFactory.class=javax.net.ssl.SSLSocketFactory
+spring.mail.properties.mail.smtp.socketFactory.fallback=false
+spring.mail.properties.mail.smtp.ssl.checkserveridentity=true
