@@ -1,30 +1,55 @@
 package top.thexiaola.dreamhwhub.module.login.domain;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 
-@TableName(value = "user")
-public class User {
-    @TableId(type = IdType.AUTO)
+import java.io.Serializable;
+
+/**
+ * 用户实体类
+ * 对应数据库表：user
+ */
+@TableName("user")
+public class User implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 用户编号
+     */
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
-    
-    @TableField(value = "user_no")
-    private String userNo;
-    
-    @TableField(value = "username")
-    private String username;
-    
-    @TableField(value = "email")
-    private String email;
-    
-    @TableField(value = "password")
-    private String password;
-    
-    @TableField(value = "permission")
-    private Short permission;
 
+    /**
+     * 学号/工号
+     */
+    @TableField("user_no")
+    private String userNo;
+
+    /**
+     * 用户名
+     */
+    @TableField("username")
+    private String username;
+
+    /**
+     * 邮箱
+     */
+    @TableField("email")
+    private String email;
+
+    /**
+     * 密码
+     */
+    @TableField("password")
+    private byte[] password;
+
+    /**
+     * 权限级别
+     */
+    @TableField("permission")
+    private Short permission = 1;
+
+    // Getter和Setter方法
     public Integer getId() {
         return id;
     }
@@ -57,19 +82,32 @@ public class User {
         this.email = email;
     }
 
-    public String getPassword() {
+    public byte[] getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
+    public void setPassword(byte[] password) {
         this.password = password;
     }
 
     public Short getPermission() {
-        return permission;
+        return permission == null ? 1 : permission;
     }
 
     public void setPermission(Short permission) {
         this.permission = permission;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User)) return false;
+        User user = (User) o;
+        return id != null ? id.equals(user.id) : user.id == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
     }
 }

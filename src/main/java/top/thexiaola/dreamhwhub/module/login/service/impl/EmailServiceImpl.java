@@ -2,27 +2,31 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.InternetAddress;
 import org.springframework.stereotype.Service;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.InternetAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.time.LocalDateTime;
 
+/**
+ * 邮件服务实现类
+ */
 @Service
 public class EmailServiceImpl implements EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
     
-    private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
-    
-    private final JavaMailSender mailSender;
+    @Autowired
+    private JavaMailSender mailSender;
     
     // 存储验证码及其过期时间
     private final Map<String, VerificationCodeInfo> verificationCodes = new ConcurrentHashMap<>();
@@ -33,7 +37,7 @@ public class EmailServiceImpl implements EmailService {
     @Value("${spring.mail.username}")
     private String senderEmail;
     
-    @Value("${spring.mail.properties.mail.from.nickname}")
+    @Value("${spring.mail.properties.mail.from.nickname:系统管理员}")
     private String senderNickname;
     
     /**
@@ -53,13 +57,40 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    public EmailServiceImpl(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    @Override
+    public void sendEmail(String to, String subject, String content) {
+        if (mailSender == null) {
+            log.error("邮件服务器未配置，收件人: {}, 主题: {}", to, subject);
+            System.out.println("邮件服务器未配置，收件人: " + to + ", 主题: " + subject);
+            return;
+        }
+        
+        // 验证邮箱格式
+        if (to == null || !to.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            log.warn("邮箱格式不正确: {}", to);
+            return;
+        }
+        
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(new InternetAddress(senderEmail, ISO_to_UTF8(senderNickname), "UTF-8"));
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content);
+            mailSender.send(message);
+            log.debug("邮件已成功发送至: {}, 主题: {}", to, subject);
+        } catch (Exception e) {
+            // 如果邮件发送失败，记录错误但继续执行
+            log.error("邮件发送失败: {}, 收件人: {}, 主题: {}", e.getMessage(), to, subject, e);
+            System.out.println("邮件发送失败: " + e.getMessage());
+            System.out.println("收件人: " + to + ", 主题: " + subject);
+        }
     }
 
     @Override
     public void sendVerificationCode(String email) {
-        logger.debug("正在为邮箱 {} 发送验证码", email);
+        log.debug("正在为邮箱 {} 发送验证码", email);
         
         // 生成6位随机数字验证码
         Random random = new Random();
@@ -69,23 +100,27 @@ public class EmailServiceImpl implements EmailService {
         VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
         verificationCodes.put(email, codeInfo);
         
-        logger.debug("验证码 {} 已生成并存储，将在 {} 分钟后过期", code, expiryMinutes);
+        log.debug("验证码 {} 已生成并存储，将在 {} 分钟后过期", code, expiryMinutes);
         
         // 发送邮件
-        sendEmail(email, code);
+        sendVerificationCodeEmail(email, code);
 
-        logger.debug("验证码发送流程完成，邮箱: {}", email);
+        log.debug("验证码发送流程完成，邮箱: {}", email);
     }
 
     @Override
+    public void sendVerificationCode(String to, String code) {
+        sendVerificationCodeEmail(to, code);
+    }
+    
     public boolean verifyCode(String email, String code) {
-        logger.debug("正在验证邮箱 {} 的验证码", email);
+        log.debug("正在验证邮箱 {} 的验证码", email);
         
         VerificationCodeInfo codeInfo = verificationCodes.get(email);
         if (codeInfo != null) {
             // 检查是否过期
             if (LocalDateTime.now().isAfter(codeInfo.expiryTime())) {
-                logger.warn("验证码已过期，邮箱: {}, 验证码: {}", email, code);
+                log.warn("验证码已过期，邮箱: {}, 验证码: {}", email, code);
                 
                 // 验证码已过期，删除它
                 verificationCodes.remove(email);
@@ -93,50 +128,30 @@ public class EmailServiceImpl implements EmailService {
             }
             
             if (codeInfo.code().equals(code)) {
-                logger.info("验证码验证成功，邮箱: {}", email);
+                log.info("验证码验证成功，邮箱: {}", email);
                 
                 // 验证成功后删除该验证码
                 verificationCodes.remove(email);
                 return true;
             } else {
-                logger.warn("验证码不匹配，邮箱: {}, 输入验证码: {}, 正确验证码: {}", email, code, codeInfo.code());
+                log.warn("验证码不匹配，邮箱: {}, 输入验证码: {}, 正确验证码: {}", email, code, codeInfo.code());
             }
         } else {
-            logger.warn("未找到邮箱 {} 的验证码记录", email);
+            log.warn("未找到邮箱 {} 的验证码记录", email);
         }
         return false;
     }
     
-    private void sendEmail(String email, String code) {
-        if (mailSender == null) {
-            logger.error("邮件服务器未配置，验证码为: {} (发送至: {})", code, email);
-            System.out.println("邮件服务器未配置，验证码为: " + code + " (发送至: " + email + ")");
-            return;
-        }
+    private void sendVerificationCodeEmail(String email, String code) {
+        String subject = "Dream HWHub 验证码";
+        String content = String.format(
+                "您好！\n\n您的验证码是：%s\n\n验证码有效期为%d分钟，请及时使用。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
+                code, expiryMinutes
+        );
         
-        // 验证邮箱格式
-        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            logger.warn("邮箱格式不正确: {}", email);
-            return;
-        }
-        
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(new InternetAddress(senderEmail, ISO_to_UTF8(senderNickname), "UTF-8"));
-            helper.setTo(email);
-            helper.setSubject("验证码");
-            helper.setText("您的验证码是：" + code + "，有效期" + expiryMinutes + "分钟");
-            mailSender.send(message);
-            logger.debug("验证码邮件已成功发送至: {}", email);
-        } catch (Exception e) {
-            // 如果邮件发送失败，记录错误但继续执行
-            logger.error("邮件发送失败: {}, 邮箱: {}, 验证码: {}", e.getMessage(), email, code, e);
-            System.out.println("邮件发送失败: " + e.getMessage());
-            System.out.println("验证码为: " + code + " (发送至: " + email + ")");
-        }
+        sendEmail(email, subject, content);
     }
-
+    
     // 存储验证码及其过期时间
     private record VerificationCodeInfo(String code, LocalDateTime expiryTime) {}
 }

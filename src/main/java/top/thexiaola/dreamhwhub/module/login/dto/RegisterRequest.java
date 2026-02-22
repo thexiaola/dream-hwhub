@@ -1,12 +1,48 @@
 package top.thexiaola.dreamhwhub.module.login.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+/**
+ * 用户注册请求DTO
+ */
 public class RegisterRequest {
-    private String userNo;          // 学号
-    private String username;        // 用户名
-    private String email;           // 邮箱
-    private String password;        // 密码
-    private String verificationCode; // 邮箱验证码
-    private String invitationCode;  // 邀请码
+
+    /**
+     * 学号/工号
+     */
+    @NotBlank(message = "学号/工号不能为空")
+    @Size(max = 24, message = "学号/工号长度不能超过24位")
+    private String userNo;
+
+    /**
+     * 用户名
+     */
+    @NotBlank(message = "用户名不能为空")
+    @Size(max = 64, message = "用户名长度不能超过64位")
+    private String username;
+
+    /**
+     * 邮箱
+     */
+    @NotBlank(message = "邮箱不能为空")
+    @Email(message = "邮箱格式不正确")
+    @Size(max = 100, message = "邮箱长度不能超过100位")
+    private String email;
+
+    /**
+     * 邮箱验证码
+     */
+    @NotBlank(message = "邮箱验证码不能为空")
+    private String emailCode;
+
+    /**
+     * 密码
+     */
+    @NotBlank(message = "密码不能为空")
+    @Size(min = 6, max = 50, message = "密码长度必须在6-50位之间")
+    private String password;
 
     public String getUserNo() {
         return userNo;
@@ -32,27 +68,19 @@ public class RegisterRequest {
         this.email = email;
     }
 
+    public String getEmailCode() {
+        return emailCode;
+    }
+
+    public void setEmailCode(String emailCode) {
+        this.emailCode = emailCode;
+    }
+
     public String getPassword() {
         return password;
     }
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getVerificationCode() {
-        return verificationCode;
-    }
-
-    public void setVerificationCode(String verificationCode) {
-        this.verificationCode = verificationCode;
-    }
-
-    public String getInvitationCode() {
-        return invitationCode;
-    }
-
-    public void setInvitationCode(String invitationCode) {
-        this.invitationCode = invitationCode;
     }
 }

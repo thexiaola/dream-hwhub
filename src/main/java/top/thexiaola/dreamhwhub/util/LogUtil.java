@@ -1,138 +1,194 @@
 package top.thexiaola.dreamhwhub.util;
 
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import org.slf4j.Logger;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
-// 日志工具类
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+/**
+ * 日志工具类
+ * 提供用户信息和IP地址获取功能
+ */
 public class LogUtil {
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     /**
-     * 获取用户信息字符串
+     * 获取客户端真实IP地址
+     * @param request HttpServletRequest对象
+     * @return 客户端真实IP地址
+     */
+    public static String getClientIp(HttpServletRequest request) {
+        if (request == null) {
+            return "unknown";
+        }
+
+        // 获取直接连接的IP地址
+        String directIp = request.getRemoteAddr();
+
+        // 1. 优先从X-Forwarded-For头获取真实IP
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            String[] ipAddresses = ip.split(",");
+            for (String addr : ipAddresses) {
+                addr = addr.trim();
+                if (!addr.isEmpty() && !"unknown".equalsIgnoreCase(addr)) {
+                    return addr + "-" + directIp;
+                }
+            }
+        }
+
+        // 2. 如果X-Forwarded-For没有有效IP，尝试从X-Real-IP获取
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            ip = ip.trim();
+            return ip + "-" + directIp;
+        }
+
+        // 3. 如果以上都没有，使用request.getRemoteAddr()获取直接连接的IP
+        ip = directIp;
+
+        // 特殊处理：如果是IPv6的环回地址，返回IPv4的环回地址
+        if ("0:0:0:0:0:0:0:1".equals(ip)) {
+            ip = "127.0.0.1";
+        }
+
+        return ip + "-" + directIp;
+    }
+
+    /**
+     * 从RequestContextHolder获取请求对象
+     * @return HttpServletRequest对象，如果不存在则返回null
+     */
+    public static HttpServletRequest getRequest() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
+        return attributes != null ? attributes.getRequest() : null;
+    }
+
+    /**
+     * 从RequestContextHolder获取客户端IP
+     * @return 客户端IP地址
+     */
+    public static String getCurrentClientIp() {
+        return getClientIp(getRequest());
+    }
+
+    /**
+     * 获取用户信息字符串（简洁版）
      * @param user 用户对象
-     * @return 格式化的用户信息字符串
+     * @return 格式化的用户信息
      */
     public static String getUserInfo(User user) {
         if (user == null) {
             return "";
         }
-        
+
         StringBuilder sb = new StringBuilder();
-        
-        // 添加非空字段
-        if (user.getId() != null) {
-            if (!sb.isEmpty()) sb.append(", ");
-            sb.append("id: ").append(user.getId());
+        sb.append("id: ").append(user.getId()).append(", ");
+        sb.append("user_no: ").append(formatValue(user.getUserNo())).append(", ");
+        sb.append("username: ").append(formatValue(user.getUsername())).append(", ");
+        sb.append("email: ").append(formatValue(user.getEmail())).append(", ");
+        sb.append("permission: ").append(user.getPermission());
+
+        // 移除末尾的逗号和空格
+        String result = sb.toString();
+        if (result.endsWith(", ")) {
+            result = result.substring(0, result.length() - 2);
         }
-        
-        if (user.getUserNo() != null) {
-            if (!sb.isEmpty()) sb.append(", ");
-            sb.append("user_no: ").append(user.getUserNo());
-        }
-        
-        if (user.getUsername() != null) {
-            if (!sb.isEmpty()) sb.append(", ");
-            sb.append("username: ").append(user.getUsername());
-        }
-        
-        if (user.getEmail() != null) {
-            if (!sb.isEmpty()) sb.append(", ");
-            sb.append("email: ").append(user.getEmail());
-        }
-        
-        if (user.getPermission() != null) {
-            if (!sb.isEmpty()) sb.append(", ");
-            sb.append("permission: ").append(user.getPermission());
-        }
-        
-        return sb.toString();
+
+        return result;
     }
-    
+
     /**
-     * 获取客户端IP地址
-     * @param request HttpServletRequest对象
-     * @return IP地址
-     */
-    public static String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
-        if (request == null) {
-            return "unknown";
-        }
-        
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        
-        // 处理多个IP的情况，取第一个
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        
-        return ip;
-    }
-    
-    /**
-     * 获取带IP的用户信息
+     * 获取格式化的用户信息字符串（完整版）
+     * 包含IP、用户详细信息，用于关键操作日志记录
+     * @param ip 客户端IP地址
      * @param user 用户对象
-     * @param request HttpServletRequest对象
-     * @return 包含IP的完整用户信息
+     * @return 格式化的用户信息字符串
      */
-    public static String getUserInfoWithIp(User user, jakarta.servlet.http.HttpServletRequest request) {
-        String userInfo = getUserInfo(user);
-        String ip = getClientIp(request);
-        return userInfo + ", ip: " + ip;
+    public static String getUserInfoString(String ip, User user) {
+        if (user != null) {
+            return String.format("ip: %s, id: %d, user_no: %s, username: %s, email: %s, permission: %d",
+                    ip, user.getId(), formatValue(user.getUserNo()), formatValue(user.getUsername()), 
+                    formatValue(user.getEmail()), user.getPermission());
+        } else {
+            return String.format("ip: %s, not logged in", ip);
+        }
     }
-    
+
     /**
-     * 获取仅包含IP的信息（用于未登录情况）
-     * @param request HttpServletRequest对象
-     * @return IP信息
+     * 获取格式化的用户信息字符串（自动获取当前请求信息）
+     * @return 格式化的用户信息字符串
      */
-    public static String getIpOnly(jakarta.servlet.http.HttpServletRequest request) {
-        return "ip: " + getClientIp(request);
+    public static String getUserInfoString() {
+        return getUserInfoString(getCurrentClientIp(), null);
     }
-    
-    public static void info(Logger logger, String message, User user, jakarta.servlet.http.HttpServletRequest request) {
-        logger.info("[{}] {}", getUserInfoWithIp(user, request), message);
+
+    /**
+     * 获取带用户信息的操作日志格式
+     * @param operation 操作描述
+     * @param user 用户对象
+     * @return 格式化的操作日志
+     */
+    public static String getOperationLog(String operation, User user) {
+        String ip = getCurrentClientIp();
+        String userInfo = getUserInfoString(ip, user);
+        return String.format("%s - %s", operation, userInfo);
     }
-    
-    public static void debug(Logger logger, String message, User user, jakarta.servlet.http.HttpServletRequest request) {
-        logger.debug("[{}] {}", getUserInfoWithIp(user, request), message);
+
+    /**
+     * 获取带用户信息的成功操作日志
+     * @param operation 操作描述
+     * @param user 用户对象
+     * @return 格式化的成功操作日志
+     */
+    public static String getSuccessLog(String operation, User user) {
+        return getOperationLog(operation + " successfully", user);
     }
-    
-    public static void warn(Logger logger, String message, User user, jakarta.servlet.http.HttpServletRequest request) {
-        logger.warn("[{}] {}", getUserInfoWithIp(user, request), message);
+
+    /**
+     * 获取带用户信息的失败操作日志
+     * @param operation 操作描述
+     * @param reason 失败原因
+     * @param user 用户对象
+     * @return 格式化的失败操作日志
+     */
+    public static String getFailureLog(String operation, String reason, User user) {
+        String ip = getCurrentClientIp();
+        String userInfo = getUserInfoString(ip, user);
+        return String.format("%s failed: %s - %s", operation, reason, userInfo);
     }
-    
-    public static void error(Logger logger, String message, User user, jakarta.servlet.http.HttpServletRequest request) {
-        logger.error("[{}] {}", getUserInfoWithIp(user, request), message);
+
+    /**
+     * 格式化值，处理null和"null"字符串
+     * @param value 值
+     * @return 格式化后的字符串
+     */
+    private static String formatValue(String value) {
+        if (value == null || "null".equals(value)) {
+            return "null";
+        }
+        return value;
     }
-    
-    // 未登录情况下的日志记录方法
-    public static void infoAnonymous(Logger logger, String message, jakarta.servlet.http.HttpServletRequest request) {
-        logger.info("[{}] {}", getIpOnly(request), message);
+
+    /**
+     * 获取IP信息（简化版）
+     * @param ip IP地址
+     * @return 格式化的IP信息
+     */
+    public static String getIpOnly(String ip) {
+        return "ip: " + (ip != null ? ip : "unknown");
     }
-    
-    public static void debugAnonymous(Logger logger, String message, jakarta.servlet.http.HttpServletRequest request) {
-        logger.debug("[{}] {}", getIpOnly(request), message);
-    }
-    
-    public static void warnAnonymous(Logger logger, String message, jakarta.servlet.http.HttpServletRequest request) {
-        logger.warn("[{}] {}", getIpOnly(request), message);
-    }
-    
-    public static void errorAnonymous(Logger logger, String message, jakarta.servlet.http.HttpServletRequest request) {
-        logger.error("[{}] {}", getIpOnly(request), message);
+
+    /**
+     * 获取当前时间戳
+     * @return 格式化的时间字符串
+     */
+    public static String getCurrentTimestamp() {
+        return LocalDateTime.now().format(FORMATTER);
     }
 }
