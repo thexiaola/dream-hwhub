@@ -2,8 +2,6 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
@@ -24,21 +22,21 @@ public class LoginUserServiceImpl implements LoginUserService {
 
     private static final Logger log = LoggerFactory.getLogger(LoginUserServiceImpl.class);
     
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
 
-    @Autowired
-    private EmailService emailService;
+    private final EmailService emailService;
 
-    @Autowired
-    private AESEncryptionUtil aesEncryptionUtil;
+    private final AESEncryptionUtil aesEncryptionUtil;
 
-    @Value("${app.verification-code.expiry-minutes:30}")
-    private int expiryMinutes;
+    public LoginUserServiceImpl(AESEncryptionUtil aesEncryptionUtil, UserMapper userMapper, EmailService emailService) {
+        this.aesEncryptionUtil = aesEncryptionUtil;
+        this.userMapper = userMapper;
+        this.emailService = emailService;
+    }
 
     @PostConstruct
     public void init() {
-        log.info("LoginUserService initialized");
+        // 服务初始化完成
     }
 
     @Override
@@ -77,7 +75,7 @@ public class LoginUserServiceImpl implements LoginUserService {
 
         try {
             userMapper.insert(user);
-            log.info(LogUtil.getSuccessLog(operation, user));
+            // 用户注册成功
             
             return user;
         } catch (Exception e) {
@@ -108,7 +106,7 @@ public class LoginUserServiceImpl implements LoginUserService {
         
         try {
             emailService.sendVerificationCode(email);
-            log.info(LogUtil.getSuccessLog(operation + " to " + email, null));
+            // 验证码发送成功
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "email sending failed: " + e.getMessage(), null), e);
             throw new RuntimeException("验证码发送失败: " + e.getMessage());

@@ -5,29 +5,19 @@ package top.thexiaola.dreamhwhub.module.login.dto;
  */
 public class UserResponse {
 
-    /**
-     * 用户编号
-     */
+    // 用户编号
     private Integer id;
 
-    /**
-     * 学号/工号
-     */
+    // 学号/工号
     private String userNo;
 
-    /**
-     * 用户名
-     */
+    // 用户名
     private String username;
 
-    /**
-     * 邮箱
-     */
+    // 邮箱
     private String email;
 
-    /**
-     * 权限级别
-     */
+    // 权限级别
     private Short permission;
 
     /**

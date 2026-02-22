@@ -60,14 +60,13 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendEmail(String to, String subject, String content) {
         if (mailSender == null) {
-            log.error("邮件服务器未配置，收件人: {}, 主题: {}", to, subject);
-            System.out.println("邮件服务器未配置，收件人: " + to + ", 主题: " + subject);
+            log.error("Mail server not configured, recipient: {}, subject: {}", to, subject);
             return;
         }
         
         // 验证邮箱格式
         if (to == null || !to.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            log.warn("邮箱格式不正确: {}", to);
+            log.warn("Invalid email format: {}", to);
             return;
         }
         
@@ -79,19 +78,14 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject(subject);
             helper.setText(content);
             mailSender.send(message);
-            log.debug("邮件已成功发送至: {}, 主题: {}", to, subject);
         } catch (Exception e) {
             // 如果邮件发送失败，记录错误但继续执行
-            log.error("邮件发送失败: {}, 收件人: {}, 主题: {}", e.getMessage(), to, subject, e);
-            System.out.println("邮件发送失败: " + e.getMessage());
-            System.out.println("收件人: " + to + ", 主题: " + subject);
+            log.error("Failed to send email: {}, recipient: {}, subject: {}", e.getMessage(), to, subject, e);
         }
     }
 
     @Override
     public void sendVerificationCode(String email) {
-        log.debug("正在为邮箱 {} 发送验证码", email);
-        
         // 生成6位随机数字验证码
         Random random = new Random();
         String code = String.format("%06d", random.nextInt(999999));
@@ -99,13 +93,9 @@ public class EmailServiceImpl implements EmailService {
         // 存储验证码及过期时间
         VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
         verificationCodes.put(email, codeInfo);
-        
-        log.debug("验证码 {} 已生成并存储，将在 {} 分钟后过期", code, expiryMinutes);
-        
+
         // 发送邮件
         sendVerificationCodeEmail(email, code);
-
-        log.debug("验证码发送流程完成，邮箱: {}", email);
     }
 
     @Override
@@ -114,13 +104,11 @@ public class EmailServiceImpl implements EmailService {
     }
     
     public boolean verifyCode(String email, String code) {
-        log.debug("正在验证邮箱 {} 的验证码", email);
-        
         VerificationCodeInfo codeInfo = verificationCodes.get(email);
         if (codeInfo != null) {
             // 检查是否过期
             if (LocalDateTime.now().isAfter(codeInfo.expiryTime())) {
-                log.warn("验证码已过期，邮箱: {}, 验证码: {}", email, code);
+                // Verification code expired
                 
                 // 验证码已过期，删除它
                 verificationCodes.remove(email);
@@ -128,16 +116,14 @@ public class EmailServiceImpl implements EmailService {
             }
             
             if (codeInfo.code().equals(code)) {
-                log.info("验证码验证成功，邮箱: {}", email);
-                
                 // 验证成功后删除该验证码
                 verificationCodes.remove(email);
                 return true;
             } else {
-                log.warn("验证码不匹配，邮箱: {}, 输入验证码: {}, 正确验证码: {}", email, code, codeInfo.code());
+                // Verification code mismatch
             }
         } else {
-            log.warn("未找到邮箱 {} 的验证码记录", email);
+            // No verification code record found
         }
         return false;
     }
@@ -148,7 +134,6 @@ public class EmailServiceImpl implements EmailService {
                 "您好！\n\n您的验证码是：%s\n\n验证码有效期为%d分钟，请及时使用。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
                 code, expiryMinutes
         );
-        
         sendEmail(email, subject, content);
     }
     

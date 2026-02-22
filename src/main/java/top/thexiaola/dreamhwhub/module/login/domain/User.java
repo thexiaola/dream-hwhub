@@ -2,7 +2,9 @@ package top.thexiaola.dreamhwhub.module.login.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
 
+import java.io.Serial;
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * 用户实体类
@@ -11,45 +13,33 @@ import java.io.Serializable;
 @TableName("user")
 public class User implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 用户编号
-     */
+    // 用户编号
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
-    /**
-     * 学号/工号
-     */
+    // 学号/工号
     @TableField("user_no")
     private String userNo;
 
-    /**
-     * 用户名
-     */
+    // 用户名
     @TableField("username")
     private String username;
 
-    /**
-     * 邮箱
-     */
+    // 邮箱
     @TableField("email")
     private String email;
 
-    /**
-     * 密码
-     */
+    //密码
     @TableField("password")
     private byte[] password;
 
-    /**
-     * 权限级别
-     */
+    // 权限级别
     @TableField("permission")
     private Short permission = 1;
 
-    // Getter和Setter方法
     public Integer getId() {
         return id;
     }
@@ -101,9 +91,8 @@ public class User implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof User)) return false;
-        User user = (User) o;
-        return id != null ? id.equals(user.id) : user.id == null;
+        if (!(o instanceof User user)) return false;
+        return Objects.equals(id, user.id);
     }
 
     @Override

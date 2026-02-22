@@ -36,7 +36,7 @@ public class AESEncryptionUtil {
         try {
             // 验证输入
             if (plainText == null || plainText.isEmpty()) {
-                log.error("Encryption failed: Password cannot be null or empty");
+                // 输入验证失败
                 throw new IllegalArgumentException("Password cannot be null or empty");
             }
             
@@ -58,10 +58,10 @@ public class AESEncryptionUtil {
             System.arraycopy(iv, 0, combined, 0, iv.length);
             System.arraycopy(encryptedData, 0, combined, iv.length, encryptedData.length);
             
-            log.debug("Password encrypted successfully");
+            // 加密成功，返回结果
             return combined;
         } catch (Exception e) {
-            log.error("Password encryption failed: {}", e.getMessage(), e);
+            // 加密过程失败
             throw new RuntimeException("Password encryption failed", e);
         }
     }
@@ -72,19 +72,19 @@ public class AESEncryptionUtil {
     private SecretKeySpec initSecretKey() {
         try {
             if (encryptionKey == null || encryptionKey.isEmpty()) {
-                log.error("Encryption key is not configured in password-key.properties");
+                // 密钥配置缺失
                 throw new IllegalStateException("Encryption key is missing");
             }
             
             byte[] keyBytes = hexStringToByteArray(encryptionKey);
             if (keyBytes.length != 32) {
-                log.error("Invalid encryption key length: {}. Expected 32 bytes for AES-256", keyBytes.length);
+                // 密钥长度无效
                 throw new IllegalArgumentException("Invalid encryption key length");
             }
             
             return new SecretKeySpec(keyBytes, ALGORITHM);
         } catch (Exception e) {
-            log.error("Failed to initialize AES encryption utility: {}", e.getMessage(), e);
+            // 密钥初始化失败
             throw new RuntimeException("AES encryption initialization failed", e);
         }
     }

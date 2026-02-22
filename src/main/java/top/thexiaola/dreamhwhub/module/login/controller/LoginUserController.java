@@ -53,7 +53,14 @@ public class LoginUserController {
             
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.info("User ({}) registration failed: {}", userInfo, e.getMessage());
+            // Handle business validation errors
+            if (e.getMessage().contains("验证码无效") || e.getMessage().contains("验证码已过期")) {
+                log.warn("User ({}) registration failed due to invalid/expired verification code: {}", userInfo, e.getMessage());
+            } else if (e.getMessage().contains("已被注册")) {
+                log.info("User ({}) registration failed due to duplicate registration: {}", userInfo, e.getMessage());
+            } else {
+                log.info("User ({}) registration failed: {}", userInfo, e.getMessage());
+            }
             
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("code", 400);
@@ -133,7 +140,7 @@ public class LoginUserController {
         try {
             loginUserService.sendEmailCode(email);
             
-            log.debug("User ({}) verification code sent to email: {}", userInfo, email);
+            log.info("User ({}) verification code sent successfully to email: {}", userInfo, email);
             
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("code", 200);
@@ -142,7 +149,7 @@ public class LoginUserController {
             
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.info("User ({}) failed to send verification code to {}: {}", userInfo, email, e.getMessage());
+            log.warn("User ({}) failed to send verification code to {}: {}", userInfo, email, e.getMessage());
             
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("code", 400);
