@@ -2,6 +2,7 @@ package top.thexiaola.dreamhwhub.module.login.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
+import top.thexiaola.dreamhwhub.util.JwtUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
 import jakarta.validation.Valid;
@@ -29,9 +31,14 @@ public class RegisterController {
     private static final Logger log = LoggerFactory.getLogger(RegisterController.class);
     
     private final LoginUserService loginUserService;
+    private final JwtUtil jwtUtil;
+    
+    @Value("${app.jwt.expiration}")
+    private Long jwtExpiration;
 
-    public RegisterController(LoginUserService loginUserService) {
+    public RegisterController(LoginUserService loginUserService, JwtUtil jwtUtil) {
         this.loginUserService = loginUserService;
+        this.jwtUtil = jwtUtil;
     }
 
     /**
@@ -52,10 +59,20 @@ public class RegisterController {
             userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) registration successful", userInfo);
             
+            // 注册成功后自动登录
+            String jwtToken = jwtUtil.generateToken(user.getId(), user.getUsername());
+            
+            Map<String, Object> responseData = new LinkedHashMap<>();
+            responseData.put("user", userResponse);
+            responseData.put("token", jwtToken);
+            responseData.put("tokenType", "Bearer");
+            responseData.put("expiresIn", jwtExpiration / 1000); // 转换为秒
+            responseData.put("isLoggedIn", true);
+            
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("code", 200);
-            response.put("msg", "注册成功！");
-            response.put("data", userResponse);
+            response.put("msg", "注册成功并已自动登录！");
+            response.put("data", responseData);
             
             return ResponseEntity.ok(response);
         } else {

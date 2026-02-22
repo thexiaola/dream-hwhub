@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +26,6 @@ import java.util.Map;
 /**
  * 用户登录控制器
  */
-
 @RestController
 @RequestMapping("/api/users")
 public class LoginUserController {
@@ -34,6 +34,9 @@ public class LoginUserController {
     
     private final LoginUserService loginUserService;
     private final JwtUtil jwtUtil;
+    
+    @Value("${app.jwt.expiration}")
+    private Long jwtExpiration;
 
     public LoginUserController(LoginUserService loginUserService, JwtUtil jwtUtil) {
         this.loginUserService = loginUserService;
@@ -62,7 +65,7 @@ public class LoginUserController {
             responseData.put("user", userResponse);
             responseData.put("token", jwtToken);
             responseData.put("tokenType", "Bearer");
-            responseData.put("expiresIn", 86400); // 24小时
+            responseData.put("expiresIn", jwtExpiration / 1000); // 毫秒 -> 秒
             responseData.put("isLoggedIn", true);
             
             Map<String, Object> response = new LinkedHashMap<>();
