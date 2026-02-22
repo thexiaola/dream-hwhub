@@ -188,13 +188,29 @@ public class LogSystem extends RollingPolicyBase {
             log.debug("Logs directory does not exist or is not a directory, returning startup count 1");
             return 1;
         }
-
+    
         String datePrefix = "log_" + currentDate + "_";
         Pattern pattern = Pattern.compile("^log_" + currentDate + "_(\\d+)_(\\d+)\\.log$");
-
+    
+        int maxStartupCount = findMaxStartupCount(logsDir, datePrefix, pattern);
+        int nextStartupCount = calculateNextStartupCount(maxStartupCount);
+    
+        log.debug("Calculated today's startup count: {}", nextStartupCount);
+        return nextStartupCount;
+    }
+    
+    /**
+     * 查找目录中最大的启动次数
+     *
+     * @param logsDir 日志目录
+     * @param datePrefix 日期前缀
+     * @param pattern 文件名匹配模式
+     * @return 最大启动次数
+     */
+    private int findMaxStartupCount(File logsDir, String datePrefix, Pattern pattern) {
         int maxStartupCount = 0;
-
         File[] files = logsDir.listFiles();
+            
         if (files != null) {
             for (File file : files) {
                 if (file.isFile() && file.getName().startsWith(datePrefix)) {
@@ -206,8 +222,19 @@ public class LogSystem extends RollingPolicyBase {
                 }
             }
         }
-
+            
+        return maxStartupCount;
+    }
+    
+    /**
+     * 计算下一个启动次数
+     *
+     * @param maxStartupCount 当前最大启动次数
+     * @return 下一个启动次数
+     */
+    private int calculateNextStartupCount(int maxStartupCount) {
         int nextStartupCount = maxStartupCount + 1;
+            
         while (true) {
             String baseFileName = String.format("%s/log_%s_%d_1.log", LOGS_DIR, currentDate, nextStartupCount);
             File testFile = new File(baseFileName);
@@ -216,8 +243,7 @@ public class LogSystem extends RollingPolicyBase {
             }
             nextStartupCount++;
         }
-
-        log.debug("Calculated today's startup count: {}", nextStartupCount);
+            
         return nextStartupCount;
     }
 

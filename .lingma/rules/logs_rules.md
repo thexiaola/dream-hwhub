@@ -9,4 +9,3 @@ trigger: always_on
    `log.info("User ({}) login failed: {}", userInfo, errorMessage);`
    `log.info("User ({}) verification code sent successfully to email.", userInfo);`
    Each log must contain the `userInfo` field.
-5. Each log must be printed on a single line; manual line breaks in log content are strictly prohibited.

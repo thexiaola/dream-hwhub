@@ -8,6 +8,7 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.Base64;
 
 /**
  * AES-256-GCM 加密工具类
@@ -25,11 +26,11 @@ public class AESEncryptionUtil {
     private String encryptionKey;
 
     /**
-     * 加密密码
+     * 加密密码并进行Base64编码
      * @param plainText 明文密码
-     * @return 加密后的密码字节数组（包含IV+密文）
+     * @return Base64编码的加密字符串（包含IV+密文）
      */
-    public byte[] encrypt(String plainText) {
+    public String encrypt(String plainText) {
         try {
             // 验证输入
             if (plainText == null || plainText.isEmpty()) {
@@ -55,23 +56,32 @@ public class AESEncryptionUtil {
             System.arraycopy(iv, 0, combined, 0, iv.length);
             System.arraycopy(encryptedData, 0, combined, iv.length, encryptedData.length);
             
-            // 加密成功，返回结果
-            return combined;
+            // 加密成功，返回Base64编码的结果
+            return Base64.getEncoder().encodeToString(combined);
         } catch (Exception e) {
             // 加密过程失败
             throw new RuntimeException("Password encryption failed", e);
         }
     }
-
+    
     /**
-     * 解密密码
-     * @param encryptedData 加密的数据（包含IV+密文）
+     * 解密Base64编码的密码
+     * @param base64EncryptedData Base64编码的加密数据（包含IV+密文）
      * @return 解密后的明文密码
      */
-    public String decrypt(byte[] encryptedData) {
+    public String decrypt(String base64EncryptedData) {
         try {
             // 验证输入
-            if (encryptedData == null || encryptedData.length <= GCM_IV_LENGTH) {
+            if (base64EncryptedData == null || base64EncryptedData.isEmpty()) {
+                // 输入验证失败
+                throw new IllegalArgumentException("Encrypted data cannot be null or empty");
+            }
+            
+            // Base64解码
+            byte[] encryptedData = Base64.getDecoder().decode(base64EncryptedData);
+            
+            // 验证解码后的数据长度
+            if (encryptedData.length <= GCM_IV_LENGTH) {
                 // 输入验证失败
                 throw new IllegalArgumentException("Invalid encrypted data");
             }
@@ -125,12 +135,12 @@ public class AESEncryptionUtil {
     /**
      * 验证密码是否正确
      * @param plainPassword 明文密码
-     * @param encryptedPassword 加密后的密码
+     * @param base64EncryptedPassword Base64编码的加密密码
      * @return 密码是否匹配
      */
-    public boolean verifyPassword(String plainPassword, byte[] encryptedPassword) {
+    public boolean verifyPassword(String plainPassword, String base64EncryptedPassword) {
         try {
-            String decryptedPassword = decrypt(encryptedPassword);
+            String decryptedPassword = decrypt(base64EncryptedPassword);
             return plainPassword.equals(decryptedPassword);
         } catch (Exception e) {
             // 解密失败或密码不匹配
