@@ -1,6 +1,5 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +17,7 @@ import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.JwtUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
+import jakarta.validation.Valid;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -54,10 +54,9 @@ public class RegisterController {
         if (result.isSuccess()) {
             User user = result.getData();
             UserResponse userResponse = UserResponse.fromEntity(user);
-            
-            // 更新userInfo包含注册成功的用户信息
+
             userInfo = LogUtil.getUserInfoString(ip, user);
-            log.info("User ({}) registration successful", userInfo);
+            log.info("User ({}) registration successful, auto-login initiated", userInfo);
             
             // 注册成功后自动登录
             String jwtToken = jwtUtil.generateToken(user.getId(), user.getUsername());

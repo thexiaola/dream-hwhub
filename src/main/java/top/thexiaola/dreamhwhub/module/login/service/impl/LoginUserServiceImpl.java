@@ -3,6 +3,7 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
@@ -11,7 +12,6 @@ import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
-import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
 /**
@@ -70,7 +70,7 @@ public class LoginUserServiceImpl implements LoginUserService {
 
         try {
             userMapper.insert(user);
-            log.info(LogUtil.getSuccessLog(operation, user));
+            log.info(LogUtil.getSuccessLog(operation + " - user created in database", user));
             return ServiceResult.success(user);
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "database insert failed: " + e.getMessage(), user), e);
@@ -90,7 +90,7 @@ public class LoginUserServiceImpl implements LoginUserService {
 
         // 使用AES解密验证密码
         if (aesEncryptionUtil.verifyPassword(loginRequest.getPassword(), user.getPassword())) {
-            log.info(LogUtil.getSuccessLog(operation, user));
+            log.info(LogUtil.getSuccessLog(operation + " - password verified", user));
             return ServiceResult.success(user);
         } else {
             log.warn(LogUtil.getFailureLog(operation, "password mismatch for user: " + loginRequest.getAccount(), user));
