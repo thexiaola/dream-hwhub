@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 @Component
 public class LogSystem extends RollingPolicyBase {
 
-    private static final Logger logger = LoggerFactory.getLogger(LogSystem.class);
+    private static final Logger log = LoggerFactory.getLogger(LogSystem.class);
 
     // 滚动策略相关常量
     private static final String DATE_FORMAT = "yyyyMMdd";
@@ -37,7 +37,7 @@ public class LogSystem extends RollingPolicyBase {
         currentDate = new SimpleDateFormat(DATE_FORMAT).format(new Date());
         startupCount = calculateStartupCount();
         super.start();
-        logger.info("统一日志系统初始化完成");
+        log.info("Unified logging system initialization completed");
     }
 
     @Override
@@ -46,7 +46,7 @@ public class LogSystem extends RollingPolicyBase {
         currentFileIndex = 1;
         startupCount = 1;
         super.stop();
-        logger.info("日志滚动策略已停止，资源释放完成");
+        log.info("Log rolling policy stopped, resources released");
     }
 
     // 确保日志目录存在
@@ -55,7 +55,7 @@ public class LogSystem extends RollingPolicyBase {
         if (!logsDir.exists()) {
             boolean created = logsDir.mkdirs();
             if (created) {
-                logger.info("创建日志目录: {}", LOGS_DIR);
+                log.info("Creating logs directory: {}", LOGS_DIR);
             }
         }
     }
@@ -68,7 +68,7 @@ public class LogSystem extends RollingPolicyBase {
     private void checkFileSizeAndRollover(File file) {
         if (file.exists() && file.length() >= MAX_FILE_SIZE) {
             currentFileIndex++;
-            logger.debug("文件 {} 超过大小限制，准备滚动到下一个文件", file.getName());
+            log.debug("File {} exceeds size limit, preparing to roll to next file", file.getName());
         }
     }
 
@@ -78,11 +78,11 @@ public class LogSystem extends RollingPolicyBase {
     private void checkAndHandleDateChange() {
         String today = new SimpleDateFormat(DATE_FORMAT).format(new Date());
         if (!today.equals(currentDate)) {
-            logger.info("检测到日期变化: {} -> {}，自动切换日志文件", currentDate, today);
+            log.info("Detected date change: {} -> {}, automatically switching log file", currentDate, today);
             currentDate = today;
             startupCount = calculateStartupCount();
             currentFileIndex = 1;
-            logger.info("日期切换完成，新启动次数: {}, 文件序号重置为: {}", startupCount, currentFileIndex);
+            log.info("Date switch completed, new startup count: {}, file index reset to: {}", startupCount, currentFileIndex);
         }
     }
 
@@ -104,7 +104,7 @@ public class LogSystem extends RollingPolicyBase {
         String fallbackFileName = String.format("%s/fallback_%s.log", LOGS_DIR, currentDate);
         try (FileWriter writer = new FileWriter(fallbackFileName, true)) {
             String fallbackMessage = String.format(
-                    "%s [FALLBACK] %s - 原始错误: %s, 消息: %s%s",
+                    "%s [FALLBACK] %s - Original error: %s, Message: %s%s",
                     new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()),
                     level.toUpperCase(),
                     originalException.getMessage(),
@@ -114,8 +114,8 @@ public class LogSystem extends RollingPolicyBase {
             writer.write(fallbackMessage);
             writer.flush();
         } catch (Exception fallbackException) {
-            System.err.println("致命错误：无法写入任何日志文件 - " + fallbackException.getMessage());
-            System.err.println("原始消息: " + message);
+            System.err.println("Fatal error: Unable to write to any log file - " + fallbackException.getMessage());
+            System.err.println("Original message: " + message);
         }
     }
 
@@ -128,7 +128,7 @@ public class LogSystem extends RollingPolicyBase {
         File expectedFile = new File(expectedFileName);
 
         if (!expectedFile.exists()) {
-            logger.warn("检测到日志文件 {} 不存在，重新计算启动参数", expectedFileName);
+            log.warn("Detected log file {} does not exist, recalculating startup parameters", expectedFileName);
             startupCount = calculateStartupCount();
             currentFileIndex = 1;
             expectedFileName = String.format("%s/log_%s_%d_%d.log", LOGS_DIR, currentDate, startupCount, currentFileIndex);
@@ -145,14 +145,14 @@ public class LogSystem extends RollingPolicyBase {
 
         String today = new SimpleDateFormat(DATE_FORMAT).format(new Date());
         if (!today.equals(currentDate)) {
-            logger.info("日期变更 {} -> {}，重置日志文件序号", currentDate, today);
+            log.info("Date change {} -> {}, resetting log file index", currentDate, today);
             currentDate = today;
             startupCount = calculateStartupCount();
             currentFileIndex = 1;
         } else {
             currentFileIndex++;
             currentFileIndex = findNextAvailableFileIndex();
-            logger.info("同日内滚动，新文件序号: {}", currentFileIndex);
+            log.info("Same-day rolling, new file index: {}", currentFileIndex);
         }
     }
 
@@ -185,16 +185,32 @@ public class LogSystem extends RollingPolicyBase {
     private int calculateStartupCount() {
         File logsDir = new File(LOGS_DIR);
         if (!logsDir.exists() || !logsDir.isDirectory()) {
-            logger.debug("日志目录不存在或不是目录，返回启动次数1");
+            log.debug("Logs directory does not exist or is not a directory, returning startup count 1");
             return 1;
         }
-
+    
         String datePrefix = "log_" + currentDate + "_";
         Pattern pattern = Pattern.compile("^log_" + currentDate + "_(\\d+)_(\\d+)\\.log$");
-
+    
+        int maxStartupCount = findMaxStartupCount(logsDir, datePrefix, pattern);
+        int nextStartupCount = calculateNextStartupCount(maxStartupCount);
+    
+        log.debug("Calculated today's startup count: {}", nextStartupCount);
+        return nextStartupCount;
+    }
+    
+    /**
+     * 查找目录中最大的启动次数
+     *
+     * @param logsDir 日志目录
+     * @param datePrefix 日期前缀
+     * @param pattern 文件名匹配模式
+     * @return 最大启动次数
+     */
+    private int findMaxStartupCount(File logsDir, String datePrefix, Pattern pattern) {
         int maxStartupCount = 0;
-
         File[] files = logsDir.listFiles();
+            
         if (files != null) {
             for (File file : files) {
                 if (file.isFile() && file.getName().startsWith(datePrefix)) {
@@ -206,8 +222,19 @@ public class LogSystem extends RollingPolicyBase {
                 }
             }
         }
-
+            
+        return maxStartupCount;
+    }
+    
+    /**
+     * 计算下一个启动次数
+     *
+     * @param maxStartupCount 当前最大启动次数
+     * @return 下一个启动次数
+     */
+    private int calculateNextStartupCount(int maxStartupCount) {
         int nextStartupCount = maxStartupCount + 1;
+            
         while (true) {
             String baseFileName = String.format("%s/log_%s_%d_1.log", LOGS_DIR, currentDate, nextStartupCount);
             File testFile = new File(baseFileName);
@@ -216,8 +243,7 @@ public class LogSystem extends RollingPolicyBase {
             }
             nextStartupCount++;
         }
-
-        logger.debug("计算得到当日启动次数: {}", nextStartupCount);
+            
         return nextStartupCount;
     }
 
@@ -228,7 +254,7 @@ public class LogSystem extends RollingPolicyBase {
      */
     public String getStatusInfo() {
         return String.format(
-                "统一日志系统状态 - 当前日期: %s, 启动次数: %d, 文件序号: %d, 当前文件: %s",
+                "Unified log system status - Current date: %s, Startup count: %d, File index: %d, Current file: %s",
                 currentDate, startupCount, currentFileIndex,
                 String.format("%s/log_%s_%d_%d.log", LOGS_DIR, currentDate, startupCount, currentFileIndex)
         );

@@ -1,29 +1,42 @@
-package top.thexiaola.dreamhwhub.domain;
+package top.thexiaola.dreamhwhub.module.login.dto;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+/**
+ * 用户信息响应DTO
+ */
+public class UserResponse {
 
-@TableName(value = "user")
-public class User {
-    @TableId(type = IdType.AUTO)
+    // 用户编号
     private Integer id;
-    
-    @TableField(value = "user_no")
+
+    // 学号/工号
     private String userNo;
-    
-    @TableField(value = "username")
+
+    // 用户名
     private String username;
-    
-    @TableField(value = "email")
+
+    // 邮箱
     private String email;
-    
-    @TableField(value = "password")
-    private String password;
-    
-    @TableField(value = "permission")
+
+    // 权限级别
     private Short permission;
+
+    /**
+     * 从User实体创建响应对象
+     * @param user 用户实体
+     * @return 用户响应对象
+     */
+    public static UserResponse fromEntity(top.thexiaola.dreamhwhub.module.login.domain.User user) {
+        if (user == null) {
+            return null;
+        }
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setUserNo(user.getUserNo());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setPermission(user.getPermission());
+        return response;
+    }
 
     public Integer getId() {
         return id;
@@ -55,14 +68,6 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public Short getPermission() {
