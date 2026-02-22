@@ -3,7 +3,6 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
@@ -12,6 +11,7 @@ import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
+import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
 /**

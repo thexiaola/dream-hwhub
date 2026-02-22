@@ -1,5 +1,7 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,8 +12,6 @@ import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.InternetAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Map;
