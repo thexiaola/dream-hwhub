@@ -7,6 +7,8 @@ import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
+import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
@@ -34,35 +36,30 @@ public class LoginUserServiceImpl implements LoginUserService {
         this.emailService = emailService;
     }
 
-    @PostConstruct
-    public void init() {
-        // 服务初始化完成
-    }
-
     @Override
-    public User register(RegisterRequest registerRequest) {
+    public ServiceResult<User> register(RegisterRequest registerRequest) {
         String operation = "User registration";
         
         // 检查唯一性
         if (isUserNoExists(registerRequest.getUserNo())) {
             log.warn(LogUtil.getFailureLog(operation, "user_no already exists: " + registerRequest.getUserNo(), null));
-            throw new RuntimeException("学号已被注册");
+            return ServiceResult.failure(BusinessErrorCode.USER_NO_EXISTS);
         }
 
         if (isUsernameExists(registerRequest.getUsername())) {
             log.warn(LogUtil.getFailureLog(operation, "username already exists: " + registerRequest.getUsername(), null));
-            throw new RuntimeException("用户名已被注册");
+            return ServiceResult.failure(BusinessErrorCode.USERNAME_EXISTS);
         }
 
         if (isEmailExists(registerRequest.getEmail())) {
             log.warn(LogUtil.getFailureLog(operation, "email already exists: " + registerRequest.getEmail(), null));
-            throw new RuntimeException("邮箱已被注册");
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_EXISTS);
         }
 
         // 验证邮箱验证码
         if (!emailService.verifyCode(registerRequest.getEmail(), registerRequest.getEmailCode())) {
             log.warn(LogUtil.getFailureLog(operation, "invalid or expired email verification code", null));
-            throw new RuntimeException("邮箱验证码无效或已过期");
+            return ServiceResult.failure(BusinessErrorCode.VERIFICATION_CODE_INVALID);
         }
 
         // 创建用户
@@ -75,41 +72,45 @@ public class LoginUserServiceImpl implements LoginUserService {
 
         try {
             userMapper.insert(user);
-            // 用户注册成功
-            
-            return user;
+            log.info(LogUtil.getSuccessLog(operation, user));
+            return ServiceResult.success(user);
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "database insert failed: " + e.getMessage(), user), e);
-            throw new RuntimeException("注册失败: " + e.getMessage());
+            return ServiceResult.failure(BusinessErrorCode.REGISTRATION_FAILED, "注册失败: " + e.getMessage());
         }
     }
 
     @Override
-    public User login(LoginRequest loginRequest) {
+    public ServiceResult<User> login(LoginRequest loginRequest) {
         String operation = "User login";
         
         User user = findByAccount(loginRequest.getAccount());
         if (user == null) {
             log.warn(LogUtil.getFailureLog(operation, "user not found: " + loginRequest.getAccount(), null));
-            throw new RuntimeException("账号或密码错误");
+            return ServiceResult.failure(BusinessErrorCode.USER_NOT_FOUND);
         }
 
-        // 由于AES加密是不可逆的，我们无法直接验证密码
-        // 这里抛出异常表示不支持密码验证
-        log.warn(LogUtil.getFailureLog(operation, "password verification not supported for irreversible encryption", user));
-        throw new RuntimeException("系统不支持密码验证功能");
+        // 使用AES解密验证密码
+        if (aesEncryptionUtil.verifyPassword(loginRequest.getPassword(), user.getPassword())) {
+            log.info(LogUtil.getSuccessLog(operation, user));
+            return ServiceResult.success(user);
+        } else {
+            log.warn(LogUtil.getFailureLog(operation, "password mismatch for user: " + loginRequest.getAccount(), user));
+            return ServiceResult.failure(BusinessErrorCode.INVALID_CREDENTIALS);
+        }
     }
 
     @Override
-    public void sendEmailCode(String email) {
+    public ServiceResult<Void> sendEmailCode(String email) {
         String operation = "Send email verification code";
         
         try {
             emailService.sendVerificationCode(email);
-            // 验证码发送成功
+            log.info(LogUtil.getSuccessLog(operation, null));
+            return ServiceResult.success(null);
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "email sending failed: " + e.getMessage(), null), e);
-            throw new RuntimeException("验证码发送失败: " + e.getMessage());
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败: " + e.getMessage());
         }
     }
 

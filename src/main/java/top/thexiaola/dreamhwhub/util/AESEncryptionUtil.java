@@ -67,6 +67,42 @@ public class AESEncryptionUtil {
     }
 
     /**
+     * 解密密码
+     * @param encryptedData 加密的数据（包含IV+密文）
+     * @return 解密后的明文密码
+     */
+    public String decrypt(byte[] encryptedData) {
+        try {
+            // 验证输入
+            if (encryptedData == null || encryptedData.length <= GCM_IV_LENGTH) {
+                // 输入验证失败
+                throw new IllegalArgumentException("Invalid encrypted data");
+            }
+            
+            // 初始化密钥
+            SecretKeySpec key = initSecretKey();
+            
+            // 提取IV和密文
+            byte[] iv = new byte[GCM_IV_LENGTH];
+            byte[] cipherText = new byte[encryptedData.length - GCM_IV_LENGTH];
+            System.arraycopy(encryptedData, 0, iv, 0, GCM_IV_LENGTH);
+            System.arraycopy(encryptedData, GCM_IV_LENGTH, cipherText, 0, cipherText.length);
+            
+            // 执行解密
+            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
+            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+            cipher.init(Cipher.DECRYPT_MODE, key, spec);
+            byte[] decryptedData = cipher.doFinal(cipherText);
+            
+            // 解密成功，返回结果
+            return new String(decryptedData, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            // 解密过程失败
+            throw new RuntimeException("Password decryption failed", e);
+        }
+    }
+
+    /**
      * 初始化AES密钥
      */
     private SecretKeySpec initSecretKey() {
@@ -86,6 +122,22 @@ public class AESEncryptionUtil {
         } catch (Exception e) {
             // 密钥初始化失败
             throw new RuntimeException("AES encryption initialization failed", e);
+        }
+    }
+    
+    /**
+     * 验证密码是否正确
+     * @param plainPassword 明文密码
+     * @param encryptedPassword 加密后的密码
+     * @return 密码是否匹配
+     */
+    public boolean verifyPassword(String plainPassword, byte[] encryptedPassword) {
+        try {
+            String decryptedPassword = decrypt(encryptedPassword);
+            return plainPassword.equals(decryptedPassword);
+        } catch (Exception e) {
+            // 解密失败或密码不匹配
+            return false;
         }
     }
     

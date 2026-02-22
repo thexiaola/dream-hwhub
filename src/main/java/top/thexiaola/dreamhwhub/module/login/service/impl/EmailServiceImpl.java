@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
+import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 
 import jakarta.mail.internet.MimeMessage;
@@ -58,16 +60,16 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendEmail(String to, String subject, String content) {
+    public ServiceResult<Void> sendEmail(String to, String subject, String content) {
         if (mailSender == null) {
             log.error("Mail server not configured, recipient: {}, subject: {}", to, subject);
-            return;
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SERVER_NOT_CONFIGURED);
         }
         
         // 验证邮箱格式
         if (to == null || !to.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             log.warn("Invalid email format: {}", to);
-            return;
+            return ServiceResult.failure(BusinessErrorCode.INVALID_EMAIL_FORMAT);
         }
         
         try {
@@ -78,14 +80,15 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject(subject);
             helper.setText(content);
             mailSender.send(message);
+            return ServiceResult.success(null);
         } catch (Exception e) {
-            // 如果邮件发送失败，记录错误但继续执行
             log.error("Failed to send email: {}, recipient: {}, subject: {}", e.getMessage(), to, subject, e);
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败: " + e.getMessage());
         }
     }
 
     @Override
-    public void sendVerificationCode(String email) {
+    public ServiceResult<Void> sendVerificationCode(String email) {
         // 生成6位随机数字验证码
         Random random = new Random();
         String code = String.format("%06d", random.nextInt(999999));
@@ -95,12 +98,12 @@ public class EmailServiceImpl implements EmailService {
         verificationCodes.put(email, codeInfo);
 
         // 发送邮件
-        sendVerificationCodeEmail(email, code);
+        return sendVerificationCodeEmail(email, code);
     }
 
     @Override
-    public void sendVerificationCode(String to, String code) {
-        sendVerificationCodeEmail(to, code);
+    public ServiceResult<Void> sendVerificationCode(String to, String code) {
+        return sendVerificationCodeEmail(to, code);
     }
     
     public boolean verifyCode(String email, String code) {
@@ -108,8 +111,6 @@ public class EmailServiceImpl implements EmailService {
         if (codeInfo != null) {
             // 检查是否过期
             if (LocalDateTime.now().isAfter(codeInfo.expiryTime())) {
-                // Verification code expired
-                
                 // 验证码已过期，删除它
                 verificationCodes.remove(email);
                 return false;
@@ -119,22 +120,18 @@ public class EmailServiceImpl implements EmailService {
                 // 验证成功后删除该验证码
                 verificationCodes.remove(email);
                 return true;
-            } else {
-                // Verification code mismatch
             }
-        } else {
-            // No verification code record found
         }
         return false;
     }
     
-    private void sendVerificationCodeEmail(String email, String code) {
+    private ServiceResult<Void> sendVerificationCodeEmail(String email, String code) {
         String subject = "Dream HWHub 验证码";
         String content = String.format(
                 "您好！\n\n您的验证码是：%s\n\n验证码有效期为%d分钟，请及时使用。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
                 code, expiryMinutes
         );
-        sendEmail(email, subject, content);
+        return sendEmail(email, subject, content);
     }
     
     // 存储验证码及其过期时间

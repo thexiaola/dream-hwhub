@@ -3,6 +3,7 @@ package top.thexiaola.dreamhwhub.module.login.service;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 
 /**
  * 用户登录服务接口
@@ -12,22 +13,23 @@ public interface LoginUserService {
     /**
      * 用户注册
      * @param registerRequest 注册请求
-     * @return 注册成功的用户信息
+     * @return 服务结果，包含用户信息或错误码
      */
-    User register(RegisterRequest registerRequest);
+    ServiceResult<User> register(RegisterRequest registerRequest);
 
     /**
      * 用户登录
      * @param loginRequest 登录请求
-     * @return 登录成功的用户信息
+     * @return 服务结果，包含用户信息或错误码
      */
-    User login(LoginRequest loginRequest);
+    ServiceResult<User> login(LoginRequest loginRequest);
 
     /**
      * 发送邮箱验证码
      * @param email 邮箱地址
+     * @return 服务结果，包含操作状态或错误码
      */
-    void sendEmailCode(String email);
+    ServiceResult<Void> sendEmailCode(String email);
 
     /**
      * 验证邮箱验证码

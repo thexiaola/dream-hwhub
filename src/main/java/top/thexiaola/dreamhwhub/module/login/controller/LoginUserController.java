@@ -30,66 +30,17 @@ public class LoginUserController {
         this.loginUserService = loginUserService;
     }
 
-    /**
-     * 用户注册
-     */
-    @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        String ip = LogUtil.getCurrentClientIp();
-        String userInfo = LogUtil.getUserInfoString(ip, null);
-        
-        try {
-            User user = loginUserService.register(registerRequest);
-            UserResponse userResponse = UserResponse.fromEntity(user);
-            
-            // 更新userInfo包含注册成功的用户信息
-            userInfo = LogUtil.getUserInfoString(ip, user);
-            log.info("User ({}) registration successful", userInfo);
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 200);
-            response.put("msg", "注册成功！");
-            response.put("data", userResponse);
-            
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            // Handle business validation errors
-            if (e.getMessage().contains("验证码无效") || e.getMessage().contains("验证码已过期")) {
-                log.warn("User ({}) registration failed due to invalid/expired verification code: {}", userInfo, e.getMessage());
-            } else if (e.getMessage().contains("已被注册")) {
-                log.info("User ({}) registration failed due to duplicate registration: {}", userInfo, e.getMessage());
-            } else {
-                log.info("User ({}) registration failed: {}", userInfo, e.getMessage());
-            }
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 400);
-            response.put("msg", e.getMessage());
-            response.put("data", null);
-            
-            return ResponseEntity.badRequest().body(response);
-        } catch (Exception e) {
-            log.error("User ({}) registration failed with system error: {}", userInfo, e.getMessage(), e);
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 500);
-            response.put("msg", "注册失败！");
-            response.put("data", null);
-            
-            return ResponseEntity.status(500).body(response);
-        }
-    }
 
-    /**
-     * 用户登录
-     */
+
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest loginRequest) {
         String ip = LogUtil.getCurrentClientIp();
         String userInfo = LogUtil.getUserInfoString(ip, null);
         
-        try {
-            User user = loginUserService.login(loginRequest);
+        ServiceResult<User> result = loginUserService.login(loginRequest);
+        
+        if (result.isSuccess()) {
+            User user = result.getData();
             UserResponse userResponse = UserResponse.fromEntity(user);
             
             // 更新userInfo包含登录成功的用户信息
@@ -107,67 +58,19 @@ public class LoginUserController {
             response.put("data", responseData);
             
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            log.info("User ({}) login failed: {}", userInfo, e.getMessage());
+        } else {
+            String errorMessage = result.getMessage();
+            log.info("User ({}) login failed: {}", userInfo, errorMessage);
             
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("code", 401);
-            response.put("msg", "账号或密码错误！");
+            response.put("msg", errorMessage);
             response.put("data", null);
             
             return ResponseEntity.status(401).body(response);
-        } catch (Exception e) {
-            log.error("User ({}) login failed with system error: {}", userInfo, e.getMessage(), e);
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 500);
-            response.put("msg", "登录失败！");
-            response.put("data", null);
-            
-            return ResponseEntity.status(500).body(response);
         }
     }
 
-    /**
-     * 发送注册验证码
-     */
-    @PostMapping("/getregcode")
-    public ResponseEntity<Map<String, Object>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
-        String ip = LogUtil.getCurrentClientIp();
-        String userInfo = LogUtil.getUserInfoString(ip, null);
-        String email = emailCodeRequest.getEmail();
-        
-        try {
-            loginUserService.sendEmailCode(email);
-            
-            log.info("User ({}) verification code sent successfully to email: {}", userInfo, email);
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 200);
-            response.put("msg", "验证码发送成功！");
-            response.put("data", null);
-            
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            log.warn("User ({}) failed to send verification code to {}: {}", userInfo, email, e.getMessage());
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 400);
-            response.put("msg", e.getMessage());
-            response.put("data", null);
-            
-            return ResponseEntity.badRequest().body(response);
-        } catch (Exception e) {
-            log.error("User ({}) failed to send verification code to {} with system error: {}", userInfo, email, e.getMessage(), e);
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 500);
-            response.put("msg", "验证码发送失败！");
-            response.put("data", null);
-            
-            return ResponseEntity.status(500).body(response);
-        }
-    }
 
     /**
      * 检查学号是否可用
