@@ -2,7 +2,6 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -27,8 +26,7 @@ public class EmailServiceImpl implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
     
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
     
     // 存储验证码及其过期时间
     private final Map<String, VerificationCodeInfo> verificationCodes = new ConcurrentHashMap<>();
@@ -41,7 +39,16 @@ public class EmailServiceImpl implements EmailService {
     
     @Value("${spring.mail.properties.mail.from.nickname:系统管理员}")
     private String senderNickname;
+
+    public EmailServiceImpl(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
     
+    // 用于测试环境的备用构造函数
+    public EmailServiceImpl() {
+        this.mailSender = null;
+    }
+
     /**
      * ISO-8859-1 编码转换 UTF-8 编码
      * @param text ISO-8859-1 编码的文本

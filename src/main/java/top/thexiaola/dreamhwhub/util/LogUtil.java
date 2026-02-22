@@ -87,15 +87,12 @@ public class LogUtil {
             return "";
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("id: ").append(user.getId()).append(", ");
-        sb.append("user_no: ").append(formatValue(user.getUserNo())).append(", ");
-        sb.append("username: ").append(formatValue(user.getUsername())).append(", ");
-        sb.append("email: ").append(formatValue(user.getEmail())).append(", ");
-        sb.append("permission: ").append(user.getPermission());
-
         // 移除末尾的逗号和空格
-        String result = sb.toString();
+        String result = "id: " + user.getId() + ", " +
+                "user_no: " + formatValue(user.getUserNo()) + ", " +
+                "username: " + formatValue(user.getUsername()) + ", " +
+                "email: " + formatValue(user.getEmail()) + ", " +
+                "permission: " + user.getPermission();
         if (result.endsWith(", ")) {
             result = result.substring(0, result.length() - 2);
         }

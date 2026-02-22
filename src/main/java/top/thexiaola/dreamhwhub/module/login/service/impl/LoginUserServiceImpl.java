@@ -14,8 +14,6 @@ import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
-import jakarta.annotation.PostConstruct;
-
 /**
  * 用户登录服务实现类
  */
