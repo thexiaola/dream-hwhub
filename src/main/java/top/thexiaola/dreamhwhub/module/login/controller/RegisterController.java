@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +18,6 @@ import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.JwtUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
-import jakarta.validation.Valid;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

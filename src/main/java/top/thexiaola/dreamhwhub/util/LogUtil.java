@@ -5,8 +5,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 
-import java.time.format.DateTimeFormatter;
-
 /**
  * 日志工具类
  * 提供用户信息和IP地址获取功能
