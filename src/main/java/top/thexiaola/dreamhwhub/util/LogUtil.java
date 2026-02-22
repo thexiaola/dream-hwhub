@@ -13,8 +13,6 @@ import java.time.format.DateTimeFormatter;
  */
 public class LogUtil {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     /**
      * 获取客户端真实IP地址
      * @param request HttpServletRequest对象

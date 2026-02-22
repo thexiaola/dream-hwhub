@@ -17,8 +17,6 @@ import java.security.SecureRandom;
 @Component
 public class AESEncryptionUtil {
 
-    private static final Logger log = LoggerFactory.getLogger(AESEncryptionUtil.class);
-    
     // AES-GCM 参数
     private static final String ALGORITHM = "AES";
     private static final String TRANSFORMATION = "AES/GCM/NoPadding";
