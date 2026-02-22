@@ -4,16 +4,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
+import top.thexiaola.dreamhwhub.util.JwtUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
 import jakarta.validation.Valid;
@@ -32,12 +33,12 @@ public class LoginUserController {
     private static final Logger log = LoggerFactory.getLogger(LoginUserController.class);
     
     private final LoginUserService loginUserService;
+    private final JwtUtil jwtUtil;
 
-    public LoginUserController(LoginUserService loginUserService) {
+    public LoginUserController(LoginUserService loginUserService, JwtUtil jwtUtil) {
         this.loginUserService = loginUserService;
+        this.jwtUtil = jwtUtil;
     }
-
-
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -54,10 +55,15 @@ public class LoginUserController {
             userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) login successful", userInfo);
             
-            // 这里可以生成JWT token，简化处理直接返回用户信息
+            // 生成JWT token
+            String jwtToken = jwtUtil.generateToken(user.getId(), user.getUsername());
+            
             Map<String, Object> responseData = new LinkedHashMap<>();
             responseData.put("user", userResponse);
-            // responseData.put("token", generateToken(user)); // 可以添加token生成
+            responseData.put("token", jwtToken);
+            responseData.put("tokenType", "Bearer");
+            responseData.put("expiresIn", 86400); // 24小时
+            responseData.put("isLoggedIn", true);
             
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("code", 200);
@@ -78,12 +84,14 @@ public class LoginUserController {
         }
     }
 
-
     /**
      * 检查学号是否可用
+     * 传入学号
+     * 传出 是否存在
      */
-    @GetMapping("/check/userno/{userNo}")
-    public ResponseEntity<Map<String, Object>> checkUserNo(@PathVariable String userNo) {
+    @GetMapping("/check/userno")
+    public ResponseEntity<Map<String, Object>> checkUserNo(
+            @RequestParam() String userNo) {
         boolean exists = loginUserService.isUserNoExists(userNo);
         
         Map<String, Object> response = new HashMap<>();
@@ -96,9 +104,12 @@ public class LoginUserController {
 
     /**
      * 检查用户名是否可用
+     * 传入用户名
+     * 传出 是否存在
      */
-    @GetMapping("/check/username/{username}")
-    public ResponseEntity<Map<String, Object>> checkUsername(@PathVariable String username) {
+    @GetMapping("/check/username")
+    public ResponseEntity<Map<String, Object>> checkUsername(
+            @RequestParam() String username) {
         boolean exists = loginUserService.isUsernameExists(username);
         
         Map<String, Object> response = new HashMap<>();
@@ -111,9 +122,12 @@ public class LoginUserController {
 
     /**
      * 检查邮箱是否可用
+     * 传入邮箱地址
+     * 传出 是否存在
      */
-    @GetMapping("/check/email/{email}")
-    public ResponseEntity<Map<String, Object>> checkEmail(@PathVariable String email) {
+    @GetMapping("/check/email")
+    public ResponseEntity<Map<String, Object>> checkEmail(
+            @RequestParam() String email) {
         boolean exists = loginUserService.isEmailExists(email);
         
         Map<String, Object> response = new HashMap<>();

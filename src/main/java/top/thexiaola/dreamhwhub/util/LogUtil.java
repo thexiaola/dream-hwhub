@@ -171,21 +171,4 @@ public class LogUtil {
         }
         return value;
     }
-
-    /**
-     * 获取IP信息（简化版）
-     * @param ip IP地址
-     * @return 格式化的IP信息
-     */
-    public static String getIpOnly(String ip) {
-        return "ip: " + (ip != null ? ip : "unknown");
-    }
-
-    /**
-     * 获取当前时间戳
-     * @return 格式化的时间字符串
-     */
-    public static String getCurrentTimestamp() {
-        return LocalDateTime.now().format(FORMATTER);
-    }
 }
