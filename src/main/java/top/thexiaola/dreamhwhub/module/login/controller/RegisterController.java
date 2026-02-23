@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +16,8 @@ import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
-import top.thexiaola.dreamhwhub.util.JwtUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
+import top.thexiaola.dreamhwhub.util.SessionManager;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,21 +32,20 @@ public class RegisterController {
     private static final Logger log = LoggerFactory.getLogger(RegisterController.class);
     
     private final LoginUserService loginUserService;
-    private final JwtUtil jwtUtil;
+
     
     @Value("${app.jwt.expiration}")
     private Long jwtExpiration;
 
-    public RegisterController(LoginUserService loginUserService, JwtUtil jwtUtil) {
+    public RegisterController(LoginUserService loginUserService) {
         this.loginUserService = loginUserService;
-        this.jwtUtil = jwtUtil;
     }
 
     /**
      * 用户注册
      */
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<Map<String, Object>> register(HttpServletRequest request, @Valid @RequestBody RegisterRequest registerRequest) {
         String ip = LogUtil.getCurrentClientIp();
         String userInfo = LogUtil.getUserInfoString(ip, null);
         
@@ -58,10 +58,12 @@ public class RegisterController {
             userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) registration successful, auto-login initiated", userInfo);
             
-            // 注册成功后自动登录
-            String jwtToken = jwtUtil.generateToken(user.getId(), user.getUsername());
+            // 注册成功后自动登录，使用Session管理
+            SessionManager.addSession(user.getId(), request.getSession());
+            request.getSession().setAttribute("user", user);
+            request.getSession().setAttribute("username", user.getUsername());
             
-            Map<String, Object> responseData = createUserLoginResponse(userResponse, jwtToken);
+            Map<String, Object> responseData = createUserLoginResponse(userResponse, request.getSession().getId());
             Map<String, Object> response = createSuccessResponse("注册成功并已自动登录！", responseData);
             
             return ResponseEntity.ok(response);

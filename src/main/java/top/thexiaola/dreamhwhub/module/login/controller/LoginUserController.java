@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +12,8 @@ import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
-import top.thexiaola.dreamhwhub.util.JwtUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
+import top.thexiaola.dreamhwhub.util.SessionManager;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -28,18 +29,17 @@ public class LoginUserController {
     private static final Logger log = LoggerFactory.getLogger(LoginUserController.class);
     
     private final LoginUserService loginUserService;
-    private final JwtUtil jwtUtil;
+
     
     @Value("${app.jwt.expiration}")
     private Long jwtExpiration;
 
-    public LoginUserController(LoginUserService loginUserService, JwtUtil jwtUtil) {
+    public LoginUserController(LoginUserService loginUserService) {
         this.loginUserService = loginUserService;
-        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<Map<String, Object>> login(HttpServletRequest request, @Valid @RequestBody LoginRequest loginRequest) {
         String ip = LogUtil.getCurrentClientIp();
         String userInfo = LogUtil.getUserInfoString(ip, null);
         
@@ -52,14 +52,14 @@ public class LoginUserController {
             userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) login successful, generating JWT token", userInfo);
             
-            // 生成JWT token
-            String jwtToken = jwtUtil.generateToken(user.getId(), user.getUsername());
+            // 使用Session管理
+            SessionManager.addSession(user.getId(), request.getSession());
+            request.getSession().setAttribute("user", user);
+            request.getSession().setAttribute("username", user.getUsername());
             
             Map<String, Object> responseData = new LinkedHashMap<>();
             responseData.put("user", userResponse);
-            responseData.put("token", jwtToken);
-            responseData.put("tokenType", "Bearer");
-            responseData.put("expiresIn", jwtExpiration / 1000); // 毫秒 -> 秒
+            responseData.put("sessionId", request.getSession().getId());
             responseData.put("isLoggedIn", true);
             
             Map<String, Object> response = new LinkedHashMap<>();
