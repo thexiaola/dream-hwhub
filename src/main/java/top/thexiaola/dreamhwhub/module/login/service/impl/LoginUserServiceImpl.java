@@ -81,14 +81,14 @@ public class LoginUserServiceImpl implements LoginUserService {
     @Override
     public ServiceResult<User> login(LoginRequest loginRequest) {
         String operation = "User login";
-        
+            
         User user = findByAccount(loginRequest.getAccount());
         if (user == null) {
-            log.warn(LogUtil.getFailureLog(operation, "user not found: " + loginRequest.getAccount(), null));
-            return ServiceResult.failure(BusinessErrorCode.USER_NOT_FOUND);
+            log.warn(LogUtil.getFailureLog(operation, "invalid account or password: " + loginRequest.getAccount(), null));
+            return ServiceResult.failure(BusinessErrorCode.INVALID_CREDENTIALS);
         }
-
-        // 使用AES解密验证密码
+    
+        // 使用 AES 解密验证密码
         if (aesEncryptionUtil.verifyPassword(loginRequest.getPassword(), user.getPassword())) {
             log.info(LogUtil.getSuccessLog(operation + " - password verified", user));
             return ServiceResult.success(user);
@@ -99,16 +99,28 @@ public class LoginUserServiceImpl implements LoginUserService {
     }
 
     @Override
-    public ServiceResult<Void> sendEmailCode(String email) {
-        String operation = "Send email verification code";
-        
+    public ServiceResult<Void> sendEmailCode(String email, String userNo, String username) {
+
+        // 检查学号是否已被注册
+        if (isUserNoExists(userNo)) {
+            return ServiceResult.failure(BusinessErrorCode.USER_NO_EXISTS);
+        }
+            
+        // 检查用户名是否已被注册
+        if (isUsernameExists(username)) {
+            return ServiceResult.failure(BusinessErrorCode.USERNAME_EXISTS);
+        }
+            
+        // 检查邮箱是否已被注册
+        if (isEmailExists(email)) {
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_EXISTS);
+        }
+            
         try {
             emailService.sendVerificationCode(email);
-            log.info(LogUtil.getSuccessLog(operation, null));
             return ServiceResult.success(null);
         } catch (Exception e) {
-            log.error(LogUtil.getFailureLog(operation, "email sending failed: " + e.getMessage(), null), e);
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败: " + e.getMessage());
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败：" + e.getMessage());
         }
     }
 

@@ -27,9 +27,11 @@ public interface LoginUserService {
     /**
      * 发送邮箱验证码
      * @param email 邮箱地址
+     * @param userNo 学号
+     * @param username 用户名
      * @return 服务结果，包含操作状态或错误码
      */
-    ServiceResult<Void> sendEmailCode(String email);
+    ServiceResult<Void> sendEmailCode(String email, String userNo, String username);
 
     /**
      * 验证邮箱验证码

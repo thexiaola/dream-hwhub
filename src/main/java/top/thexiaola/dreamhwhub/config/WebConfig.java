@@ -20,14 +20,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
-            .addPathPatterns("/api/**")  // 拦截所有API请求
+            .addPathPatterns("/api/**")  // 拦截所有 API 请求
             .excludePathPatterns(        // 排除公开接口
                 "/api/users/register",
                 "/api/users/login",
-                "/api/users/getregcode",
-                "/api/users/check/**",
-                "/actuator/**",
-                "/favicon.ico"
+                "/api/users/getregcode"
             );
     }
 }

@@ -4,17 +4,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.dto.EmailCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
-import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.SessionManager;
@@ -33,10 +32,6 @@ public class RegisterController {
     
     private final LoginUserService loginUserService;
 
-    
-    @Value("${app.jwt.expiration}")
-    private Long jwtExpiration;
-
     public RegisterController(LoginUserService loginUserService) {
         this.loginUserService = loginUserService;
     }
@@ -46,41 +41,26 @@ public class RegisterController {
      */
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(HttpServletRequest request, @Valid @RequestBody RegisterRequest registerRequest) {
-        String ip = LogUtil.getCurrentClientIp();
-        String userInfo = LogUtil.getUserInfoString(ip, null);
-        
         ServiceResult<User> result = loginUserService.register(registerRequest);
         
         if (result.isSuccess()) {
             User user = result.getData();
             UserResponse userResponse = UserResponse.fromEntity(user);
-
-            userInfo = LogUtil.getUserInfoString(ip, user);
+        
+            String ip = LogUtil.getCurrentClientIp();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) registration successful, auto-login initiated", userInfo);
-            
-            // 注册成功后自动登录，使用Session管理
             SessionManager.addSession(user.getId(), request.getSession());
             request.getSession().setAttribute("user", user);
             request.getSession().setAttribute("username", user.getUsername());
             
-            Map<String, Object> responseData = createUserLoginResponse(userResponse, request.getSession().getId());
+            Map<String, Object> responseData = createUserLoginResponse(userResponse);
             Map<String, Object> response = createSuccessResponse("注册成功并已自动登录！", responseData);
             
             return ResponseEntity.ok(response);
         } else {
-            BusinessErrorCode errorCode = result.getErrorCode();
             String errorMessage = result.getMessage();
-            
-            if (BusinessErrorCode.isVerificationCodeError(errorCode)) {
-                log.warn("User ({}) registration failed due to invalid/expired verification code: {}", userInfo, errorMessage);
-            } else if (BusinessErrorCode.isDuplicateRegistrationError(errorCode)) {
-                log.info("User ({}) registration failed due to duplicate registration: {}", userInfo, errorMessage);
-            } else {
-                log.info("User ({}) registration failed: {}", userInfo, errorMessage);
-            }
-            
             Map<String, Object> response = createErrorResponse(errorMessage);
-            
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -89,25 +69,18 @@ public class RegisterController {
      * 发送注册验证码
      */
     @PostMapping("/getregcode")
-    public ResponseEntity<Map<String, Object>> sendRegisterCode(@Valid @RequestBody RegisterRequest registerRequest) {
-        String ip = LogUtil.getCurrentClientIp();
-        String userInfo = LogUtil.getUserInfoString(ip, null);
-        String email = registerRequest.getEmail();
-        
-        ServiceResult<Void> result = loginUserService.sendEmailCode(email);
+    public ResponseEntity<Map<String, Object>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
+        ServiceResult<Void> result = loginUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
         
         if (result.isSuccess()) {
-            log.info("User ({}) verification code sent successfully to email: {}", userInfo, email);
-            
             Map<String, Object> response = createSuccessResponse("验证码发送成功！", null);
-            
+
             return ResponseEntity.ok(response);
         } else {
             String errorMessage = result.getMessage();
-            log.warn("User ({}) failed to send verification code to {}: {}", userInfo, email, errorMessage);
-            
+
             Map<String, Object> response = createErrorResponse(errorMessage);
-            
+
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -115,12 +88,9 @@ public class RegisterController {
     /**
      * 创建用户登录响应数据
      */
-    private Map<String, Object> createUserLoginResponse(UserResponse userResponse, String jwtToken) {
+    private Map<String, Object> createUserLoginResponse(UserResponse userResponse) {
         Map<String, Object> responseData = createBaseResponseMap();
         responseData.put("user", userResponse);
-        responseData.put("token", jwtToken);
-        responseData.put("tokenType", "Bearer");
-        responseData.put("expiresIn", jwtExpiration / 1000);
         responseData.put("isLoggedIn", true);
         return responseData;
     }
