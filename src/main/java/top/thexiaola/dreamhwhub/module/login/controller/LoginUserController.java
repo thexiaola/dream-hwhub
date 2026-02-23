@@ -30,9 +30,7 @@ public class LoginUserController {
     
     private final LoginUserService loginUserService;
 
-    
-    @Value("${app.jwt.expiration}")
-    private Long jwtExpiration;
+
 
     public LoginUserController(LoginUserService loginUserService) {
         this.loginUserService = loginUserService;
@@ -59,7 +57,6 @@ public class LoginUserController {
             
             Map<String, Object> responseData = new LinkedHashMap<>();
             responseData.put("user", userResponse);
-            responseData.put("sessionId", request.getSession().getId());
             responseData.put("isLoggedIn", true);
             
             Map<String, Object> response = new LinkedHashMap<>();

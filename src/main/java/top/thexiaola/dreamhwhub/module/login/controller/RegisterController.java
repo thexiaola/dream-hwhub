@@ -33,9 +33,7 @@ public class RegisterController {
     
     private final LoginUserService loginUserService;
 
-    
-    @Value("${app.jwt.expiration}")
-    private Long jwtExpiration;
+
 
     public RegisterController(LoginUserService loginUserService) {
         this.loginUserService = loginUserService;
@@ -63,7 +61,7 @@ public class RegisterController {
             request.getSession().setAttribute("user", user);
             request.getSession().setAttribute("username", user.getUsername());
             
-            Map<String, Object> responseData = createUserLoginResponse(userResponse, request.getSession().getId());
+            Map<String, Object> responseData = createUserLoginResponse(userResponse);
             Map<String, Object> response = createSuccessResponse("注册成功并已自动登录！", responseData);
             
             return ResponseEntity.ok(response);
@@ -115,12 +113,9 @@ public class RegisterController {
     /**
      * 创建用户登录响应数据
      */
-    private Map<String, Object> createUserLoginResponse(UserResponse userResponse, String jwtToken) {
+    private Map<String, Object> createUserLoginResponse(UserResponse userResponse) {
         Map<String, Object> responseData = createBaseResponseMap();
         responseData.put("user", userResponse);
-        responseData.put("token", jwtToken);
-        responseData.put("tokenType", "Bearer");
-        responseData.put("expiresIn", jwtExpiration / 1000);
         responseData.put("isLoggedIn", true);
         return responseData;
     }
