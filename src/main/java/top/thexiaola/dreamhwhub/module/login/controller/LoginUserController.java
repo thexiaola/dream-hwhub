@@ -26,11 +26,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/users")
 public class LoginUserController {
-
     private static final Logger log = LoggerFactory.getLogger(LoginUserController.class);
-    
     private final LoginUserService loginUserService;
-
     public LoginUserController(LoginUserService loginUserService) {
         this.loginUserService = loginUserService;
     }
@@ -47,30 +44,38 @@ public class LoginUserController {
 
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) login successful, generating JWT token", userInfo);
-            // 使用Session管理
+
+            // 使用 Session 管理
             SessionManager.addSession(user.getId(), request.getSession());
             request.getSession().setAttribute("user", user);
             request.getSession().setAttribute("username", user.getUsername());
             
-            Map<String, Object> responseData = new LinkedHashMap<>();
-            responseData.put("user", userResponse);
-            responseData.put("isLoggedIn", true);
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 200);
-            response.put("msg", "登录成功！");
-            response.put("data", responseData);
-            
-            return ResponseEntity.ok(response);
+            return buildSuccessResponse(userResponse);
         } else {
             String errorMessage = result.getMessage();
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("code", 401);
-            response.put("msg", errorMessage);
-            response.put("data", null);
-            
-            return ResponseEntity.status(401).body(response);
+            return buildErrorResponse(errorMessage);
         }
+    }
+
+    /**
+     * 成功响应
+     */
+    private ResponseEntity<Map<String, Object>> buildSuccessResponse(Object data) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("code", 200);
+        response.put("msg", "登录成功！");
+        response.put("data", data);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 错误响应
+     */
+    private ResponseEntity<Map<String, Object>> buildErrorResponse(String message) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("code", 401);
+        response.put("msg", message);
+        response.put("data", null);
+        return ResponseEntity.status(401).body(response);
     }
 }

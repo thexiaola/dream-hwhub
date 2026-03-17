@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -51,20 +52,17 @@ public class LoginUserServiceImpl implements LoginUserService {
     @Override
     public User findByAccount(String account) {
         User user = userMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
-                        .eq("user_no", account)
+                new QueryWrapper<User>().eq("user_no", account)
         );
         if (user != null) return user;
 
         user = userMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
-                        .eq("username", account)
+                new QueryWrapper<User>().eq("username", account)
         );
         if (user != null) return user;
 
         user = userMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
-                        .eq("email", account)
+                new QueryWrapper<User>().eq("email", account)
         );
         return user;
     }

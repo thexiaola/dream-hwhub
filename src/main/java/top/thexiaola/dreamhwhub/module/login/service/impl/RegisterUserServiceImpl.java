@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -52,7 +53,7 @@ public class RegisterUserServiceImpl implements RegisterUserService {
             return ServiceResult.failure(BusinessErrorCode.EMAIL_EXISTS);
         }
 
-        if (!emailService.verifyCode(registerRequest.getEmail(), registerRequest.getEmailCode())) {
+        if (!verifyEmailCode(registerRequest.getEmail(), registerRequest.getEmailCode(), registerRequest.getUserNo(), registerRequest.getUsername())) {
             log.warn(LogUtil.getFailureLog(operation, "invalid or expired email verification code", null));
             return ServiceResult.failure(BusinessErrorCode.VERIFICATION_CODE_INVALID);
         }
@@ -94,13 +95,15 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         }
             
         try {
-            ServiceResult<Void> result = emailService.sendVerificationCode(email);
+            ServiceResult<Void> result = emailService.sendVerificationCode(email, userNo, username);
             if (result.isSuccess()) {
                 log.info(LogUtil.getSuccessLog(operation + " - verification code sent to email: " + email, null));
                 return ServiceResult.success(null);
             } else {
-                log.warn(LogUtil.getFailureLog(operation, "failed to send verification code: " + result.getMessage(), null));
-                return ServiceResult.failure(result.getErrorCode(), result.getMessage());
+                // 对于邮箱不存在等特定错误，使用服务层返回的详细消息
+                String errorMessage = result.getMessage();
+                log.warn(LogUtil.getFailureLog(operation, "failed to send verification code: " + errorMessage, null));
+                return ServiceResult.failure(result.getErrorCode(), errorMessage);
             }
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "failed to send verification code: " + e.getMessage(), null), e);
@@ -108,32 +111,32 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         }
     }
 
+    /**
+     * 验证注册验证码（需要匹配 userNo、username、email）
+     */
     @Override
-    public boolean verifyEmailCode(String email, String code) {
-        return emailService.verifyCode(email, code);
+    public boolean verifyEmailCode(String email, String code, String userNo, String username) {
+        return emailService.verifyCode(email, code, userNo, username);
     }
 
     @Override
     public boolean isUserNoExists(String userNo) {
         return userMapper.selectCount(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
-                        .eq("user_no", userNo)
+                new QueryWrapper<User>().eq("user_no", userNo)
         ) > 0;
     }
 
     @Override
     public boolean isUsernameExists(String username) {
         return userMapper.selectCount(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
-                        .eq("username", username)
+                new QueryWrapper<User>().eq("username", username)
         ) > 0;
     }
 
     @Override
     public boolean isEmailExists(String email) {
         return userMapper.selectCount(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
-                        .eq("email", email)
+                new QueryWrapper<User>().eq("email", email)
         ) > 0;
     }
 }

@@ -26,12 +26,14 @@ public interface RegisterUserService {
     ServiceResult<Void> sendEmailCode(String email, String userNo, String username);
 
     /**
-     * 验证邮箱验证码
+     * 验证邮箱验证码（需要匹配 userNo、username、email）
      * @param email 邮箱地址
      * @param code 验证码
+     * @param userNo 学号/工号
+     * @param username 用户名
      * @return 是否验证通过
      */
-    boolean verifyEmailCode(String email, String code);
+    boolean verifyEmailCode(String email, String code, String userNo, String username);
 
     /**
      * 检查学号是否已存在

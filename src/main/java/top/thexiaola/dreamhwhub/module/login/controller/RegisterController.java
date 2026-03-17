@@ -71,22 +71,19 @@ public class RegisterController {
     @PostMapping("/getregcode")
     public ResponseEntity<Map<String, Object>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
         ServiceResult<Void> result = registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
-        
+
         if (result.isSuccess()) {
             Map<String, Object> response = createSuccessResponse("验证码发送成功！", null);
-
             return ResponseEntity.ok(response);
         } else {
             String errorMessage = result.getMessage();
-
             Map<String, Object> response = createErrorResponse(errorMessage);
-
             return ResponseEntity.badRequest().body(response);
         }
     }
 
     /**
-     * 创建用户登录响应数据
+     * 用户登录响应数据
      */
     private Map<String, Object> createUserLoginResponse(UserResponse userResponse) {
         Map<String, Object> responseData = createBaseResponseMap();
@@ -96,7 +93,7 @@ public class RegisterController {
     }
 
     /**
-     * 创建成功响应
+     * 成功响应
      */
     private Map<String, Object> createSuccessResponse(String message, Object data) {
         Map<String, Object> response = createBaseResponseMap();
@@ -107,7 +104,7 @@ public class RegisterController {
     }
 
     /**
-     * 创建错误响应
+     * 错误响应
      */
     private Map<String, Object> createErrorResponse(String message) {
         Map<String, Object> response = createBaseResponseMap();
@@ -118,7 +115,7 @@ public class RegisterController {
     }
 
     /**
-     * 创建基础响应Map
+     * 基础响应Map
      */
     private Map<String, Object> createBaseResponseMap() {
         return new LinkedHashMap<>();

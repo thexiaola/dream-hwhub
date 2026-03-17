@@ -12,7 +12,7 @@ import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.util.UserUtils;
 
 /**
- * 认证拦截器，用于检查用户是否已登录
+ * 认证拦截器，检查用户是否登录
  */
 @Component
 public class AuthInterceptor implements HandlerInterceptor {

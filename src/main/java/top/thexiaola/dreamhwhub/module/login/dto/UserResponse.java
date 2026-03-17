@@ -1,8 +1,11 @@
 package top.thexiaola.dreamhwhub.module.login.dto;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 /**
- * 用户信息响应DTO
+ * 用户信息响应 DTO
  */
+@JsonPropertyOrder({"id", "userNo", "username", "email", "permission"})
 public class UserResponse {
 
     // 用户编号
