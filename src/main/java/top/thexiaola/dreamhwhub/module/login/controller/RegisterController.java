@@ -14,7 +14,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.EmailCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
-import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
+import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.SessionManager;
 
@@ -30,10 +30,10 @@ public class RegisterController {
 
     private static final Logger log = LoggerFactory.getLogger(RegisterController.class);
     
-    private final LoginUserService loginUserService;
+    private final RegisterUserService registerUserService;
 
-    public RegisterController(LoginUserService loginUserService) {
-        this.loginUserService = loginUserService;
+    public RegisterController(RegisterUserService registerUserService) {
+        this.registerUserService = registerUserService;
     }
 
     /**
@@ -41,7 +41,7 @@ public class RegisterController {
      */
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(HttpServletRequest request, @Valid @RequestBody RegisterRequest registerRequest) {
-        ServiceResult<User> result = loginUserService.register(registerRequest);
+        ServiceResult<User> result = registerUserService.register(registerRequest);
         
         if (result.isSuccess()) {
             User user = result.getData();
@@ -70,7 +70,7 @@ public class RegisterController {
      */
     @PostMapping("/getregcode")
     public ResponseEntity<Map<String, Object>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
-        ServiceResult<Void> result = loginUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
+        ServiceResult<Void> result = registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
         
         if (result.isSuccess()) {
             Map<String, Object> response = createSuccessResponse("验证码发送成功！", null);

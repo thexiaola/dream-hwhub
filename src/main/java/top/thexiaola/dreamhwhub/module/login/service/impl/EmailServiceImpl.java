@@ -42,11 +42,11 @@ public class EmailServiceImpl implements EmailService {
 
     public EmailServiceImpl(JavaMailSender mailSender) {
         this.mailSender = mailSender;
-    }
-    
-    // 用于测试环境的备用构造函数
-    public EmailServiceImpl() {
-        this.mailSender = null;
+        if (mailSender != null) {
+            log.info("EmailServiceImpl initialized successfully with JavaMailSender: {}", mailSender.getClass().getSimpleName());
+        } else {
+            log.error("CRITICAL: JavaMailSender is NULL in EmailServiceImpl constructor! Bean creation order issue?");
+        }
     }
 
     /**
