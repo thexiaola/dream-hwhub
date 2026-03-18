@@ -5,6 +5,7 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -30,8 +31,16 @@ public class EmailServiceImpl implements EmailService {
     
     // 存储验证码及其过期时间
     private final Map<String, VerificationCodeInfo> verificationCodes = new ConcurrentHashMap<>();
+    
+    // 存储邮箱最后发送时间
+    private final Map<String, LocalDateTime> emailLastSendTime = new ConcurrentHashMap<>();
 
-    @Value("${app.verification-code.expiry-minutes:30}")
+    // 发送验证码的冷却时间（秒）
+    @Value("${app.verification-code.cooldown-seconds}")
+    private int cooldownSeconds;
+
+    // 验证码有效期（分钟）
+    @Value("${app.verification-code.expiry-minutes}")
     private int expiryMinutes;
     
     @Value("${spring.mail.username}")
@@ -42,11 +51,11 @@ public class EmailServiceImpl implements EmailService {
 
     public EmailServiceImpl(JavaMailSender mailSender) {
         this.mailSender = mailSender;
-    }
-    
-    // 用于测试环境的备用构造函数
-    public EmailServiceImpl() {
-        this.mailSender = null;
+        if (mailSender != null) {
+            log.info("EmailServiceImpl initialized successfully with JavaMailSender: {}", mailSender.getClass().getSimpleName());
+        } else {
+            log.error("CRITICAL: JavaMailSender is NULL in EmailServiceImpl constructor! Bean creation order issue?");
+        }
     }
 
     /**
@@ -72,13 +81,13 @@ public class EmailServiceImpl implements EmailService {
             log.error("Mail server not configured, recipient: {}, subject: {}", to, subject);
             return ServiceResult.failure(BusinessErrorCode.EMAIL_SERVER_NOT_CONFIGURED);
         }
-        
+            
         // 验证邮箱格式
         if (to == null || !to.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             log.warn("Invalid email format: {}", to);
             return ServiceResult.failure(BusinessErrorCode.INVALID_EMAIL_FORMAT);
         }
-        
+            
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -88,54 +97,109 @@ public class EmailServiceImpl implements EmailService {
             helper.setText(content);
             mailSender.send(message);
             return ServiceResult.success(null);
+        } catch (MailSendException e) {
+            // 特殊处理邮件发送失败，特别是 550 错误（邮箱不存在）
+            String errorMessage = e.getMessage();
+            if (errorMessage != null && errorMessage.contains("550")) {
+                log.warn("Email address does not exist or is invalid: {}, SMTP error: {}", to, errorMessage);
+                return ServiceResult.failure(BusinessErrorCode.INVALID_EMAIL_FORMAT, "邮箱地址不存在或无效，请检查后重新输入");
+            }
+            log.error("Failed to send email: {}, recipient: {}, subject: {}", errorMessage, to, subject);
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + errorMessage);
         } catch (Exception e) {
             log.error("Failed to send email: {}, recipient: {}, subject: {}", e.getMessage(), to, subject, e);
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败: " + e.getMessage());
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + e.getMessage());
         }
     }
 
+    /**
+     * 发送注册验证码（绑定 userNo、username、email）
+     */
     @Override
-    public ServiceResult<Void> sendVerificationCode(String email) {
-        // 生成6位随机数字验证码
+    public ServiceResult<Void> sendVerificationCode(String email, String userNo, String username) {
+        // 检查发送频率限制
+        Long remainingTime = checkSendFrequency(email);
+        if (remainingTime != null && remainingTime > 0) {
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, 
+                "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
+        }
+        
+        // 生成 6 位随机数字验证码
         Random random = new Random();
         String code = String.format("%06d", random.nextInt(999999));
+            
+        // 删除该邮箱的所有旧验证码
+        removeOldVerificationCodesByEmail(email);
         
-        // 存储验证码及过期时间
+        // 使用组合 key 存储新验证码
+        String compositeKey = buildCompositeKey(userNo, username, email);
         VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
-        verificationCodes.put(email, codeInfo);
-
+        verificationCodes.put(compositeKey, codeInfo);
+    
+        // 记录发送时间
+        emailLastSendTime.put(email, LocalDateTime.now());
+    
         // 发送邮件
         return sendVerificationCodeEmail(email, code);
     }
-
-    @Override
-    public ServiceResult<Void> sendVerificationCode(String to, String code) {
-        return sendVerificationCodeEmail(to, code);
+    
+    /**
+     * 检查发送频率限制
+     * @return 剩余等待时间（秒），如果无限制则返回 null
+     */
+    private Long checkSendFrequency(String email) {
+        LocalDateTime lastSendTime = emailLastSendTime.get(email);
+        if (lastSendTime != null) {
+            long secondsSinceLastSend = java.time.Duration.between(lastSendTime, LocalDateTime.now()).getSeconds();
+            if (secondsSinceLastSend < cooldownSeconds) {
+                return cooldownSeconds - secondsSinceLastSend;
+            }
+        }
+        return null;
     }
     
-    public boolean verifyCode(String email, String code) {
-        VerificationCodeInfo codeInfo = verificationCodes.get(email);
+    /**
+     * 删除指定邮箱的所有旧验证码
+     */
+    private void removeOldVerificationCodesByEmail(String email) {
+        verificationCodes.keySet().removeIf(key -> key.endsWith("#" + email));
+    }
+        
+    /**
+     * 验证注册验证码（需要匹配 userNo、username、email）
+     */
+    @Override
+    public boolean verifyCode(String email, String code, String userNo, String username) {
+        String compositeKey = buildCompositeKey(userNo, username, email);
+        VerificationCodeInfo codeInfo = verificationCodes.get(compositeKey);
         if (codeInfo != null) {
             // 检查是否过期
             if (LocalDateTime.now().isAfter(codeInfo.expiryTime())) {
                 // 验证码已过期，删除它
-                verificationCodes.remove(email);
+                verificationCodes.remove(compositeKey);
                 return false;
             }
-            
+                
             if (codeInfo.code().equals(code)) {
                 // 验证成功后删除该验证码
-                verificationCodes.remove(email);
+                verificationCodes.remove(compositeKey);
                 return true;
             }
         }
         return false;
     }
+        
+    /**
+     * 构建组合键：userNo#username#email
+     */
+    private String buildCompositeKey(String userNo, String username, String email) {
+        return userNo + "#" + username + "#" + email;
+    }
     
     private ServiceResult<Void> sendVerificationCodeEmail(String email, String code) {
         String subject = "Dream HWHub 验证码";
         String content = String.format(
-                "您好！\n\n您的验证码是：%s\n\n验证码有效期为%d分钟，请及时使用。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
+                "您好！\n\n您的验证码是：%s。\n\n验证码有效期为%d分钟，请及时使用。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
                 code, expiryMinutes
         );
         return sendEmail(email, subject, content);

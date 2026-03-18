@@ -12,33 +12,42 @@ public class ServiceResult<T> {
     private final T data;
     private final BusinessErrorCode errorCode;
     private final String message;
+    private final Object extraData; // 额外数据（如剩余时间）
     
-    private ServiceResult(boolean success, T data, BusinessErrorCode errorCode, String message) {
+    private ServiceResult(boolean success, T data, BusinessErrorCode errorCode, String message, Object extraData) {
         this.success = success;
         this.data = data;
         this.errorCode = errorCode;
         this.message = message;
+        this.extraData = extraData;
     }
     
     /**
      * 创建成功的返回结果
      */
     public static <T> ServiceResult<T> success(T data) {
-        return new ServiceResult<>(true, data, null, null);
+        return new ServiceResult<>(true, data, null, null, null);
     }
     
     /**
      * 创建失败的返回结果
      */
     public static <T> ServiceResult<T> failure(BusinessErrorCode errorCode) {
-        return new ServiceResult<>(false, null, errorCode, errorCode.getMessage());
+        return new ServiceResult<>(false, null, errorCode, errorCode.getMessage(), null);
     }
     
     /**
      * 创建失败的返回结果（带自定义消息）
      */
     public static <T> ServiceResult<T> failure(BusinessErrorCode errorCode, String message) {
-        return new ServiceResult<>(false, null, errorCode, message);
+        return new ServiceResult<>(false, null, errorCode, message, null);
+    }
+    
+    /**
+     * 创建失败的返回结果（带自定义消息和额外数据）
+     */
+    public static <T> ServiceResult<T> failure(BusinessErrorCode errorCode, String message, Object extraData) {
+        return new ServiceResult<>(false, null, errorCode, message, extraData);
     }
     
     public boolean isSuccess() {
@@ -55,6 +64,10 @@ public class ServiceResult<T> {
     
     public String getMessage() {
         return message;
+    }
+    
+    public Object getExtraData() {
+        return extraData;
     }
     
     /**

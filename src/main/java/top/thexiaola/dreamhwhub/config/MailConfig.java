@@ -1,9 +1,12 @@
 package top.thexiaola.dreamhwhub.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
@@ -13,7 +16,10 @@ import java.util.Properties;
  * 邮件配置类
  */
 @Configuration
+@PropertySource("classpath:mail-config.properties")
 public class MailConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(MailConfig.class);
 
     @Value("${spring.mail.host}")
     private String mailHost;
@@ -47,22 +53,35 @@ public class MailConfig {
     
     @Value("${spring.mail.properties.mail.smtp.charset:UTF-8}")
     private String mailCharset;
-    
+
     /**
      * 邮件发送器配置
      */
     @Bean
     @Primary
     public JavaMailSender javaMailSender() {
+        if (mailHost == null || mailHost.isEmpty()) {
+            log.error("spring.mail.host not configured in mail-config.properties");
+            return null;
+        }
+        
+        if (mailUsername == null || mailUsername.isEmpty()) {
+            log.error("spring.mail.username not configured in mail-config.properties");
+            return null;
+        }
+        
+        if (mailPassword == null || mailPassword.isEmpty()) {
+            log.error("spring.mail.password not configured in mail-config.properties");
+            return null;
+        }
+        
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         
-        // 从配置文件读取基础配置
         mailSender.setHost(mailHost);
         mailSender.setPort(mailPort);
         mailSender.setUsername(mailUsername);
         mailSender.setPassword(mailPassword);
         
-        // 从配置文件读取邮件属性配置
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", mailProtocol);
         props.put("mail.smtp.auth", mailSmtpAuth);
@@ -71,6 +90,8 @@ public class MailConfig {
         props.put("mail.smtp.socketFactory.class", mailSocketFactoryClass);
         props.put("mail.smtp.socketFactory.fallback", mailSocketFactoryFallback);
         props.put("mail.smtp.charset", mailCharset);
+
+        log.info("JavaMailSender initialized with host: {}, username: {}", mailHost, mailUsername);
         
         return mailSender;
     }

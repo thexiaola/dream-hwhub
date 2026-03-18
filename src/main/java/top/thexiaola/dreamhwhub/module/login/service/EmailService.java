@@ -17,25 +17,21 @@ public interface EmailService {
     ServiceResult<Void> sendEmail(String to, String subject, String content);
 
     /**
-     * 发送验证码邮件
-     * @param to 收件人邮箱
-     * @param code 验证码
-     * @return 服务结果
-     */
-    ServiceResult<Void> sendVerificationCode(String to, String code);
-    
-    /**
-     * 生成并发送验证码
+     * 生成并发送验证码（用于注册，绑定 userNo、username、email）
      * @param email 收件人邮箱
+     * @param userNo 学号/工号
+     * @param username 用户名
      * @return 服务结果
      */
-    ServiceResult<Void> sendVerificationCode(String email);
+    ServiceResult<Void> sendVerificationCode(String email, String userNo, String username);
     
     /**
-     * 验证验证码
+     * 验证注册验证码（需要匹配 userNo、username、email）
      * @param email 邮箱地址
      * @param code 验证码
+     * @param userNo 学号/工号
+     * @param username 用户名
      * @return 验证是否成功
      */
-    boolean verifyCode(String email, String code);
+    boolean verifyCode(String email, String code, String userNo, String username);
 }

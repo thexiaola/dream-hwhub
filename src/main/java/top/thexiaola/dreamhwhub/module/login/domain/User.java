@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -43,30 +42,6 @@ public class User implements Serializable {
     // 权限级别
     @TableField("permission")
     private Short permission = 1;
-
-    // 创建时间
-    @TableField("created_at")
-    private LocalDateTime createdAt;
-
-    // 更新时间
-    @TableField("updated_at")
-    private LocalDateTime updatedAt;
-
-    // 最后登录时间
-    @TableField("last_login")
-    private LocalDateTime lastLogin;
-
-    // 账户状态
-    @TableField("is_active")
-    private Boolean isActive = true;
-
-    // 登录尝试次数
-    @TableField("login_attempts")
-    private Integer loginAttempts = 0;
-
-    // 账户锁定时间
-    @TableField("locked_until")
-    private LocalDateTime lockedUntil;
 
     public Integer getId() {
         return id;
@@ -116,63 +91,10 @@ public class User implements Serializable {
         this.permission = permission;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getLastLogin() {
-        return lastLogin;
-    }
-
-    public void setLastLogin(LocalDateTime lastLogin) {
-        this.lastLogin = lastLogin;
-    }
-
-    public Boolean getIsActive() {
-        return isActive == null || isActive;
-    }
-
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
-
-    public Integer getLoginAttempts() {
-        return loginAttempts == null ? 0 : loginAttempts;
-    }
-
-    public void setLoginAttempts(Integer loginAttempts) {
-        this.loginAttempts = loginAttempts;
-    }
-
-    public LocalDateTime getLockedUntil() {
-        return lockedUntil;
-    }
-
-    public void setLockedUntil(LocalDateTime lockedUntil) {
-        this.lockedUntil = lockedUntil;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof User user)) return false;
         return Objects.equals(id, user.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
     }
 }
