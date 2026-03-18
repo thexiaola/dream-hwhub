@@ -31,8 +31,14 @@ public class EmailServiceImpl implements EmailService {
     
     // 存储验证码及其过期时间
     private final Map<String, VerificationCodeInfo> verificationCodes = new ConcurrentHashMap<>();
-
-    @Value("${app.verification-code.expiry-minutes:30}")
+    
+    // 存储邮箱最后发送时间
+    private final Map<String, LocalDateTime> emailLastSendTime = new ConcurrentHashMap<>();
+    
+    @Value("${app.verification-code.cooldown-seconds}")
+    private int cooldownSeconds;
+    
+    @Value("${app.verification-code.expiry-minutes}")
     private int expiryMinutes;
     
     @Value("${spring.mail.username}")
@@ -109,6 +115,13 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public ServiceResult<Void> sendVerificationCode(String email, String userNo, String username) {
+        // 检查发送频率限制
+        Long remainingTime = checkSendFrequency(email);
+        if (remainingTime != null && remainingTime > 0) {
+            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, 
+                "验证码已发送，请在" + remainingTime + "秒后再次尝试");
+        }
+        
         // 生成 6 位随机数字验证码
         Random random = new Random();
         String code = String.format("%06d", random.nextInt(999999));
@@ -121,8 +134,26 @@ public class EmailServiceImpl implements EmailService {
         VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
         verificationCodes.put(compositeKey, codeInfo);
     
+        // 记录发送时间
+        emailLastSendTime.put(email, LocalDateTime.now());
+    
         // 发送邮件
         return sendVerificationCodeEmail(email, code);
+    }
+    
+    /**
+     * 检查发送频率限制
+     * @return 剩余等待时间（秒），如果无限制则返回 null
+     */
+    private Long checkSendFrequency(String email) {
+        LocalDateTime lastSendTime = emailLastSendTime.get(email);
+        if (lastSendTime != null) {
+            long secondsSinceLastSend = java.time.Duration.between(lastSendTime, LocalDateTime.now()).getSeconds();
+            if (secondsSinceLastSend < cooldownSeconds) {
+                return cooldownSeconds - secondsSinceLastSend;
+            }
+        }
+        return null;
     }
     
     /**

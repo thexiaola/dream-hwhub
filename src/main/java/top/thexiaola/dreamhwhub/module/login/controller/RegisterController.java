@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +32,9 @@ public class RegisterController {
     private static final Logger log = LoggerFactory.getLogger(RegisterController.class);
     
     private final RegisterUserService registerUserService;
+    
+    @Value("${app.verification-code.cooldown-seconds}")
+    private int cooldown;
 
     public RegisterController(RegisterUserService registerUserService) {
         this.registerUserService = registerUserService;
@@ -55,12 +59,12 @@ public class RegisterController {
             request.getSession().setAttribute("username", user.getUsername());
             
             Map<String, Object> responseData = createUserLoginResponse(userResponse);
-            Map<String, Object> response = createSuccessResponse("注册成功并已自动登录！", responseData);
+            Map<String, Object> response = createSuccessRegResponse(responseData);
             
             return ResponseEntity.ok(response);
         } else {
             String errorMessage = result.getMessage();
-            Map<String, Object> response = createErrorResponse(errorMessage);
+            Map<String, Object> response = createErrorRegResponse(errorMessage);
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -73,11 +77,11 @@ public class RegisterController {
         ServiceResult<Void> result = registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
 
         if (result.isSuccess()) {
-            Map<String, Object> response = createSuccessResponse("验证码发送成功！", null);
+            Map<String, Object> response = createSuccessSendResponse(cooldown);
             return ResponseEntity.ok(response);
         } else {
             String errorMessage = result.getMessage();
-            Map<String, Object> response = createErrorResponse(errorMessage);
+            Map<String, Object> response = createErrorSendResponse(errorMessage);
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -93,20 +97,42 @@ public class RegisterController {
     }
 
     /**
-     * 成功响应
+     * 验证码发送成功响应
      */
-    private Map<String, Object> createSuccessResponse(String message, Object data) {
+    private Map<String, Object> createSuccessSendResponse(int cooldown) {
         Map<String, Object> response = createBaseResponseMap();
         response.put("code", 200);
+        response.put("msg", "验证码发送成功！");
+        response.put("cooldown", cooldown);
+        return response;
+    }
+
+    /**
+     * 验证码发送错误响应
+     */
+    private Map<String, Object> createErrorSendResponse(String message) {
+        Map<String, Object> response = createBaseResponseMap();
+        response.put("code", 400);
         response.put("msg", message);
+        response.put("cooldown", 0);
+        return response;
+    }
+
+    /**
+     * 注册成功响应
+     */
+    private Map<String, Object> createSuccessRegResponse(Object data) {
+        Map<String, Object> response = createBaseResponseMap();
+        response.put("code", 200);
+        response.put("msg", "注册成功并已自动登录！");
         response.put("data", data);
         return response;
     }
 
     /**
-     * 错误响应
+     * 注册错误响应
      */
-    private Map<String, Object> createErrorResponse(String message) {
+    private Map<String, Object> createErrorRegResponse(String message) {
         Map<String, Object> response = createBaseResponseMap();
         response.put("code", 400);
         response.put("msg", message);
