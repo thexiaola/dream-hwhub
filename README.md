@@ -112,14 +112,14 @@ spring.mail.properties.mail.smtp.ssl.enable=true
 ```json
 {
   "code": 200,
-  "msg": "操作成功",
+  "message": "操作成功",
   "data": {}
 }
 ```
 
 **响应字段说明：**
 - `code`: 状态码（200成功，400参数错误，401未授权，403权限不足，500服务器错误）
-- `msg`: 响应消息
+- `message`: 响应消息
 - `data`: 响应数据（无数据时为null）
 
 ### 认证机制
@@ -148,7 +148,7 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
   ```json
   {
     "code": 200,
-    "msg": "登录成功！",
+    "message": "登录成功！",
     "data": {
       "user": {
         "id": 1,
@@ -179,7 +179,7 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
   ```json
   {
     "code": 200,
-    "msg": "注册成功并已自动登录！",
+    "message": "注册成功并已自动登录！",
     "data": {
       "user": {
         "id": 1,
@@ -206,7 +206,7 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
   ```json
   {
     "code": 200,
-    "msg": "验证码发送成功！",
+    "message": "验证码发送成功！",
     "data": null
   }
   ```

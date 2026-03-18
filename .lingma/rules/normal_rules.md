@@ -9,3 +9,4 @@ trigger: always_on
 5. Generated code must exclude comments that describe the act of adding, deleting, modifying, or updating code logic, implementation details, or business data. For instance, avoid comments such as "updated userInfo with successful login information" or similar descriptive remarks about code changes.
 6. For single-line comment content, line comments should be prioritized over block comments.
 7. In `import` statements, wildcard usage is prohibited.
+8. Do not extract data from return messages; parameters must be passed manually. Extracting any hard-coded data is prohibited.

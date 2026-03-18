@@ -63,7 +63,7 @@ public class LoginUserController {
     private ResponseEntity<Map<String, Object>> buildSuccessResponse(Object data) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("code", 200);
-        response.put("msg", "登录成功！");
+        response.put("message", "登录成功！");
         response.put("data", data);
         return ResponseEntity.ok(response);
     }
@@ -74,7 +74,7 @@ public class LoginUserController {
     private ResponseEntity<Map<String, Object>> buildErrorResponse(String message) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("code", 401);
-        response.put("msg", message);
+        response.put("message", message);
         response.put("data", null);
         return ResponseEntity.status(401).body(response);
     }

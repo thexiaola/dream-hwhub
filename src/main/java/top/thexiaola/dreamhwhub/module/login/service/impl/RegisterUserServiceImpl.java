@@ -103,7 +103,7 @@ public class RegisterUserServiceImpl implements RegisterUserService {
                 // 对于邮箱不存在等特定错误，使用服务层返回的详细消息
                 String errorMessage = result.getMessage();
                 log.warn(LogUtil.getFailureLog(operation, "failed to send verification code: " + errorMessage, null));
-                return ServiceResult.failure(result.getErrorCode(), errorMessage);
+                return ServiceResult.failure(result.getErrorCode(), errorMessage, result.getExtraData());
             }
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "failed to send verification code: " + e.getMessage(), null), e);

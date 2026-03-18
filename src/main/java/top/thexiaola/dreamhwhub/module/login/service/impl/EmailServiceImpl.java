@@ -34,10 +34,12 @@ public class EmailServiceImpl implements EmailService {
     
     // 存储邮箱最后发送时间
     private final Map<String, LocalDateTime> emailLastSendTime = new ConcurrentHashMap<>();
-    
+
+    // 发送验证码的冷却时间（秒）
     @Value("${app.verification-code.cooldown-seconds}")
     private int cooldownSeconds;
-    
+
+    // 验证码有效期（分钟）
     @Value("${app.verification-code.expiry-minutes}")
     private int expiryMinutes;
     
@@ -119,7 +121,7 @@ public class EmailServiceImpl implements EmailService {
         Long remainingTime = checkSendFrequency(email);
         if (remainingTime != null && remainingTime > 0) {
             return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, 
-                "验证码已发送，请在" + remainingTime + "秒后再次尝试");
+                "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
         }
         
         // 生成 6 位随机数字验证码

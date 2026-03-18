@@ -81,7 +81,12 @@ public class RegisterController {
             return ResponseEntity.ok(response);
         } else {
             String errorMessage = result.getMessage();
-            Map<String, Object> response = createErrorSendResponse(errorMessage);
+            // 从额外数据中获取剩余秒数
+            int remainingSeconds = 0;
+            if (result.getExtraData() instanceof Number) {
+                remainingSeconds = ((Number) result.getExtraData()).intValue();
+            }
+            Map<String, Object> response = createErrorSendResponse(errorMessage, remainingSeconds);
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -102,7 +107,7 @@ public class RegisterController {
     private Map<String, Object> createSuccessSendResponse(int cooldown) {
         Map<String, Object> response = createBaseResponseMap();
         response.put("code", 200);
-        response.put("msg", "验证码发送成功！");
+        response.put("message", "验证码发送成功！");
         response.put("cooldown", cooldown);
         return response;
     }
@@ -110,11 +115,11 @@ public class RegisterController {
     /**
      * 验证码发送错误响应
      */
-    private Map<String, Object> createErrorSendResponse(String message) {
+    private Map<String, Object> createErrorSendResponse(String message, int remainingSeconds) {
         Map<String, Object> response = createBaseResponseMap();
         response.put("code", 400);
-        response.put("msg", message);
-        response.put("cooldown", 0);
+        response.put("message", message);
+        response.put("cooldown", remainingSeconds);
         return response;
     }
 
@@ -124,7 +129,7 @@ public class RegisterController {
     private Map<String, Object> createSuccessRegResponse(Object data) {
         Map<String, Object> response = createBaseResponseMap();
         response.put("code", 200);
-        response.put("msg", "注册成功并已自动登录！");
+        response.put("message", "注册成功并已自动登录！");
         response.put("data", data);
         return response;
     }
@@ -135,7 +140,7 @@ public class RegisterController {
     private Map<String, Object> createErrorRegResponse(String message) {
         Map<String, Object> response = createBaseResponseMap();
         response.put("code", 400);
-        response.put("msg", message);
+        response.put("message", message);
         response.put("data", null);
         return response;
     }
