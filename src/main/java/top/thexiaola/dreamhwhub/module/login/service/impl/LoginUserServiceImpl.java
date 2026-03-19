@@ -13,6 +13,8 @@ import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
+import java.time.LocalDateTime;
+
 /**
  * 用户登录服务实现类
  */
@@ -42,6 +44,11 @@ public class LoginUserServiceImpl implements LoginUserService {
     
         if (aesEncryptionUtil.verifyPassword(loginRequest.getPassword(), user.getPassword())) {
             log.info(LogUtil.getSuccessLog(operation + " - password verified", user));
+            
+            // 更新最后登录时间
+            user.setLastLoginTime(LocalDateTime.now());
+            userMapper.updateById(user);
+            
             return ServiceResult.success(user);
         } else {
             log.warn(LogUtil.getFailureLog(operation, "password mismatch for user: " + loginRequest.getAccount(), user));

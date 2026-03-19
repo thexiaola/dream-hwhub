@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -42,6 +43,18 @@ public class User implements Serializable {
     // 权限级别
     @TableField("permission")
     private Short permission = 1;
+
+    // 是否被封禁：0-正常，1-封禁
+    @TableField("is_banned")
+    private Boolean isBanned = false;
+
+    // 注册时间
+    @TableField("register_time")
+    private LocalDateTime registerTime;
+
+    // 最后登录时间
+    @TableField("last_login_time")
+    private LocalDateTime lastLoginTime;
 
     public Integer getId() {
         return id;
@@ -89,6 +102,30 @@ public class User implements Serializable {
 
     public void setPermission(Short permission) {
         this.permission = permission;
+    }
+
+    public Boolean getIsBanned() {
+        return isBanned;
+    }
+
+    public void setIsBanned(Boolean isBanned) {
+        this.isBanned = isBanned;
+    }
+
+    public LocalDateTime getRegisterTime() {
+        return registerTime;
+    }
+
+    public void setRegisterTime(LocalDateTime registerTime) {
+        this.registerTime = registerTime;
+    }
+
+    public LocalDateTime getLastLoginTime() {
+        return lastLoginTime;
+    }
+
+    public void setLastLoginTime(LocalDateTime lastLoginTime) {
+        this.lastLoginTime = lastLoginTime;
     }
 
     @Override

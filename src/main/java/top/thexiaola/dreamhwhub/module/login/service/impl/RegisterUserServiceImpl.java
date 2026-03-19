@@ -14,6 +14,8 @@ import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
 import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 
+import java.time.LocalDateTime;
+
 /**
  * 用户注册服务实现类
  */
@@ -64,6 +66,8 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         user.setEmail(registerRequest.getEmail());
         user.setPassword(aesEncryptionUtil.encrypt(registerRequest.getPassword()));
         user.setPermission((short) 1);
+        user.setIsBanned(false);
+        user.setRegisterTime(LocalDateTime.now());
 
         try {
             userMapper.insert(user);
