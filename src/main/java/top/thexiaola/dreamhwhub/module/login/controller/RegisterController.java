@@ -58,8 +58,7 @@ public class RegisterController {
             request.getSession().setAttribute("user", user);
             request.getSession().setAttribute("username", user.getUsername());
             
-            Map<String, Object> responseData = createUserLoginResponse(userResponse);
-            Map<String, Object> response = createSuccessRegResponse(responseData);
+            Map<String, Object> response = createSuccessRegResponse(userResponse);
             
             return ResponseEntity.ok(response);
         } else {
@@ -89,16 +88,6 @@ public class RegisterController {
             Map<String, Object> response = createErrorSendResponse(errorMessage, remainingSeconds);
             return ResponseEntity.badRequest().body(response);
         }
-    }
-
-    /**
-     * 用户登录响应数据
-     */
-    private Map<String, Object> createUserLoginResponse(UserResponse userResponse) {
-        Map<String, Object> responseData = createBaseResponseMap();
-        responseData.put("user", userResponse);
-        responseData.put("isLoggedIn", true);
-        return responseData;
     }
 
     /**
