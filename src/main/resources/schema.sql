@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS user (
     permission SMALLINT NOT NULL DEFAULT 1 COMMENT '权限级别',
     is_banned BIT(1) NOT NULL DEFAULT 0 COMMENT '是否被封禁：0-正常，1-封禁',
     register_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
-    last_login_time DATETIME DEFAULT NULL COMMENT '最后登录时间',
+    last_login_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '最后登录时间',
     PRIMARY KEY (id) USING BTREE,
     UNIQUE INDEX uk_user_no(user_no ASC) USING BTREE COMMENT '学号唯一索引',
     UNIQUE INDEX uk_username(username ASC) USING BTREE COMMENT '用户名唯一索引',
