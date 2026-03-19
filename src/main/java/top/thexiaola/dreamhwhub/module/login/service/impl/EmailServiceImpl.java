@@ -139,6 +139,9 @@ public class EmailServiceImpl implements EmailService {
         // 记录发送时间
         emailLastSendTime.put(email, LocalDateTime.now());
     
+        // 记录验证码生成日志
+        log.info("Generated verification code {} for email: {}, userNo: {}, username: {}", code, email, userNo, username);
+    
         // 发送邮件
         return sendVerificationCodeEmail(email, code);
     }
