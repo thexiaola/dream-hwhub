@@ -41,7 +41,13 @@ public class LoginUserServiceImpl implements LoginUserService {
             log.warn(LogUtil.getFailureLog(operation, "invalid account or password: " + loginRequest.getAccount(), null));
             return ServiceResult.failure(BusinessErrorCode.INVALID_CREDENTIALS);
         }
-    
+        
+        // 检查用户是否被封禁
+        if (Boolean.TRUE.equals(user.getIsBanned())) {
+            log.warn(LogUtil.getFailureLog(operation, "user is banned", user));
+            return ServiceResult.failure(BusinessErrorCode.USER_BANNED);
+        }
+        
         if (aesEncryptionUtil.verifyPassword(loginRequest.getPassword(), user.getPassword())) {
             log.info(LogUtil.getSuccessLog(operation + " - password verified", user));
             
