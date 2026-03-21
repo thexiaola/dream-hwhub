@@ -118,7 +118,7 @@ spring.mail.properties.mail.smtp.ssl.enable=true
 ```
 
 **响应字段说明：**
-- `code`: 状态码（200成功，400参数错误，401未授权，403权限不足，500服务器错误）
+- `code`: 状态码（200为成功，400为参数错误，401为未授权，403为权限不足，500服务器错误）
 - `message`: 响应消息
 - `data`: 响应数据（无数据时为null）
 
@@ -153,10 +153,12 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
       "id": 1,
       "userNo": "2158514781",
       "username": "张三",
+      "idName": null,
       "email": "zhangsan@example.com",
+      "phone": null,
       "permission": 1,
       "isBanned": false,
-      "registerTime": "2026-03-19T20:32:29",
+      "registerTime": "2026-03-21T17:58:34.661108921",
       "lastLoginTime": "2026-03-21T17:58:34.661108921"
     }
   }
@@ -184,10 +186,12 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
       "id": 1,
       "userNo": "2158514781",
       "username": "张三",
+      "idName": null,
       "email": "zhangsan@example.com",
+      "phone": null,
       "permission": 1,
       "isBanned": false,
-      "registerTime": "2026-03-19T20:32:29",
+      "registerTime": "2026-03-21T17:58:34.661108921",
       "lastLoginTime": "2026-03-21T17:58:34.661108921"
     }
   }
@@ -447,7 +451,7 @@ mysql -u root -p < src/main/resources/schema.sql
 - `user` 表：存储用户基本信息
   - 核心字段：学号、用户名、邮箱、加密密码、权限级别
   - 唯一约束：学号、用户名、邮箱均唯一
-- 支持UTF-8字符集，确保中文内容正确存储
+- 支持 UTF-8 字符集，确保中文内容正确存储
 - 简洁高效的表结构设计
 
 ## 日志系统
@@ -491,7 +495,7 @@ logs/log_{日期}_{启动次数}_{文件序号}.log
 #### 拦截器配置
 - **保护路径**: `/api/**` 下的所有接口
 - **公开接口**: 注册、登录、验证码发送、检查接口等
-- **统一响应**: 未认证请求返回401状态码和标准错误格式
+- **统一响应**: 未认证请求返回 401 状态码和标准错误格式
 
 ### 密码安全
 - **AES-256-GCM加密**: 使用行业标准的对称加密算法
