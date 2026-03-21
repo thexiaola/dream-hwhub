@@ -154,7 +154,10 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
       "userNo": "2158514781",
       "username": "张三",
       "email": "zhangsan@example.com",
-      "permission": 1
+      "permission": 1,
+      "isBanned": false,
+      "registerTime": "2026-03-19T20:32:29",
+      "lastLoginTime": "2026-03-21T17:58:34.661108921"
     }
   }
   ```
@@ -182,7 +185,10 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
       "userNo": "2158514781",
       "username": "张三",
       "email": "zhangsan@example.com",
-      "permission": 1
+      "permission": 1,
+      "isBanned": false,
+      "registerTime": "2026-03-19T20:32:29",
+      "lastLoginTime": "2026-03-21T17:58:34.661108921"
     }
   }
   ```
