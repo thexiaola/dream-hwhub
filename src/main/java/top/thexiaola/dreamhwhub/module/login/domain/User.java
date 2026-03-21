@@ -32,9 +32,17 @@ public class User implements Serializable {
     @TableField("username")
     private String username;
 
+    // 身份证姓名
+    @TableField("id_name")
+    private String idName;
+
     // 邮箱
     @TableField("email")
     private String email;
+
+    // 手机号
+    @TableField("phone")
+    private String phone;
 
     //密码
     @TableField("password")
@@ -126,6 +134,22 @@ public class User implements Serializable {
 
     public void setLastLoginTime(LocalDateTime lastLoginTime) {
         this.lastLoginTime = lastLoginTime;
+    }
+
+    public String getIdName() {
+        return idName;
+    }
+
+    public void setIdName(String idName) {
+        this.idName = idName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     @Override
