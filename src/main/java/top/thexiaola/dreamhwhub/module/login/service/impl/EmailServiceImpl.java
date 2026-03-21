@@ -14,6 +14,7 @@ import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
@@ -139,6 +140,9 @@ public class EmailServiceImpl implements EmailService {
         // 记录发送时间
         emailLastSendTime.put(email, LocalDateTime.now());
     
+        // 记录验证码生成日志
+        log.info("Generated verification code {} for email: {}, userNo: {}, username: {}", code, email, userNo, username);
+    
         // 发送邮件
         return sendVerificationCodeEmail(email, code);
     }
@@ -150,7 +154,7 @@ public class EmailServiceImpl implements EmailService {
     private Long checkSendFrequency(String email) {
         LocalDateTime lastSendTime = emailLastSendTime.get(email);
         if (lastSendTime != null) {
-            long secondsSinceLastSend = java.time.Duration.between(lastSendTime, LocalDateTime.now()).getSeconds();
+            long secondsSinceLastSend = Duration.between(lastSendTime, LocalDateTime.now()).getSeconds();
             if (secondsSinceLastSend < cooldownSeconds) {
                 return cooldownSeconds - secondsSinceLastSend;
             }

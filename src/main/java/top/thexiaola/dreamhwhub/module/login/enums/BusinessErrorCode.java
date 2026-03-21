@@ -21,6 +21,7 @@ public enum BusinessErrorCode {
     // 登录相关错误
     USER_NOT_FOUND(3001, "用户不存在"),
     INVALID_CREDENTIALS(3002, "账号或密码错误"),
+    USER_BANNED(3003, "用户已被封禁"),
     
     // 邮件相关错误
     EMAIL_SEND_FAILED(4001, "邮件发送失败"),

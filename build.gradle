@@ -29,7 +29,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.baomidou:mybatis-plus-spring-boot4-starter:3.5.15'
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.21.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
