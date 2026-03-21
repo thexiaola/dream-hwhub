@@ -67,7 +67,9 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         user.setPassword(aesEncryptionUtil.encrypt(registerRequest.getPassword()));
         user.setPermission((short) 1);
         user.setIsBanned(false);
-        user.setRegisterTime(LocalDateTime.now());
+        LocalDateTime timeNow = LocalDateTime.now();
+        user.setRegisterTime(timeNow);
+        user.setLastLoginTime(timeNow);
 
         try {
             userMapper.insert(user);

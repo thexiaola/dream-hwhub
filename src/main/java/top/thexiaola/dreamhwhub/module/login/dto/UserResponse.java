@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 /**
  * 用户信息响应 DTO
  */
-@JsonPropertyOrder({"id", "userNo", "username", "email", "permission", "isBanned", "registerTime", "lastLoginTime"})
+@JsonPropertyOrder({"id", "userNo", "username", "idName", "email", "phone", "permission", "isBanned", "registerTime", "lastLoginTime"})
 public class UserResponse {
 
     // 用户编号
@@ -19,8 +19,14 @@ public class UserResponse {
     // 用户名
     private String username;
 
+    // 身份证姓名
+    private String idName;
+
     // 邮箱
     private String email;
+
+    // 手机号
+    private String phone;
 
     // 权限级别
     private Short permission;
@@ -47,7 +53,9 @@ public class UserResponse {
         response.setId(user.getId());
         response.setUserNo(user.getUserNo());
         response.setUsername(user.getUsername());
+        response.setIdName(user.getIdName());
         response.setEmail(user.getEmail());
+        response.setPhone(user.getPhone());
         response.setPermission(user.getPermission());
         response.setIsBanned(user.getIsBanned());
         response.setRegisterTime(user.getRegisterTime());
@@ -79,12 +87,28 @@ public class UserResponse {
         this.username = username;
     }
 
+    public String getIdName() {
+        return idName;
+    }
+
+    public void setIdName(String idName) {
+        this.idName = idName;
+    }
+
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public Short getPermission() {
