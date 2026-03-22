@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
@@ -37,27 +37,27 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     }
 
     @Override
-    public ServiceResult<User> register(RegisterRequest registerRequest) {
+    public User register(RegisterRequest registerRequest) {
         String operation = "User registration";
         
         if (isUserNoExists(registerRequest.getUserNo())) {
-            log.warn(LogUtil.getFailureLog(operation, "user_no already exists: " + registerRequest.getUserNo(), null));
-            return ServiceResult.failure(BusinessErrorCode.USER_NO_EXISTS);
+            log.info(LogUtil.getFailureLog(operation, "user_no already exists: " + registerRequest.getUserNo(), null));
+            throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
         }
 
         if (isUsernameExists(registerRequest.getUsername())) {
-            log.warn(LogUtil.getFailureLog(operation, "username already exists: " + registerRequest.getUsername(), null));
-            return ServiceResult.failure(BusinessErrorCode.USERNAME_EXISTS);
+            log.info(LogUtil.getFailureLog(operation, "username already exists: " + registerRequest.getUsername(), null));
+            throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
         }
 
         if (isEmailExists(registerRequest.getEmail())) {
-            log.warn(LogUtil.getFailureLog(operation, "email already exists: " + registerRequest.getEmail(), null));
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_EXISTS);
+            log.info(LogUtil.getFailureLog(operation, "email already exists: " + registerRequest.getEmail(), null));
+            throw new BusinessException(BusinessErrorCode.EMAIL_EXISTS, "邮箱已存在", null);
         }
 
         if (!verifyEmailCode(registerRequest.getEmail(), registerRequest.getEmailCode(), registerRequest.getUserNo(), registerRequest.getUsername())) {
-            log.warn(LogUtil.getFailureLog(operation, "invalid or expired email verification code", null));
-            return ServiceResult.failure(BusinessErrorCode.VERIFICATION_CODE_INVALID);
+            log.info(LogUtil.getFailureLog(operation, "invalid or expired email verification code", null));
+            throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "验证码无效或已过期", null);
         }
 
         User user = new User();
@@ -74,46 +74,43 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         try {
             userMapper.insert(user);
             log.info(LogUtil.getSuccessLog(operation + " - user created in database", user));
-            return ServiceResult.success(user);
+            return user;
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "database insert failed: " + e.getMessage(), user), e);
-            return ServiceResult.failure(BusinessErrorCode.REGISTRATION_FAILED, "注册失败：" + e.getMessage());
+            throw new BusinessException(BusinessErrorCode.REGISTRATION_FAILED, "注册失败：" + e.getMessage());
         }
     }
 
     @Override
-    public ServiceResult<Void> sendEmailCode(String email, String userNo, String username) {
+    public void sendEmailCode(String email, String userNo, String username) {
         String operation = "Send registration verification code";
 
         if (isUserNoExists(userNo)) {
             log.warn(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));
-            return ServiceResult.failure(BusinessErrorCode.USER_NO_EXISTS);
+            throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
         }
             
         if (isUsernameExists(username)) {
             log.warn(LogUtil.getFailureLog(operation, "username already exists: " + username, null));
-            return ServiceResult.failure(BusinessErrorCode.USERNAME_EXISTS);
+            throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
         }
             
         if (isEmailExists(email)) {
             log.warn(LogUtil.getFailureLog(operation, "email already exists: " + email, null));
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_EXISTS);
+            throw new BusinessException(BusinessErrorCode.EMAIL_EXISTS, "邮箱已存在", null);
         }
             
         try {
-            ServiceResult<Void> result = emailService.sendVerificationCode(email, userNo, username);
-            if (result.isSuccess()) {
-                log.info(LogUtil.getSuccessLog(operation + " - verification code sent to email: " + email, null));
-                return ServiceResult.success(null);
-            } else {
-                // 对于邮箱不存在等特定错误，使用服务层返回的详细消息
-                String errorMessage = result.getMessage();
-                log.warn(LogUtil.getFailureLog(operation, "failed to send verification code: " + errorMessage, null));
-                return ServiceResult.failure(result.getErrorCode(), errorMessage, result.getExtraData());
-            }
+            try {
+            emailService.sendVerificationCode(email, userNo, username);
+            log.info(LogUtil.getSuccessLog(operation + " - verification code sent to email: " + email, null));
+        } catch (BusinessException e) {
+            // 重新抛出异常，由全局异常处理器处理
+            throw e;
+        }
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "failed to send verification code: " + e.getMessage(), null), e);
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败：" + e.getMessage());
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败：" + e.getMessage());
         }
     }
 

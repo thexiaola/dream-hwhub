@@ -23,7 +23,7 @@ public interface EmailService {
      * @param username 用户名
      * @return 服务结果
      */
-    ServiceResult<Void> sendVerificationCode(String email, String userNo, String username);
+    void sendVerificationCode(String email, String userNo, String username);
     
     /**
      * 验证注册验证码（需要匹配 userNo、username、email）

@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
+import top.thexiaola.dreamhwhub.exception.BusinessException;
 
 import java.util.Objects;
 
@@ -20,6 +21,17 @@ import java.util.Objects;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * 处理业务逻辑异常 (ServiceResult.failure)
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
+        int code = e.getErrorCodeValue();
+        String message = e.getMessage();
+        log.warn("Business exception occurred: code={}, message={}", code, message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(code, message));
+    }
 
     /**
      * 处理参数校验异常 (JSR-303)

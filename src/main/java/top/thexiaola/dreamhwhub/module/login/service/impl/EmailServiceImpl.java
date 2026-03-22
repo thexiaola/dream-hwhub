@@ -9,6 +9,7 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
@@ -80,13 +81,13 @@ public class EmailServiceImpl implements EmailService {
     public ServiceResult<Void> sendEmail(String to, String subject, String content) {
         if (mailSender == null) {
             log.error("Mail server not configured, recipient: {}, subject: {}", to, subject);
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_SERVER_NOT_CONFIGURED);
+            throw new BusinessException(BusinessErrorCode.EMAIL_SERVER_NOT_CONFIGURED);
         }
             
         // 验证邮箱格式
         if (to == null || !to.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             log.warn("Invalid email format: {}", to);
-            return ServiceResult.failure(BusinessErrorCode.INVALID_EMAIL_FORMAT);
+            throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT);
         }
             
         try {
@@ -103,13 +104,13 @@ public class EmailServiceImpl implements EmailService {
             String errorMessage = e.getMessage();
             if (errorMessage != null && errorMessage.contains("550")) {
                 log.warn("Email address does not exist or is invalid: {}, SMTP error: {}", to, errorMessage);
-                return ServiceResult.failure(BusinessErrorCode.INVALID_EMAIL_FORMAT, "邮箱地址不存在或无效，请检查后重新输入");
+                throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT, "邮箱地址不存在或无效，请检查后重新输入");
             }
             log.error("Failed to send email: {}, recipient: {}, subject: {}", errorMessage, to, subject);
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + errorMessage);
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + errorMessage);
         } catch (Exception e) {
             log.error("Failed to send email: {}, recipient: {}, subject: {}", e.getMessage(), to, subject, e);
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + e.getMessage());
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + e.getMessage());
         }
     }
 
@@ -117,12 +118,11 @@ public class EmailServiceImpl implements EmailService {
      * 发送注册验证码（绑定 userNo、username、email）
      */
     @Override
-    public ServiceResult<Void> sendVerificationCode(String email, String userNo, String username) {
+    public void sendVerificationCode(String email, String userNo, String username) {
         // 检查发送频率限制
         Long remainingTime = checkSendFrequency(email);
         if (remainingTime != null && remainingTime > 0) {
-            return ServiceResult.failure(BusinessErrorCode.EMAIL_SENDING_FAILED, 
-                "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
         }
         
         // 生成 6 位随机数字验证码
@@ -142,9 +142,11 @@ public class EmailServiceImpl implements EmailService {
     
         // 记录验证码生成日志
         log.info("Generated verification code {} for email: {}, userNo: {}, username: {}", code, email, userNo, username);
+        
+                // 发送邮件，异常会自动被抛出
     
         // 发送邮件
-        return sendVerificationCodeEmail(email, code);
+        sendVerificationCodeEmail(email, code);
     }
     
     /**

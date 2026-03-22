@@ -10,13 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
+import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
-
 
 
 @RestController
@@ -31,15 +30,14 @@ public class ModifyUserController {
     @PostMapping("/modify/info")
     public ResponseEntity<ApiResponse<UserResponse>> modifyUserInfo(HttpServletRequest request, @Valid @RequestBody ModifyUserInfoRequest modifyUserInfoRequest) {
         String ip = LogUtil.getCurrentClientIp();
-        ServiceResult<User> result = modifyUserService.modifyUserInfo(modifyUserInfoRequest);
-        if (result.isSuccess()) {
-            User user = result.getData();
+        try {
+            User user = modifyUserService.modifyUserInfo(modifyUserInfoRequest);
             UserResponse userResponse = UserResponse.fromEntity(user);
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) modify user info successful", userInfo);
             return ResponseEntity.ok(ApiResponse.success(userResponse));
-        } else {
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, result.getMessage()));
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }
 
