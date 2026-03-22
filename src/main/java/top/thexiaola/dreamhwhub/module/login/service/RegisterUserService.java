@@ -20,7 +20,6 @@ public interface RegisterUserService {
      * @param email 邮箱地址
      * @param userNo 学号
      * @param username 用户名
-     * @return 服务结果，包含操作状态或错误码
      */
     void sendEmailCode(String email, String userNo, String username);
 

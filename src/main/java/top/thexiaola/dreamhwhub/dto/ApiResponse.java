@@ -5,9 +5,9 @@ package top.thexiaola.dreamhwhub.dto;
  * @param <T> 响应数据类型
  */
 public class ApiResponse<T> {
-    private int code;
-    private String message;
-    private T data;
+    private final int code;
+    private final String message;
+    private final T data;
 
     private ApiResponse(int code, String message, T data) {
         this.code = code;

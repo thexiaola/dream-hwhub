@@ -101,13 +101,8 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         }
             
         try {
-            try {
             emailService.sendVerificationCode(email, userNo, username);
             log.info(LogUtil.getSuccessLog(operation + " - verification code sent to email: " + email, null));
-        } catch (BusinessException e) {
-            // 重新抛出异常，由全局异常处理器处理
-            throw e;
-        }
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "failed to send verification code: " + e.getMessage(), null), e);
             throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败：" + e.getMessage());

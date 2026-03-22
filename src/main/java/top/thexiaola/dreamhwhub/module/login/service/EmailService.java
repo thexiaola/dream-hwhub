@@ -1,7 +1,5 @@
 package top.thexiaola.dreamhwhub.module.login.service;
 
-import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
-
 /**
  * 邮件服务接口
  */
@@ -9,19 +7,18 @@ public interface EmailService {
 
     /**
      * 发送邮件
-     * @param to 收件人邮箱
+     *
+     * @param to      收件人邮箱
      * @param subject 邮件主题
      * @param content 邮件内容
-     * @return 服务结果
      */
-    ServiceResult<Void> sendEmail(String to, String subject, String content);
+    void sendEmail(String to, String subject, String content);
 
     /**
      * 生成并发送验证码（用于注册，绑定 userNo、username、email）
      * @param email 收件人邮箱
      * @param userNo 学号/工号
      * @param username 用户名
-     * @return 服务结果
      */
     void sendVerificationCode(String email, String userNo, String username);
     

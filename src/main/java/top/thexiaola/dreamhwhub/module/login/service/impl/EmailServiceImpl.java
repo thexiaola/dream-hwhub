@@ -10,7 +10,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
-import top.thexiaola.dreamhwhub.module.login.dto.ServiceResult;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 
@@ -78,7 +77,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public ServiceResult<Void> sendEmail(String to, String subject, String content) {
+    public void sendEmail(String to, String subject, String content) {
         if (mailSender == null) {
             log.error("Mail server not configured, recipient: {}, subject: {}", to, subject);
             throw new BusinessException(BusinessErrorCode.EMAIL_SERVER_NOT_CONFIGURED);
@@ -98,7 +97,6 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject(subject);
             helper.setText(content);
             mailSender.send(message);
-            return ServiceResult.success(null);
         } catch (MailSendException e) {
             // 特殊处理邮件发送失败，特别是 550 错误（邮箱不存在）
             String errorMessage = e.getMessage();
@@ -142,8 +140,6 @@ public class EmailServiceImpl implements EmailService {
     
         // 记录验证码生成日志
         log.info("Generated verification code {} for email: {}, userNo: {}, username: {}", code, email, userNo, username);
-        
-                // 发送邮件，异常会自动被抛出
     
         // 发送邮件
         sendVerificationCodeEmail(email, code);
@@ -202,13 +198,13 @@ public class EmailServiceImpl implements EmailService {
         return userNo + "#" + username + "#" + email;
     }
     
-    private ServiceResult<Void> sendVerificationCodeEmail(String email, String code) {
+    private void sendVerificationCodeEmail(String email, String code) {
         String subject = "Dream HWHub 验证码";
         String content = String.format(
                 "您好！\n\n您的验证码是：%s。\n\n验证码有效期为%d分钟，请及时使用。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
                 code, expiryMinutes
         );
-        return sendEmail(email, subject, content);
+        sendEmail(email, subject, content);
     }
     
     // 存储验证码及其过期时间
