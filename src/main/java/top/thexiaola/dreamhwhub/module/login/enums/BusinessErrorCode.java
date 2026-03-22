@@ -13,15 +13,16 @@ public enum BusinessErrorCode {
     VERIFICATION_CODE_NOT_FOUND(1003, "验证码不存在"),
     
     // 注册相关错误
-    USER_NO_EXISTS(2001, "学号已被注册"),
-    USERNAME_EXISTS(2002, "用户名已被注册"),
-    EMAIL_EXISTS(2003, "邮箱已被注册"),
+    USER_NO_EXISTS(2001, "学号已被占用"),
+    USERNAME_EXISTS(2002, "用户名已被占用"),
+    EMAIL_EXISTS(2003, "邮箱已被占用"),
     REGISTRATION_FAILED(2004, "注册失败"),
     
     // 登录相关错误
     USER_NOT_FOUND(3001, "用户不存在"),
     INVALID_CREDENTIALS(3002, "账号或密码错误"),
     USER_BANNED(3003, "用户已被封禁"),
+    USER_NOT_LOGGED_IN(3004, "用户未登录"),
     
     // 邮件相关错误
     EMAIL_SEND_FAILED(4001, "邮件发送失败"),
@@ -31,7 +32,11 @@ public enum BusinessErrorCode {
     
     // 系统错误
     SYSTEM_ERROR(5000, "系统错误"),
-    DATABASE_ERROR(5001, "数据库操作失败");
+    DATABASE_ERROR(5001, "数据库操作失败"),
+    
+    // 修改用户信息错误
+    USER_NO_REQUIRED(6001, "学号不能为空"),
+    USERNAME_REQUIRED(6002, "用户名不能为空");
 
     private final int code;
     private final String message;
