@@ -158,8 +158,8 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
       "phone": null,
       "permission": 1,
       "isBanned": false,
-      "registerTime": "2026-03-21T17:58:34.661108921",
-      "lastLoginTime": "2026-03-21T17:58:34.661108921"
+      "registerTime": "2026-03-21T17:58:34",
+      "lastLoginTime": "2026-03-21T17:58:34"
     }
   }
   ```
@@ -191,8 +191,8 @@ Cookie: JSESSIONID=YOUR_SESSION_ID
       "phone": null,
       "permission": 1,
       "isBanned": false,
-      "registerTime": "2026-03-21T17:58:34.661108921",
-      "lastLoginTime": "2026-03-21T17:58:34.661108921"
+      "registerTime": "2026-03-21T17:58:34",
+      "lastLoginTime": "2026-03-21T17:58:34"
     }
   }
   ```

@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.login.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -35,9 +36,11 @@ public class UserResponse {
     private Boolean isBanned;
 
     // 注册时间
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime registerTime;
 
     // 最后登录时间
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastLoginTime;
 
     /**
