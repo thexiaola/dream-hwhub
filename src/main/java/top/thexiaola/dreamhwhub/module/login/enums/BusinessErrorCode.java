@@ -13,9 +13,9 @@ public enum BusinessErrorCode {
     VERIFICATION_CODE_NOT_FOUND(1003, "验证码不存在"),
     
     // 注册相关错误
-    USER_NO_EXISTS(2001, "学号已被注册"),
-    USERNAME_EXISTS(2002, "用户名已被注册"),
-    EMAIL_EXISTS(2003, "邮箱已被注册"),
+    USER_NO_EXISTS(2001, "学号已被占用"),
+    USERNAME_EXISTS(2002, "用户名已被占用"),
+    EMAIL_EXISTS(2003, "邮箱已被占用"),
     REGISTRATION_FAILED(2004, "注册失败"),
     
     // 登录相关错误
