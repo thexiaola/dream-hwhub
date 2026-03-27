@@ -8,8 +8,10 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 
@@ -31,7 +33,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
         int code = e.getErrorCodeValue();
         String message = e.getMessage();
-        log.warn("Business exception occurred: code={}, message={}", code, message);
+        log.info("Business exception occurred: code={}, message={}", code, message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(code, message));
     }
 
@@ -46,7 +48,7 @@ public class GlobalExceptionHandler {
         } else if (e instanceof BindException bindException) {
             message = Objects.requireNonNull(bindException.getFieldError()).getDefaultMessage();
         }
-        log.warn("Validation exception: {}", message);
+        log.info("Validation exception: {}", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, message));
     }
 
@@ -55,7 +57,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
-        log.warn("Invalid JSON format: {}", e.getMessage());
+        log.info("Invalid JSON format: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, "请求数据格式错误，请检查 JSON 格式"));
     }
 
@@ -64,8 +66,26 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
-        log.warn("Request method not supported: {}", e.getMessage());
+        log.info("Request method not supported: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ApiResponse.error(405, "请求方法不支持，请使用 " + e.getSupportedHttpMethods()));
+    }
+
+    /**
+     * 处理资源未找到异常 (404)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.debug("Resource not found: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(404, "请求的资源不存在"));
+    }
+
+    /**
+     * 处理请求参数缺失异常
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        log.info("Missing request parameter: {}", e.getParameterName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, "缺少必需的请求参数"));
     }
 
     /**

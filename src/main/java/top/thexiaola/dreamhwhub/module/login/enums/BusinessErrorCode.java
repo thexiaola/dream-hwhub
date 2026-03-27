@@ -36,7 +36,10 @@ public enum BusinessErrorCode {
     
     // 修改用户信息错误
     USER_NO_REQUIRED(6001, "学号不能为空"),
-    USERNAME_REQUIRED(6002, "用户名不能为空");
+    USERNAME_REQUIRED(6002, "用户名不能为空"),
+    
+    // 修改邮箱错误
+    SAME_EMAIL(6003, "新邮箱不能与原邮箱相同");
 
     private final int code;
     private final String message;

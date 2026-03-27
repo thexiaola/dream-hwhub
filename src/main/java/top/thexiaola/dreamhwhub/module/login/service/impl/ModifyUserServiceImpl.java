@@ -89,7 +89,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
 
         // 验证原邮箱验证码
         String oldEmail = user.getEmail();
-        boolean isBeforeCodeValid = emailService.verifyCode(oldEmail, beforeCode, user.getUserNo(), user.getUsername());
+        boolean isBeforeCodeValid = emailService.verifyModifyCode(oldEmail, beforeCode, user.getUserNo(), user.getUsername());
         if (!isBeforeCodeValid) {
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "原邮箱验证码错误", null);
         }
@@ -104,7 +104,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         }
 
         // 验证新邮箱验证码（使用新邮箱作为 key）
-        boolean isAfterCodeValid = emailService.verifyCode(newEmail, afterCode, user.getUserNo(), user.getUsername());
+        boolean isAfterCodeValid = emailService.verifyModifyCode(newEmail, afterCode, user.getUserNo(), user.getUsername());
         if (!isAfterCodeValid) {
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "新邮箱验证码错误", null);
         }
@@ -114,5 +114,44 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         userMapper.updateById(user);
 
         return user;
+    }
+    
+    @Override
+    public void sendModifyCodeToNewEmail(String email) {
+        // 获取当前用户
+        User user = UserUtils.getCurrentUser();
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 验证邮箱参数
+        if (email == null || email.trim().isEmpty()) {
+            throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT, "新邮箱不能为空", null);
+        }
+
+        // 验证邮箱格式
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT, "邮箱格式不正确", null);
+        }
+
+        // 检查新邮箱是否与原邮箱相同
+        if (email.equals(user.getEmail())) {
+            throw new BusinessException(BusinessErrorCode.SAME_EMAIL, "新邮箱不能与原邮箱相同", null);
+        }
+
+        // 发送验证码到新邮箱
+        emailService.sendModifyEmailCode(email, user.getUserNo(), user.getUsername());
+    }
+    
+    @Override
+    public void sendModifyCodeToOldEmail() {
+        // 获取当前用户
+        User user = UserUtils.getCurrentUser();
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 发送验证码到原邮箱（当前邮箱）
+        emailService.sendModifyEmailCode(user.getEmail(), user.getUserNo(), user.getUsername());
     }
 }

@@ -37,7 +37,7 @@
     </root>
 
     <!-- 应用包的日志级别 -->
-    <logger name="top.thexiaola.dreamhwhub" level="DEBUG" additivity="false">
+    <logger name="top.thexiaola.dreamhwhub" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC_FILE"/>
     </logger>

@@ -113,10 +113,13 @@ public class EmailServiceImpl implements EmailService {
     }
 
     /**
-     * 发送注册验证码（绑定 userNo、username、email）
+     * 发送验证码（通用方法）
+     * @param email 邮箱
+     * @param userNo 学号/工号
+     * @param username 用户名
+     * @param isModify 是否为换绑验证码
      */
-    @Override
-    public void sendVerificationCode(String email, String userNo, String username) {
+    private void sendVerificationCodeInternal(String email, String userNo, String username, boolean isModify) {
         // 检查发送频率限制
         Long remainingTime = checkSendFrequency(email);
         if (remainingTime != null && remainingTime > 0) {
@@ -131,7 +134,7 @@ public class EmailServiceImpl implements EmailService {
         removeOldVerificationCodesByEmail(email);
         
         // 使用组合 key 存储新验证码
-        String compositeKey = buildCompositeKey(userNo, username, email);
+        String compositeKey = isModify ? buildModifyKey(userNo, username, email) : buildCompositeKey(userNo, username, email);
         VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
         verificationCodes.put(compositeKey, codeInfo);
     
@@ -139,10 +142,23 @@ public class EmailServiceImpl implements EmailService {
         emailLastSendTime.put(email, LocalDateTime.now());
     
         // 记录验证码生成日志
-        log.info("Generated verification code {} for email: {}, userNo: {}, username: {}", code, email, userNo, username);
+        log.info("Generated {} verification code {} for email: {}, userNo: {}, username: {}", 
+                isModify ? "modify" : "registration", code, email, userNo, username);
     
         // 发送邮件
-        sendVerificationCodeEmail(email, code);
+        if (isModify) {
+            sendModifyCodeEmail(email, code);
+        } else {
+            sendVerificationCodeEmail(email, code);
+        }
+    }
+
+    /**
+     * 发送注册验证码（绑定 userNo、username、email）
+     */
+    @Override
+    public void sendVerificationCode(String email, String userNo, String username) {
+        sendVerificationCodeInternal(email, userNo, username, false);
     }
     
     /**
@@ -168,23 +184,48 @@ public class EmailServiceImpl implements EmailService {
     }
         
     /**
-     * 验证注册验证码（需要匹配 userNo、username、email）
+     * 验证注册验证码 (需要匹配 userNo、username、email)
+     * @param email 邮箱地址
+     * @param code 验证码
+     * @param userNo 学号/工号
+     * @param username 用户名
+     * @return 验证是否成功
      */
     @Override
-    public boolean verifyCode(String email, String code, String userNo, String username) {
-        String compositeKey = buildCompositeKey(userNo, username, email);
-        VerificationCodeInfo codeInfo = verificationCodes.get(compositeKey);
+    public boolean verifyRegistrationCode(String email, String code, String userNo, String username) {
+        return verifyCodeInternal(buildCompositeKey(userNo, username, email), code);
+    }
+    
+    /**
+     * 验证换绑验证码 (需要匹配 userNo、username、email)
+     * @param email 邮箱地址
+     * @param code 验证码
+     * @param userNo 学号/工号
+     * @param username 用户名
+     * @return 验证是否成功
+     */
+    @Override
+    public boolean verifyModifyCode(String email, String code, String userNo, String username) {
+        return verifyCodeInternal(buildModifyKey(userNo, username, email), code);
+    }
+    
+    /**
+     * 内部验证码验证方法
+     * @param key 验证码存储的 key
+     * @param code 用户输入的验证码
+     * @return 验证是否成功
+     */
+    private boolean verifyCodeInternal(String key, String code) {
+        VerificationCodeInfo codeInfo = verificationCodes.get(key);
         if (codeInfo != null) {
             // 检查是否过期
             if (LocalDateTime.now().isAfter(codeInfo.expiryTime())) {
-                // 验证码已过期，删除它
-                verificationCodes.remove(compositeKey);
+                verificationCodes.remove(key);
                 return false;
             }
-                
             if (codeInfo.code().equals(code)) {
                 // 验证成功后删除该验证码
-                verificationCodes.remove(compositeKey);
+                verificationCodes.remove(key);
                 return true;
             }
         }
@@ -212,32 +253,7 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendModifyEmailCode(String email, String userNo, String username) {
-        // 检查发送频率限制
-        Long remainingTime = checkSendFrequency(email);
-        if (remainingTime != null && remainingTime > 0) {
-            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
-        }
-        
-        // 生成 6 位随机数字验证码
-        Random random = new Random();
-        String code = String.format("%06d", random.nextInt(999999));
-            
-        // 删除该邮箱的所有旧验证码
-        removeOldVerificationCodesByEmail(email);
-        
-        // 使用组合 key 存储新验证码 (用于换绑)
-        String compositeKey = buildModifyKey(userNo, username, email);
-        VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
-        verificationCodes.put(compositeKey, codeInfo);
-    
-        // 记录发送时间
-        emailLastSendTime.put(email, LocalDateTime.now());
-    
-        // 记录验证码生成日志
-        log.info("Generated modify verification code {} for email: {}, userNo: {}, username: {}", code, email, userNo, username);
-    
-        // 发送邮件
-        sendModifyCodeEmail(email, code);
+        sendVerificationCodeInternal(email, userNo, username, true);
     }
     
     /**

@@ -40,18 +40,34 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     public User register(RegisterRequest registerRequest) {
         String operation = "User registration";
         
-        if (isUserNoExists(registerRequest.getUserNo())) {
-            log.info(LogUtil.getFailureLog(operation, "user_no already exists: " + registerRequest.getUserNo(), null));
+        // 去除首尾空格
+        String userNo = registerRequest.getUserNo().trim();
+        String username = registerRequest.getUsername().trim();
+
+        String email = registerRequest.getEmail();
+        
+        if (userNo.isEmpty()) {
+            log.info(LogUtil.getFailureLog(operation, "user_no is empty after trim", null));
+            throw new BusinessException(BusinessErrorCode.USER_NO_REQUIRED, "学号不能为空", null);
+        }
+        
+        if (username.isEmpty()) {
+            log.info(LogUtil.getFailureLog(operation, "username is empty after trim", null));
+            throw new BusinessException(BusinessErrorCode.USERNAME_REQUIRED, "用户名不能为空", null);
+        }
+        
+        if (isUserNoExists(userNo)) {
+            log.info(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));
             throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
         }
 
-        if (isUsernameExists(registerRequest.getUsername())) {
-            log.info(LogUtil.getFailureLog(operation, "username already exists: " + registerRequest.getUsername(), null));
+        if (isUsernameExists(username)) {
+            log.info(LogUtil.getFailureLog(operation, "username already exists: " + username, null));
             throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
         }
 
-        if (isEmailExists(registerRequest.getEmail())) {
-            log.info(LogUtil.getFailureLog(operation, "email already exists: " + registerRequest.getEmail(), null));
+        if (isEmailExists(email)) {
+            log.info(LogUtil.getFailureLog(operation, "email already exists: " + email, null));
             throw new BusinessException(BusinessErrorCode.EMAIL_EXISTS, "邮箱已存在", null);
         }
 
@@ -61,9 +77,9 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         }
 
         User user = new User();
-        user.setUserNo(registerRequest.getUserNo());
-        user.setUsername(registerRequest.getUsername());
-        user.setEmail(registerRequest.getEmail());
+        user.setUserNo(userNo);
+        user.setUsername(username);
+        user.setEmail(email);
         user.setPassword(aesEncryptionUtil.encrypt(registerRequest.getPassword()));
         user.setPermission((short) 1);
         user.setIsBanned(false);
@@ -84,6 +100,21 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     @Override
     public void sendEmailCode(String email, String userNo, String username) {
         String operation = "Send registration verification code";
+
+        // 去除首尾空格
+        userNo = userNo != null ? userNo.trim() : "";
+        username = username != null ? username.trim() : "";
+        
+        // 验证参数是否为空
+        if (userNo.isEmpty()) {
+            log.warn(LogUtil.getFailureLog(operation, "user_no is empty after trim", null));
+            throw new BusinessException(BusinessErrorCode.USER_NO_REQUIRED, "学号不能为空", null);
+        }
+        
+        if (username.isEmpty()) {
+            log.warn(LogUtil.getFailureLog(operation, "username is empty after trim", null));
+            throw new BusinessException(BusinessErrorCode.USERNAME_REQUIRED, "用户名不能为空", null);
+        }
 
         if (isUserNoExists(userNo)) {
             log.warn(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));
@@ -114,7 +145,7 @@ public class RegisterUserServiceImpl implements RegisterUserService {
      */
     @Override
     public boolean verifyEmailCode(String email, String code, String userNo, String username) {
-        return emailService.verifyCode(email, code, userNo, username);
+        return emailService.verifyRegistrationCode(email, code, userNo, username);
     }
 
     @Override

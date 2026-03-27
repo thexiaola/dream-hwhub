@@ -20,4 +20,16 @@ public interface ModifyUserService {
      * @return 修改后的用户对象
      */
     User modifyUserEmail(ModifyEmailRequest modifyEmailRequest);
+    
+    /**
+     * 为换绑的目标邮箱发送验证码
+     *
+     * @param email 目标邮箱
+     */
+    void sendModifyCodeToNewEmail(String email);
+    
+    /**
+     * 为换绑前的原邮箱发送验证码
+     */
+    void sendModifyCodeToOldEmail();
 }

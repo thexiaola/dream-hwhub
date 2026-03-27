@@ -40,7 +40,7 @@ public class LoginUserController {
             UserResponse userResponse = UserResponse.fromEntity(user);
 
             String userInfo = LogUtil.getUserInfoString(ip, user);
-            log.info("User ({}) login successful, generating JWT token", userInfo);
+            log.info("User ({}) login successful, session created", userInfo);
 
             // 使用 Session 管理
             SessionManager.addSession(user.getId(), request.getSession());
