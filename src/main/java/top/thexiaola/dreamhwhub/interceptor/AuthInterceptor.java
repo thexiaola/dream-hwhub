@@ -35,15 +35,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             response.setContentType("application/json;charset=UTF-8");
 
             // 返回错误信息
-            String jsonResponse = """
-                {
-                    "code": 401,
-                    "message": "用户未登录，请先登录",
-                    "data": null
-                }
-                """;
-
-            response.getWriter().write(jsonResponse);
+            response.getWriter().write("{\"code\":401,\"message\":\"用户未登录，请先登录\",\"data\":null}");
             return false;
         }
         

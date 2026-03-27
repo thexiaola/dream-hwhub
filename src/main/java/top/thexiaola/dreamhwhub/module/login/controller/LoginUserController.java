@@ -5,10 +5,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
@@ -16,7 +13,6 @@ import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
-import top.thexiaola.dreamhwhub.util.SessionManager;
 
 
 /**
@@ -27,6 +23,7 @@ import top.thexiaola.dreamhwhub.util.SessionManager;
 public class LoginUserController {
     private static final Logger log = LoggerFactory.getLogger(LoginUserController.class);
     private final LoginUserService loginUserService;
+    
     public LoginUserController(LoginUserService loginUserService) {
         this.loginUserService = loginUserService;
     }
@@ -36,21 +33,45 @@ public class LoginUserController {
         String ip = LogUtil.getCurrentClientIp();
         
         try {
-            User user = loginUserService.login(loginRequest);
+            User user = loginUserService.login(loginRequest, request);
             UserResponse userResponse = UserResponse.fromEntity(user);
 
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) login successful, session created", userInfo);
-
-            // 使用 Session 管理
-            SessionManager.addSession(user.getId(), request.getSession());
-            request.getSession().setAttribute("user", user);
-            request.getSession().setAttribute("username", user.getUsername());
             
             return ResponseEntity.ok(ApiResponse.success(userResponse));
         } catch (BusinessException e) {
             String errorMessage = e.getMessage();
             return ResponseEntity.status(401).body(ApiResponse.error(401, errorMessage));
+        }
+    }
+
+    /**
+     * 用户登出
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+        String ip = LogUtil.getCurrentClientIp();
+        
+        try {
+            // 从服务层获取当前用户
+            User currentUser = loginUserService.getCurrentUser(request);
+            String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+            
+            // 调用服务层登出
+            loginUserService.logout(currentUser.getId());
+            
+            // 销毁 HTTP Session
+            request.getSession().invalidate();
+            
+            log.info("User ({}) logout successful", userInfo);
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (BusinessException e) {
+            log.warn("User logout failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        } catch (Exception e) {
+            log.error("User logout failed", e);
+            return ResponseEntity.status(500).body(ApiResponse.error(500, "登出失败"));
         }
     }
 

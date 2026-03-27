@@ -12,6 +12,9 @@ import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
+import top.thexiaola.dreamhwhub.util.SessionManager;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 
@@ -33,7 +36,7 @@ public class LoginUserServiceImpl implements LoginUserService {
     }
 
     @Override
-    public User login(LoginRequest loginRequest) {
+    public User login(LoginRequest loginRequest, HttpServletRequest request) {
         String operation = "User login";
             
         User user = findByAccount(loginRequest.getAccount());
@@ -54,6 +57,11 @@ public class LoginUserServiceImpl implements LoginUserService {
             // 更新最后登录时间
             user.setLastLoginTime(LocalDateTime.now());
             userMapper.updateById(user);
+            
+            // 创建 Session
+            SessionManager.addSession(user.getId(), request.getSession());
+            request.getSession().setAttribute("user", user);
+            request.getSession().setAttribute("username", user.getUsername());
             
             return user;
         } else {
@@ -78,5 +86,34 @@ public class LoginUserServiceImpl implements LoginUserService {
                 new QueryWrapper<User>().eq("email", account)
         );
         return user;
+    }
+    
+    @Override
+    public void logout(Integer userId) {
+        String operation = "User logout";
+        
+        if (userId == null) {
+            log.warn(LogUtil.getFailureLog(operation, "user ID is null", null));
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+        
+        try {
+            // 销毁 Session
+            SessionManager.invalidateSession(userId);
+            log.info(LogUtil.getSuccessLog(operation, null));
+        } catch (Exception e) {
+            log.error(LogUtil.getFailureLog(operation, "failed to invalidate session: " + e.getMessage(), null), e);
+            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "登出失败", null);
+        }
+    }
+    
+    @Override
+    public User getCurrentUser(HttpServletRequest request) {
+        User currentUser = (User) request.getSession().getAttribute("user");
+        if (currentUser == null) {
+            log.warn(LogUtil.getFailureLog("Get current user", "user not logged in", null));
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+        return currentUser;
     }
 }
