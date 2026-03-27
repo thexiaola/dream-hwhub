@@ -16,34 +16,33 @@ import top.thexiaola.dreamhwhub.util.UserUtils;
  */
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AuthInterceptor.class);
-    
+
     @Override
     public boolean preHandle(HttpServletRequest request,
                              @NonNull HttpServletResponse response,
                              @NonNull Object handler)
             throws Exception {
-            
+
         String requestURI = request.getRequestURI();
-            
+
         // 检查 Session 中是否存在用户信息
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
-            logger.warn("Unauthorized access to {}: session not found or user not logged in", requestURI);
-            
             // 返回401未认证状态
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
-            
-            // 返回统一样式的错误信息
+
+            // 返回错误信息
             String jsonResponse = """
                 {
                     "code": 401,
-                    "msg": "用户未登录，请先登录",
+                    "message": "用户未登录，请先登录",
                     "data": null
                 }
                 """;
+
             response.getWriter().write(jsonResponse);
             return false;
         }

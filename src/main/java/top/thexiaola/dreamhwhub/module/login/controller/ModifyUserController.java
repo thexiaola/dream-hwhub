@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
@@ -17,7 +18,7 @@ import top.thexiaola.dreamhwhub.util.UserUtils;
 
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/users/modify")
 public class ModifyUserController {
     private static final Logger log = LoggerFactory.getLogger(ModifyUserController.class);
     private final ModifyUserService modifyUserService;
@@ -28,7 +29,7 @@ public class ModifyUserController {
         this.emailService = emailService;
     }
 
-    @PostMapping("/modify/info")
+    @PutMapping("/info")
     public ResponseEntity<ApiResponse<UserResponse>> modifyUserInfo(@Valid @RequestBody ModifyUserInfoRequest modifyUserInfoRequest) {
         String ip = LogUtil.getCurrentClientIp();
         try {
@@ -42,16 +43,26 @@ public class ModifyUserController {
         }
     }
 
-    @PostMapping("/modify/email")
-    public String modifyUserEmail() {
-        // TODO: 需要允许用户修改自己的 email
-        return null;
+    @PutMapping("/email")
+    public ResponseEntity<ApiResponse<UserResponse>> modifyUserEmail(@Valid @RequestBody ModifyEmailRequest modifyEmailRequest) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User user = modifyUserService.modifyUserEmail(modifyEmailRequest);
+            UserResponse userResponse = UserResponse.fromEntity(user);
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            log.info("User ({}) modify email successful", userInfo);
+            return ResponseEntity.ok(ApiResponse.success(userResponse));
+        } catch (BusinessException e) {
+            String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
+            log.warn("User ({}) failed to modify email: {}", userInfo, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
     }
 
     /**
      * 发送换绑验证码
      */
-    @GetMapping("/modify/getemailcode")
+    @PostMapping("/getemailcode")
     public ResponseEntity<ApiResponse<Void>> sendModifyEmailCode() {
         String ip = LogUtil.getCurrentClientIp();
         try {
@@ -72,7 +83,7 @@ public class ModifyUserController {
         }
     }
 
-    @PostMapping("/modify/password")
+    @PutMapping("/password")
     public String modifyUserPassword() {
         // TODO: 需要允许用户修改自己的密码
         return null;
