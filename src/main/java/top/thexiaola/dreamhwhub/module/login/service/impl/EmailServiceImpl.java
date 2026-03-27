@@ -207,6 +207,55 @@ public class EmailServiceImpl implements EmailService {
         sendEmail(email, subject, content);
     }
     
+    /**
+     * 发送换绑验证码
+     */
+    @Override
+    public void sendModifyEmailCode(String email, String userNo, String username) {
+        // 检查发送频率限制
+        Long remainingTime = checkSendFrequency(email);
+        if (remainingTime != null && remainingTime > 0) {
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
+        }
+        
+        // 生成 6 位随机数字验证码
+        Random random = new Random();
+        String code = String.format("%06d", random.nextInt(999999));
+            
+        // 删除该邮箱的所有旧验证码
+        removeOldVerificationCodesByEmail(email);
+        
+        // 使用组合 key 存储新验证码 (用于换绑)
+        String compositeKey = buildModifyKey(userNo, username, email);
+        VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
+        verificationCodes.put(compositeKey, codeInfo);
+    
+        // 记录发送时间
+        emailLastSendTime.put(email, LocalDateTime.now());
+    
+        // 记录验证码生成日志
+        log.info("Generated modify verification code {} for email: {}, userNo: {}, username: {}", code, email, userNo, username);
+    
+        // 发送邮件
+        sendModifyCodeEmail(email, code);
+    }
+    
+    /**
+     * 构建换绑验证码的组合键：modify#userNo#username#email
+     */
+    private String buildModifyKey(String userNo, String username, String email) {
+        return "modify#" + userNo + "#" + username + "#" + email;
+    }
+    
+    private void sendModifyCodeEmail(String email, String code) {
+        String subject = "Dream HWHub 换绑验证码";
+        String content = String.format(
+                "您好！\n\n您正在申请修改绑定邮箱，验证码是：%s。\n\n验证码有效期为%d分钟，请及时使用。\n\n如非本人操作，请立即联系管理员。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
+                code, expiryMinutes
+        );
+        sendEmail(email, subject, content);
+    }
+    
     // 存储验证码及其过期时间
     private record VerificationCodeInfo(String code, LocalDateTime expiryTime) {}
 }
