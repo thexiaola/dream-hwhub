@@ -39,7 +39,11 @@ public enum BusinessErrorCode {
     USERNAME_REQUIRED(6002, "用户名不能为空"),
     
     // 修改邮箱错误
-    SAME_EMAIL(6003, "新邮箱不能与原邮箱相同");
+    SAME_EMAIL(6003, "新邮箱不能与原邮箱相同"),
+    
+    // 修改密码错误
+    INVALID_OLD_PASSWORD(6004, "原密码错误"),
+    NEW_PASSWORD_SAME_AS_OLD(6005, "新密码不能与原密码相同");
 
     private final int code;
     private final String message;

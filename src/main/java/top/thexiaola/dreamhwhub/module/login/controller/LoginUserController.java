@@ -5,15 +5,18 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
+import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
-
 
 /**
  * 用户登录控制器
@@ -41,8 +44,11 @@ public class LoginUserController {
             
             return ResponseEntity.ok(ApiResponse.success(userResponse));
         } catch (BusinessException e) {
-            String errorMessage = e.getMessage();
-            return ResponseEntity.status(401).body(ApiResponse.error(401, errorMessage));
+            // 统一返回 INVALID_CREDENTIALS
+            return ResponseEntity.status(401).body(ApiResponse.error(
+                BusinessErrorCode.INVALID_CREDENTIALS.getCode(),
+                BusinessErrorCode.INVALID_CREDENTIALS.getMessage()
+            ));
         }
     }
 

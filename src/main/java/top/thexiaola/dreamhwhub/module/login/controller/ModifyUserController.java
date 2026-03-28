@@ -9,6 +9,7 @@ import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
@@ -97,9 +98,22 @@ public class ModifyUserController {
         }
     }
 
+    /**
+     * 修改用户密码
+     */
     @PutMapping("/password")
-    public String modifyUserPassword() {
-        // TODO: 需要允许用户修改自己的密码
-        return null;
+    public ResponseEntity<ApiResponse<Void>> modifyUserPassword(@Valid @RequestBody ModifyPasswordRequest modifyPasswordRequest) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User currentUser = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+            modifyUserService.modifyUserPassword(modifyPasswordRequest);
+            log.info("User ({}) password modified successfully", userInfo);
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (BusinessException e) {
+            String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
+            log.warn("User ({}) failed to modify password: {}", userInfo, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
     }
 }

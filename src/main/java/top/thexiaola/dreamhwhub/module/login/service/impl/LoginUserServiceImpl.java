@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,8 +14,6 @@ import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.SessionManager;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 

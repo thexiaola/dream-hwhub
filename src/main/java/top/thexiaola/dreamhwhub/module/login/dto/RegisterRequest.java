@@ -2,6 +2,7 @@ package top.thexiaola.dreamhwhub.module.login.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -31,7 +32,8 @@ public class RegisterRequest {
 
     // 密码
     @NotBlank(message = "密码不能为空")
-    @Size(min = 6, max = 50, message = "密码长度必须在6-50位之间")
+    @Pattern(regexp = "^[0-9a-zA-Z!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]+$", message = "密码只能包含字母、数字和特殊字符")
+    @Size(min = 6, max = 48, message = "密码长度必须在 6-48 位之间")
     private String password;
 
     public String getUserNo() {

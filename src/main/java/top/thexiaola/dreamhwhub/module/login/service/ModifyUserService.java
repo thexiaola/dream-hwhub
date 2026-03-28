@@ -2,6 +2,7 @@ package top.thexiaola.dreamhwhub.module.login.service;
 
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 
 public interface ModifyUserService {
@@ -32,4 +33,11 @@ public interface ModifyUserService {
      * 为换绑前的原邮箱发送验证码
      */
     void sendModifyCodeToOldEmail();
+    
+    /**
+     * 修改用户密码
+     *
+     * @param modifyPasswordRequest 修改密码请求
+     */
+    void modifyUserPassword(ModifyPasswordRequest modifyPasswordRequest);
 }

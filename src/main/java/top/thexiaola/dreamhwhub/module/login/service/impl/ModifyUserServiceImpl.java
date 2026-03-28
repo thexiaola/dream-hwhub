@@ -1,25 +1,32 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
+import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
+import top.thexiaola.dreamhwhub.util.LogUtil;
+import top.thexiaola.dreamhwhub.util.SessionManager;
 import top.thexiaola.dreamhwhub.util.UserUtils;
 
 @Service
 public class ModifyUserServiceImpl implements ModifyUserService {
     private final UserMapper userMapper;
     private final EmailService emailService;
+    private final AESEncryptionUtil aesEncryptionUtil;
 
-    public ModifyUserServiceImpl(UserMapper userMapper, EmailService emailService) {
+    public ModifyUserServiceImpl(UserMapper userMapper, EmailService emailService, AESEncryptionUtil aesEncryptionUtil) {
         this.userMapper = userMapper;
         this.emailService = emailService;
+        this.aesEncryptionUtil = aesEncryptionUtil;
     }
 
     @Override
@@ -68,11 +75,19 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         user.setIdName(newIdName);
         user.setPhone(newPhone);
 
-        // 传入数据库
-        userMapper.updateById(user);
+        // 更新数据库
+        User updatedUser = userMapper.selectById(user.getId());
+        if (updatedUser != null) {
+            // 同步更新 Session 中的用户信息
+            HttpServletRequest request = LogUtil.getRequest();
+            if (request != null) {
+                request.getSession().setAttribute("user", updatedUser);
+                SessionManager.updateUserSession(user.getId(), updatedUser);
+            }
+        }
 
         // 返回成功
-        return user;
+        return updatedUser;
     }
     
     @Override
@@ -112,6 +127,13 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         // 更新邮箱
         user.setEmail(newEmail);
         userMapper.updateById(user);
+        
+        // 同步更新 Session 中的用户信息
+        HttpServletRequest request = LogUtil.getRequest();
+        if (request != null) {
+            request.getSession().setAttribute("user", user);
+            SessionManager.updateUserSession(user.getId(), user);
+        }
 
         return user;
     }
@@ -153,5 +175,37 @@ public class ModifyUserServiceImpl implements ModifyUserService {
 
         // 发送验证码到原邮箱（当前邮箱）
         emailService.sendModifyEmailCode(user.getEmail(), user.getUserNo(), user.getUsername());
+    }
+    
+    @Override
+    public void modifyUserPassword(ModifyPasswordRequest modifyPasswordRequest) {
+        // 获取当前用户
+        User user = UserUtils.getCurrentUser();
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        String oldPassword = modifyPasswordRequest.getOldPassword();
+        String newPassword = modifyPasswordRequest.getNewPassword();
+
+        // 验证原密码是否正确
+        if (!aesEncryptionUtil.verifyPassword(oldPassword, user.getPassword())) {
+            throw new BusinessException(BusinessErrorCode.INVALID_OLD_PASSWORD, "原密码错误", null);
+        }
+
+        // 检查新密码是否与原密码相同
+        if (oldPassword.equals(newPassword)) {
+            throw new BusinessException(BusinessErrorCode.NEW_PASSWORD_SAME_AS_OLD, "新密码不能与原密码相同", null);
+        }
+
+        // 加密新密码
+        String encryptedNewPassword = aesEncryptionUtil.encrypt(newPassword);
+
+        // 更新密码
+        user.setPassword(encryptedNewPassword);
+        userMapper.updateById(user);
+
+        // 使该用户的所有 Session 失效
+        SessionManager.invalidateSession(user.getId());
     }
 }

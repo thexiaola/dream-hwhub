@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS user (
     id_name VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '姓名',
     email VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '邮箱',
     phone VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '手机号',
-    password VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码',
+    password VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码',
     permission SMALLINT NOT NULL DEFAULT 1 COMMENT '权限级别',
     is_banned BIT(1) NOT NULL DEFAULT 0 COMMENT '是否被封禁：0-正常，1-封禁',
     register_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
