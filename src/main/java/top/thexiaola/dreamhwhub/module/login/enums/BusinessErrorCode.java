@@ -26,17 +26,12 @@ public enum BusinessErrorCode {
     
     // 邮件相关错误
     EMAIL_SEND_FAILED(4001, "邮件发送失败"),
-    INVALID_EMAIL_FORMAT(4002, "邮箱格式不正确"),
     EMAIL_SERVER_NOT_CONFIGURED(4003, "邮件服务器未配置"),
     EMAIL_SENDING_FAILED(4004, "邮件发送失败"),
     
     // 系统错误
     SYSTEM_ERROR(5000, "系统错误"),
     DATABASE_ERROR(5001, "数据库操作失败"),
-    
-    // 修改用户信息错误
-    USER_NO_REQUIRED(6001, "学号不能为空"),
-    USERNAME_REQUIRED(6002, "用户名不能为空"),
     
     // 修改邮箱错误
     SAME_EMAIL(6003, "新邮箱不能与原邮箱相同"),

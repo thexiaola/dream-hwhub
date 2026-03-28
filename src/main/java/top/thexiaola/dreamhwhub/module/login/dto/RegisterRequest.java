@@ -10,14 +10,16 @@ import jakarta.validation.constraints.Size;
  */
 public class RegisterRequest {
 
-    // 学号/工号
+    // 学号/工号（仅允许数字）
     @NotBlank(message = "学号/工号不能为空")
     @Size(max = 24, message = "学号/工号长度不能超过24位")
+    @Pattern(regexp = "^[0-9]+$", message = "学号/工号只能包含数字")
     private String userNo;
 
-    // 用户名
+    // 用户名（不允许换行符、制表符等特殊字符）
     @NotBlank(message = "用户名不能为空")
     @Size(max = 64, message = "用户名长度不能超过64位")
+    @Pattern(regexp = "^[\\p{L}\\s·-]+$", message = "身份证姓名只能包含字母、汉字及允许的符号（空格、中点、连字符）")
     private String username;
 
     // 邮箱

@@ -83,12 +83,6 @@ public class EmailServiceImpl implements EmailService {
             throw new BusinessException(BusinessErrorCode.EMAIL_SERVER_NOT_CONFIGURED);
         }
             
-        // 验证邮箱格式
-        if (to == null || !to.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            log.warn("Invalid email format: {}", to);
-            throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT);
-        }
-            
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -102,7 +96,7 @@ public class EmailServiceImpl implements EmailService {
             String errorMessage = e.getMessage();
             if (errorMessage != null && errorMessage.contains("550")) {
                 log.warn("Email address does not exist or is invalid: {}, SMTP error: {}", to, errorMessage);
-                throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT, "邮箱地址不存在或无效，请检查后重新输入");
+                throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮箱地址不存在或无效，请检查后重新输入");
             }
             log.error("Failed to send email: {}, recipient: {}, subject: {}", errorMessage, to, subject);
             throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + errorMessage);
@@ -261,6 +255,64 @@ public class EmailServiceImpl implements EmailService {
      */
     private String buildModifyKey(String userNo, String username, String email) {
         return "modify#" + userNo + "#" + username + "#" + email;
+    }
+    
+    /**
+     * 构建找回密码验证码的组合键：retrieve#userNo#username#email
+     */
+    private String buildRetrievePasswordKey(String userNo, String username, String email) {
+        return "retrieve#" + userNo + "#" + username + "#" + email;
+    }
+    
+    /**
+     * 发送找回密码验证码
+     */
+    @Override
+    public void sendRetrievePasswordEmailCode(String email, String userNo, String username) {
+        // 检查发送频率限制
+        Long remainingTime = checkSendFrequency(email);
+        if (remainingTime != null && remainingTime > 0) {
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
+        }
+        
+        // 生成 6 位随机数字验证码
+        Random random = new Random();
+        String code = String.format("%06d", random.nextInt(999999));
+            
+        // 删除该邮箱的所有旧验证码
+        removeOldVerificationCodesByEmail(email);
+        
+        // 使用组合 key 存储新验证码
+        String compositeKey = buildRetrievePasswordKey(userNo, username, email);
+        VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
+        verificationCodes.put(compositeKey, codeInfo);
+    
+        // 记录发送时间
+        emailLastSendTime.put(email, LocalDateTime.now());
+    
+        // 记录验证码生成日志
+        log.info("Generated retrieve password verification code {} for email: {}, userNo: {}, username: {}", 
+                code, email, userNo, username);
+    
+        // 发送邮件
+        sendRetrievePasswordCodeEmail(email, code);
+    }
+    
+    /**
+     * 验证找回密码验证码
+     */
+    @Override
+    public boolean verifyRetrievePasswordCode(String email, String code, String userNo, String username) {
+        return verifyCodeInternal(buildRetrievePasswordKey(userNo, username, email), code);
+    }
+    
+    private void sendRetrievePasswordCodeEmail(String email, String code) {
+        String subject = "Dream HWHub 找回密码验证码";
+        String content = String.format(
+                "您好！\n\n您正在申请找回密码，验证码是：%s。\n\n验证码有效期为%d分钟，请及时使用。\n\n如非本人操作，请立即联系管理员。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
+                code, expiryMinutes
+        );
+        sendEmail(email, subject, content);
     }
     
     private void sendModifyCodeEmail(String email, String code) {

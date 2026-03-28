@@ -41,20 +41,10 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         String operation = "User registration";
         
         // 去除首尾空格
-        String userNo = registerRequest.getUserNo().trim();
-        String username = registerRequest.getUsername().trim();
+        String userNo = registerRequest.getUserNo();
+        String username = registerRequest.getUsername();
 
         String email = registerRequest.getEmail();
-        
-        if (userNo.isEmpty()) {
-            log.info(LogUtil.getFailureLog(operation, "user_no is empty after trim", null));
-            throw new BusinessException(BusinessErrorCode.USER_NO_REQUIRED, "学号不能为空", null);
-        }
-        
-        if (username.isEmpty()) {
-            log.info(LogUtil.getFailureLog(operation, "username is empty after trim", null));
-            throw new BusinessException(BusinessErrorCode.USERNAME_REQUIRED, "用户名不能为空", null);
-        }
         
         if (isUserNoExists(userNo)) {
             log.info(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));
@@ -105,17 +95,6 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         userNo = userNo != null ? userNo.trim() : "";
         username = username != null ? username.trim() : "";
         
-        // 验证参数是否为空
-        if (userNo.isEmpty()) {
-            log.warn(LogUtil.getFailureLog(operation, "user_no is empty after trim", null));
-            throw new BusinessException(BusinessErrorCode.USER_NO_REQUIRED, "学号不能为空", null);
-        }
-        
-        if (username.isEmpty()) {
-            log.warn(LogUtil.getFailureLog(operation, "username is empty after trim", null));
-            throw new BusinessException(BusinessErrorCode.USERNAME_REQUIRED, "用户名不能为空", null);
-        }
-
         if (isUserNoExists(userNo)) {
             log.warn(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));
             throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);

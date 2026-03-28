@@ -11,12 +11,13 @@ import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordCodeRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.SendModifyCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.UserUtils;
-
-import java.util.Map;
 
 
 @RestController
@@ -82,14 +83,13 @@ public class ModifyUserController {
      * 为换绑的目标邮箱发送换绑验证码
      */
     @PostMapping("/getmodifycode/after")
-    public ResponseEntity<ApiResponse<Void>> sendModifyEmailCodeAfter(@RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<ApiResponse<Void>> sendModifyEmailCodeAfter(@Valid @RequestBody SendModifyCodeRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
-            String newEmail = requestBody.get("newEmail");
-            modifyUserService.sendModifyCodeToNewEmail(newEmail);
+            modifyUserService.sendModifyCodeToNewEmail(request.getNewEmail());
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            log.info("User ({}) sent modify verification code to new email: {} successfully", userInfo, newEmail);
+            log.info("User ({}) sent modify verification code to new email: {} successfully", userInfo, request.getNewEmail());
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
@@ -113,6 +113,38 @@ public class ModifyUserController {
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to modify password: {}", userInfo, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
+    }
+    
+    /**
+     * 发送找回密码验证码
+     */
+    @PostMapping("/retrieve/sendcode")
+    public ResponseEntity<ApiResponse<Void>> sendRetrievePasswordCode(@Valid @RequestBody RetrievePasswordCodeRequest request) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            modifyUserService.sendRetrievePasswordCode(request.getAccount());
+            log.info("User ({}) send retrieve password verification code successful", request.getAccount());
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (BusinessException e) {
+            log.warn("User ({}) failed to send retrieve password verification code: {}", request.getAccount(), e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
+    }
+    
+    /**
+     * 找回密码（通过验证码修改密码）
+     */
+    @PutMapping("/retrieve/modify")
+    public ResponseEntity<ApiResponse<Void>> retrievePassword(@Valid @RequestBody RetrievePasswordModifyRequest request) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            modifyUserService.retrievePassword(request);
+            log.info("User ({}) password retrieved successfully", request.getAccount());
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (BusinessException e) {
+            log.warn("User ({}) failed to retrieve password: {}", request.getAccount(), e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }

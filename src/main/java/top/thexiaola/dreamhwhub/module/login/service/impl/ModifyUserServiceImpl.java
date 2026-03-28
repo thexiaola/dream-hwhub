@@ -42,14 +42,6 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         String newUsername = modifyUserInfoRequest.getUsername();
         String newIdName = modifyUserInfoRequest.getIdName();
         String newPhone = modifyUserInfoRequest.getPhone();
-
-        // 验证字段
-        if (newUserNo == null || newUserNo.trim().isEmpty()) {
-            throw new BusinessException(BusinessErrorCode.USER_NO_REQUIRED, "学号不能为空", null);
-        }
-        if (newUsername == null || newUsername.trim().isEmpty()) {
-            throw new BusinessException(BusinessErrorCode.USERNAME_REQUIRED, "用户名不能为空", null);
-        }
         
         // 验证学号唯一性（排除自己）
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -146,16 +138,6 @@ public class ModifyUserServiceImpl implements ModifyUserService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 验证邮箱参数
-        if (email == null || email.trim().isEmpty()) {
-            throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT, "新邮箱不能为空", null);
-        }
-
-        // 验证邮箱格式
-        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            throw new BusinessException(BusinessErrorCode.INVALID_EMAIL_FORMAT, "邮箱格式不正确", null);
-        }
-
         // 检查新邮箱是否与原邮箱相同
         if (email.equals(user.getEmail())) {
             throw new BusinessException(BusinessErrorCode.SAME_EMAIL, "新邮箱不能与原邮箱相同", null);
@@ -207,5 +189,74 @@ public class ModifyUserServiceImpl implements ModifyUserService {
 
         // 使该用户的所有 Session 失效
         SessionManager.invalidateSession(user.getId());
+    }
+    
+    @Override
+    public void sendRetrievePasswordCode(String account) {
+        // 根据账号查找用户
+        User user = getUserByAccount(account);
+        if (user == null) {
+            // 为了安全，不提示具体原因，统一返回"账号不存在"
+            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "账号不存在", null);
+        }
+        
+        // 检查用户是否被封禁
+        if (Boolean.TRUE.equals(user.getIsBanned())) {
+            throw new BusinessException(BusinessErrorCode.USER_BANNED, "用户已被封禁", null);
+        }
+        
+        // 发送验证码到用户邮箱
+        emailService.sendRetrievePasswordEmailCode(user.getEmail(), user.getUserNo(), user.getUsername());
+    }
+    
+    @Override
+    public void retrievePassword(top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest request) {
+        String account = request.getAccount();
+        String code = request.getCode();
+        String newPassword = request.getNewPassword();
+        
+        // 根据账号查找用户
+        User user = getUserByAccount(account);
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "账号不存在", null);
+        }
+        
+        // 验证验证码
+        boolean isCodeValid = emailService.verifyRetrievePasswordCode(
+            user.getEmail(), code, user.getUserNo(), user.getUsername()
+        );
+        if (!isCodeValid) {
+            throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "验证码错误", null);
+        }
+        
+        // 加密新密码
+        String encryptedNewPassword = aesEncryptionUtil.encrypt(newPassword);
+        
+        // 更新密码
+        user.setPassword(encryptedNewPassword);
+        userMapper.updateById(user);
+        
+        // 使该用户的所有 Session 失效（强制重新登录）
+        SessionManager.invalidateSession(user.getId());
+    }
+    
+    /**
+     * 根据账号查找用户（支持学号、用户名、邮箱）
+     */
+    private User getUserByAccount(String account) {
+        User user = userMapper.selectOne(
+                new QueryWrapper<User>().eq("user_no", account)
+        );
+        if (user != null) return user;
+        
+        user = userMapper.selectOne(
+                new QueryWrapper<User>().eq("username", account)
+        );
+        if (user != null) return user;
+        
+        user = userMapper.selectOne(
+                new QueryWrapper<User>().eq("email", account)
+        );
+        return user;
     }
 }
