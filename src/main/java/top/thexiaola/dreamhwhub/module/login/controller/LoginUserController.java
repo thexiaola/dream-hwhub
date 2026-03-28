@@ -54,15 +54,12 @@ public class LoginUserController {
         String ip = LogUtil.getCurrentClientIp();
         
         try {
-            // 从服务层获取当前用户
+            // 获取当前用户
             User currentUser = loginUserService.getCurrentUser(request);
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             
-            // 调用服务层登出
-            loginUserService.logout(currentUser.getId());
-            
-            // 销毁 HTTP Session
-            request.getSession().invalidate();
+            // 登出
+            loginUserService.logout(currentUser.getId(), request);
             
             log.info("User ({}) logout successful", userInfo);
             return ResponseEntity.ok(ApiResponse.success(null));

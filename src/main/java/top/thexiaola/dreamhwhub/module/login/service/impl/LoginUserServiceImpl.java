@@ -89,7 +89,7 @@ public class LoginUserServiceImpl implements LoginUserService {
     }
     
     @Override
-    public void logout(Integer userId) {
+    public void logout(Integer userId, HttpServletRequest request) {
         String operation = "User logout";
         
         if (userId == null) {
@@ -98,7 +98,9 @@ public class LoginUserServiceImpl implements LoginUserService {
         }
         
         try {
-            // 销毁 Session
+            // 销毁 HTTP Session
+            request.getSession().invalidate();
+            // 清除 SessionManager 中的记录
             SessionManager.invalidateSession(userId);
             log.info(LogUtil.getSuccessLog(operation, null));
         } catch (Exception e) {

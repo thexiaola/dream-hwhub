@@ -26,8 +26,9 @@ public interface LoginUserService {
     /**
      * 用户登出
      * @param userId 用户 ID
+     * @param request HTTP 请求
      */
-    void logout(Integer userId);
+    void logout(Integer userId, HttpServletRequest request);
     
     /**
      * 获取当前登录用户
