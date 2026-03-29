@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassApplication;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.dto.*;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
@@ -28,16 +27,32 @@ public class ClassController {
     }
 
     /**
-     * 创建班级
+     * 提交创建班级申请
      */
     @PostMapping("/create")
-    public ApiResponse<ClassInfo> createClass(@Valid @RequestBody CreateClassRequest request) {
+    public ApiResponse<ClassApplication> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} creating class: {}", userInfo, request.getClassName());
-        ClassInfo classInfo = classService.createClass(request.getClassName(), request.getDescription());
-        log.info("User {} created class successfully, ID: {}", userInfo, classInfo.getId());
-        return ApiResponse.success(classInfo);
+        log.info("User {} applying to create class: {}", userInfo, request.getClassName());
+        ClassApplication application = classService.submitCreateClassRequest(
+                request.getClassName(), request.getDescription());
+        log.info("User {} submitted create class application, id: {}", userInfo, application.getId());
+        return ApiResponse.success(application);
+    }
+
+    /**
+     * 提交加入班级申请
+     */
+    @PostMapping("/join")
+    public ApiResponse<ClassApplication> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} applying to join class by ID: {}", userInfo, request.getClassCode());
+        int classId = Integer.parseInt(request.getClassCode());
+        ClassApplication application = classService.submitJoinClassRequest(classId, request.getIsTeacher());
+        String roleStr = request.getIsTeacher() ? "TEACHER" : "STUDENT";
+        log.info("User {} submitted join class application, role: {}", userInfo, roleStr);
+        return ApiResponse.success(application);
     }
 
     /**
@@ -127,35 +142,6 @@ public class ClassController {
         MemberCheckResponse response = new MemberCheckResponse(isMember, role);
         log.info("User {} check result: isMember={}, role={}", userInfo, isMember, role);
         return ApiResponse.success(response);
-    }
-
-    /**
-     * 提交创建班级申请
-     */
-    @PostMapping("/applycreate")
-    public ApiResponse<ClassApplication> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
-        User currentUser = UserUtils.getCurrentUser();
-        String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} applying to create class: {}", userInfo, request.getClassName());
-        ClassApplication application = classService.submitCreateClassRequest(
-                request.getClassName(), request.getDescription());
-        log.info("User {} submitted create class application, id: {}", userInfo, application.getId());
-        return ApiResponse.success(application);
-    }
-
-    /**
-     * 提交加入班级申请
-     */
-    @PostMapping("/applyjoin")
-    public ApiResponse<ClassApplication> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
-        User currentUser = UserUtils.getCurrentUser();
-        String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} applying to join class by ID: {}", userInfo, request.getClassCode());
-        int classId = Integer.parseInt(request.getClassCode());
-        ClassApplication application = classService.submitJoinClassRequest(classId, request.getIsTeacher());
-        String roleStr = request.getIsTeacher() ? "TEACHER" : "STUDENT";
-        log.info("User {} submitted join class application, role: {}", userInfo, roleStr);
-        return ApiResponse.success(application);
     }
 
     /**

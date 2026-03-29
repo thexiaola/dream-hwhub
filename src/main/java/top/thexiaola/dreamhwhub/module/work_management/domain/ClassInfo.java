@@ -24,9 +24,6 @@ public class ClassInfo {
     @TableField("creator_id")
     private Integer creatorId;
 
-    @TableField("status")
-    private Integer status;
-
     @TableField("approval_status")
     private Integer approvalStatus;  // 0-待审核，1-已通过，2-已拒绝
 

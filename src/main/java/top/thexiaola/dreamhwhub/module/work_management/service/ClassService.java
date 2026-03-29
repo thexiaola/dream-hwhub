@@ -14,11 +14,6 @@ import java.util.List;
 public interface ClassService {
 
     /**
-     * 创建班级
-     */
-    ClassInfo createClass(String className, String description);
-
-    /**
      * 添加用户为班级老师（管理员或老师专用）
      */
     ClassMember addTeacherToClass(Integer classId, String userAccount);

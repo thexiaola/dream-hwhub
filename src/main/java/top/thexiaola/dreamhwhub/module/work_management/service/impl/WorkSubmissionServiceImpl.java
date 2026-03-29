@@ -68,8 +68,8 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级学生可以提交作业", null);
         }
 
-        // 检查作业状态
-        if (workInfo.getStatus() != 1) {
+        // 检查作业状态（必须是已发布状态才能提交）
+        if (!isWorkPublished(workInfo)) {
             throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业未发布或已结束", null);
         }
 
@@ -331,6 +331,23 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                         attachment.getUploadTime()
                 ))
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 检查作业是否已发布（在发布时间内）
+     * @param workInfo 作业信息
+     * @return true-已发布，false-未发布或已结束
+     */
+    private boolean isWorkPublished(WorkInfo workInfo) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 如果当前时间在发布时间之前，未发布
+        if (workInfo.getPublishTime() != null && now.isBefore(workInfo.getPublishTime())) {
+            return false;
+        }
+        
+        // 如果当前时间在截止时间之后，已结束
+        return workInfo.getDeadline() == null || !now.isAfter(workInfo.getDeadline());
     }
     
 }

@@ -43,12 +43,6 @@ public class UpdateWorkRequest {
     private Integer totalScore;
 
     /**
-     * 作业状态：0-未发布，1-已发布，2-已结束
-     */
-    @NotNull(message = "作业状态不能为空")
-    private Integer status;
-
-    /**
      * 附件列表（文件路径）
      */
     private java.util.List<String> attachmentPaths;

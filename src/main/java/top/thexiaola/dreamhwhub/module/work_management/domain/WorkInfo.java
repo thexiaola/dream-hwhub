@@ -63,10 +63,10 @@ public class WorkInfo implements Serializable {
     private Integer totalScore = 100;
 
     /**
-     * 作业状态：0-未发布，1-已发布，2-已结束
+     * 发布时间
      */
-    @TableField("status")
-    private Integer status = 1;
+    @TableField("publish_time")
+    private LocalDateTime publishTime;
 
     /**
      * 创建时间

@@ -46,39 +46,6 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassInfo createClass(String className, String description) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
-
-        // 创建班级
-        ClassInfo classInfo = new ClassInfo();
-        classInfo.setClassName(className);
-        classInfo.setDescription(description);
-        classInfo.setCreatorId(currentUser.getId());
-        classInfo.setStatus(1);
-        classInfo.setCreateTime(LocalDateTime.now());
-        classInfo.setUpdateTime(LocalDateTime.now());
-
-        classInfoMapper.insert(classInfo);
-
-        // 创建者自动成为老师
-        ClassMember member = new ClassMember();
-        member.setClassId(classInfo.getId());
-        member.setUserId(currentUser.getId());
-        member.setIsTeacher(true);
-        member.setJoinTime(LocalDateTime.now());
-        member.setInviteBy(null);
-
-        classMemberMapper.insert(member);
-
-        log.info("User {} created class: {}", currentUser.getId(), className);
-        return classInfo;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public ClassMember addTeacherToClass(Integer classId, String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -181,10 +148,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者可以删除班级", null);
         }
 
-        // 更新班级状态为已解散（软删除）
-        classInfo.setStatus(2);
-        classInfo.setUpdateTime(LocalDateTime.now());
-        classInfoMapper.updateById(classInfo);
+        // 直接删除班级（级联删除相关数据）
+        classInfoMapper.deleteById(classId);
 
         log.info("User {} deleted class {}", currentUser.getId(), classId);
     }
@@ -197,7 +162,7 @@ public class ClassServiceImpl implements ClassService {
 
         return members.stream()
                 .map(member -> classInfoMapper.selectById(member.getClassId()))
-                .filter(classInfo -> classInfo != null && classInfo.getStatus() == 1)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
@@ -269,7 +234,6 @@ public class ClassServiceImpl implements ClassService {
                 classInfo.getClassName(),
                 classInfo.getCreatorId(),
                 creatorName,
-                classInfo.getStatus(),
                 userRole,
                 memberCount,
                 teacherCount,
@@ -286,7 +250,7 @@ public class ClassServiceImpl implements ClassService {
         return members.stream()
                 .map(member -> {
                     ClassInfo classInfo = classInfoMapper.selectById(member.getClassId());
-                    if (classInfo == null || classInfo.getStatus() != 1) {
+                    if (classInfo == null) {
                         return null;
                     }
 
@@ -312,7 +276,6 @@ public class ClassServiceImpl implements ClassService {
                             classInfo.getClassName(),
                             classInfo.getCreatorId(),
                             creatorName,
-                            classInfo.getStatus(),
                             member.getIsTeacher() != null ? (member.getIsTeacher() ? "TEACHER" : "STUDENT") : null,
                             memberCount,
                             teacherCount,
@@ -501,7 +464,6 @@ public class ClassServiceImpl implements ClassService {
                 classInfo.setClassName(application.getClassName());
                 classInfo.setDescription(application.getDescription());
                 classInfo.setCreatorId(application.getApplicantId());
-                classInfo.setStatus(1);
                 classInfo.setCreateTime(LocalDateTime.now());
                 classInfo.setUpdateTime(LocalDateTime.now());
                 classInfoMapper.insert(classInfo);
@@ -513,8 +475,6 @@ public class ClassServiceImpl implements ClassService {
                 member.setIsTeacher(true);
                 member.setJoinTime(LocalDateTime.now());
                 classMemberMapper.insert(member);
-
-                log.info("Create class application approved, created class: {}", classInfo.getId());
             } else if (Integer.valueOf(2).equals(application.getType())) {
                 // 加入班级申请通过 - 直接添加为成员
                 ClassMember member = new ClassMember();

@@ -68,7 +68,7 @@ public class WorkServiceImpl implements WorkService {
         workInfo.setClassId(request.getClassId());
         workInfo.setDeadline(request.getDeadline());
         workInfo.setTotalScore(request.getTotalScore());
-        workInfo.setStatus(1); // 已发布
+        workInfo.setPublishTime(request.getPublishTime());
         workInfo.setCreateTime(LocalDateTime.now());
         workInfo.setUpdateTime(LocalDateTime.now());
 
@@ -117,7 +117,6 @@ public class WorkServiceImpl implements WorkService {
         workInfo.setDescription(request.getDescription());
         workInfo.setDeadline(request.getDeadline());
         workInfo.setTotalScore(request.getTotalScore());
-        workInfo.setStatus(request.getStatus());
         workInfo.setUpdateTime(LocalDateTime.now());
 
         workMapper.updateById(workInfo);
@@ -158,11 +157,22 @@ public class WorkServiceImpl implements WorkService {
         if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
+        
+        // 检查权限：未发布的作业只有老师可以查看
+        User currentUser = UserUtils.getCurrentUser();
+        Integer status = calculateWorkStatus(workInfo);
+        if (status == 0) { // 0-未发布
+            if (currentUser == null || !classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+                throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "该作业尚未发布，无法查看", null);
+            }
+        }
+        
         return workInfo;
     }
 
     @Override
     public List<WorkResponse> getWorkList(String publisherUserNo, Integer status) {
+        User currentUser = UserUtils.getCurrentUser();
         QueryWrapper<WorkInfo> queryWrapper = new QueryWrapper<>();
         
         if (publisherUserNo != null && !publisherUserNo.isEmpty()) {
@@ -175,16 +185,20 @@ public class WorkServiceImpl implements WorkService {
             }
         }
         
-        if (status != null) {
-            queryWrapper.eq("status", status);
-        }
-        
         queryWrapper.orderByDesc("create_time");
         
         List<WorkInfo> workInfos = workMapper.selectList(queryWrapper);
         LocalDateTime now = LocalDateTime.now();
         
         return workInfos.stream()
+                .filter(work -> {
+                    // 过滤未发布作业：学生看不到
+                    Integer workStatus = calculateWorkStatus(work);
+                    if (workStatus == 0) { // 0-未发布
+                        return currentUser != null && classService.isTeacher(work.getClassId(), currentUser.getId());
+                    }
+                    return true;
+                })
                 .map(work -> {
                     WorkResponse response = new WorkResponse();
                     response.setId(work.getId());
@@ -193,7 +207,8 @@ public class WorkServiceImpl implements WorkService {
                     response.setPublisherId(work.getPublisherId());
                     response.setDeadline(work.getDeadline());
                     response.setTotalScore(work.getTotalScore());
-                    response.setStatus(work.getStatus());
+                    response.setPublishTime(work.getPublishTime());
+                    response.setStatus(calculateWorkStatus(work)); // 动态计算状态
                     response.setIsOverdue(work.getDeadline() != null && now.isAfter(work.getDeadline()));
                     response.setCreateTime(work.getCreateTime());
                     response.setUpdateTime(work.getUpdateTime());
@@ -220,6 +235,28 @@ public class WorkServiceImpl implements WorkService {
         User user = userMapper.selectOne(queryWrapper);
         
         return user != null ? user.getId() : null;
+    }
+    
+    /**
+     * 动态计算作业状态
+     * @param workInfo 作业信息
+     * @return 0-未发布，1-已发布，2-已结束
+     */
+    private Integer calculateWorkStatus(WorkInfo workInfo) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 如果当前时间在发布时间之前，状态为 0（未发布）
+        if (workInfo.getPublishTime() != null && now.isBefore(workInfo.getPublishTime())) {
+            return 0;
+        }
+        
+        // 如果当前时间在截止时间之后，状态为 2（已结束）
+        if (workInfo.getDeadline() != null && now.isAfter(workInfo.getDeadline())) {
+            return 2;
+        }
+        
+        // 否则状态为 1（已发布）
+        return 1;
     }
     
     /**

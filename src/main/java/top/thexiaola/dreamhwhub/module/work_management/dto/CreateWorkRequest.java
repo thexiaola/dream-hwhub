@@ -43,6 +43,12 @@ public class CreateWorkRequest {
     private Integer classId;
 
     /**
+     * 发布时间（必填，立即发布则传当前时间）
+     */
+    @NotNull(message = "发布时间不能为空")
+    private LocalDateTime publishTime;
+
+    /**
      * 附件列表（文件路径）
      */
     private java.util.List<String> attachmentPaths;

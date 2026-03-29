@@ -33,11 +33,6 @@ public class ClassDetailResponse {
     private String creatorName;
 
     /**
-     * 班级状态（1-正常，2-已解散）
-     */
-    private Integer status;
-
-    /**
      * 用户在该班级的角色（TEACHER 或 STUDENT）
      */
     private String userRole;

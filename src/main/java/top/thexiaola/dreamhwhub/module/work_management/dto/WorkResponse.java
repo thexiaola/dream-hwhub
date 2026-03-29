@@ -45,7 +45,12 @@ public class WorkResponse {
     private Integer totalScore;
 
     /**
-     * 作业状态：0-未发布，1-已发布，2-已结束
+     * 发布时间
+     */
+    private LocalDateTime publishTime;
+
+    /**
+     * 作业状态：0-未发布，1-已发布，2-已结束（动态计算）
      */
     private Integer status;
 
