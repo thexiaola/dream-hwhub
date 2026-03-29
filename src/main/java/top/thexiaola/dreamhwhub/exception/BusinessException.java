@@ -1,10 +1,12 @@
 package top.thexiaola.dreamhwhub.exception;
 
+import lombok.Getter;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 
 /**
  * 业务异常类
  */
+@Getter
 public class BusinessException extends RuntimeException {
     
     private final BusinessErrorCode errorCode;
@@ -23,11 +25,7 @@ public class BusinessException extends RuntimeException {
         super(message);
         this.errorCode = errorCode;
     }
-    
-    public BusinessErrorCode getErrorCode() {
-        return errorCode;
-    }
-    
+
     public int getErrorCodeValue() {
         return errorCode.getCode();
     }

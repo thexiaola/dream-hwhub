@@ -17,8 +17,12 @@ public class SubmitWorkRequest {
     private Integer workId;
 
     /**
-     * 提交内容/文件路径
+     * 提交内容/文本描述
      */
-    @NotBlank(message = "提交内容不能为空")
     private String submissionContent;
+
+    /**
+     * 附件列表（文件路径）
+     */
+    private java.util.List<String> attachmentPaths;
 }

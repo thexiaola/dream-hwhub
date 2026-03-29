@@ -29,7 +29,7 @@ public class GradeWorkRequest {
     private BigDecimal score;
 
     /**
-     * 教师评语
+     * 批改人评语
      */
     @NotBlank(message = "评语不能为空")
     private String comment;

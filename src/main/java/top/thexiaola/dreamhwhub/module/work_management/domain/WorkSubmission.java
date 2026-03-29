@@ -34,19 +34,13 @@ public class WorkSubmission implements Serializable {
     private Integer workId;
 
     /**
-     * 提交学生学号
+     * 提交人 ID
      */
-    @TableField("student_no")
-    private String studentNo;
+    @TableField("submitter_id")
+    private Integer submitterId;
 
     /**
-     * 提交学生姓名
-     */
-    @TableField("student_name")
-    private String studentName;
-
-    /**
-     * 提交内容/文件路径
+     * 提交内容/文本描述
      */
     @TableField("submission_content")
     private String submissionContent;
@@ -58,7 +52,7 @@ public class WorkSubmission implements Serializable {
     private BigDecimal score;
 
     /**
-     * 教师评语
+     * 批改人评语
      */
     @TableField("comment")
     private String comment;
@@ -76,10 +70,10 @@ public class WorkSubmission implements Serializable {
     private LocalDateTime gradeTime;
 
     /**
-     * 批改教师工号
+     * 批改人 ID
      */
-    @TableField("grade_teacher_no")
-    private String gradeTeacherNo;
+    @TableField("grader_id")
+    private Integer graderId;
 
     /**
      * 提交状态：0-未提交，1-已提交，2-已批改

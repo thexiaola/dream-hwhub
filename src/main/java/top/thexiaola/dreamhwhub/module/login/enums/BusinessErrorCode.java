@@ -1,8 +1,11 @@
 package top.thexiaola.dreamhwhub.module.login.enums;
 
+import lombok.Getter;
+
 /**
  * 业务错误码枚举
  */
+@Getter
 public enum BusinessErrorCode {
     // 成功
     SUCCESS(0, "操作成功"),
@@ -55,14 +58,6 @@ public enum BusinessErrorCode {
     BusinessErrorCode(int code, String message) {
         this.code = code;
         this.message = message;
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
     }
 
     /**

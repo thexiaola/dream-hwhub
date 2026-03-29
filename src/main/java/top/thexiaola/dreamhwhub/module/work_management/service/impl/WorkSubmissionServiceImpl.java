@@ -8,11 +8,13 @@ import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.util.UserUtils;
 
@@ -28,10 +30,12 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;
+    private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
 
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper) {
+    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper) {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workMapper = workMapper;
+        this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
     }
 
     @Override
@@ -62,7 +66,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         // 检查是否已提交过
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("work_id", request.getWorkId())
-                .eq("student_no", currentUser.getUserNo());
+                .eq("submitter_id", currentUser.getId());
         WorkSubmission existingSubmission = workSubmissionMapper.selectOne(queryWrapper);
         
         if (existingSubmission != null) {
@@ -72,8 +76,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         // 创建提交记录
         WorkSubmission submission = new WorkSubmission();
         submission.setWorkId(request.getWorkId());
-        submission.setStudentNo(currentUser.getUserNo());
-        submission.setStudentName(currentUser.getIdName());
+        submission.setSubmitterId(currentUser.getId());
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1); // 已提交
         submission.setIsOverdue(work.getDeadline() != null && LocalDateTime.now().isAfter(work.getDeadline()));
@@ -82,6 +85,12 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setUpdateTime(LocalDateTime.now());
 
         workSubmissionMapper.insert(submission);
+        
+        // 保存附件
+        if (request.getAttachmentPaths() != null && !request.getAttachmentPaths().isEmpty()) {
+            saveSubmissionAttachments(submission.getId(), request.getAttachmentPaths());
+        }
+        
         return submission;
     }
 
@@ -101,7 +110,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 只能修改自己的提交
-        if (!submission.getStudentNo().equals(currentUser.getUserNo())) {
+        if (!submission.getSubmitterId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能修改自己的提交", null);
         }
 
@@ -135,7 +144,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
         // 如果是学生，只能删除自己的提交
         if (currentUser.getPermission() < 2) {
-            if (!submission.getStudentNo().equals(currentUser.getUserNo())) {
+            if (!submission.getSubmitterId().equals(currentUser.getId())) {
                 throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能删除自己的提交", null);
             }
         }
@@ -154,8 +163,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     public List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId) {
+        // TODO: 需要通过 studentNo 查询用户 ID，这里暂时简化处理
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("student_no", studentNo);
+        // queryWrapper.eq("submitter_id", userId);
         
         if (workId != null) {
             queryWrapper.eq("work_id", workId);
@@ -229,7 +239,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setComment(request.getComment());
         submission.setStatus(2); // 已批改
         submission.setGradeTime(LocalDateTime.now());
-        submission.setGradeTeacherNo(currentUser.getUserNo());
+        submission.setGraderId(currentUser.getId());
         submission.setUpdateTime(LocalDateTime.now());
 
         workSubmissionMapper.updateById(submission);
@@ -245,18 +255,56 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         response.setId(submission.getId());
         response.setWorkId(submission.getWorkId());
         response.setWorkTitle(work != null ? work.getTitle() : null);
-        response.setStudentNo(submission.getStudentNo());
-        response.setStudentName(submission.getStudentName());
+        response.setSubmitterId(submission.getSubmitterId());
         response.setSubmissionContent(submission.getSubmissionContent());
         response.setScore(submission.getScore());
         response.setComment(submission.getComment());
         response.setSubmitTime(submission.getSubmitTime());
         response.setGradeTime(submission.getGradeTime());
-        response.setGradeTeacherNo(submission.getGradeTeacherNo());
+        response.setGraderId(submission.getGraderId());
         response.setStatus(submission.getStatus());
         response.setIsOverdue(submission.getIsOverdue());
         response.setCreateTime(submission.getCreateTime());
         response.setUpdateTime(submission.getUpdateTime());
+        
+        // 加载附件列表
+        List<WorkSubmissionResponse.AttachmentInfo> attachments = getSubmissionAttachments(submission.getId());
+        response.setAttachments(attachments);
+        
         return response;
+    }
+    
+    /**
+     * 保存提交附件
+     */
+    private void saveSubmissionAttachments(Integer submissionId, List<String> attachmentPaths) {
+        for (String filePath : attachmentPaths) {
+            WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
+            attachment.setSubmissionId(submissionId);
+            attachment.setFileName(filePath.substring(filePath.lastIndexOf("/") + 1));
+            attachment.setFilePath(filePath);
+            attachment.setUploadTime(LocalDateTime.now());
+            workSubmissionAttachmentMapper.insert(attachment);
+        }
+    }
+    
+    /**
+     * 获取提交附件列表
+     */
+    private List<WorkSubmissionResponse.AttachmentInfo> getSubmissionAttachments(Integer submissionId) {
+        QueryWrapper<WorkSubmissionAttachment> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("submission_id", submissionId);
+        List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(queryWrapper);
+        
+        return attachments.stream()
+                .map(attachment -> new WorkSubmissionResponse.AttachmentInfo(
+                        attachment.getId(),
+                        attachment.getFileName(),
+                        attachment.getFilePath(),
+                        attachment.getFileSize(),
+                        attachment.getFileType(),
+                        attachment.getUploadTime()
+                ))
+                .collect(Collectors.toList());
     }
 }

@@ -39,16 +39,10 @@ public class Work implements Serializable {
     private String description;
 
     /**
-     * 发布教师工号
+     * 发布人 ID
      */
-    @TableField("teacher_no")
-    private String teacherNo;
-
-    /**
-     * 发布教师姓名
-     */
-    @TableField("teacher_name")
-    private String teacherName;
+    @TableField("publisher_id")
+    private Integer publisherId;
 
     /**
      * 截止时间

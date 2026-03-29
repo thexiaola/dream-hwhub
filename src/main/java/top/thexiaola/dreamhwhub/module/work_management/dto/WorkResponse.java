@@ -30,14 +30,9 @@ public class WorkResponse {
     private String description;
 
     /**
-     * 发布教师工号
+     * 发布人 ID
      */
-    private String teacherNo;
-
-    /**
-     * 发布教师姓名
-     */
-    private String teacherName;
+    private Integer publisherId;
 
     /**
      * 截止时间
@@ -68,4 +63,21 @@ public class WorkResponse {
      * 更新时间
      */
     private LocalDateTime updateTime;
+
+    /**
+     * 附件列表
+     */
+    private java.util.List<AttachmentInfo> attachments;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AttachmentInfo {
+        private Integer id;
+        private String fileName;
+        private String filePath;
+        private Long fileSize;
+        private String fileType;
+        private LocalDateTime uploadTime;
+    }
 }

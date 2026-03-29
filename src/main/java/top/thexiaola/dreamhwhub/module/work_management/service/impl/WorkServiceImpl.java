@@ -7,10 +7,12 @@ import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.WorkResponse;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.util.UserUtils;
 
@@ -25,9 +27,11 @@ import java.util.stream.Collectors;
 public class WorkServiceImpl implements WorkService {
 
     private final WorkMapper workMapper;
+    private final WorkAttachmentMapper workAttachmentMapper;
 
-    public WorkServiceImpl(WorkMapper workMapper) {
+    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper) {
         this.workMapper = workMapper;
+        this.workAttachmentMapper = workAttachmentMapper;
     }
 
     @Override
@@ -48,8 +52,7 @@ public class WorkServiceImpl implements WorkService {
         Work work = new Work();
         work.setTitle(request.getTitle());
         work.setDescription(request.getDescription());
-        work.setTeacherNo(currentUser.getUserNo());
-        work.setTeacherName(currentUser.getIdName());
+        work.setPublisherId(currentUser.getId());
         work.setDeadline(request.getDeadline());
         work.setTotalScore(request.getTotalScore());
         work.setStatus(1); // 已发布
@@ -57,6 +60,12 @@ public class WorkServiceImpl implements WorkService {
         work.setUpdateTime(LocalDateTime.now());
 
         workMapper.insert(work);
+        
+        // 保存附件
+        if (request.getAttachmentPaths() != null && !request.getAttachmentPaths().isEmpty()) {
+            saveWorkAttachments(work.getId(), request.getAttachmentPaths());
+        }
+        
         return work;
     }
 
@@ -81,7 +90,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         // 只能修改自己发布的作业
-        if (!work.getTeacherNo().equals(currentUser.getUserNo())) {
+        if (!work.getPublisherId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能修改自己发布的作业", null);
         }
 
@@ -118,7 +127,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         // 只能删除自己发布的作业
-        if (!work.getTeacherNo().equals(currentUser.getUserNo())) {
+        if (!work.getPublisherId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能删除自己发布的作业", null);
         }
 
@@ -139,7 +148,7 @@ public class WorkServiceImpl implements WorkService {
         QueryWrapper<Work> queryWrapper = new QueryWrapper<>();
         
         if (teacherNo != null && !teacherNo.isEmpty()) {
-            queryWrapper.eq("teacher_no", teacherNo);
+            queryWrapper.eq("publisher_id", getUserIdByUserNo(teacherNo));
         }
         
         if (status != null) {
@@ -157,16 +166,62 @@ public class WorkServiceImpl implements WorkService {
                     response.setId(work.getId());
                     response.setTitle(work.getTitle());
                     response.setDescription(work.getDescription());
-                    response.setTeacherNo(work.getTeacherNo());
-                    response.setTeacherName(work.getTeacherName());
+                    response.setPublisherId(work.getPublisherId());
                     response.setDeadline(work.getDeadline());
                     response.setTotalScore(work.getTotalScore());
                     response.setStatus(work.getStatus());
                     response.setIsOverdue(work.getDeadline() != null && now.isAfter(work.getDeadline()));
                     response.setCreateTime(work.getCreateTime());
                     response.setUpdateTime(work.getUpdateTime());
+                    
+                    // 加载附件列表
+                    List<WorkResponse.AttachmentInfo> attachments = getWorkAttachments(work.getId());
+                    response.setAttachments(attachments);
+                    
                     return response;
                 })
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 保存作业附件
+     */
+    private void saveWorkAttachments(Integer workId, List<String> attachmentPaths) {
+        for (String filePath : attachmentPaths) {
+            WorkAttachment attachment = new WorkAttachment();
+            attachment.setWorkId(workId);
+            attachment.setFileName(filePath.substring(filePath.lastIndexOf("/") + 1));
+            attachment.setFilePath(filePath);
+            attachment.setUploadTime(LocalDateTime.now());
+            workAttachmentMapper.insert(attachment);
+        }
+    }
+    
+    /**
+     * 获取作业附件列表
+     */
+    private List<WorkResponse.AttachmentInfo> getWorkAttachments(Integer workId) {
+        QueryWrapper<WorkAttachment> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("work_id", workId);
+        List<WorkAttachment> attachments = workAttachmentMapper.selectList(queryWrapper);
+        
+        return attachments.stream()
+                .map(attachment -> new WorkResponse.AttachmentInfo(
+                        attachment.getId(),
+                        attachment.getFileName(),
+                        attachment.getFilePath(),
+                        attachment.getFileSize(),
+                        attachment.getFileType(),
+                        attachment.getUploadTime()
+                ))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 根据工号获取用户 ID（临时方法，实际应该从 user 表查询）
+     */
+    private Integer getUserIdByUserNo(String userNo) {
+        // TODO: 需要从 UserMapper 查询，这里暂时返回 null
+        return null;
     }
 }

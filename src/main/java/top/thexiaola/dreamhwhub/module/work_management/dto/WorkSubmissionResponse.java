@@ -31,17 +31,12 @@ public class WorkSubmissionResponse {
     private String workTitle;
 
     /**
-     * 提交学生学号
+     * 提交人 ID
      */
-    private String studentNo;
+    private Integer submitterId;
 
     /**
-     * 提交学生姓名
-     */
-    private String studentName;
-
-    /**
-     * 提交内容/文件路径
+     * 提交内容/文本描述
      */
     private String submissionContent;
 
@@ -51,7 +46,7 @@ public class WorkSubmissionResponse {
     private BigDecimal score;
 
     /**
-     * 教师评语
+     * 批改人评语
      */
     private String comment;
 
@@ -66,9 +61,9 @@ public class WorkSubmissionResponse {
     private LocalDateTime gradeTime;
 
     /**
-     * 批改教师工号
+     * 批改人 ID
      */
-    private String gradeTeacherNo;
+    private Integer graderId;
 
     /**
      * 提交状态：0-未提交，1-已提交，2-已批改
@@ -89,4 +84,21 @@ public class WorkSubmissionResponse {
      * 更新时间
      */
     private LocalDateTime updateTime;
+
+    /**
+     * 附件列表
+     */
+    private java.util.List<AttachmentInfo> attachments;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AttachmentInfo {
+        private Integer id;
+        private String fileName;
+        private String filePath;
+        private Long fileSize;
+        private String fileType;
+        private LocalDateTime uploadTime;
+    }
 }

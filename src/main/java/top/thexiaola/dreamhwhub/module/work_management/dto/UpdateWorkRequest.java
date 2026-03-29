@@ -47,4 +47,9 @@ public class UpdateWorkRequest {
      */
     @NotNull(message = "作业状态不能为空")
     private Integer status;
+
+    /**
+     * 附件列表（文件路径）
+     */
+    private java.util.List<String> attachmentPaths;
 }

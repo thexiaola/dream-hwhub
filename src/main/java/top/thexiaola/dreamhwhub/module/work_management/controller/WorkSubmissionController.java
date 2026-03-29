@@ -39,11 +39,13 @@ public class WorkSubmissionController {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
             WorkSubmission submission = workSubmissionService.submitWork(request);
-            log.info("User ({}) submitted work, id: {}", ip, submission.getId());
+            log.info("User ({}) submitted work, id: {}", userInfo, submission.getId());
             return ResponseEntity.ok(ApiResponse.success(submission));
         } catch (BusinessException e) {
-            log.warn("User ({}) failed to submit work: {}", ip, e.getMessage());
+            log.warn("User submit work failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }
@@ -57,11 +59,14 @@ public class WorkSubmissionController {
             @RequestParam String submissionContent) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
             WorkSubmission submission = workSubmissionService.updateSubmission(submissionId, submissionContent);
-            log.info("User ({}) updated submission, id: {}", ip, submission.getId());
+            log.info("User ({}) updated submission, id: {}", userInfo, submission.getId());
             return ResponseEntity.ok(ApiResponse.success(submission));
         } catch (BusinessException e) {
-            log.warn("User ({}) failed to update submission: {}", ip, e.getMessage());
+            log.warn("User update submission failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }
@@ -73,11 +78,14 @@ public class WorkSubmissionController {
     public ResponseEntity<ApiResponse<Void>> deleteSubmission(@RequestParam Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
             workSubmissionService.deleteSubmission(submissionId);
-            log.info("User ({}) deleted submission, id: {}", ip, submissionId);
+            log.info("User ({}) deleted submission, id: {}", userInfo, submissionId);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (BusinessException e) {
-            log.warn("User ({}) failed to delete submission: {}", ip, e.getMessage());
+            log.warn("User delete submission failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }
@@ -89,11 +97,14 @@ public class WorkSubmissionController {
     public ResponseEntity<ApiResponse<WorkSubmission>> getSubmissionDetail(@RequestParam Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
             WorkSubmission submission = workSubmissionService.getSubmissionById(submissionId);
-            log.info("User ({}) queried submission detail, id: {}", ip, submissionId);
+            log.info("User ({}) queried submission detail, id: {}", userInfo, submissionId);
             return ResponseEntity.ok(ApiResponse.success(submission));
         } catch (BusinessException e) {
-            log.warn("User ({}) failed to query submission detail: {}", ip, e.getMessage());
+            log.warn("User query submission detail failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }
@@ -107,14 +118,16 @@ public class WorkSubmissionController {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
             if (user == null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(400, "用户未登录"));
             }
             List<WorkSubmissionResponse> submissions = workSubmissionService.getStudentSubmissions(user.getUserNo(), workId);
-            log.info("User ({}) queried student submissions, size: {}", ip, submissions.size());
+            log.info("User ({}) queried student submissions, size: {}", userInfo, submissions.size());
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {
-            log.warn("User ({}) failed to query student submissions: {}", ip, e.getMessage());
+            log.warn("User query student submissions failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }
@@ -126,11 +139,14 @@ public class WorkSubmissionController {
     public ResponseEntity<ApiResponse<List<WorkSubmissionResponse>>> getWorkSubmissions(@RequestParam Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
             List<WorkSubmissionResponse> submissions = workSubmissionService.getWorkSubmissions(workId);
-            log.info("User ({}) queried work submissions, workId: {}, size: {}", ip, workId, submissions.size());
+            log.info("User ({}) queried work submissions, workId: {}, size: {}", userInfo, workId, submissions.size());
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {
-            log.warn("User ({}) failed to query work submissions: {}", ip, e.getMessage());
+            log.warn("User query work submissions failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }
@@ -142,11 +158,14 @@ public class WorkSubmissionController {
     public ResponseEntity<ApiResponse<WorkSubmission>> gradeWork(@Valid @RequestBody GradeWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
             WorkSubmission submission = workSubmissionService.gradeWork(request);
-            log.info("User ({}) graded submission, id: {}, score: {}", ip, submission.getId(), submission.getScore());
+            log.info("User ({}) graded submission, id: {}, score: {}", userInfo, submission.getId(), submission.getScore());
             return ResponseEntity.ok(ApiResponse.success(submission));
         } catch (BusinessException e) {
-            log.warn("User ({}) failed to grade submission: {}", ip, e.getMessage());
+            log.warn("User grade work failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }

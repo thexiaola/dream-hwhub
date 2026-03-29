@@ -35,4 +35,9 @@ public class CreateWorkRequest {
      */
     @NotNull(message = "作业总分不能为空")
     private Integer totalScore = 100;
+
+    /**
+     * 附件列表（文件路径）
+     */
+    private java.util.List<String> attachmentPaths;
 }
