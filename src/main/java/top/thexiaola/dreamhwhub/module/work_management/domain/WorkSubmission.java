@@ -34,6 +34,12 @@ public class WorkSubmission implements Serializable {
     private Integer workId;
 
     /**
+     * 所属班级 ID
+     */
+    @TableField("class_id")
+    private Integer classId;
+
+    /**
      * 提交人 ID
      */
     @TableField("submitter_id")

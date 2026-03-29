@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
  * 作业实体类
  */
 @Data
-@TableName("work")
-public class Work implements Serializable {
+@TableName("work_info")
+public class WorkInfo implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -43,6 +43,12 @@ public class Work implements Serializable {
      */
     @TableField("publisher_id")
     private Integer publisherId;
+
+    /**
+     * 所属班级 ID
+     */
+    @TableField("class_id")
+    private Integer classId;
 
     /**
      * 截止时间

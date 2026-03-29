@@ -8,8 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
-import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
@@ -18,6 +17,7 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.WorkSubmissionRespons
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
+import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.util.FileUploadValidator;
 import top.thexiaola.dreamhwhub.util.UserUtils;
@@ -39,13 +39,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
-    private final UserMapper userMapper;
+    private final ClassService classService;
 
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, UserMapper userMapper) {
+    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService) {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workMapper = workMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
-        this.userMapper = userMapper;
+        this.classService = classService;
     }
 
     @Override
@@ -57,19 +57,19 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 检查权限（学生才能提交作业）
-        if (currentUser.getPermission() >= 2) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "教师不能提交作业", null);
-        }
-
         // 查询作业
-        Work work = workMapper.selectById(request.getWorkId());
-        if (work == null) {
+        WorkInfo workInfo = workMapper.selectById(request.getWorkId());
+        if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
 
+        // 检查权限（必须是班级学生才能提交作业）
+        if (!classService.isStudent(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级学生可以提交作业", null);
+        }
+
         // 检查作业状态
-        if (work.getStatus() != 1) {
+        if (workInfo.getStatus() != 1) {
             throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业未发布或已结束", null);
         }
 
@@ -89,7 +89,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setSubmitterId(currentUser.getId());
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1); // 已提交
-        submission.setIsOverdue(work.getDeadline() != null && LocalDateTime.now().isAfter(work.getDeadline()));
+        submission.setIsOverdue(workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline()));
         submission.setSubmitTime(LocalDateTime.now());
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
@@ -152,8 +152,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
         }
 
-        // 如果是学生，只能删除自己的提交
-        if (currentUser.getPermission() < 2) {
+        // 如果是老师，可以删除任何学生的提交；如果是学生，只能删除自己的提交
+        boolean isTeacher = classService.isTeacher(submission.getClassId(), currentUser.getId());
+        if (!isTeacher) {
             if (!submission.getSubmitterId().equals(currentUser.getId())) {
                 throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能删除自己的提交", null);
             }
@@ -173,31 +174,8 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     public List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId) {
-        if (studentNo == null || studentNo.isEmpty()) {
-            return List.of();
-        }
-        
-        // 根据学号查询用户 ID
-        Integer studentId = getUserIdByUserNo(studentNo);
-        if (studentId == null) {
-            // 如果学生不存在，返回空列表
-            return List.of();
-        }
-        
-        QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("submitter_id", studentId);
-        
-        if (workId != null) {
-            queryWrapper.eq("work_id", workId);
-        }
-        
-        queryWrapper.orderByDesc("submit_time");
-        
-        List<WorkSubmission> submissions = workSubmissionMapper.selectList(queryWrapper);
-        
-        return submissions.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+        // 此方法已废弃，应该使用 getCurrentUserSubmissions 代替
+        return List.of();
     }
 
     @Override
@@ -208,9 +186,10 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 检查权限（只有教师可以查看所有提交）
-        if (currentUser.getPermission() < 2) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有教师可以查看所有提交", null);
+        // 检查权限（只有班级老师可以查看所有提交）
+        WorkInfo workInfo = workMapper.selectById(workId);
+        if (workInfo == null || !classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看所有提交", null);
         }
 
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
@@ -232,25 +211,20 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 检查权限（只有教师可以批改作业）
-        if (currentUser.getPermission() < 2) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有教师可以批改作业", null);
-        }
-
         // 查询提交记录
         WorkSubmission submission = workSubmissionMapper.selectById(request.getSubmissionId());
         if (submission == null) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
         }
 
-        // 查询作业信息
-        Work work = workMapper.selectById(submission.getWorkId());
-        if (work == null) {
-            throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
+        // 查询作业信息并检查权限（只有班级老师可以批改作业）
+        WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
+        if (workInfo == null || !classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以批改作业", null);
         }
 
         // 检查分数范围
-        if (request.getScore().compareTo(new java.math.BigDecimal(work.getTotalScore())) > 0) {
+        if (request.getScore().compareTo(new java.math.BigDecimal(workInfo.getTotalScore())) > 0) {
             throw new BusinessException(BusinessErrorCode.SCORE_OUT_OF_RANGE, "分数超过作业总分", null);
         }
 
@@ -270,11 +244,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
      * 转换为响应对象
      */
     private WorkSubmissionResponse convertToResponse(WorkSubmission submission) {
-        Work work = workMapper.selectById(submission.getWorkId());
+        WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
         WorkSubmissionResponse response = new WorkSubmissionResponse();
         response.setId(submission.getId());
         response.setWorkId(submission.getWorkId());
-        response.setWorkTitle(work != null ? work.getTitle() : null);
+        response.setWorkTitle(workInfo != null ? workInfo.getTitle() : null);
         response.setSubmitterId(submission.getSubmitterId());
         response.setSubmissionContent(submission.getSubmissionContent());
         response.setScore(submission.getScore());
@@ -359,23 +333,4 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 .collect(Collectors.toList());
     }
     
-    /**
-     * 根据学号/工号查询用户 ID
-     * @param userNo 学号或工号
-     * @return 用户 ID，不存在返回 null
-     */
-    private Integer getUserIdByUserNo(String userNo) {
-        // 验证参数
-        if (userNo == null || userNo.trim().isEmpty()) {
-            return null;
-        }
-        
-        // 构建查询条件
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_no", userNo);
-        User user = userMapper.selectOne(queryWrapper);
-        
-        // 返回用户 ID
-        return user != null ? user.getId() : null;
-    }
 }

@@ -1,6 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
-import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.WorkResponse;
@@ -18,7 +18,7 @@ public interface WorkService {
      * @param request 创建作业请求
      * @return 创建的作业
      */
-    Work createWork(CreateWorkRequest request);
+    WorkInfo createWork(CreateWorkRequest request);
 
     /**
      * 更新作业
@@ -26,7 +26,7 @@ public interface WorkService {
      * @param request 更新作业请求
      * @return 更新后的作业
      */
-    Work updateWork(UpdateWorkRequest request);
+    WorkInfo updateWork(UpdateWorkRequest request);
 
     /**
      * 删除作业
@@ -41,7 +41,7 @@ public interface WorkService {
      * @param workId 作业 ID
      * @return 作业信息
      */
-    Work getWorkById(Integer workId);
+    WorkInfo getWorkById(Integer workId);
 
     /**
      * 查询作业列表

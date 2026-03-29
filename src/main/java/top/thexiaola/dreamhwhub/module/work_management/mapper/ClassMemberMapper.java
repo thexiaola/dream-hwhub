@@ -2,11 +2,11 @@ package top.thexiaola.dreamhwhub.module.work_management.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
 
 /**
- * 作业 Mapper 接口
+ * 班级成员 Mapper 接口
  */
 @Mapper
-public interface WorkMapper extends BaseMapper<WorkInfo> {
+public interface ClassMemberMapper extends BaseMapper<ClassMember> {
 }

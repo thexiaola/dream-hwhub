@@ -9,13 +9,14 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
-import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkAttachment;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.WorkResponse;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
+import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.util.FileUploadValidator;
 import top.thexiaola.dreamhwhub.util.UserUtils;
@@ -36,84 +37,91 @@ public class WorkServiceImpl implements WorkService {
 
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
+    private final ClassService classService;
     private final UserMapper userMapper;
 
-    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper, UserMapper userMapper) {
+    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper, ClassService classService, UserMapper userMapper) {
         this.workMapper = workMapper;
         this.workAttachmentMapper = workAttachmentMapper;
+        this.classService = classService;
         this.userMapper = userMapper;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Work createWork(CreateWorkRequest request) {
+    public WorkInfo createWork(CreateWorkRequest request) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 检查权限（只有教师可以发布作业）
-        if (currentUser.getPermission() < 2) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有教师可以发布作业", null);
+        // 检查权限（只有班级老师可以发布作业）
+        if (!classService.isTeacher(request.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以发布作业", null);
         }
 
         // 创建作业
-        Work work = new Work();
-        work.setTitle(request.getTitle());
-        work.setDescription(request.getDescription());
-        work.setPublisherId(currentUser.getId());
-        work.setDeadline(request.getDeadline());
-        work.setTotalScore(request.getTotalScore());
-        work.setStatus(1); // 已发布
-        work.setCreateTime(LocalDateTime.now());
-        work.setUpdateTime(LocalDateTime.now());
+        WorkInfo workInfo = new WorkInfo();
+        workInfo.setTitle(request.getTitle());
+        workInfo.setDescription(request.getDescription());
+        workInfo.setClassId(request.getClassId());
+        workInfo.setDeadline(request.getDeadline());
+        workInfo.setTotalScore(request.getTotalScore());
+        workInfo.setStatus(1); // 已发布
+        workInfo.setCreateTime(LocalDateTime.now());
+        workInfo.setUpdateTime(LocalDateTime.now());
 
-        workMapper.insert(work);
+        workMapper.insert(workInfo);
         
         // 保存附件
         if (request.getAttachmentPaths() != null && !request.getAttachmentPaths().isEmpty()) {
-            saveWorkAttachments(work.getId(), request.getAttachmentPaths());
+            saveWorkAttachments(workInfo.getId(), request.getAttachmentPaths());
         }
         
-        return work;
+        return workInfo;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Work updateWork(UpdateWorkRequest request) {
+    public WorkInfo updateWork(UpdateWorkRequest request) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 检查权限
-        if (currentUser.getPermission() < 2) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有教师可以修改作业", null);
-        }
-
         // 查询作业
-        Work work = workMapper.selectById(request.getId());
-        if (work == null) {
+        WorkInfo workInfo = workMapper.selectById(request.getId());
+        if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
 
+        // 检查权限（只有班级老师可以修改作业）
+        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以修改作业", null);
+        }
+
         // 只能修改自己发布的作业
-        if (!work.getPublisherId().equals(currentUser.getId())) {
+        if (!workInfo.getPublisherId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能修改自己发布的作业", null);
         }
 
-        // 更新作业
-        work.setTitle(request.getTitle());
-        work.setDescription(request.getDescription());
-        work.setDeadline(request.getDeadline());
-        work.setTotalScore(request.getTotalScore());
-        work.setStatus(request.getStatus());
-        work.setUpdateTime(LocalDateTime.now());
+        // 再次检查是否是班级老师
+        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以修改作业", null);
+        }
 
-        workMapper.updateById(work);
-        return work;
+        // 更新作业
+        workInfo.setTitle(request.getTitle());
+        workInfo.setDescription(request.getDescription());
+        workInfo.setDeadline(request.getDeadline());
+        workInfo.setTotalScore(request.getTotalScore());
+        workInfo.setStatus(request.getStatus());
+        workInfo.setUpdateTime(LocalDateTime.now());
+
+        workMapper.updateById(workInfo);
+        return workInfo;
     }
 
     @Override
@@ -125,19 +133,19 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 检查权限
-        if (currentUser.getPermission() < 2) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有教师可以删除作业", null);
-        }
-
         // 查询作业
-        Work work = workMapper.selectById(workId);
-        if (work == null) {
+        WorkInfo workInfo = workMapper.selectById(workId);
+        if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
 
+        // 检查权限（只有班级老师可以删除作业）
+        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以删除作业", null);
+        }
+
         // 只能删除自己发布的作业
-        if (!work.getPublisherId().equals(currentUser.getId())) {
+        if (!workInfo.getPublisherId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能删除自己发布的作业", null);
         }
 
@@ -145,17 +153,17 @@ public class WorkServiceImpl implements WorkService {
     }
 
     @Override
-    public Work getWorkById(Integer workId) {
-        Work work = workMapper.selectById(workId);
-        if (work == null) {
+    public WorkInfo getWorkById(Integer workId) {
+        WorkInfo workInfo = workMapper.selectById(workId);
+        if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
-        return work;
+        return workInfo;
     }
 
     @Override
     public List<WorkResponse> getWorkList(String publisherUserNo, Integer status) {
-        QueryWrapper<Work> queryWrapper = new QueryWrapper<>();
+        QueryWrapper<WorkInfo> queryWrapper = new QueryWrapper<>();
         
         if (publisherUserNo != null && !publisherUserNo.isEmpty()) {
             Integer publisherId = getUserIdByUserNo(publisherUserNo);
@@ -173,10 +181,10 @@ public class WorkServiceImpl implements WorkService {
         
         queryWrapper.orderByDesc("create_time");
         
-        List<Work> works = workMapper.selectList(queryWrapper);
+        List<WorkInfo> workInfos = workMapper.selectList(queryWrapper);
         LocalDateTime now = LocalDateTime.now();
         
-        return works.stream()
+        return workInfos.stream()
                 .map(work -> {
                     WorkResponse response = new WorkResponse();
                     response.setId(work.getId());
@@ -197,6 +205,21 @@ public class WorkServiceImpl implements WorkService {
                     return response;
                 })
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 通过用户号获取用户 ID
+     */
+    private Integer getUserIdByUserNo(String userNo) {
+        if (userNo == null || userNo.isEmpty()) {
+            return null;
+        }
+        
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_no", userNo);
+        User user = userMapper.selectOne(queryWrapper);
+        
+        return user != null ? user.getId() : null;
     }
     
     /**
@@ -262,24 +285,5 @@ public class WorkServiceImpl implements WorkService {
                         attachment.getUploadTime()
                 ))
                 .collect(Collectors.toList());
-    }
-    
-    /**
-     * 根据工号获取用户 ID
-     * @param userNo 学号或工号
-     * @return 用户 ID，不存在返回 null
-     */
-    private Integer getUserIdByUserNo(String userNo) {
-        // 验证参数有效性
-        if (userNo == null || userNo.trim().isEmpty()) {
-            return null;
-        }
-        
-        // 构建查询条件并查询用户
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_no", userNo);
-        User user = userMapper.selectOne(queryWrapper);
-        
-        return user != null ? user.getId() : null;
     }
 }

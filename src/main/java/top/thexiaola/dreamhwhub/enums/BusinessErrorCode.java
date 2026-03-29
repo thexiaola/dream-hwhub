@@ -58,6 +58,13 @@ public enum BusinessErrorCode {
     FILE_IS_INFECTED(8004, "文件可能包含病毒"),
     INVALID_FILE_PATH(8005, "非法的文件路径"),
     
+    // 班级管理相关错误
+    CLASS_NOT_FOUND(8501, "班级不存在"),
+    CLASS_DISSOLVED(8502, "班级已解散"),
+    ALREADY_IN_CLASS(8503, "你已经在该班级中"),
+    NOT_IN_CLASS(8504, "你不是该班级的成员"),
+    CREATOR_CANNOT_LEAVE(8505, "创建者不能退出班级"),
+    
     PERMISSION_DENIED(9001, "权限不足");
 
     private final int code;

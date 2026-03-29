@@ -37,6 +37,12 @@ public class CreateWorkRequest {
     private Integer totalScore = 100;
 
     /**
+     * 所属班级 ID
+     */
+    @NotNull(message = "所属班级 ID 不能为空")
+    private Integer classId;
+
+    /**
      * 附件列表（文件路径）
      */
     private java.util.List<String> attachmentPaths;

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.WorkResponse;
@@ -35,15 +35,15 @@ public class WorkController {
      * 创建作业
      */
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<Work>> createWork(@Valid @RequestBody CreateWorkRequest request) {
+    public ResponseEntity<ApiResponse<WorkInfo>> createWork(@Valid @RequestBody CreateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             
-            Work work = workService.createWork(request);
-            log.info("User ({}) created work: {}", userInfo, work.getTitle());
-            return ResponseEntity.ok(ApiResponse.success(work));
+            WorkInfo workInfo = workService.createWork(request);
+            log.info("User ({}) created work: {}", userInfo, workInfo.getTitle());
+            return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
             log.warn("User create work failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
@@ -54,15 +54,15 @@ public class WorkController {
      * 更新作业
      */
     @PutMapping("/update")
-    public ResponseEntity<ApiResponse<Work>> updateWork(@Valid @RequestBody UpdateWorkRequest request) {
+    public ResponseEntity<ApiResponse<WorkInfo>> updateWork(@Valid @RequestBody UpdateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             
-            Work work = workService.updateWork(request);
-            log.info("User ({}) updated work: {}", userInfo, work.getTitle());
-            return ResponseEntity.ok(ApiResponse.success(work));
+            WorkInfo workInfo = workService.updateWork(request);
+            log.info("User ({}) updated work: {}", userInfo, workInfo.getTitle());
+            return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
             log.warn("User update work failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
@@ -92,15 +92,15 @@ public class WorkController {
      * 查询作业详情
      */
     @GetMapping("/detail")
-    public ResponseEntity<ApiResponse<Work>> getWorkDetail(@RequestParam Integer workId) {
+    public ResponseEntity<ApiResponse<WorkInfo>> getWorkDetail(@RequestParam Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             
-            Work work = workService.getWorkById(workId);
+            WorkInfo workInfo = workService.getWorkById(workId);
             log.info("User ({}) queried work detail, id: {}", userInfo, workId);
-            return ResponseEntity.ok(ApiResponse.success(work));
+            return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
             log.warn("User query work detail failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
