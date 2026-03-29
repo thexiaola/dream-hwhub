@@ -112,8 +112,9 @@ public class EmailServiceImpl implements EmailService {
      * @param userNo 学号/工号
      * @param username 用户名
      * @param isModify 是否为换绑验证码
+     * @param isRetrieve 是否为找回密码验证码
      */
-    private void sendVerificationCodeInternal(String email, String userNo, String username, boolean isModify) {
+    private void sendVerificationCodeInternal(String email, String userNo, String username, boolean isModify, boolean isRetrieve) {
         // 检查发送频率限制
         Long remainingTime = checkSendFrequency(email);
         if (remainingTime != null && remainingTime > 0) {
@@ -128,7 +129,14 @@ public class EmailServiceImpl implements EmailService {
         removeOldVerificationCodesByEmail(email);
         
         // 使用组合 key 存储新验证码
-        String compositeKey = isModify ? buildModifyKey(userNo, username, email) : buildCompositeKey(userNo, username, email);
+        String compositeKey;
+        if (isRetrieve) {
+            compositeKey = buildRetrievePasswordKey(userNo, username, email);
+        } else if (isModify) {
+            compositeKey = buildModifyKey(userNo, username, email);
+        } else {
+            compositeKey = buildCompositeKey(userNo, username, email);
+        }
         VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
         verificationCodes.put(compositeKey, codeInfo);
     
@@ -136,11 +144,14 @@ public class EmailServiceImpl implements EmailService {
         emailLastSendTime.put(email, LocalDateTime.now());
     
         // 记录验证码生成日志
+        String codeType = isRetrieve ? "retrieve password" : (isModify ? "modify" : "registration");
         log.info("Generated {} verification code {} for email: {}, userNo: {}, username: {}", 
-                isModify ? "modify" : "registration", code, email, userNo, username);
+                codeType, code, email, userNo, username);
     
         // 发送邮件
-        if (isModify) {
+        if (isRetrieve) {
+            sendRetrievePasswordCodeEmail(email, code);
+        } else if (isModify) {
             sendModifyCodeEmail(email, code);
         } else {
             sendVerificationCodeEmail(email, code);
@@ -152,7 +163,7 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendVerificationCode(String email, String userNo, String username) {
-        sendVerificationCodeInternal(email, userNo, username, false);
+        sendVerificationCodeInternal(email, userNo, username, false, false);
     }
     
     /**
@@ -247,7 +258,7 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendModifyEmailCode(String email, String userNo, String username) {
-        sendVerificationCodeInternal(email, userNo, username, true);
+        sendVerificationCodeInternal(email, userNo, username, true, false);
     }
     
     /**
@@ -269,33 +280,7 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendRetrievePasswordEmailCode(String email, String userNo, String username) {
-        // 检查发送频率限制
-        Long remainingTime = checkSendFrequency(email);
-        if (remainingTime != null && remainingTime > 0) {
-            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
-        }
-        
-        // 生成 6 位随机数字验证码
-        Random random = new Random();
-        String code = String.format("%06d", random.nextInt(999999));
-            
-        // 删除该邮箱的所有旧验证码
-        removeOldVerificationCodesByEmail(email);
-        
-        // 使用组合 key 存储新验证码
-        String compositeKey = buildRetrievePasswordKey(userNo, username, email);
-        VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
-        verificationCodes.put(compositeKey, codeInfo);
-    
-        // 记录发送时间
-        emailLastSendTime.put(email, LocalDateTime.now());
-    
-        // 记录验证码生成日志
-        log.info("Generated retrieve password verification code {} for email: {}, userNo: {}, username: {}", 
-                code, email, userNo, username);
-    
-        // 发送邮件
-        sendRetrievePasswordCodeEmail(email, code);
+        sendVerificationCodeInternal(email, userNo, username, false, true);
     }
     
     /**

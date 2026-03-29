@@ -24,7 +24,9 @@ public class WebConfig implements WebMvcConfigurer {
             .excludePathPatterns(        // 排除公开接口
                 "/api/users/register",
                 "/api/users/login",
-                "/api/users/getregcode"
+                "/api/users/getregcode",
+                "/api/users/retrieve/sendcode",
+                "/api/users/retrieve/password"
             );
     }
 }

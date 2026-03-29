@@ -8,13 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordCodeRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.SendModifyCodeRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
+import top.thexiaola.dreamhwhub.module.login.dto.*;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.UserUtils;
@@ -113,38 +107,6 @@ public class ModifyUserController {
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to modify password: {}", userInfo, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
-        }
-    }
-    
-    /**
-     * 发送找回密码验证码
-     */
-    @PostMapping("/retrieve/sendcode")
-    public ResponseEntity<ApiResponse<Void>> sendRetrievePasswordCode(@Valid @RequestBody RetrievePasswordCodeRequest request) {
-        String ip = LogUtil.getCurrentClientIp();
-        try {
-            modifyUserService.sendRetrievePasswordCode(request.getAccount());
-            log.info("User ({}) send retrieve password verification code successful", request.getAccount());
-            return ResponseEntity.ok(ApiResponse.success(null));
-        } catch (BusinessException e) {
-            log.warn("User ({}) failed to send retrieve password verification code: {}", request.getAccount(), e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
-        }
-    }
-    
-    /**
-     * 找回密码（通过验证码修改密码）
-     */
-    @PutMapping("/retrieve/modify")
-    public ResponseEntity<ApiResponse<Void>> retrievePassword(@Valid @RequestBody RetrievePasswordModifyRequest request) {
-        String ip = LogUtil.getCurrentClientIp();
-        try {
-            modifyUserService.retrievePassword(request);
-            log.info("User ({}) password retrieved successfully", request.getAccount());
-            return ResponseEntity.ok(ApiResponse.success(null));
-        } catch (BusinessException e) {
-            log.warn("User ({}) failed to retrieve password: {}", request.getAccount(), e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }

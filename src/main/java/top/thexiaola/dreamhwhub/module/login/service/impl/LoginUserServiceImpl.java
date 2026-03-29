@@ -71,6 +71,10 @@ public class LoginUserServiceImpl implements LoginUserService {
 
     @Override
     public User findByAccount(String account) {
+        return getUser(account, userMapper);
+    }
+
+    static User getUser(String account, UserMapper userMapper) {
         User user = userMapper.selectOne(
                 new QueryWrapper<User>().eq("user_no", account)
         );
@@ -86,7 +90,7 @@ public class LoginUserServiceImpl implements LoginUserService {
         );
         return user;
     }
-    
+
     @Override
     public void logout(Integer userId, HttpServletRequest request) {
         String operation = "User logout";

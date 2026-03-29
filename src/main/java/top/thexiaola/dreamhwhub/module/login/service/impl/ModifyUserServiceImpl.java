@@ -17,6 +17,8 @@ import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.SessionManager;
 import top.thexiaola.dreamhwhub.util.UserUtils;
 
+import static top.thexiaola.dreamhwhub.module.login.service.impl.LoginUserServiceImpl.getUser;
+
 @Service
 public class ModifyUserServiceImpl implements ModifyUserService {
     private final UserMapper userMapper;
@@ -192,7 +194,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
     }
     
     @Override
-    public void sendRetrievePasswordCode(String account) {
+    public User sendRetrievePasswordCode(String account) {
         // 根据账号查找用户
         User user = getUserByAccount(account);
         if (user == null) {
@@ -207,10 +209,12 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         
         // 发送验证码到用户邮箱
         emailService.sendRetrievePasswordEmailCode(user.getEmail(), user.getUserNo(), user.getUsername());
+        
+        return user;
     }
     
     @Override
-    public void retrievePassword(top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest request) {
+    public User retrievePassword(top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest request) {
         String account = request.getAccount();
         String code = request.getCode();
         String newPassword = request.getNewPassword();
@@ -238,25 +242,14 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         
         // 使该用户的所有 Session 失效（强制重新登录）
         SessionManager.invalidateSession(user.getId());
+        
+        return user;
     }
     
     /**
      * 根据账号查找用户（支持学号、用户名、邮箱）
      */
     private User getUserByAccount(String account) {
-        User user = userMapper.selectOne(
-                new QueryWrapper<User>().eq("user_no", account)
-        );
-        if (user != null) return user;
-        
-        user = userMapper.selectOne(
-                new QueryWrapper<User>().eq("username", account)
-        );
-        if (user != null) return user;
-        
-        user = userMapper.selectOne(
-                new QueryWrapper<User>().eq("email", account)
-        );
-        return user;
+        return getUser(account, userMapper);
     }
 }

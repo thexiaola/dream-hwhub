@@ -45,13 +45,15 @@ public interface ModifyUserService {
      * 发送找回密码验证码
      *
      * @param account 账号（学号/用户名/邮箱）
+     * @return 用户对象
      */
-    void sendRetrievePasswordCode(String account);
+    User sendRetrievePasswordCode(String account);
     
     /**
      * 找回密码（通过验证码修改密码）
      *
      * @param retrievePasswordModifyRequest 找回密码修改密码请求
+     * @return 用户对象
      */
-    void retrievePassword(top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest retrievePasswordModifyRequest);
+    User retrievePassword(top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest retrievePasswordModifyRequest);
 }
