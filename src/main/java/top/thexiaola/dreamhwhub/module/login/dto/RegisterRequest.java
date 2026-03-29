@@ -18,10 +18,10 @@ public class RegisterRequest {
     @Pattern(regexp = "^[0-9]+$", message = "学号/工号只能包含数字")
     private String userNo;
 
-    // 用户名（不允许换行符、制表符等特殊字符）
+    // 用户名（允许字母、汉字和常用特殊字符，不允许换行符、制表符等不常见字符）
     @NotBlank(message = "用户名不能为空")
-    @Size(max = 64, message = "用户名长度不能超过64位")
-    @Pattern(regexp = "^[\\p{L}\\s·-]+$", message = "身份证姓名只能包含字母、汉字及允许的符号（空格、中点、连字符）")
+    @Size(max = 64, message = "用户名长度不能超过 64 位")
+    @Pattern(regexp = "^[^\\r\\n\\t\\f\\v]+$", message = "用户名不能包含特殊字符（换行符、制表符等）")
     private String username;
 
     // 邮箱
@@ -32,6 +32,7 @@ public class RegisterRequest {
 
     // 邮箱验证码
     @NotBlank(message = "邮箱验证码不能为空")
+    @Size(min = 6, max = 6, message = "验证码长度为 6 位")
     private String emailCode;
 
     // 密码

@@ -11,9 +11,7 @@ import lombok.Data;
 @Data
 public class ModifyPasswordRequest {
 
-    @NotBlank(message = "原密码不符合预期")
-    @Pattern(regexp = "^[0-9a-zA-Z!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]+$", message = "原密码不符合预期")
-    @Size(min = 6, max = 48, message = "原密码不符合预期")
+    @NotBlank(message = "原密码不为空")
     private String oldPassword;
 
     @NotBlank(message = "新密码不能为空")
