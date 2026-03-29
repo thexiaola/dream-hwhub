@@ -17,7 +17,7 @@ public class ModifyEmailRequest {
     // 新邮箱
     @NotBlank(message = "新邮箱不能为空")
     @Email(message = "邮箱格式不正确")
-    @Size(max = 100, message = "邮箱长度不能超过 100 位")
+    @Size(max = 64, message = "邮箱长度不能超过 64 位")
     private String newEmail;
 
     // 新邮箱验证码（afterCode）
