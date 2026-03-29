@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
-import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
@@ -40,10 +40,8 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     public User register(RegisterRequest registerRequest) {
         String operation = "User registration";
         
-        // 去除首尾空格
         String userNo = registerRequest.getUserNo();
         String username = registerRequest.getUsername();
-
         String email = registerRequest.getEmail();
         
         if (isUserNoExists(userNo)) {
@@ -90,10 +88,6 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     @Override
     public void sendEmailCode(String email, String userNo, String username) {
         String operation = "Send registration verification code";
-
-        // 去除首尾空格
-        userNo = userNo != null ? userNo.trim() : "";
-        username = username != null ? username.trim() : "";
         
         if (isUserNoExists(userNo)) {
             log.warn(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));

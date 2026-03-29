@@ -1,22 +1,28 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.WorkResponse;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
+import top.thexiaola.dreamhwhub.util.FileUploadValidator;
 import top.thexiaola.dreamhwhub.util.UserUtils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +32,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class WorkServiceImpl implements WorkService {
+    private static final Logger log = LoggerFactory.getLogger(WorkServiceImpl.class);
 
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
@@ -196,13 +203,44 @@ public class WorkServiceImpl implements WorkService {
      * 保存作业附件
      */
     private void saveWorkAttachments(Integer workId, List<String> attachmentPaths) {
+        if (attachmentPaths == null || attachmentPaths.isEmpty()) {
+            return;
+        }
+        
         for (String filePath : attachmentPaths) {
-            WorkAttachment attachment = new WorkAttachment();
-            attachment.setWorkId(workId);
-            attachment.setFileName(filePath.substring(filePath.lastIndexOf("/") + 1));
-            attachment.setFilePath(filePath);
-            attachment.setUploadTime(LocalDateTime.now());
-            workAttachmentMapper.insert(attachment);
+            try {
+                // 1. 获取文件信息
+                Path path = Paths.get(filePath);
+                long fileSize = Files.size(path);
+                String fileName = path.getFileName().toString();
+                
+                // 2. 执行完整的安全检查
+                FileUploadValidator.performFullSecurityCheck(filePath, fileSize);
+                
+                // 3. 获取文件类型
+                String fileType = FileUploadValidator.detectFileType(filePath);
+                
+                // 4. 保存到数据库
+                WorkAttachment attachment = new WorkAttachment();
+                attachment.setWorkId(workId);
+                attachment.setFileName(fileName);
+                attachment.setFilePath(filePath);
+                attachment.setFileSize(fileSize);
+                attachment.setFileType(fileType);
+                attachment.setUploadTime(LocalDateTime.now());
+                workAttachmentMapper.insert(attachment);
+                
+                log.info("Saved work attachment: {}, size: {}, type: {}", 
+                        fileName, fileSize, fileType);
+                        
+            } catch (BusinessException e) {
+                log.error("File security check failed: {}", filePath, e);
+                throw e;
+            } catch (Exception e) {
+                log.error("Failed to save work attachment: {}", filePath, e);
+                throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, 
+                        "文件上传失败：" + e.getMessage(), null);
+            }
         }
     }
     
@@ -228,12 +266,16 @@ public class WorkServiceImpl implements WorkService {
     
     /**
      * 根据工号获取用户 ID
+     * @param userNo 学号或工号
+     * @return 用户 ID，不存在返回 null
      */
     private Integer getUserIdByUserNo(String userNo) {
-        if (userNo == null || userNo.isEmpty()) {
+        // 验证参数有效性
+        if (userNo == null || userNo.trim().isEmpty()) {
             return null;
         }
         
+        // 构建查询条件并查询用户
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_no", userNo);
         User user = userMapper.selectOne(queryWrapper);

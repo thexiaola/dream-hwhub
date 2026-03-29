@@ -119,7 +119,7 @@ public class SessionManager {
         for (Map.Entry<Integer, HttpSession> entry : USER_SESSION_MAP.entrySet()) {
             try {
                 entry.getValue().invalidate();
-                logger.debug("Invalidated session for user: {}", entry.getKey());
+                logger.debug("Invalidated all session for user: {}", entry.getKey());
             } catch (Exception e) {
                 logger.error("Failed to invalidate session for user: {}", entry.getKey(), e);
             }

@@ -1,11 +1,13 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
@@ -14,11 +16,15 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
+import top.thexiaola.dreamhwhub.util.FileUploadValidator;
 import top.thexiaola.dreamhwhub.util.UserUtils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +34,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class WorkSubmissionServiceImpl implements WorkSubmissionService {
+    private static final Logger log = LoggerFactory.getLogger(WorkSubmissionServiceImpl.class);
 
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;
@@ -291,13 +298,44 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
      * 保存提交附件
      */
     private void saveSubmissionAttachments(Integer submissionId, List<String> attachmentPaths) {
+        if (attachmentPaths == null || attachmentPaths.isEmpty()) {
+            return;
+        }
+        
         for (String filePath : attachmentPaths) {
-            WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
-            attachment.setSubmissionId(submissionId);
-            attachment.setFileName(filePath.substring(filePath.lastIndexOf("/") + 1));
-            attachment.setFilePath(filePath);
-            attachment.setUploadTime(LocalDateTime.now());
-            workSubmissionAttachmentMapper.insert(attachment);
+            try {
+                // 1. 获取文件信息
+                Path path = Paths.get(filePath);
+                long fileSize = Files.size(path);
+                String fileName = path.getFileName().toString();
+                
+                // 2. 执行完整的安全检查
+                FileUploadValidator.performFullSecurityCheck(filePath, fileSize);
+                
+                // 3. 获取文件类型
+                String fileType = FileUploadValidator.detectFileType(filePath);
+                
+                // 4. 保存到数据库
+                WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
+                attachment.setSubmissionId(submissionId);
+                attachment.setFileName(fileName);
+                attachment.setFilePath(filePath);
+                attachment.setFileSize(fileSize);
+                attachment.setFileType(fileType);
+                attachment.setUploadTime(LocalDateTime.now());
+                workSubmissionAttachmentMapper.insert(attachment);
+                
+                log.info("Saved submission attachment: {}, size: {}, type: {}", 
+                        fileName, fileSize, fileType);
+                        
+            } catch (BusinessException e) {
+                log.error("File security check failed: {}", filePath, e);
+                throw e;
+            } catch (Exception e) {
+                log.error("Failed to save submission attachment: {}", filePath, e);
+                throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, 
+                        "文件上传失败：" + e.getMessage(), null);
+            }
         }
     }
     
@@ -322,17 +360,22 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
     
     /**
-     * 根据工号/学号获取用户 ID
+     * 根据学号/工号查询用户 ID
+     * @param userNo 学号或工号
+     * @return 用户 ID，不存在返回 null
      */
     private Integer getUserIdByUserNo(String userNo) {
-        if (userNo == null || userNo.isEmpty()) {
+        // 验证参数
+        if (userNo == null || userNo.trim().isEmpty()) {
             return null;
         }
         
+        // 构建查询条件
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_no", userNo);
         User user = userMapper.selectOne(queryWrapper);
         
+        // 返回用户 ID
         return user != null ? user.getId() : null;
     }
 }

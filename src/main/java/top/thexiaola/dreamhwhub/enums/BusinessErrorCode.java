@@ -50,6 +50,14 @@ public enum BusinessErrorCode {
     SUBMISSION_NOT_FOUND(7004, "提交记录不存在"),
     SUBMISSION_ALREADY_GRADED(7005, "作业已被批改，不能修改"),
     SCORE_OUT_OF_RANGE(7006, "分数超过作业总分"),
+    
+    // 文件上传相关错误
+    FILE_UPLOAD_FAILED(8001, "文件上传失败"),
+    FILE_TYPE_NOT_ALLOWED(8002, "不允许的文件类型"),
+    FILE_SIZE_EXCEEDED(8003, "文件大小超过限制"),
+    FILE_IS_INFECTED(8004, "文件可能包含病毒"),
+    INVALID_FILE_PATH(8005, "非法的文件路径"),
+    
     PERMISSION_DENIED(9001, "权限不足");
 
     private final int code;
