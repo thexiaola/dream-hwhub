@@ -198,7 +198,6 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         // 根据账号查找用户
         User user = getUserByAccount(account);
         if (user == null) {
-            // 为了安全，不提示具体原因，统一返回"账号不存在"
             throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "账号不存在", null);
         }
         

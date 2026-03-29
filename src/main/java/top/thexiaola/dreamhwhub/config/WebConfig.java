@@ -26,7 +26,7 @@ public class WebConfig implements WebMvcConfigurer {
                 "/api/users/login",
                 "/api/users/getregcode",
                 "/api/users/retrieve/sendcode",
-                "/api/users/retrieve/password"
+                "/api/users/retrieve/resetpassword"
             );
     }
 }

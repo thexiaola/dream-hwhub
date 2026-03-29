@@ -48,7 +48,7 @@ public class RetrieveUserController {
     /**
      * 找回密码（通过验证码修改密码）
      */
-    @PutMapping("/password")
+    @PutMapping("/resetpassword")
     public ResponseEntity<ApiResponse<Void>> retrievePassword(@Valid @RequestBody RetrievePasswordModifyRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
