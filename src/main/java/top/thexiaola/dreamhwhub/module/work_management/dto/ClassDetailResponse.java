@@ -33,11 +33,6 @@ public class ClassDetailResponse {
     private String creatorName;
 
     /**
-     * 班级邀请码
-     */
-    private String classCode;
-
-    /**
      * 班级状态（1-正常，2-已解散）
      */
     private Integer status;

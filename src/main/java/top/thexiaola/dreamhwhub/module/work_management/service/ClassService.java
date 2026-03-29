@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ClassDetailResponse;
@@ -18,9 +19,9 @@ public interface ClassService {
     ClassInfo createClass(String className, String description);
 
     /**
-     * 加入班级
+     * 添加用户为班级老师（管理员或老师专用）
      */
-    ClassMember joinClass(Integer classId, Boolean isTeacher);
+    ClassMember addTeacherToClass(Integer classId, String userAccount);
 
     /**
      * 退出班级
@@ -53,16 +54,6 @@ public interface ClassService {
     boolean isClassMember(Integer classId, Integer userId);
 
     /**
-     * 通过班级邀请码加入班级
-     */
-    ClassMember joinClassByCode(String classCode, Boolean isTeacher);
-
-    /**
-     * 验证班级邀请码并返回班级信息
-     */
-    ClassInfo verifyClassCode(String classCode);
-
-    /**
      * 获取班级信息
      */
     ClassInfo getClassById(Integer classId);
@@ -86,4 +77,24 @@ public interface ClassService {
      * 更新成员角色
      */
     void updateMemberRole(Integer classId, Integer userId, Boolean isTeacher);
+
+    /**
+     * 提交创建班级申请
+     */
+    ClassApplication submitCreateClassRequest(String className, String description);
+
+    /**
+     * 提交加入班级申请
+     */
+    ClassApplication submitJoinClassRequest(Integer classId, Boolean isTeacher);
+
+    /**
+     * 获取所有待审核的申请列表
+     */
+    List<ClassApplication> getPendingApplications();
+
+    /**
+     * 审核申请
+     */
+    void approveApplication(Integer applicationId, Boolean approved, String comment);
 }

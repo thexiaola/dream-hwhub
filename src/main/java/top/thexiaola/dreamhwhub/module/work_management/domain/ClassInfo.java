@@ -24,11 +24,14 @@ public class ClassInfo {
     @TableField("creator_id")
     private Integer creatorId;
 
-    @TableField("class_code")
-    private String classCode;
-
     @TableField("status")
     private Integer status;
+
+    @TableField("approval_status")
+    private Integer approvalStatus;  // 0-待审核，1-已通过，2-已拒绝
+
+    @TableField("admin_remark")
+    private String adminRemark;  // 管理员审核备注
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

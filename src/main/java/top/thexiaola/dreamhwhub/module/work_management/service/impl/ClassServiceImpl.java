@@ -9,10 +9,12 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ClassMemberResponse;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassApplicationMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
@@ -21,7 +23,6 @@ import top.thexiaola.dreamhwhub.util.UserUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 
 /**
  * 班级管理服务实现类
@@ -33,11 +34,14 @@ public class ClassServiceImpl implements ClassService {
     private final ClassInfoMapper classInfoMapper;
     private final ClassMemberMapper classMemberMapper;
     private final UserMapper userMapper;
+    private final ClassApplicationMapper classApplicationMapper;
 
-    public ClassServiceImpl(ClassInfoMapper classInfoMapper, ClassMemberMapper classMemberMapper, UserMapper userMapper) {
+    public ClassServiceImpl(ClassInfoMapper classInfoMapper, ClassMemberMapper classMemberMapper, 
+                           UserMapper userMapper, ClassApplicationMapper classApplicationMapper) {
         this.classInfoMapper = classInfoMapper;
         this.classMemberMapper = classMemberMapper;
         this.userMapper = userMapper;
+        this.classApplicationMapper = classApplicationMapper;
     }
 
     @Override
@@ -53,7 +57,6 @@ public class ClassServiceImpl implements ClassService {
         classInfo.setClassName(className);
         classInfo.setDescription(description);
         classInfo.setCreatorId(currentUser.getId());
-        classInfo.setClassCode(generateClassCode());
         classInfo.setStatus(1);
         classInfo.setCreateTime(LocalDateTime.now());
         classInfo.setUpdateTime(LocalDateTime.now());
@@ -76,7 +79,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassMember joinClass(Integer classId, Boolean isTeacher) {
+    public ClassMember addTeacherToClass(Integer classId, String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -88,31 +91,47 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 验证班级状态
-        if (classInfo.getStatus() != 1) {
-            throw new BusinessException(BusinessErrorCode.CLASS_DISSOLVED, "班级已解散", null);
+        // 检查当前用户是否有权限添加老师（需要是老师或管理员）
+        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isTeacher = isTeacher(classId, currentUser.getId());
+        
+        if (!isAdmin && !isTeacher) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师或管理员可以添加其他老师到班级", null);
         }
 
-        // 检查是否已经是成员
-        QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("class_id", classId).eq("user_id", currentUser.getId());
-        ClassMember existingMember = classMemberMapper.selectOne(queryWrapper);
+        // 根据账号查询目标用户
+        QueryWrapper<User> userQuery = new QueryWrapper<>();
+        userQuery.eq("user_no", userAccount);
+        User targetUser = userMapper.selectOne(userQuery);
+        
+        if (targetUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
+        }
+
+        // 检查目标用户是否已经是成员
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).eq("user_id", targetUser.getId());
+        ClassMember existingMember = classMemberMapper.selectOne(memberQuery);
         
         if (existingMember != null) {
-            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "你已经在该班级中", null);
+            // 如果已经是成员，更新为老师
+            existingMember.setIsTeacher(true);
+            classMemberMapper.updateById(existingMember);
+            log.info("User {} updated user {} to TEACHER in class {}", currentUser.getId(), userAccount, classId);
+            return existingMember;
         }
 
-        // 创建成员记录
+        // 创建新的老师成员记录
         ClassMember member = new ClassMember();
         member.setClassId(classId);
-        member.setUserId(currentUser.getId());
-        member.setIsTeacher(isTeacher);
+        member.setUserId(targetUser.getId());
+        member.setIsTeacher(true);  // 设置为老师
         member.setJoinTime(LocalDateTime.now());
-        member.setInviteBy(null);
+        member.setInviteBy(currentUser.getId());
 
         classMemberMapper.insert(member);
 
-        log.info("User {} joined class {} as {}", currentUser.getId(), classId, isTeacher ? "TEACHER" : "STUDENT");
+        log.info("User {} added user {} as TEACHER to class {}", currentUser.getId(), userAccount, classId);
         return member;
     }
 
@@ -204,41 +223,8 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ClassMember joinClassByCode(String classCode, Boolean isTeacher) {
-        // 通过班级码查询班级
-        QueryWrapper<ClassInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("class_code", classCode);
-        ClassInfo classInfo = classInfoMapper.selectOne(queryWrapper);
-        
-        if (classInfo == null) {
-            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级邀请码无效", null);
-        }
-
-        return joinClass(classInfo.getId(), isTeacher);
-    }
-
-    @Override
     public ClassInfo getClassById(Integer classId) {
         return classInfoMapper.selectById(classId);
-    }
-
-    @Override
-    public ClassInfo verifyClassCode(String classCode) {
-        QueryWrapper<ClassInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("class_code", classCode);
-        ClassInfo classInfo = classInfoMapper.selectOne(queryWrapper);
-        
-        if (classInfo == null) {
-            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级邀请码无效", null);
-        }
-
-        // 检查班级状态
-        if (classInfo.getStatus() != 1) {
-            throw new BusinessException(BusinessErrorCode.CLASS_DISSOLVED, "班级已解散", null);
-        }
-
-        return classInfo;
     }
 
     @Override
@@ -283,7 +269,6 @@ public class ClassServiceImpl implements ClassService {
                 classInfo.getClassName(),
                 classInfo.getCreatorId(),
                 creatorName,
-                classInfo.getClassCode(),
                 classInfo.getStatus(),
                 userRole,
                 memberCount,
@@ -327,7 +312,6 @@ public class ClassServiceImpl implements ClassService {
                             classInfo.getClassName(),
                             classInfo.getCreatorId(),
                             creatorName,
-                            classInfo.getClassCode(),
                             classInfo.getStatus(),
                             member.getIsTeacher() != null ? (member.getIsTeacher() ? "TEACHER" : "STUDENT") : null,
                             memberCount,
@@ -392,26 +376,160 @@ public class ClassServiceImpl implements ClassService {
                 currentUser.getId(), userId, isTeacher ? "TEACHER" : "STUDENT", classId);
     }
 
-    /**
-     * 生成 6 位随机班级邀请码
-     */
-    private String generateClassCode() {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        Random random = new Random();
-        StringBuilder code = new StringBuilder();
-        
-        for (int i = 0; i < 6; i++) {
-            code.append(chars.charAt(random.nextInt(chars.length())));
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ClassApplication submitCreateClassRequest(String className, String description) {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
-        
-        // 确保唯一性
-        QueryWrapper<ClassInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("class_code", code.toString());
-        
-        if (classInfoMapper.selectCount(queryWrapper) > 0) {
-            return generateClassCode();
+
+        // 创建申请记录
+        ClassApplication application = new ClassApplication();
+        application.setType(1);  // 创建班级申请
+        application.setApplicantId(currentUser.getId());
+        application.setClassName(className);
+        application.setDescription(description);
+        application.setStatus(0);  // 待审核
+        application.setCreateTime(LocalDateTime.now());
+
+        classApplicationMapper.insert(application);
+
+        log.info("User {} submitted create class request: {}", currentUser.getId(), className);
+        return application;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ClassApplication submitJoinClassRequest(Integer classId, Boolean isTeacher) {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
-        
-        return code.toString();
+
+        // 验证班级是否存在
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        // 检查是否已经是成员
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
+        if (classMemberMapper.selectCount(memberQuery) > 0) {
+            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "你已经在该班级中", null);
+        }
+
+        // 检查是否已经有待审核的申请
+        QueryWrapper<ClassApplication> appQuery = new QueryWrapper<>();
+        appQuery.eq("type", 2)
+                .eq("class_id", classId)
+                .eq("applicant_id", currentUser.getId())
+                .eq("status", 0);
+        if (classApplicationMapper.selectCount(appQuery) > 0) {
+            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "你已有待审核的申请", null);
+        }
+
+        // 创建申请记录
+        ClassApplication application = new ClassApplication();
+        application.setType(2);  // 加入班级申请
+        application.setClassId(classId);
+        application.setApplicantId(currentUser.getId());
+        application.setTargetRole(isTeacher);
+        application.setStatus(0);  // 待审核
+        application.setCreateTime(LocalDateTime.now());
+
+        classApplicationMapper.insert(application);
+
+        log.info("User {} submitted join class request: classId={}, role={}", 
+                currentUser.getId(), classId, isTeacher ? "TEACHER" : "STUDENT");
+        return application;
+    }
+
+    @Override
+    public List<ClassApplication> getPendingApplications() {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 检查是否是管理员（permission >= 100）
+        if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看待审核申请", null);
+        }
+
+        QueryWrapper<ClassApplication> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("status", 0)  // 待审核
+                   .orderByDesc("create_time");
+        return classApplicationMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void approveApplication(Integer applicationId, Boolean approved, String comment) {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 检查是否是管理员（permission >= 100）
+        if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以审核申请", null);
+        }
+
+        ClassApplication application = classApplicationMapper.selectById(applicationId);
+        if (application == null) {
+            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "申请不存在", null);
+        }
+
+        if (!Integer.valueOf(0).equals(application.getStatus())) {
+            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该申请已处理", null);
+        }
+
+        // 更新申请状态
+        application.setStatus(approved ? 1 : 2);
+        application.setReviewerId(currentUser.getId());
+        application.setReviewTime(LocalDateTime.now());
+        application.setReviewComment(comment);
+        classApplicationMapper.updateById(application);
+
+        // 如果审核通过，执行相应操作
+        if (approved) {
+            if (Integer.valueOf(1).equals(application.getType())) {
+                // 创建班级申请通过 - 自动创建班级
+                ClassInfo classInfo = new ClassInfo();
+                classInfo.setClassName(application.getClassName());
+                classInfo.setDescription(application.getDescription());
+                classInfo.setCreatorId(application.getApplicantId());
+                classInfo.setStatus(1);
+                classInfo.setCreateTime(LocalDateTime.now());
+                classInfo.setUpdateTime(LocalDateTime.now());
+                classInfoMapper.insert(classInfo);
+
+                // 创建者自动成为老师
+                ClassMember member = new ClassMember();
+                member.setClassId(classInfo.getId());
+                member.setUserId(application.getApplicantId());
+                member.setIsTeacher(true);
+                member.setJoinTime(LocalDateTime.now());
+                classMemberMapper.insert(member);
+
+                log.info("Create class application approved, created class: {}", classInfo.getId());
+            } else if (Integer.valueOf(2).equals(application.getType())) {
+                // 加入班级申请通过 - 直接添加为成员
+                ClassMember member = new ClassMember();
+                member.setClassId(application.getClassId());
+                member.setUserId(application.getApplicantId());
+                member.setIsTeacher(application.getTargetRole());
+                member.setJoinTime(LocalDateTime.now());
+                classMemberMapper.insert(member);
+
+                log.info("Join class application approved, user {} joined class {}", 
+                        application.getApplicantId(), application.getClassId());
+            }
+        }
+
+        log.info("User {} approved application: id={}, type={}, approved={}", 
+                currentUser.getId(), applicationId, application.getType(), approved);
     }
 }

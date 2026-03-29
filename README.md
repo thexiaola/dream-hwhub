@@ -113,7 +113,7 @@ spring.mail.properties.mail.smtp.ssl.enable=true
 {
   "code": 200,
   "message": "操作成功",
-  "data": {}
+  "data": null
 }
 ```
 
