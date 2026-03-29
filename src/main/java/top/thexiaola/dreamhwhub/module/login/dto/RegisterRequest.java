@@ -4,10 +4,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 /**
  * 用户注册请求DTO
  */
+@Data
 public class RegisterRequest {
 
     // 学号/工号（仅允许数字）
@@ -37,44 +39,4 @@ public class RegisterRequest {
     @Pattern(regexp = "^[0-9a-zA-Z!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]+$", message = "密码只能包含字母、数字和特殊字符")
     @Size(min = 6, max = 48, message = "密码长度必须在 6-48 位之间")
     private String password;
-
-    public String getUserNo() {
-        return userNo;
-    }
-
-    public void setUserNo(String userNo) {
-        this.userNo = userNo;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getEmailCode() {
-        return emailCode;
-    }
-
-    public void setEmailCode(String emailCode) {
-        this.emailCode = emailCode;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }

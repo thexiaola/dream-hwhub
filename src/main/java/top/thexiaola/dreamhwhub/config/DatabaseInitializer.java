@@ -39,12 +39,23 @@ public class DatabaseInitializer {
             boolean tableExists = checkTableExists("user");
                 
             if (!tableExists) {
-                log.info("User table not found, creating tables from schema.sql...");
+                log.info("User table not found, creating tables from user_schema.sql...");
                 executeSchemaSql();
-                log.info("Database initialization completed successfully.");
+                log.info("User table created successfully.");
             } else {
                 log.info("User table exists, validating columns...");
                 validateAndSyncUserTableFromSchema();
+            }
+                
+            // 检查 work 表是否存在（判断作业管理模块是否需要初始化）
+            boolean workTableExists = checkTableExists("work");
+            if (!workTableExists) {
+                log.info("Work table not found, creating tables from work_management.sql...");
+                executeWorkManagementSql();
+                log.info("Work management tables created successfully.");
+            } else {
+                log.info("Work management tables exist, validating columns...");
+                validateAndSyncWorkTablesFromSchema();
             }
                 
         } catch (Exception e) {
@@ -84,15 +95,15 @@ public class DatabaseInitializer {
     }
 
     /**
-     * 从 schema.sql 动态解析并同步 user 表字段
+     * 从 user_schema.sql 动态解析并同步 user 表字段
      */
     private void validateAndSyncUserTableFromSchema() {
         try {
-            // 从 schema.sql 解析期望的字段定义
-            List<ColumnDefinition> expectedColumns = parseSchemaSql();
+            // 从 user_schema.sql 解析期望的字段定义
+            List<ColumnDefinition> expectedColumns = parseSchemaSql("user_schema.sql", "user");
             
             if (expectedColumns.isEmpty()) {
-                log.warn("No column definitions found in schema.sql for user table");
+                log.warn("No column definitions found in user_schema.sql for user table");
                 return;
             }
             
@@ -106,7 +117,7 @@ public class DatabaseInitializer {
                 if (!actualColumns.contains(expected.columnName)) {
                     log.warn("Missing column '{}' in user table, will add it", expected.columnName);
                     needAlter = true;
-                    alterSql.append(generateAddColumnSql(expected)).append(";");
+                    alterSql.append(generateAddColumnSql("user", expected)).append(";");
                 }
             }
             
@@ -128,24 +139,87 @@ public class DatabaseInitializer {
                 log.info("User table structure is up-to-date. All {} columns present.", actualColumns.size());
             }
         } catch (Exception e) {
-            log.error("Failed to parse schema.sql: {}", e.getMessage(), e);
+            log.error("Failed to parse user_schema.sql: {}", e.getMessage(), e);
         }
     }
     
     /**
-     * 从 schema.sql 解析 user 表的字段定义
+     * 从 work_management.sql 动态解析并同步 work 和 work_submission 表字段
      */
-    private List<ColumnDefinition> parseSchemaSql() {
+    private void validateAndSyncWorkTablesFromSchema() {
         try {
-            ClassPathResource resource = new ClassPathResource("schema.sql");
+            // 同步 work 表
+            validateAndSyncWorkTable("work");
+            // 同步 work_submission 表
+            validateAndSyncWorkTable("work_submission");
+        } catch (Exception e) {
+            log.error("Failed to sync work management tables: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 从 work_management.sql 解析并同步指定表的字段
+     */
+    private void validateAndSyncWorkTable(String tableName) {
+        try {
+            // 从 work_management.sql 解析期望的字段定义
+            List<ColumnDefinition> expectedColumns = parseSchemaSql("work_management.sql", tableName);
+            
+            if (expectedColumns.isEmpty()) {
+                log.warn("No column definitions found in work_management.sql for table '{}'", tableName);
+                return;
+            }
+            
+            Set<String> actualColumns = getActualColumns(tableName);
+            
+            boolean needAlter = false;
+            StringBuilder alterSql = new StringBuilder();
+            
+            // 检查缺少的字段
+            for (ColumnDefinition expected : expectedColumns) {
+                if (!actualColumns.contains(expected.columnName)) {
+                    log.warn("Missing column '{}' in {} table, will add it", expected.columnName, tableName);
+                    needAlter = true;
+                    alterSql.append(generateAddColumnSql(tableName, expected)).append(";");
+                }
+            }
+            
+            // 如果有缺失字段，执行 ALTER TABLE
+            if (needAlter) {
+                log.info("Executing ALTER TABLE to sync {} table structure...", tableName);
+                try {
+                    String[] statements = alterSql.toString().split(";");
+                    for (String stmt : statements) {
+                        if (!stmt.trim().isEmpty()) {
+                            jdbcTemplate.execute(stmt.trim());
+                        }
+                    }
+                    log.info("{} table structure synced successfully!", tableName);
+                } catch (Exception e) {
+                    log.error("Failed to sync {} table structure: {}", tableName, e.getMessage(), e);
+                }
+            } else {
+                log.info("{} table structure is up-to-date. All {} columns present.", tableName, actualColumns.size());
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse work_management.sql for table {}: {}", tableName, e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 从 SQL 脚本中解析指定表的字段定义
+     */
+    private List<ColumnDefinition> parseSchemaSql(String resourceName, String tableName) {
+        try {
+            ClassPathResource resource = new ClassPathResource(resourceName);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 String sqlScript = reader.lines()
                     .collect(Collectors.joining("\n"));
                 
-                // 提取 CREATE TABLE user 语句
-                String createTableSql = extractCreateTableSql(sqlScript, "user");
+                // 提取 CREATE TABLE 语句
+                String createTableSql = extractCreateTableSql(sqlScript, tableName);
                 if (createTableSql == null || createTableSql.isEmpty()) {
-                    log.warn("CREATE TABLE statement for 'user' not found in schema.sql");
+                    log.warn("CREATE TABLE statement for '{}' not found in {}", tableName, resourceName);
                     return List.of();
                 }
                 
@@ -153,7 +227,7 @@ public class DatabaseInitializer {
                 return parseColumnDefinitions(createTableSql);
             }
         } catch (Exception e) {
-            log.error("Error parsing schema.sql: {}", e.getMessage());
+            log.error("Error parsing {}: {}", resourceName, e.getMessage());
             return List.of();
         }
     }
@@ -252,9 +326,9 @@ public class DatabaseInitializer {
     /**
      * 根据解析出的字段定义生成 ADD COLUMN SQL
      */
-    private String generateAddColumnSql(ColumnDefinition columnDef) {
-        return String.format("ALTER TABLE user ADD COLUMN %s %s", 
-            columnDef.columnName, columnDef.fullDefinition);
+    private String generateAddColumnSql(String tableName, ColumnDefinition columnDef) {
+        return String.format("ALTER TABLE %s ADD COLUMN %s %s", 
+            tableName, columnDef.columnName, columnDef.fullDefinition);
     }
     
     /**
@@ -270,19 +344,24 @@ public class DatabaseInitializer {
         }
     }
 
-    // 执行schema.sql脚本
-    private void executeSchemaSql() {
+    /**
+     * 执行 SQL 脚本文件
+     * @param resourceName SQL 资源文件名
+     * @param skipUseStatement 是否跳过 USE 语句
+     */
+    private void executeSqlScript(String resourceName, boolean skipUseStatement) {
         try {
-            ClassPathResource resource = new ClassPathResource("schema.sql");
+            ClassPathResource resource = new ClassPathResource(resourceName);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 String sqlScript = reader.lines()
-                    .filter(line -> !line.trim().isEmpty() && !line.trim().startsWith("--") && !line.trim().startsWith("USE "))
+                    .filter(line -> !line.trim().isEmpty() && !line.trim().startsWith("--") 
+                        && !(skipUseStatement && line.trim().startsWith("USE ")))
                     .collect(Collectors.joining("\n"));
-                
-                // 清理SQL脚本中的多余逗号
+                    
+                // 清理 SQL 脚本中的多余逗号
                 sqlScript = sqlScript.replaceAll(",\\s*\\)", ")");
-                
-                // 分割SQL语句并执行
+                    
+                // 分割 SQL 语句并执行
                 String[] statements = sqlScript.split(";");
                 for (String statement : statements) {
                     String trimmedStatement = statement.trim();
@@ -299,8 +378,18 @@ public class DatabaseInitializer {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to execute schema.sql: {}", e.getMessage(), e);
-            throw new RuntimeException("Database schema initialization failed", e);
+            log.error("Failed to execute {}: {}", resourceName, e.getMessage(), e);
+            throw new RuntimeException(resourceName + " initialization failed", e);
         }
+    }
+
+    // 执行 user_schema.sql 脚本
+    private void executeSchemaSql() {
+        executeSqlScript("user_schema.sql", true);
+    }
+        
+    // 执行 work_management.sql 脚本
+    private void executeWorkManagementSql() {
+        executeSqlScript("work_management.sql", false);
     }
 }

@@ -1,11 +1,13 @@
 package top.thexiaola.dreamhwhub.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import lombok.Getter;
 
 /**
  * 统一 API 响应包装类
  * @param <T> 响应数据类型
  */
+@Getter
 @JsonPropertyOrder({"code", "message", "data"})
 public class ApiResponse<T> {
     private final int code;
@@ -26,7 +28,4 @@ public class ApiResponse<T> {
         return new ApiResponse<>(code, message, null);
     }
 
-    public int getCode() { return code; }
-    public String getMessage() { return message; }
-    public T getData() { return data; }
 }

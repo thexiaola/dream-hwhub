@@ -2,6 +2,7 @@ CREATE DATABASE IF NOT EXISTS dream_hwhub CHARACTER SET utf8mb4 COLLATE utf8mb4_
 
 USE dream_hwhub;
 
+-- 用户表
 CREATE TABLE IF NOT EXISTS user (
     id INT NOT NULL AUTO_INCREMENT COMMENT '用户编号',
     user_no VARCHAR(24) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '学号/工号',
@@ -17,5 +18,5 @@ CREATE TABLE IF NOT EXISTS user (
     PRIMARY KEY (id) USING BTREE,
     UNIQUE INDEX uk_user_no(user_no ASC) USING BTREE COMMENT '学号唯一索引',
     UNIQUE INDEX uk_username(username ASC) USING BTREE COMMENT '用户名唯一索引',
-    UNIQUE INDEX uk_email(email ASC) USING BTREE COMMENT '邮箱唯一索引',
+    UNIQUE INDEX uk_email(email ASC) USING BTREE COMMENT '邮箱唯一索引'
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;

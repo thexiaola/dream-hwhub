@@ -2,10 +2,12 @@ package top.thexiaola.dreamhwhub.module.login.dto;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 /**
  * 修改用户信息请求DTO
  */
+@Data
 public class ModifyUserInfoRequest {
 
     // 学号/工号（仅允许数字）
@@ -27,36 +29,4 @@ public class ModifyUserInfoRequest {
     @Size(max = 20, message = "手机号长度不能超过 20 位")
     @Pattern(regexp = "^[+]?[0-9()\\-\\s]+$", message = "手机号格式不正确，请检查后重新输入")
     private String phone;
-
-    public String getUserNo() {
-        return userNo;
-    }
-
-    public void setUserNo(String userNo) {
-        this.userNo = userNo;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getIdName() {
-        return idName;
-    }
-
-    public void setIdName(String idName) {
-        this.idName = idName;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
 }

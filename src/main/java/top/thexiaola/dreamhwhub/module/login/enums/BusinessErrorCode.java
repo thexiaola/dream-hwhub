@@ -38,7 +38,16 @@ public enum BusinessErrorCode {
     
     // 修改密码错误
     INVALID_OLD_PASSWORD(6004, "原密码错误"),
-    NEW_PASSWORD_SAME_AS_OLD(6005, "新密码不能与原密码相同");
+    NEW_PASSWORD_SAME_AS_OLD(6005, "新密码不能与原密码相同"),
+    
+    // 作业相关错误
+    WORK_NOT_FOUND(7001, "作业不存在"),
+    WORK_STATUS_ERROR(7002, "作业状态错误"),
+    WORK_ALREADY_SUBMITTED(7003, "已经提交过该作业"),
+    SUBMISSION_NOT_FOUND(7004, "提交记录不存在"),
+    SUBMISSION_ALREADY_GRADED(7005, "作业已被批改，不能修改"),
+    SCORE_OUT_OF_RANGE(7006, "分数超过作业总分"),
+    PERMISSION_DENIED(9001, "权限不足");
 
     private final int code;
     private final String message;

@@ -2,12 +2,14 @@ package top.thexiaola.dreamhwhub.module.login.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
  * 用户信息响应 DTO
  */
+@Data
 @JsonPropertyOrder({"id", "userNo", "username", "idName", "email", "phone", "permission", "isBanned", "registerTime", "lastLoginTime"})
 public class UserResponse {
 
@@ -66,83 +68,4 @@ public class UserResponse {
         return response;
     }
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getUserNo() {
-        return userNo;
-    }
-
-    public void setUserNo(String userNo) {
-        this.userNo = userNo;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getIdName() {
-        return idName;
-    }
-
-    public void setIdName(String idName) {
-        this.idName = idName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public Short getPermission() {
-        return permission;
-    }
-
-    public void setPermission(Short permission) {
-        this.permission = permission;
-    }
-
-    public Boolean getIsBanned() {
-        return isBanned;
-    }
-
-    public void setIsBanned(Boolean isBanned) {
-        this.isBanned = isBanned;
-    }
-
-    public LocalDateTime getRegisterTime() {
-        return registerTime;
-    }
-
-    public void setRegisterTime(LocalDateTime registerTime) {
-        this.registerTime = registerTime;
-    }
-
-    public LocalDateTime getLastLoginTime() {
-        return lastLoginTime;
-    }
-
-    public void setLastLoginTime(LocalDateTime lastLoginTime) {
-        this.lastLoginTime = lastLoginTime;
-    }
 }
