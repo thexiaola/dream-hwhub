@@ -34,10 +34,10 @@ public class DatabaseInitializer {
     public void initializeDatabase() {
         try {
             log.info("Starting database initialization and schema validation...");
-                
+
             // 检查 user 表是否存在
             boolean tableExists = checkTableExists("user");
-                
+
             if (!tableExists) {
                 log.info("User table not found, creating tables from user_schema.sql...");
                 executeSchemaSql();
@@ -46,9 +46,9 @@ public class DatabaseInitializer {
                 log.info("User table exists, validating columns...");
                 validateAndSyncUserTableFromSchema();
             }
-                
-            // 检查 work 表是否存在（判断作业管理模块是否需要初始化）
-            boolean workTableExists = checkTableExists("work");
+
+            // 检查 work_info 表是否存在（判断作业管理模块是否需要初始化）
+            boolean workTableExists = checkTableExists("work_info");
             if (!workTableExists) {
                 log.info("Work table not found, creating tables from work_management.sql...");
                 executeWorkManagementSql();
@@ -57,7 +57,7 @@ public class DatabaseInitializer {
                 log.info("Work management tables exist, validating columns...");
                 validateAndSyncWorkTablesFromSchema();
             }
-                
+
         } catch (Exception e) {
             log.error("Database initialization failed: {}", e.getMessage(), e);
         }
@@ -78,7 +78,7 @@ public class DatabaseInitializer {
             return false;
         }
     }
-    
+
     /**
      * 获取表的实际列名
      */
@@ -101,17 +101,17 @@ public class DatabaseInitializer {
         try {
             // 从 user_schema.sql 解析期望的字段定义
             List<ColumnDefinition> expectedColumns = parseSchemaSql("user_schema.sql", "user");
-            
+
             if (expectedColumns.isEmpty()) {
                 log.warn("No column definitions found in user_schema.sql for user table");
                 return;
             }
-            
+
             Set<String> actualColumns = getActualColumns("user");
-            
+
             boolean needAlter = false;
             StringBuilder alterSql = new StringBuilder();
-            
+
             // 检查缺少的字段
             for (ColumnDefinition expected : expectedColumns) {
                 if (!actualColumns.contains(expected.columnName)) {
@@ -120,7 +120,7 @@ public class DatabaseInitializer {
                     alterSql.append(generateAddColumnSql("user", expected)).append(";");
                 }
             }
-            
+
             // 如果有缺失字段，执行 ALTER TABLE
             if (needAlter) {
                 log.info("Executing ALTER TABLE to sync user table structure...");
@@ -142,21 +142,21 @@ public class DatabaseInitializer {
             log.error("Failed to parse user_schema.sql: {}", e.getMessage(), e);
         }
     }
-    
+
     /**
      * 从 work_management.sql 动态解析并同步 work 和 work_submission 表字段
      */
     private void validateAndSyncWorkTablesFromSchema() {
         try {
-            // 同步 work 表
-            validateAndSyncWorkTable("work");
+            // 同步 work_info 表
+            validateAndSyncWorkTable("work_info");
             // 同步 work_submission 表
             validateAndSyncWorkTable("work_submission");
         } catch (Exception e) {
             log.error("Failed to sync work management tables: {}", e.getMessage(), e);
         }
     }
-    
+
     /**
      * 从 work_management.sql 解析并同步指定表的字段
      */
@@ -164,17 +164,17 @@ public class DatabaseInitializer {
         try {
             // 从 work_management.sql 解析期望的字段定义
             List<ColumnDefinition> expectedColumns = parseSchemaSql("work_management.sql", tableName);
-            
+
             if (expectedColumns.isEmpty()) {
                 log.warn("No column definitions found in work_management.sql for table '{}'", tableName);
                 return;
             }
-            
+
             Set<String> actualColumns = getActualColumns(tableName);
-            
+
             boolean needAlter = false;
             StringBuilder alterSql = new StringBuilder();
-            
+
             // 检查缺少的字段
             for (ColumnDefinition expected : expectedColumns) {
                 if (!actualColumns.contains(expected.columnName)) {
@@ -183,7 +183,7 @@ public class DatabaseInitializer {
                     alterSql.append(generateAddColumnSql(tableName, expected)).append(";");
                 }
             }
-            
+
             // 如果有缺失字段，执行 ALTER TABLE
             if (needAlter) {
                 log.info("Executing ALTER TABLE to sync {} table structure...", tableName);
@@ -205,7 +205,7 @@ public class DatabaseInitializer {
             log.error("Failed to parse work_management.sql for table {}: {}", tableName, e.getMessage(), e);
         }
     }
-    
+
     /**
      * 从 SQL 脚本中解析指定表的字段定义
      */
@@ -215,14 +215,14 @@ public class DatabaseInitializer {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 String sqlScript = reader.lines()
                     .collect(Collectors.joining("\n"));
-                
+
                 // 提取 CREATE TABLE 语句
                 String createTableSql = extractCreateTableSql(sqlScript, tableName);
                 if (createTableSql == null || createTableSql.isEmpty()) {
                     log.warn("CREATE TABLE statement for '{}' not found in {}", tableName, resourceName);
                     return List.of();
                 }
-                
+
                 // 解析字段定义
                 return parseColumnDefinitions(createTableSql);
             }
@@ -231,7 +231,7 @@ public class DatabaseInitializer {
             return List.of();
         }
     }
-    
+
     /**
      * 从 SQL 脚本中提取指定表的 CREATE TABLE 语句
      */
@@ -240,25 +240,25 @@ public class DatabaseInitializer {
         String regex = "CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?" + tableName + "\\s*\\(([^;]+)\\)";
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex, java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL);
         java.util.regex.Matcher matcher = pattern.matcher(sqlScript);
-        
+
         if (matcher.find()) {
             return matcher.group(1); // 返回括号内的内容
         }
         return null;
     }
-    
+
     /**
      * 解析 CREATE TABLE 语句中的字段定义
      */
     private List<ColumnDefinition> parseColumnDefinitions(String createTableBody) {
         List<ColumnDefinition> columns = new java.util.ArrayList<>();
-        
+
         // 按逗号分割，但要考虑括号内的逗号（如 VARCHAR(100)）
         String[] parts = splitColumnDefinitions(createTableBody);
-        
+
         for (String part : parts) {
             String trimmedPart = part.trim();
-            
+
             // 跳过 PRIMARY KEY、UNIQUE INDEX 等非字段定义
             if (trimmedPart.toUpperCase().startsWith("PRIMARY KEY") ||
                 trimmedPart.toUpperCase().startsWith("UNIQUE") ||
@@ -266,17 +266,17 @@ public class DatabaseInitializer {
                 trimmedPart.toUpperCase().startsWith("KEY")) {
                 continue;
             }
-            
+
             // 解析字段名和类型定义
             ColumnDefinition columnDef = parseColumnDefinition(trimmedPart);
             if (columnDef != null) {
                 columns.add(columnDef);
             }
         }
-        
+
         return columns;
     }
-    
+
     /**
      * 分割字段定义（处理括号内的逗号）
      */
@@ -284,7 +284,7 @@ public class DatabaseInitializer {
         List<String> result = new java.util.ArrayList<>();
         StringBuilder current = new StringBuilder();
         int parenthesesCount = 0;
-        
+
         for (char c : sql.toCharArray()) {
             if (c == '(') {
                 parenthesesCount++;
@@ -297,14 +297,14 @@ public class DatabaseInitializer {
             }
             current.append(c);
         }
-        
+
         if (!current.isEmpty()) {
             result.add(current.toString().trim());
         }
-        
+
         return result.toArray(new String[0]);
     }
-    
+
     /**
      * 解析单个字段定义
      */
@@ -313,31 +313,31 @@ public class DatabaseInitializer {
         String regex = "(`?)(\\w+)\\1\\s+(.+)";
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex, java.util.regex.Pattern.CASE_INSENSITIVE);
         java.util.regex.Matcher matcher = pattern.matcher(columnDef.trim());
-        
+
         if (matcher.matches()) {
             String columnName = matcher.group(2);
             String fullDefinition = matcher.group(3).trim();
             return new ColumnDefinition(columnName, fullDefinition);
         }
-        
+
         return null;
     }
-    
+
     /**
      * 根据解析出的字段定义生成 ADD COLUMN SQL
      */
     private String generateAddColumnSql(String tableName, ColumnDefinition columnDef) {
-        return String.format("ALTER TABLE %s ADD COLUMN %s %s", 
+        return String.format("ALTER TABLE %s ADD COLUMN %s %s",
             tableName, columnDef.columnName, columnDef.fullDefinition);
     }
-    
+
     /**
      * 字段定义内部类
      */
     private static class ColumnDefinition {
         String columnName;
         String fullDefinition; // 完整的类型定义，包括类型、约束、默认值、注释等
-        
+
         ColumnDefinition(String columnName, String fullDefinition) {
             this.columnName = columnName;
             this.fullDefinition = fullDefinition;
@@ -354,13 +354,13 @@ public class DatabaseInitializer {
             ClassPathResource resource = new ClassPathResource(resourceName);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 String sqlScript = reader.lines()
-                    .filter(line -> !line.trim().isEmpty() && !line.trim().startsWith("--") 
+                    .filter(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")
                         && !(skipUseStatement && line.trim().startsWith("USE ")))
                     .collect(Collectors.joining("\n"));
-                    
+
                 // 清理 SQL 脚本中的多余逗号
                 sqlScript = sqlScript.replaceAll(",\\s*\\)", ")");
-                    
+
                 // 分割 SQL 语句并执行
                 String[] statements = sqlScript.split(";");
                 for (String statement : statements) {
@@ -387,7 +387,7 @@ public class DatabaseInitializer {
     private void executeSchemaSql() {
         executeSqlScript("user_schema.sql", true);
     }
-        
+
     // 执行 work_management.sql 脚本
     private void executeWorkManagementSql() {
         executeSqlScript("work_management.sql", false);
