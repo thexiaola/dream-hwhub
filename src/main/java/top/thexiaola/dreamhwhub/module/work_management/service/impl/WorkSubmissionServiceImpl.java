@@ -5,7 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
+import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
@@ -31,11 +32,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
+    private final UserMapper userMapper;
 
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper) {
+    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, UserMapper userMapper) {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workMapper = workMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -163,9 +166,19 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     public List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId) {
-        // TODO: 需要通过 studentNo 查询用户 ID，这里暂时简化处理
+        if (studentNo == null || studentNo.isEmpty()) {
+            return List.of();
+        }
+        
+        // 根据学号查询用户 ID
+        Integer studentId = getUserIdByUserNo(studentNo);
+        if (studentId == null) {
+            // 如果学生不存在，返回空列表
+            return List.of();
+        }
+        
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
-        // queryWrapper.eq("submitter_id", userId);
+        queryWrapper.eq("submitter_id", studentId);
         
         if (workId != null) {
             queryWrapper.eq("work_id", workId);
@@ -306,5 +319,20 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                         attachment.getUploadTime()
                 ))
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 根据工号/学号获取用户 ID
+     */
+    private Integer getUserIdByUserNo(String userNo) {
+        if (userNo == null || userNo.isEmpty()) {
+            return null;
+        }
+        
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_no", userNo);
+        User user = userMapper.selectOne(queryWrapper);
+        
+        return user != null ? user.getId() : null;
     }
 }

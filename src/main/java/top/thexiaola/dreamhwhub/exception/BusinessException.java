@@ -1,7 +1,7 @@
 package top.thexiaola.dreamhwhub.exception;
 
 import lombok.Getter;
-import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 
 /**
  * 业务异常类

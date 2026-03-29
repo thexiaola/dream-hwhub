@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.module.login.enums;
+package top.thexiaola.dreamhwhub.enums;
 
 import lombok.Getter;
 

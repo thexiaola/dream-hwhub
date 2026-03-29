@@ -5,7 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.module.login.enums.BusinessErrorCode;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
+import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.domain.Work;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
@@ -28,10 +29,12 @@ public class WorkServiceImpl implements WorkService {
 
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
+    private final UserMapper userMapper;
 
-    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper) {
+    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper, UserMapper userMapper) {
         this.workMapper = workMapper;
         this.workAttachmentMapper = workAttachmentMapper;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -144,11 +147,17 @@ public class WorkServiceImpl implements WorkService {
     }
 
     @Override
-    public List<WorkResponse> getWorkList(String teacherNo, Integer status) {
+    public List<WorkResponse> getWorkList(String publisherUserNo, Integer status) {
         QueryWrapper<Work> queryWrapper = new QueryWrapper<>();
         
-        if (teacherNo != null && !teacherNo.isEmpty()) {
-            queryWrapper.eq("publisher_id", getUserIdByUserNo(teacherNo));
+        if (publisherUserNo != null && !publisherUserNo.isEmpty()) {
+            Integer publisherId = getUserIdByUserNo(publisherUserNo);
+            if (publisherId != null) {
+                queryWrapper.eq("publisher_id", publisherId);
+            } else {
+                // 如果用户不存在，返回空列表
+                return List.of();
+            }
         }
         
         if (status != null) {
@@ -218,10 +227,17 @@ public class WorkServiceImpl implements WorkService {
     }
     
     /**
-     * 根据工号获取用户 ID（临时方法，实际应该从 user 表查询）
+     * 根据工号获取用户 ID
      */
     private Integer getUserIdByUserNo(String userNo) {
-        // TODO: 需要从 UserMapper 查询，这里暂时返回 null
-        return null;
+        if (userNo == null || userNo.isEmpty()) {
+            return null;
+        }
+        
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_no", userNo);
+        User user = userMapper.selectOne(queryWrapper);
+        
+        return user != null ? user.getId() : null;
     }
 }
