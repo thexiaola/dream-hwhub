@@ -2,6 +2,7 @@ package top.thexiaola.dreamhwhub.module.work_management.service;
 
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInviteApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ClassMemberResponse;
@@ -17,6 +18,46 @@ public interface ClassService {
      * 添加用户为班级老师（管理员或老师专用）
      */
     ClassMember addTeacherToClass(Integer classId, String userAccount);
+
+    /**
+     * 邀请用户加入班级（可以是学生或老师）
+     */
+    ClassMember inviteUserToClass(Integer classId, String userAccount, Boolean isTeacher);
+
+    /**
+     * 设置学生为助理老师（老师专用）
+     */
+    void setStudentAsAssistantTeacher(Integer classId, Integer studentUserId);
+
+    /**
+     * 检查用户是否是普通老师（非创建者）
+     */
+    boolean isOrdinaryTeacher(Integer classId, Integer userId);
+
+    /**
+     * 将学生踢出班级（老师/助理老师专用）
+     */
+    void removeStudentFromClass(Integer classId, Integer studentUserId);
+
+    /**
+     * 取消助理老师权限（降级为学生，仅创建者可用）
+     */
+    void demoteAssistantTeacher(Integer classId, Integer teacherUserId);
+
+    /**
+     * 学生邀请用户加入班级（需要审核）
+     */
+    ClassInviteApplication studentInviteUser(Integer classId, String userAccount, Boolean isTeacher);
+
+    /**
+     * 审核邀请申请（老师/管理员专用）
+     */
+    void approveInviteApplication(Integer applicationId, Boolean approved, String comment);
+
+    /**
+     * 获取待审核的邀请申请列表（班级老师专用）
+     */
+    List<ClassInviteApplication> getPendingInviteApplications(Integer classId);
 
     /**
      * 退出班级

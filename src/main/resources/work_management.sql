@@ -17,12 +17,13 @@ CREATE TABLE IF NOT EXISTS `class_info` (
 
 -- 班级成员表
 CREATE TABLE IF NOT EXISTS `class_member` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '成员ID',
-    `class_id` INT NOT NULL COMMENT '班级ID',
-    `user_id` INT NOT NULL COMMENT '用户ID',
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '成员 ID',
+    `class_id` INT NOT NULL COMMENT '班级 ID',
+    `user_id` INT NOT NULL COMMENT '用户 ID',
     `role` BIT(1) NOT NULL COMMENT '角色：1-老师，0-学生',
     `join_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
-    `invite_by` INT DEFAULT NULL COMMENT '邀请人ID',
+    `invite_by` INT DEFAULT NULL COMMENT '邀请人 ID',
+    `inviter_account` VARCHAR(50) DEFAULT NULL COMMENT '邀请人账号',
     INDEX idx_class_id (`class_id`),
     INDEX idx_user_id (`user_id`),
     INDEX idx_role (`role`),
@@ -32,17 +33,37 @@ CREATE TABLE IF NOT EXISTS `class_member` (
     CONSTRAINT fk_member_invite FOREIGN KEY (`invite_by`) REFERENCES `user`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级成员表';
 
+-- 班级邀请申请表（仅学生邀请时使用）
+CREATE TABLE IF NOT EXISTS `class_invite_application` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '邀请申请 ID',
+    `class_id` INT NOT NULL COMMENT '班级 ID',
+    `inviter_id` INT NOT NULL COMMENT '邀请人 ID（学生）',
+    `invitee_account` VARCHAR(50) NOT NULL COMMENT '被邀请人账号',
+    `target_role` BIT(1) NOT NULL COMMENT '目标角色：1-老师，0-学生',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '审核状态：0-待审核，1-已通过，2-已拒绝',
+    `reviewer_id` INT DEFAULT NULL COMMENT '审核人 ID（老师/管理员）',
+    `review_time` DATETIME DEFAULT NULL COMMENT '审核时间',
+    `review_comment` VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '邀请时间',
+    INDEX idx_class_id (`class_id`),
+    INDEX idx_inviter_id (`inviter_id`),
+    INDEX idx_status (`status`),
+    CONSTRAINT fk_invite_app_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_invite_app_inviter FOREIGN KEY (`inviter_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_invite_app_reviewer FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级邀请申请表';
+
 -- 班级申请表（统一管理创建和加入申请）
 CREATE TABLE IF NOT EXISTS `class_application` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '申请ID',
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '申请 ID',
     `type` TINYINT NOT NULL COMMENT '申请类型：1-创建班级申请，2-加入班级申请',
-    `class_id` INT DEFAULT NULL COMMENT '班级ID（创建申请时为 NULL，加入申请时必填）',
-    `applicant_id` INT NOT NULL COMMENT '申请人ID',
-    `target_role` BIT(1) DEFAULT NULL COMMENT '目标角色：1-老师，0-学生（仅加入申请时有意义）',
+    `class_id` INT DEFAULT NULL COMMENT '班级 ID（创建申请时为 NULL，加入申请时必填）',
+    `applicant_id` INT NOT NULL COMMENT '申请人 ID',
+    `target_role` BIT(1) DEFAULT NULL COMMENT '目标角色：1-老师（仅创建申请时有意义），加入申请固定为学生',
     `class_name` VARCHAR(100) DEFAULT NULL COMMENT '班级名称（仅创建申请时有意义）',
     `description` VARCHAR(500) DEFAULT NULL COMMENT '班级描述（仅创建申请时有意义）',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '审核状态：0-待审核，1-已通过，2-已拒绝',
-    `reviewer_id` INT DEFAULT NULL COMMENT '审核人ID',
+    `reviewer_id` INT DEFAULT NULL COMMENT '审核人 ID',
     `review_time` DATETIME DEFAULT NULL COMMENT '审核时间',
     `review_comment` VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',

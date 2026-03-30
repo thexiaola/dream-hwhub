@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInviteApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.dto.*;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
@@ -158,17 +160,109 @@ public class ClassController {
     }
 
     /**
-     * 审核申请（管理员专用）
+     * 邀请用户加入班级（通过账号）- 老师/管理员专用，直接加入
      */
-    @PutMapping("/applications/approve")
-    public ApiResponse<Void> approveApplication(@Valid @RequestBody ApproveJoinClassRequest request) {
+    @PostMapping("/invite")
+    public ApiResponse<ClassMember> inviteUser(@RequestParam Integer classId,
+                                                @RequestParam String userAccount,
+                                                @RequestParam Boolean isTeacher) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} approving application, id: {}, approved: {}",
-                userInfo, request.getMemberId(), request.getApproved());
-        classService.approveApplication(request.getMemberId(), request.getApproved(), request.getComment());
-        String result = request.getApproved() ? "approved" : "rejected";
-        log.info("User {} application {}", userInfo, result);
+        log.info("User {} inviting user {} to class {} as {}", 
+                userInfo, userAccount, classId, isTeacher ? "TEACHER" : "STUDENT");
+        ClassMember member = classService.inviteUserToClass(classId, userAccount, isTeacher);
+        log.info("User {} invited user {} to class {} successfully", userInfo, userAccount, classId);
+        return ApiResponse.success(member);
+    }
+
+    /**
+     * 设置学生为助理老师（老师专用）
+     */
+    @PutMapping("/set-assistant-teacher")
+    public ApiResponse<Void> setAssistantTeacher(@RequestParam Integer classId,
+                                                  @RequestParam Integer studentUserId) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} setting student {} as assistant teacher in class {}", 
+                userInfo, studentUserId, classId);
+        classService.setStudentAsAssistantTeacher(classId, studentUserId);
+        log.info("User {} set student {} as assistant teacher successfully", userInfo, studentUserId);
         return ApiResponse.success(null);
+    }
+
+    /**
+     * 将学生踢出班级（老师/助理老师专用）
+     */
+    @DeleteMapping("/remove-student")
+    public ApiResponse<Void> removeStudent(@RequestParam Integer classId,
+                                            @RequestParam Integer studentUserId) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} removing student {} from class {}", 
+                userInfo, studentUserId, classId);
+        classService.removeStudentFromClass(classId, studentUserId);
+        log.info("User {} removed student {} from class {} successfully", 
+                userInfo, studentUserId, classId);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 取消助理老师权限（降级为学生，仅创建者可用）
+     */
+    @PutMapping("/demote-assistant-teacher")
+    public ApiResponse<Void> demoteAssistantTeacher(@RequestParam Integer classId,
+                                                     @RequestParam Integer teacherUserId) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} demoting assistant teacher {} to student in class {}", 
+                userInfo, teacherUserId, classId);
+        classService.demoteAssistantTeacher(classId, teacherUserId);
+        log.info("User {} demoted assistant teacher {} to student in class {} successfully", 
+                userInfo, teacherUserId, classId);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 学生邀请用户加入班级（需要审核）
+     */
+    @PostMapping("/student/invite")
+    public ApiResponse<ClassInviteApplication> studentInviteUser(@RequestParam Integer classId,
+                                                                  @RequestParam String userAccount,
+                                                                  @RequestParam Boolean isTeacher) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("Student {} inviting user {} to class {} (needs approval)", 
+                userInfo, userAccount, classId);
+        ClassInviteApplication application = classService.studentInviteUser(classId, userAccount, isTeacher);
+        log.info("Student {} submitted invite application, id: {}", userInfo, application.getId());
+        return ApiResponse.success(application);
+    }
+
+    /**
+     * 审核邀请申请（老师/管理员专用）
+     */
+    @PutMapping("/invite/approve")
+    public ApiResponse<Void> approveInviteApplication(@Valid @RequestBody ApproveJoinClassRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} approving invite application, id: {}, approved: {}",
+                userInfo, request.getMemberId(), request.getApproved());
+        classService.approveInviteApplication(request.getMemberId(), request.getApproved(), request.getComment());
+        String result = request.getApproved() ? "approved" : "rejected";
+        log.info("User {} invite application {}", userInfo, result);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 获取待审核的邀请申请列表（班级老师专用）
+     */
+    @GetMapping("/invite/applications/pending")
+    public ApiResponse<List<ClassInviteApplication>> getPendingInviteApplications(@RequestParam Integer classId) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} querying pending invite applications for class {}", userInfo, classId);
+        List<ClassInviteApplication> applications = classService.getPendingInviteApplications(classId);
+        log.info("User {} queried {} pending invite applications", userInfo, applications.size());
+        return ApiResponse.success(applications);
     }
 }
