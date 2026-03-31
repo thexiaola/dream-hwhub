@@ -85,7 +85,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
         // 创建提交记录
         WorkSubmission submission = new WorkSubmission();
-        submission.setWorkId(request.getWorkId());
+        submission.setWorkId(Integer.parseInt(request.getWorkId()));
         submission.setSubmitterId(currentUser.getId());
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1); // 已提交
@@ -212,7 +212,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 查询提交记录
-        WorkSubmission submission = workSubmissionMapper.selectById(request.getSubmissionId());
+        WorkSubmission submission = workSubmissionMapper.selectById(Integer.parseInt(request.getSubmissionId()));
         if (submission == null) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
         }

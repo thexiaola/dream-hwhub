@@ -247,7 +247,7 @@ public class ClassController {
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} approving invite application, id: {}, approved: {}",
                 userInfo, request.getMemberId(), request.getApproved());
-        classService.approveInviteApplication(request.getMemberId(), request.getApproved(), request.getComment());
+        classService.approveInviteApplication(Integer.parseInt(request.getMemberId()), request.getApproved(), request.getComment());
         String result = request.getApproved() ? "approved" : "rejected";
         log.info("User {} invite application {}", userInfo, result);
         return ApiResponse.success(null);
