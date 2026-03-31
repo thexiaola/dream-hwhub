@@ -24,8 +24,8 @@ public class ClassApplication {
     @TableField("applicant_id")
     private Integer applicantId;
 
-    @TableField("target_role")
-    private Boolean targetRole;  // true=老师，false=学生
+    @TableField("is_teacher")
+    private Boolean isTeacher;  // true=老师，false=学生
 
     @TableField("class_name")
     private String className;

@@ -24,8 +24,8 @@ public class ClassInviteApplication {
     @TableField("invitee_account")
     private String inviteeAccount;  // 被邀请人账号
 
-    @TableField("target_role")
-    private Boolean targetRole;  // true=老师，false=学生
+    @TableField("is_teacher")
+    private Boolean isTeacher;  // true=老师，false=学生
 
     @TableField("status")
     private Integer status;  // 0-待审核，1-已通过，2-已拒绝

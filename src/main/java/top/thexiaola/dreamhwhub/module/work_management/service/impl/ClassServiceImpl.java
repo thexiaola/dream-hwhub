@@ -383,7 +383,7 @@ public class ClassServiceImpl implements ClassService {
         application.setClassId(classId);
         application.setInviterId(currentUser.getId());
         application.setInviteeAccount(userAccount);
-        application.setTargetRole(isTeacher);
+        application.setIsTeacher(isTeacher);
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 
@@ -442,7 +442,7 @@ public class ClassServiceImpl implements ClassService {
                     ClassMember member = new ClassMember();
                     member.setClassId(application.getClassId());
                     member.setUserId(targetUser.getId());
-                    member.setIsTeacher(application.getTargetRole());
+                    member.setIsTeacher(application.getIsTeacher());
                     member.setJoinTime(LocalDateTime.now());
                     member.setInviteBy(application.getInviterId());
                     
@@ -456,7 +456,7 @@ public class ClassServiceImpl implements ClassService {
 
                     log.info("Invite application approved, user {} joined class {} as {}", 
                             targetUser.getId(), application.getClassId(), 
-                            application.getTargetRole() ? "TEACHER" : "STUDENT");
+                            application.getIsTeacher() ? "TEACHER" : "STUDENT");
                 }
             }
         }
@@ -738,7 +738,7 @@ public class ClassServiceImpl implements ClassService {
         application.setApplicantId(currentUser.getId());
         application.setClassName(className);
         application.setDescription(description);
-        application.setTargetRole(true);  // 创建者自动成为老师
+        application.setIsTeacher(true);  // 创建者自动成为老师
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 
@@ -784,7 +784,7 @@ public class ClassServiceImpl implements ClassService {
         application.setType(2);  // 加入班级申请
         application.setClassId(classId);
         application.setApplicantId(currentUser.getId());
-        application.setTargetRole(false);  // 固定为学生
+        application.setIsTeacher(false);  // 固定为学生
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 
