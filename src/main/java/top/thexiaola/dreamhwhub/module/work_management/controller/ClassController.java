@@ -32,29 +32,51 @@ public class ClassController {
      * 提交创建班级申请
      */
     @PostMapping("/create")
-    public ApiResponse<ClassApplication> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
+    public ApiResponse<ClassApplicationResponse> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to create class: {}", userInfo, request.getClassName());
         ClassApplication application = classService.submitCreateClassRequest(
                 request.getClassName(), request.getDescription());
+        ClassApplicationResponse response = new ClassApplicationResponse(
+                application.getId(),
+                application.getType(),
+                application.getClassId(),
+                application.getApplicantId(),
+                application.getTargetRole(),
+                application.getClassName(),
+                application.getDescription(),
+                application.getStatus(),
+                application.getCreateTime()
+        );
         log.info("User {} submitted create class application, id: {}", userInfo, application.getId());
-        return ApiResponse.success(application);
+        return ApiResponse.success(response, "申请已提交，待审核");
     }
 
     /**
      * 提交加入班级申请
      */
     @PostMapping("/join")
-    public ApiResponse<ClassApplication> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
+    public ApiResponse<ClassApplicationResponse> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to join class by ID: {}", userInfo, request.getClassCode());
         int classId = Integer.parseInt(request.getClassCode());
         ClassApplication application = classService.submitJoinClassRequest(classId, request.getIsTeacher());
         String roleStr = request.getIsTeacher() ? "TEACHER" : "STUDENT";
+        ClassApplicationResponse response = new ClassApplicationResponse(
+                application.getId(),
+                application.getType(),
+                application.getClassId(),
+                application.getApplicantId(),
+                application.getTargetRole(),
+                application.getClassName(),
+                application.getDescription(),
+                application.getStatus(),
+                application.getCreateTime()
+        );
         log.info("User {} submitted join class application, role: {}", userInfo, roleStr);
-        return ApiResponse.success(application);
+        return ApiResponse.success(response, "申请已提交，待审核");
     }
 
     /**

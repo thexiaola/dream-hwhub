@@ -738,6 +738,7 @@ public class ClassServiceImpl implements ClassService {
         application.setApplicantId(currentUser.getId());
         application.setClassName(className);
         application.setDescription(description);
+        application.setTargetRole(true);  // 创建者自动成为老师
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 

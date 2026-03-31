@@ -38,11 +38,11 @@ public class UserResponse {
     private Boolean isBanned;
 
     // 注册时间
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime registerTime;
 
     // 最后登录时间
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime lastLoginTime;
 
     /**
