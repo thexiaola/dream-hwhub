@@ -42,7 +42,7 @@ public class LoginUserController {
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) login successful, session created", userInfo);
             
-            return ResponseEntity.ok(ApiResponse.success(userResponse));
+            return ResponseEntity.ok(ApiResponse.success(userResponse, "登录成功"));
         } catch (BusinessException e) {
             // 统一返回 INVALID_CREDENTIALS
             return ResponseEntity.status(401).body(ApiResponse.error(
@@ -68,7 +68,7 @@ public class LoginUserController {
             loginUserService.logout(currentUser.getId(), request);
             
             log.info("User ({}) logout successful", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null, "登出成功"));
         } catch (BusinessException e) {
             log.warn("User logout failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));

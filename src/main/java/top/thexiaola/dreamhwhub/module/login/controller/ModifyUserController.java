@@ -32,7 +32,7 @@ public class ModifyUserController {
             UserResponse userResponse = UserResponse.fromEntity(user);
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) modify user info successful", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(userResponse));
+            return ResponseEntity.ok(ApiResponse.success(userResponse, "信息修改成功"));
         } catch (BusinessException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
@@ -46,7 +46,7 @@ public class ModifyUserController {
             UserResponse userResponse = UserResponse.fromEntity(user);
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) modify email successful", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(userResponse));
+            return ResponseEntity.ok(ApiResponse.success(userResponse, "邮箱修改成功"));
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to modify email: {}", userInfo, e.getMessage());
@@ -65,7 +65,7 @@ public class ModifyUserController {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             log.info("User ({}) sent modify verification code successfully", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null, "验证码已发送"));
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to send modify verification code: {}", userInfo, e.getMessage());
@@ -84,7 +84,7 @@ public class ModifyUserController {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             log.info("User ({}) sent modify verification code to new email: {} successfully", userInfo, request.getNewEmail());
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null, "验证码已发送"));
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to send modify verification code to new email: {}", userInfo, e.getMessage());
@@ -103,7 +103,7 @@ public class ModifyUserController {
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             modifyUserService.modifyUserPassword(modifyPasswordRequest);
             log.info("User ({}) password modified successfully", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null, "密码修改成功"));
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to modify password: {}", userInfo, e.getMessage());

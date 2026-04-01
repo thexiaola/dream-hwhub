@@ -51,7 +51,7 @@ public class RegisterController {
             request.getSession().setAttribute("user", user);
             request.getSession().setAttribute("username", user.getUsername());
             
-            return ResponseEntity.ok(ApiResponse.success(userResponse));
+            return ResponseEntity.ok(ApiResponse.success(userResponse, "注册成功"));
         } catch (BusinessException e) {
             String errorMessage = e.getMessage();
             return ResponseEntity.badRequest().body(ApiResponse.error(400, errorMessage));
@@ -65,7 +65,7 @@ public class RegisterController {
     public ResponseEntity<ApiResponse<Void>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
         try {
             registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null, "验证码发送成功"));
         } catch (BusinessException e) {
             String errorMessage = e.getMessage();
             return ResponseEntity.badRequest().body(ApiResponse.error(400, errorMessage));

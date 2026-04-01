@@ -33,7 +33,7 @@ public class RetrieveUserController {
             User user = modifyUserService.sendRetrievePasswordCode(request.getAccount());
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) send retrieve password verification code successful", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null, "验证码已发送"));
         } catch (BusinessException e) {
             String userInfo = String.format("ip: %s, account: %s", ip, request.getAccount());
             log.warn("User ({}) failed to send retrieve password verification code: {}", userInfo, e.getMessage());
@@ -51,7 +51,7 @@ public class RetrieveUserController {
             User user = modifyUserService.retrievePassword(request);
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) password retrieved successfully", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok(ApiResponse.success(null, "密码重置成功"));
         } catch (BusinessException e) {
             String userInfo = String.format("ip: %s, account: %s", ip, request.getAccount());
             log.warn("User ({}) failed to retrieve password: {}", userInfo, e.getMessage());
