@@ -100,7 +100,6 @@ public class ClassServiceImpl implements ClassService {
         member.setIsTeacher(true);  // 设置为老师
         member.setJoinTime(LocalDateTime.now());
         member.setInviteBy(currentUser.getId());
-        member.setInviterAccount(currentUser.getUserNo());
 
         classMemberMapper.insert(member);
 
@@ -161,7 +160,6 @@ public class ClassServiceImpl implements ClassService {
         member.setIsTeacher(isTeacher);  // 设置角色
         member.setJoinTime(LocalDateTime.now());
         member.setInviteBy(currentUser.getId());
-        member.setInviterAccount(currentUser.getUserNo());
 
         classMemberMapper.insert(member);
 
@@ -383,14 +381,13 @@ public class ClassServiceImpl implements ClassService {
         application.setClassId(classId);
         application.setInviterId(currentUser.getId());
         application.setInviteeAccount(userAccount);
-        application.setIsTeacher(isTeacher);
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 
         classInviteApplicationMapper.insert(application);
 
-        log.info("Student {} submitted invite application: classId={}, invitee={}, role={}", 
-                currentUser.getId(), classId, userAccount, isTeacher ? "TEACHER" : "STUDENT");
+        log.info("Student {} submitted invite application: classId={}, invitee={}", 
+                currentUser.getId(), classId, userAccount);
         return application;
     }
 
@@ -442,21 +439,14 @@ public class ClassServiceImpl implements ClassService {
                     ClassMember member = new ClassMember();
                     member.setClassId(application.getClassId());
                     member.setUserId(targetUser.getId());
-                    member.setIsTeacher(application.getIsTeacher());
+                    member.setIsTeacher(false);  // 学生邀请的人只能作为学生加入
                     member.setJoinTime(LocalDateTime.now());
                     member.setInviteBy(application.getInviterId());
                     
-                    // 查询邀请人的账号
-                    User inviter = userMapper.selectById(application.getInviterId());
-                    if (inviter != null) {
-                        member.setInviterAccount(inviter.getUserNo());
-                    }
-                    
                     classMemberMapper.insert(member);
 
-                    log.info("Invite application approved, user {} joined class {} as {}", 
-                            targetUser.getId(), application.getClassId(), 
-                            application.getIsTeacher() ? "TEACHER" : "STUDENT");
+                    log.info("Invite application approved, user {} joined class {} as STUDENT", 
+                            targetUser.getId(), application.getClassId());
                 }
             }
         }
@@ -796,7 +786,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public List<ClassApplication> getPendingApplications() {
+    public List<ClassApplication> getPendingCreateClassApplications() {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -808,7 +798,8 @@ public class ClassServiceImpl implements ClassService {
         }
 
         QueryWrapper<ClassApplication> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("status", 0)  // 待审核
+        queryWrapper.eq("type", 1)  // 只查询创建班级申请
+                   .eq("status", 0)  // 待审核
                    .orderByDesc("create_time");
         return classApplicationMapper.selectList(queryWrapper);
     }

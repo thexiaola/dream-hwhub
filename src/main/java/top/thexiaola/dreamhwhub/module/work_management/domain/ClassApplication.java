@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
  * 班级申请实体类
  */
 @Data
+@JsonPropertyOrder({"id", "type", "applicantId", "classId", "className", "description", "isTeacher", "status", "createTime", "reviewTime", "reviewerId", "reviewComment"})
 @TableName("class_application")
 public class ClassApplication {
 

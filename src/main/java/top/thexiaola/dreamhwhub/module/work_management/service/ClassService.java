@@ -125,9 +125,9 @@ public interface ClassService {
     ClassApplication submitJoinClassRequest(Integer classId, Boolean isTeacher);
 
     /**
-     * 获取所有待审核的申请列表
+     * 获取所有待审核的创建班级申请列表
      */
-    List<ClassApplication> getPendingApplications();
+    List<ClassApplication> getPendingCreateClassApplications();
 
     /**
      * 审核申请

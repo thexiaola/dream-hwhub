@@ -169,16 +169,16 @@ public class ClassController {
     }
 
     /**
-     * 获取所有待审核的申请列表（管理员专用）
+     * 获取所有待审核的创建班级申请列表（管理员专用）
      */
-    @GetMapping("/applications/pending")
-    public ApiResponse<List<ClassApplication>> getPendingApplications() {
+    @GetMapping("/applications/create-class/pending")
+    public ApiResponse<List<ClassApplication>> getPendingCreateClassApplications() {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying pending applications", userInfo);
-        List<ClassApplication> applications = classService.getPendingApplications();
-        log.info("User {} queried {} pending applications", userInfo, applications.size());
-        return ApiResponse.success(applications);
+        log.info("User {} querying pending create class applications", userInfo);
+        List<ClassApplication> applications = classService.getPendingCreateClassApplications();
+        log.info("User {} queried {} pending create class applications", userInfo, applications.size());
+        return ApiResponse.success(applications, "查询待审核列表成功");
     }
 
     /**

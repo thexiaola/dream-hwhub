@@ -44,7 +44,4 @@ public class ClassMember {
 
     @TableField("invite_by")
     private Integer inviteBy;
-
-    @TableField("inviter_account")
-    private String inviterAccount;  // 邀请人账号
 }
