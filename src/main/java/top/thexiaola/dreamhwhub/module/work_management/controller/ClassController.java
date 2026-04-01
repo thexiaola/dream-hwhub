@@ -49,7 +49,7 @@ public class ClassController {
                 application.getCreateTime()
         );
         log.info("User {} submitted create class application, id: {}", userInfo, application.getId());
-        return ApiResponse.success(response, "申请已提交，待审核");
+        return ApiResponse.success(response, "创建班级的申请已提交，待审核");
     }
 
     /**
@@ -73,7 +73,7 @@ public class ClassController {
                 application.getCreateTime()
         );
         log.info("User {} submitted join class application, role: STUDENT", userInfo);
-        return ApiResponse.success(response, "申请已提交，待审核");
+        return ApiResponse.success(response, "加入班级的申请已提交，待审核");
     }
 
     /**
@@ -172,7 +172,7 @@ public class ClassController {
      * @param classId 班级 ID 筛选，可选
      * @param applicantId 申请人 ID 筛选，可选
      */
-    @GetMapping("/applications/list")
+    @GetMapping("/applications/listall")
     public ApiResponse<List<ClassApplication>> getClassApplications(
             @RequestParam(required = false) Integer type,
             @RequestParam(required = false) Integer status,
