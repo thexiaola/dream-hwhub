@@ -27,14 +27,37 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
-     * 处理业务逻辑异常 (ServiceResult.failure)
+     * 处理业务逻辑异常 (BusinessException)
      */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
         int code = e.getErrorCodeValue();
         String message = e.getMessage();
         log.info("Business exception occurred: code={}, message={}", code, message);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(code, message));
+        
+        // 根据错误码设置合适的 HTTP 状态码和返回码
+        HttpStatus httpStatus;
+        int returnCode;
+        
+        if (code == 9001) {
+            // 权限不足返回 403
+            httpStatus = HttpStatus.FORBIDDEN;
+            returnCode = 403;
+        } else if (code == 401 || code == 3001 || code == 3002 || code == 3003 || code == 3004) {
+            // 未登录或认证失败返回 401
+            httpStatus = HttpStatus.UNAUTHORIZED;
+            returnCode = 401;
+        } else if (code == 404 || code == 8501) {
+            // 资源不存在返回 404
+            httpStatus = HttpStatus.NOT_FOUND;
+            returnCode = 404;
+        } else {
+            // 其他业务错误返回 400
+            httpStatus = HttpStatus.BAD_REQUEST;
+            returnCode = code;
+        }
+        
+        return ResponseEntity.status(httpStatus).body(ApiResponse.error(returnCode, message));
     }
 
     /**
