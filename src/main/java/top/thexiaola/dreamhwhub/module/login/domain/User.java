@@ -58,6 +58,10 @@ public class User implements Serializable {
     @TableField("is_banned")
     private Boolean isBanned = false;
 
+    // 封禁原因
+    @TableField("ban_reason")
+    private String banReason;
+
     // 注册时间
     @TableField("register_time")
     private LocalDateTime registerTime;

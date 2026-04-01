@@ -46,8 +46,9 @@ public class LoginUserServiceImpl implements LoginUserService {
         
         // 检查用户是否被封禁
         if (Boolean.TRUE.equals(user.getIsBanned())) {
-            log.warn(LogUtil.getFailureLog(operation, "user is banned", user));
-            throw new BusinessException(BusinessErrorCode.USER_BANNED, "用户已被封禁", null);
+            String banReason = user.getBanReason() != null ? user.getBanReason() : "未提供封禁原因";
+            log.warn(LogUtil.getFailureLog(operation, "user is banned, reason: " + banReason, user));
+            throw new BusinessException(BusinessErrorCode.USER_BANNED, "用户已被封禁：" + banReason, null);
         }
         
         if (aesEncryptionUtil.verifyPassword(loginRequest.getPassword(), user.getPassword())) {

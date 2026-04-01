@@ -44,11 +44,21 @@ public class LoginUserController {
             
             return ResponseEntity.ok(ApiResponse.success(userResponse, "登录成功"));
         } catch (BusinessException e) {
-            // 统一返回 INVALID_CREDENTIALS
-            return ResponseEntity.status(401).body(ApiResponse.error(
-                BusinessErrorCode.INVALID_CREDENTIALS.getCode(),
-                BusinessErrorCode.INVALID_CREDENTIALS.getMessage()
-            ));
+            // 区分不同的错误类型
+            if (e.getErrorCode() == BusinessErrorCode.USER_BANNED) {
+                String userInfo = String.format("ip: %s, account: %s", ip, loginRequest.getAccount());
+                log.warn("User ({}) login failed: account is banned, reason: {}", userInfo, e.getMessage());
+                return ResponseEntity.status(403).body(ApiResponse.error(
+                    BusinessErrorCode.USER_BANNED.getCode(),
+                    e.getMessage()
+                ));
+            } else {
+                // 其他错误统一返回 INVALID_CREDENTIALS
+                return ResponseEntity.status(401).body(ApiResponse.error(
+                    BusinessErrorCode.INVALID_CREDENTIALS.getCode(),
+                    BusinessErrorCode.INVALID_CREDENTIALS.getMessage()
+                ));
+            }
         }
     }
 
