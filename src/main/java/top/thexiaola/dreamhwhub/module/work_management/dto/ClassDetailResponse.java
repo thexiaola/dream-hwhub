@@ -23,14 +23,14 @@ public class ClassDetailResponse {
     private String className;
 
     /**
-     * 创建者 ID
+     * 班级所有者 ID
      */
-    private Integer creatorId;
+    private Integer ownerId;
 
     /**
-     * 创建者姓名
+     * 班级所有者姓名
      */
-    private String creatorName;
+    private String ownerName;
 
     /**
      * 用户在该班级的角色（TEACHER 或 STUDENT）

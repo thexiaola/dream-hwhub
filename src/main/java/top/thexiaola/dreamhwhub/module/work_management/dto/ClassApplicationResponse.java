@@ -36,11 +36,6 @@ public class ClassApplicationResponse {
     private Integer applicantId;
 
     /**
-     * 目标角色：true=老师，false=学生
-     */
-    private Boolean isTeacher;
-
-    /**
      * 班级名称（创建班级申请时有值）
      */
     private String className;

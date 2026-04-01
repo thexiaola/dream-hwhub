@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 班级申请实体类
  */
 @Data
-@JsonPropertyOrder({"id", "type", "applicantId", "classId", "className", "description", "isTeacher", "status", "createTime", "reviewTime", "reviewerId", "reviewComment"})
+@JsonPropertyOrder({"id", "type", "applicantId", "classId", "className", "description", "status", "createTime", "reviewTime", "reviewerId", "reviewComment"})
 @TableName("class_application")
 public class ClassApplication {
 
@@ -25,9 +25,6 @@ public class ClassApplication {
 
     @TableField("applicant_id")
     private Integer applicantId;
-
-    @TableField("is_teacher")
-    private Boolean isTeacher;  // true=老师，false=学生
 
     @TableField("class_name")
     private String className;

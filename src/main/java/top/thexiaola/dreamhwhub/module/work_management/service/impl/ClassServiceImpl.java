@@ -109,7 +109,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassMember inviteUserToClass(Integer classId, String userAccount, Boolean isTeacher) {
+    public ClassMember inviteUserToClass(Integer classId, String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -153,18 +153,18 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该用户已经在班级中", null);
         }
 
-        // 创建新的成员记录
+        // 创建新的成员记录（邀请加入也只能是学生）
         ClassMember member = new ClassMember();
         member.setClassId(classId);
         member.setUserId(targetUser.getId());
-        member.setIsTeacher(isTeacher);  // 设置角色
+        member.setIsTeacher(false);  // 固定为学生
         member.setJoinTime(LocalDateTime.now());
         member.setInviteBy(currentUser.getId());
 
         classMemberMapper.insert(member);
 
-        log.info("User {} invited user {} to class {} as {}", 
-                currentUser.getId(), userAccount, classId, isTeacher ? "TEACHER" : "STUDENT");
+        log.info("User {} invited user {} to class {} as STUDENT", 
+                currentUser.getId(), userAccount, classId);
         return member;
     }
 
@@ -279,7 +279,7 @@ public class ClassServiceImpl implements ClassService {
 
         // 检查当前用户是否是创建者或管理员
         boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
-        boolean isCreator = classInfo.getCreatorId().equals(currentUser.getId());
+        boolean isCreator = classInfo.getOwnerId().equals(currentUser.getId());
         
         if (!isAdmin && !isCreator) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级创建者或管理员可以取消助理老师权限", null);
@@ -300,7 +300,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 不能取消创建者的权限（虽然创建者不会是助理老师，但为了安全还是检查一下）
-        if (classInfo.getCreatorId().equals(teacherUserId)) {
+        if (classInfo.getOwnerId().equals(teacherUserId)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能取消创建者的权限", null);
         }
 
@@ -325,12 +325,12 @@ public class ClassServiceImpl implements ClassService {
 
         // 检查是否是创建者
         ClassInfo classInfo = classInfoMapper.selectById(classId);
-        return classInfo == null || !classInfo.getCreatorId().equals(userId);  // 创建者不是普通老师
+        return classInfo == null || !classInfo.getOwnerId().equals(userId);  // 创建者不是普通老师
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassInviteApplication studentInviteUser(Integer classId, String userAccount, Boolean isTeacher) {
+    public ClassInviteApplication studentInviteUser(Integer classId, String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -496,7 +496,7 @@ public class ClassServiceImpl implements ClassService {
 
         // 如果是创建者，不能退出（需要先转让或删除班级）
         ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo != null && classInfo.getCreatorId().equals(currentUser.getId())) {
+        if (classInfo != null && classInfo.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.CREATOR_CANNOT_LEAVE, "创建者不能退出班级", null);
         }
 
@@ -519,7 +519,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 只有创建者可以删除班级
-        if (!classInfo.getCreatorId().equals(currentUser.getId())) {
+        if (!classInfo.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者可以删除班级", null);
         }
 
@@ -576,8 +576,8 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 查询创建者信息
-        User creator = userMapper.selectById(classInfo.getCreatorId());
-        String creatorName = creator != null ? creator.getUsername() : "未知";
+        User owner = userMapper.selectById(classInfo.getOwnerId());
+        String ownerName = owner != null ? owner.getUsername() : "未知";
 
         // 查询成员统计
         QueryWrapper<ClassMember> countQuery = new QueryWrapper<>();
@@ -607,8 +607,8 @@ public class ClassServiceImpl implements ClassService {
         return new ClassDetailResponse(
                 classInfo.getId(),
                 classInfo.getClassName(),
-                classInfo.getCreatorId(),
-                creatorName,
+                classInfo.getOwnerId(),
+                ownerName,
                 userRole,
                 memberCount,
                 teacherCount,
@@ -630,8 +630,8 @@ public class ClassServiceImpl implements ClassService {
                     }
 
                     // 查询创建者信息
-                    User creator = userMapper.selectById(classInfo.getCreatorId());
-                    String creatorName = creator != null ? creator.getUsername() : "未知";
+                    User owner = userMapper.selectById(classInfo.getOwnerId());
+                    String ownerName = owner != null ? owner.getUsername() : "未知";
 
                     // 查询成员统计
                     QueryWrapper<ClassMember> countQuery = new QueryWrapper<>();
@@ -649,8 +649,8 @@ public class ClassServiceImpl implements ClassService {
                     return new ClassDetailResponse(
                             classInfo.getId(),
                             classInfo.getClassName(),
-                            classInfo.getCreatorId(),
-                            creatorName,
+                            classInfo.getOwnerId(),
+                            ownerName,
                             member.getIsTeacher() != null ? (member.getIsTeacher() ? "TEACHER" : "STUDENT") : null,
                             memberCount,
                             teacherCount,
@@ -728,7 +728,6 @@ public class ClassServiceImpl implements ClassService {
         application.setApplicantId(currentUser.getId());
         application.setClassName(className);
         application.setDescription(description);
-        application.setIsTeacher(true);  // 创建者自动成为老师
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 
@@ -740,7 +739,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassApplication submitJoinClassRequest(Integer classId, Boolean isTeacher) {
+    public ClassApplication submitJoinClassRequest(Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -774,7 +773,6 @@ public class ClassServiceImpl implements ClassService {
         application.setType(2);  // 加入班级申请
         application.setClassId(classId);
         application.setApplicantId(currentUser.getId());
-        application.setIsTeacher(false);  // 固定为学生
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 
@@ -786,7 +784,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public List<ClassApplication> getPendingCreateClassApplications() {
+    public List<ClassApplication> getClassApplications(Integer type, Integer status, Integer classId, Integer applicantId) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -794,13 +792,28 @@ public class ClassServiceImpl implements ClassService {
 
         // 检查是否是管理员（permission >= 100）
         if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看待审核申请", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看申请列表", null);
         }
 
         QueryWrapper<ClassApplication> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("type", 1)  // 只查询创建班级申请
-                   .eq("status", 0)  // 待审核
-                   .orderByDesc("create_time");
+        
+        // 动态添加筛选条件
+        if (type != null) {
+            queryWrapper.eq("type", type);
+        }
+        if (status != null) {
+            queryWrapper.eq("status", status);
+        }
+        if (classId != null) {
+            queryWrapper.eq("class_id", classId);
+        }
+        if (applicantId != null) {
+            queryWrapper.eq("applicant_id", applicantId);
+        }
+        
+        // 按创建时间倒序排列
+        queryWrapper.orderByDesc("create_time");
+        
         return classApplicationMapper.selectList(queryWrapper);
     }
 
@@ -840,7 +853,7 @@ public class ClassServiceImpl implements ClassService {
                 ClassInfo classInfo = new ClassInfo();
                 classInfo.setClassName(application.getClassName());
                 classInfo.setDescription(application.getDescription());
-                classInfo.setCreatorId(application.getApplicantId());
+                classInfo.setOwnerId(application.getApplicantId());
                 classInfo.setCreateTime(LocalDateTime.now());
                 classInfo.setUpdateTime(LocalDateTime.now());
                 classInfoMapper.insert(classInfo);

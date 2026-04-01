@@ -43,7 +43,6 @@ public class ClassController {
                 application.getType(),
                 application.getClassId(),
                 application.getApplicantId(),
-                application.getIsTeacher(),
                 application.getClassName(),
                 application.getDescription(),
                 application.getStatus(),
@@ -62,20 +61,18 @@ public class ClassController {
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to join class by ID: {}", userInfo, request.getClassCode());
         int classId = Integer.parseInt(request.getClassCode());
-        ClassApplication application = classService.submitJoinClassRequest(classId, request.getIsTeacher());
-        String roleStr = request.getIsTeacher() ? "TEACHER" : "STUDENT";
+        ClassApplication application = classService.submitJoinClassRequest(classId);
         ClassApplicationResponse response = new ClassApplicationResponse(
                 application.getId(),
                 application.getType(),
                 application.getClassId(),
                 application.getApplicantId(),
-                application.getIsTeacher(),
                 application.getClassName(),
                 application.getDescription(),
                 application.getStatus(),
                 application.getCreateTime()
         );
-        log.info("User {} submitted join class application, role: {}", userInfo, roleStr);
+        log.info("User {} submitted join class application, role: STUDENT", userInfo);
         return ApiResponse.success(response, "申请已提交，待审核");
     }
 
@@ -169,30 +166,38 @@ public class ClassController {
     }
 
     /**
-     * 获取所有待审核的创建班级申请列表（管理员专用）
+     * 获取所有待审核的申请列表（管理员专用）
+     * @param type 申请类型筛选（1-创建班级，2-加入班级），可选
+     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选，默认查询所有状态
+     * @param classId 班级 ID 筛选，可选
+     * @param applicantId 申请人 ID 筛选，可选
      */
-    @GetMapping("/applications/create-class/pending")
-    public ApiResponse<List<ClassApplication>> getPendingCreateClassApplications() {
+    @GetMapping("/applications/list")
+    public ApiResponse<List<ClassApplication>> getClassApplications(
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer classId,
+            @RequestParam(required = false) Integer applicantId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying pending create class applications", userInfo);
-        List<ClassApplication> applications = classService.getPendingCreateClassApplications();
-        log.info("User {} queried {} pending create class applications", userInfo, applications.size());
-        return ApiResponse.success(applications, "查询待审核列表成功");
+        log.info("User {} querying class applications with filters: type={}, status={}, classId={}, applicantId={}", 
+                userInfo, type, status, classId, applicantId);
+        List<ClassApplication> applications = classService.getClassApplications(type, status, classId, applicantId);
+        log.info("User {} queried {} class applications", userInfo, applications.size());
+        return ApiResponse.success(applications, "查询申请列表成功");
     }
 
     /**
-     * 邀请用户加入班级（通过账号）- 老师/管理员专用，直接加入
+     * 邀请用户加入班级（通过账号）- 老师/管理员专用，直接加入（只能为学生）
      */
     @PostMapping("/invite")
     public ApiResponse<ClassMember> inviteUser(@RequestParam Integer classId,
-                                                @RequestParam String userAccount,
-                                                @RequestParam Boolean isTeacher) {
+                                                @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} inviting user {} to class {} as {}", 
-                userInfo, userAccount, classId, isTeacher ? "TEACHER" : "STUDENT");
-        ClassMember member = classService.inviteUserToClass(classId, userAccount, isTeacher);
+        log.info("User {} inviting user {} to class {} as STUDENT", 
+                userInfo, userAccount, classId);
+        ClassMember member = classService.inviteUserToClass(classId, userAccount);
         log.info("User {} invited user {} to class {} successfully", userInfo, userAccount, classId);
         return ApiResponse.success(member);
     }
@@ -249,13 +254,12 @@ public class ClassController {
      */
     @PostMapping("/student/invite")
     public ApiResponse<ClassInviteApplication> studentInviteUser(@RequestParam Integer classId,
-                                                                  @RequestParam String userAccount,
-                                                                  @RequestParam Boolean isTeacher) {
+                                                                  @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("Student {} inviting user {} to class {} (needs approval)", 
                 userInfo, userAccount, classId);
-        ClassInviteApplication application = classService.studentInviteUser(classId, userAccount, isTeacher);
+        ClassInviteApplication application = classService.studentInviteUser(classId, userAccount);
         log.info("Student {} submitted invite application, id: {}", userInfo, application.getId());
         return ApiResponse.success(application);
     }

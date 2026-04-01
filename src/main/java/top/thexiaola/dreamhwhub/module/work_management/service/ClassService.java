@@ -20,9 +20,9 @@ public interface ClassService {
     ClassMember addTeacherToClass(Integer classId, String userAccount);
 
     /**
-     * 邀请用户加入班级（可以是学生或老师）
+     * 邀请用户加入班级（只能邀请为学生）
      */
-    ClassMember inviteUserToClass(Integer classId, String userAccount, Boolean isTeacher);
+    ClassMember inviteUserToClass(Integer classId, String userAccount);
 
     /**
      * 设置学生为助理老师（老师专用）
@@ -47,7 +47,7 @@ public interface ClassService {
     /**
      * 学生邀请用户加入班级（需要审核）
      */
-    ClassInviteApplication studentInviteUser(Integer classId, String userAccount, Boolean isTeacher);
+    ClassInviteApplication studentInviteUser(Integer classId, String userAccount);
 
     /**
      * 审核邀请申请（老师/管理员专用）
@@ -122,12 +122,17 @@ public interface ClassService {
     /**
      * 提交加入班级申请
      */
-    ClassApplication submitJoinClassRequest(Integer classId, Boolean isTeacher);
+    ClassApplication submitJoinClassRequest(Integer classId);
 
     /**
-     * 获取所有待审核的创建班级申请列表
+     * 获取班级申请列表（支持筛选，管理员专用）
+     * @param type 申请类型筛选（1-创建班级，2-加入班级），可选
+     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     * @param classId 班级 ID 筛选，可选
+     * @param applicantId 申请人 ID 筛选，可选
+     * @return 按创建时间倒序排列的申请列表
      */
-    List<ClassApplication> getPendingCreateClassApplications();
+    List<ClassApplication> getClassApplications(Integer type, Integer status, Integer classId, Integer applicantId);
 
     /**
      * 审核申请
