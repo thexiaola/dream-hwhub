@@ -13,7 +13,7 @@ import top.thexiaola.dreamhwhub.module.work_management.domain.WorkAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.WorkResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
@@ -112,11 +112,21 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以修改作业", null);
         }
 
+        // 如果作业已发布，不允许修改发布时间
+        LocalDateTime now = LocalDateTime.now();
+        boolean isPublished = workInfo.getPublishTime() != null && !now.isBefore(workInfo.getPublishTime());
+        if (isPublished && request.getPublishTime() != null) {
+            throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "已发布的作业不能修改发布时间", null);
+        }
+
         // 更新作业
         workInfo.setTitle(request.getTitle());
         workInfo.setDescription(request.getDescription());
         workInfo.setDeadline(request.getDeadline());
         workInfo.setTotalScore(request.getTotalScore());
+        if (request.getPublishTime() != null) {
+            workInfo.setPublishTime(request.getPublishTime());
+        }
         workInfo.setUpdateTime(LocalDateTime.now());
 
         workMapper.updateById(workInfo);

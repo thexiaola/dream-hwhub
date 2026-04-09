@@ -6,10 +6,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.dto.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassCreateApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInvitation;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInviteApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.dto.*;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassApplicationResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.MemberCheckResponse;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.UserUtils;
@@ -36,12 +43,12 @@ public class ClassController {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to create class: {}", userInfo, request.getClassName());
-        ClassApplication application = classService.submitCreateClassRequest(
+        ClassCreateApplication application = classService.submitCreateClassRequest(
                 request.getClassName(), request.getDescription());
         ClassApplicationResponse response = new ClassApplicationResponse(
                 application.getId(),
-                application.getType(),
-                application.getClassId(),
+                null,  // type字段已废弃
+                null,  // classId在审核通过后才会有
                 application.getApplicantId(),
                 application.getClassName(),
                 application.getDescription(),
@@ -59,16 +66,16 @@ public class ClassController {
     public ApiResponse<ClassApplicationResponse> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} applying to join class by ID: {}", userInfo, request.getClassCode());
-        int classId = Integer.parseInt(request.getClassCode());
-        ClassApplication application = classService.submitJoinClassRequest(classId);
+        log.info("User {} applying to join class by ID: {}", userInfo, request.getClassId());
+        int classId = Integer.parseInt(request.getClassId());
+        ClassJoinApplication application = classService.submitJoinClassRequest(classId);
         ClassApplicationResponse response = new ClassApplicationResponse(
                 application.getId(),
-                application.getType(),
+                null,  // type字段已废弃
                 application.getClassId(),
                 application.getApplicantId(),
-                application.getClassName(),
-                application.getDescription(),
+                null,  // className
+                null,  // description
                 application.getStatus(),
                 application.getCreateTime()
         );
@@ -158,7 +165,15 @@ public class ClassController {
         boolean isMember = classService.isClassMember(classId, currentUser.getId());
         String role = null;
         if (isMember) {
-            role = classService.isTeacher(classId, currentUser.getId()) ? "TEACHER" : "STUDENT";
+            // 获取班级信息以确定是否是创建者
+            top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo classInfo = classService.getClassById(classId);
+            if (classInfo != null && classInfo.getOwnerId().equals(currentUser.getId())) {
+                role = "OWNER";
+            } else if (classService.isTeacher(classId, currentUser.getId())) {
+                role = "ASSISTANT";
+            } else {
+                role = "STUDENT";
+            }
         }
         MemberCheckResponse response = new MemberCheckResponse(isMember, role);
         log.info("User {} check result: isMember={}, role={}", userInfo, isMember, role);
@@ -166,30 +181,73 @@ public class ClassController {
     }
 
     /**
-     * 获取所有待审核的申请列表（管理员专用）
-     * @param type 申请类型筛选（1-创建班级，2-加入班级），可选
-     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选，默认查询所有状态
-     * @param classId 班级 ID 筛选，可选
-     * @param applicantId 申请人 ID 筛选，可选
+     * 获取创建班级申请列表（管理员专用）
+     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
      */
-    @GetMapping("/applications/listall")
-    public ApiResponse<List<ClassApplication>> getClassApplications(
-            @RequestParam(required = false) Integer type,
-            @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Integer classId,
-            @RequestParam(required = false) Integer applicantId) {
+    @GetMapping("/applications/create/list")
+    public ApiResponse<List<ClassCreateApplication>> getCreateApplications(
+            @RequestParam(required = false) Integer status) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying class applications with filters: type={}, status={}, classId={}, applicantId={}", 
-                userInfo, type, status, classId, applicantId);
-        List<ClassApplication> applications = classService.getClassApplications(type, status, classId, applicantId);
-        log.info("User {} queried {} class applications", userInfo, applications.size());
-        return ApiResponse.success(applications, "查询申请列表成功");
+        log.info("User {} querying create class applications with filter: status={}", userInfo, status);
+        List<ClassCreateApplication> applications = classService.getCreateApplications(status);
+        log.info("User {} queried {} create class applications", userInfo, applications.size());
+        return ApiResponse.success(applications, "查询创建申请列表成功");
+    }
+
+    /**
+     * 审核创建班级申请（管理员专用）
+     */
+    @PutMapping("/applications/create/approve")
+    public ApiResponse<Void> approveCreateApplication(@Valid @RequestBody ApproveJoinClassRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} approving create class application, id: {}, approved: {}",
+                userInfo, request.getApplicationId(), request.getApproved());
+        classService.approveCreateApplication(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
+        String result = request.getApproved() ? "approved" : "rejected";
+        log.info("User {} create class application {}", userInfo, result);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 获取加入班级申请列表（老师和管理员专用）
+     * @param classId 班级 ID 筛选，可选
+     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     */
+    @GetMapping("/applications/join/list")
+    public ApiResponse<List<ClassJoinApplication>> getJoinApplications(
+            @RequestParam(required = false) Integer classId,
+            @RequestParam(required = false) Integer status) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} querying join class applications with filters: classId={}, status={}", 
+                userInfo, classId, status);
+        List<ClassJoinApplication> applications = classService.getJoinApplications(classId, status);
+        log.info("User {} queried {} join class applications", userInfo, applications.size());
+        return ApiResponse.success(applications, "查询加入申请列表成功");
+    }
+
+    /**
+     * 审核加入班级申请（老师和管理员专用）
+     */
+    @PutMapping("/applications/join/approve")
+    public ApiResponse<Void> approveJoinApplication(@Valid @RequestBody ApproveJoinClassRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} approving join class application, id: {}, approved: {}",
+                userInfo, request.getApplicationId(), request.getApproved());
+        classService.approveJoinApplication(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
+        String result = request.getApproved() ? "approved" : "rejected";
+        log.info("User {} join class application {}", userInfo, result);
+        return ApiResponse.success(null);
     }
 
     /**
      * 邀请用户加入班级（通过账号）- 老师/管理员专用，直接加入（只能为学生）
+     * @deprecated 此接口会强制拉人入班，缺乏用户知情权。请使用 /api/class/invite-with-approval 代替
      */
+    @Deprecated
     @PostMapping("/invite")
     public ApiResponse<ClassMember> inviteUser(@RequestParam Integer classId,
                                                 @RequestParam String userAccount) {
@@ -272,8 +330,8 @@ public class ClassController {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} approving invite application, id: {}, approved: {}",
-                userInfo, request.getMemberId(), request.getApproved());
-        classService.approveInviteApplication(Integer.parseInt(request.getMemberId()), request.getApproved(), request.getComment());
+                userInfo, request.getApplicationId(), request.getApproved());
+        classService.approveInviteApplication(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
         String result = request.getApproved() ? "approved" : "rejected";
         log.info("User {} invite application {}", userInfo, result);
         return ApiResponse.success(null);
@@ -290,5 +348,54 @@ public class ClassController {
         List<ClassInviteApplication> applications = classService.getPendingInviteApplications(classId);
         log.info("User {} queried {} pending invite applications", userInfo, applications.size());
         return ApiResponse.success(applications);
+    }
+
+    /**
+     * 教师邀请用户加入班级（需用户同意）
+     */
+    @PostMapping("/invite-with-approval")
+    public ApiResponse<ClassInvitation> inviteUserWithApproval(@RequestParam Integer classId,
+                                                                @RequestParam String userAccount) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} sending invitation to user {} for class {} (requires approval)", 
+                userInfo, userAccount, classId);
+        ClassInvitation invitation = classService.inviteUserToClassWithApproval(classId, userAccount);
+        log.info("User {} sent invitation, id: {}", userInfo, invitation.getId());
+        return ApiResponse.success(invitation, "邀请已发送，等待用户响应");
+    }
+
+    /**
+     * 获取我收到的邀请列表
+     * @param status 状态筛选（0-待处理，1-已同意，2-已拒绝，3-已过期），可选
+     */
+    @GetMapping("/my-invitations")
+    public ApiResponse<List<InvitationResponse>> getMyInvitations(
+            @RequestParam(required = false) Integer status) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} querying my invitations with filter: status={}", userInfo, status);
+        if (currentUser == null) {
+            return ApiResponse.error(401, "用户未登录");
+        }
+        List<InvitationResponse> invitations = classService.getMyInvitations(currentUser.getId(), status);
+        log.info("User {} queried {} invitations", userInfo, invitations.size());
+        return ApiResponse.success(invitations);
+    }
+
+    /**
+     * 响应邀请（同意/拒绝）
+     */
+    @PutMapping("/respond-invitation")
+    public ApiResponse<Void> respondInvitation(@Valid @RequestBody RespondInvitationRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} responding to invitation, id: {}, accepted: {}",
+                userInfo, request.getInvitationId(), request.getAccepted());
+        int invitationId = Integer.parseInt(request.getInvitationId());
+        classService.respondInvitation(invitationId, request.getAccepted(), request.getComment());
+        String result = request.getAccepted() ? "accepted" : "rejected";
+        log.info("User {} invitation {}", userInfo, result);
+        return ApiResponse.success(null);
     }
 }

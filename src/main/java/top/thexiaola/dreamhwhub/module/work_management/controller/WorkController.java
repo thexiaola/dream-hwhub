@@ -11,7 +11,7 @@ import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.WorkResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.UserUtils;

@@ -1,11 +1,14 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassCreateApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInvitation;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInviteApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
-import top.thexiaola.dreamhwhub.module.work_management.dto.ClassDetailResponse;
-import top.thexiaola.dreamhwhub.module.work_management.dto.ClassMemberResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
 
 import java.util.List;
 
@@ -117,25 +120,50 @@ public interface ClassService {
     /**
      * 提交创建班级申请
      */
-    ClassApplication submitCreateClassRequest(String className, String description);
+    ClassCreateApplication submitCreateClassRequest(String className, String description);
+
+    /**
+     * 获取创建班级申请列表（管理员专用）
+     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     * @return 按创建时间倒序排列的申请列表
+     */
+    List<ClassCreateApplication> getCreateApplications(Integer status);
+
+    /**
+     * 审核创建班级申请
+     */
+    void approveCreateApplication(Integer applicationId, Boolean approved, String comment);
 
     /**
      * 提交加入班级申请
      */
-    ClassApplication submitJoinClassRequest(Integer classId);
+    ClassJoinApplication submitJoinClassRequest(Integer classId);
 
     /**
-     * 获取班级申请列表（支持筛选，管理员专用）
-     * @param type 申请类型筛选（1-创建班级，2-加入班级），可选
-     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     * 获取加入班级申请列表（老师和管理员专用）
      * @param classId 班级 ID 筛选，可选
-     * @param applicantId 申请人 ID 筛选，可选
+     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
      * @return 按创建时间倒序排列的申请列表
      */
-    List<ClassApplication> getClassApplications(Integer type, Integer status, Integer classId, Integer applicantId);
+    List<ClassJoinApplication> getJoinApplications(Integer classId, Integer status);
 
     /**
-     * 审核申请
+     * 审核加入班级申请
      */
-    void approveApplication(Integer applicationId, Boolean approved, String comment);
+    void approveJoinApplication(Integer applicationId, Boolean approved, String comment);
+
+    /**
+     * 教师邀请用户加入班级（需用户同意）
+     */
+    ClassInvitation inviteUserToClassWithApproval(Integer classId, String userAccount);
+
+    /**
+     * 获取用户收到的邀请列表
+     */
+    List<InvitationResponse> getMyInvitations(Integer userId, Integer status);
+
+    /**
+     * 用户响应邀请（同意/拒绝）
+     */
+    void respondInvitation(Integer invitationId, Boolean accepted, String comment);
 }

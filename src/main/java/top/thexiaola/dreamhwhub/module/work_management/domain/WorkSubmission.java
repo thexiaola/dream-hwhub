@@ -82,7 +82,7 @@ public class WorkSubmission implements Serializable {
     private Integer graderId;
 
     /**
-     * 提交状态：0-未提交，1-已提交，2-已批改
+     * 提交状态：1-已提交，2-已批改
      */
     @TableField("status")
     private Integer status = 1;

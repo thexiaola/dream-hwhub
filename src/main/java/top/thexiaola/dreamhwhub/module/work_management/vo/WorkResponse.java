@@ -1,77 +1,61 @@
-package top.thexiaola.dreamhwhub.module.work_management.dto;
+package top.thexiaola.dreamhwhub.module.work_management.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 作业提交响应
+ * 作业响应VO
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkSubmissionResponse {
-
-    /**
-     * 提交 ID
-     */
-    private Integer id;
+public class WorkResponse {
 
     /**
      * 作业 ID
      */
-    private Integer workId;
+    private Integer id;
 
     /**
      * 作业标题
      */
-    private String workTitle;
+    private String title;
 
     /**
-     * 提交人 ID
+     * 作业描述
      */
-    private Integer submitterId;
+    private String description;
 
     /**
-     * 提交内容/文本描述
+     * 发布人 ID
      */
-    private String submissionContent;
+    private Integer publisherId;
 
     /**
-     * 提交分数
+     * 截止时间
      */
-    private BigDecimal score;
+    private LocalDateTime deadline;
 
     /**
-     * 批改人评语
+     * 作业总分
      */
-    private String comment;
+    private Integer totalScore;
 
     /**
-     * 提交时间
+     * 发布时间
      */
-    private LocalDateTime submitTime;
+    private LocalDateTime publishTime;
 
     /**
-     * 批改时间
-     */
-    private LocalDateTime gradeTime;
-
-    /**
-     * 批改人 ID
-     */
-    private Integer graderId;
-
-    /**
-     * 提交状态：0-未提交，1-已提交，2-已批改
+     * 作业状态：0-未发布，1-已发布，2-已结束（动态计算）
      */
     private Integer status;
 
     /**
-     * 是否逾期：0-否，1-是
+     * 是否已逾期
      */
     private Boolean isOverdue;
 

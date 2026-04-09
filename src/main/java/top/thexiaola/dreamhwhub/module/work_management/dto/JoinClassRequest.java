@@ -15,5 +15,5 @@ public class JoinClassRequest {
      */
     @NotBlank(message = "班级 ID 不能为空")
     @Pattern(regexp = "^[0-9]+$", message = "班级 ID 必须是数字")
-    private String classCode;
+    private String classId;
 }

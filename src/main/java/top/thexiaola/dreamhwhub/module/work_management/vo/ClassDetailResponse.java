@@ -1,11 +1,11 @@
-package top.thexiaola.dreamhwhub.module.work_management.dto;
+package top.thexiaola.dreamhwhub.module.work_management.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 班级详情响应
+ * 班级详情响应VO
  */
 @Data
 @AllArgsConstructor
@@ -33,7 +33,7 @@ public class ClassDetailResponse {
     private String ownerName;
 
     /**
-     * 用户在该班级的角色（TEACHER 或 STUDENT）
+     * 用户在该班级的角色（OWNER/ASSISTANT/STUDENT）
      */
     private String userRole;
 

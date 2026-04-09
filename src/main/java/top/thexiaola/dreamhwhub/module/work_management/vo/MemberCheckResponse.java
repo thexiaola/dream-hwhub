@@ -1,11 +1,11 @@
-package top.thexiaola.dreamhwhub.module.work_management.dto;
+package top.thexiaola.dreamhwhub.module.work_management.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 成员检查结果响应
+ * 成员检查结果响应VO
  */
 @Data
 @AllArgsConstructor

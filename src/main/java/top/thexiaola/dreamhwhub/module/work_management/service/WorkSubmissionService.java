@@ -3,7 +3,7 @@ package top.thexiaola.dreamhwhub.module.work_management.service;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.WorkSubmissionResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 
 import java.util.List;
 
@@ -68,4 +68,20 @@ public interface WorkSubmissionService {
      * @return 批改后的提交
      */
     WorkSubmission gradeWork(GradeWorkRequest request);
+
+    /**
+     * 查询某次作业的已交名单
+     *
+     * @param workId 作业 ID
+     * @return 已交学生列表
+     */
+    List<WorkSubmissionResponse> getSubmittedStudents(Integer workId);
+
+    /**
+     * 查询某次作业的未交名单
+     *
+     * @param workId 作业 ID
+     * @return 未交学生列表（仅包含学生基本信息）
+     */
+    List<top.thexiaola.dreamhwhub.module.login.domain.User> getUnsubmittedStudents(Integer workId);
 }

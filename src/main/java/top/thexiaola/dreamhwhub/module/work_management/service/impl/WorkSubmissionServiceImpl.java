@@ -13,7 +13,7 @@ import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.WorkSubmissionResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
@@ -40,12 +40,14 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkMapper workMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
+    private final top.thexiaola.dreamhwhub.module.login.mapper.UserMapper userMapper;
 
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService) {
+    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, top.thexiaola.dreamhwhub.module.login.mapper.UserMapper userMapper) {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workMapper = workMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
         this.classService = classService;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -87,9 +89,12 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         WorkSubmission submission = new WorkSubmission();
         submission.setWorkId(Integer.parseInt(request.getWorkId()));
         submission.setSubmitterId(currentUser.getId());
+        submission.setClassId(workInfo.getClassId());
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1); // 已提交
-        submission.setIsOverdue(workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline()));
+        // 判断是否逾期：如果当前时间超过截止时间，则标记为逾期
+        boolean isOverdue = workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline());
+        submission.setIsOverdue(isOverdue);
         submission.setSubmitTime(LocalDateTime.now());
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
@@ -129,6 +134,12 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_ALREADY_GRADED, "作业已被批改，不能修改", null);
         }
 
+        // 检查是否已过截止时间，学生不能在截止后更新作业
+        WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
+        if (workInfo != null && workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
+            throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，无法修改", null);
+        }
+
         // 更新提交内容
         submission.setSubmissionContent(submissionContent);
         submission.setUpdateTime(LocalDateTime.now());
@@ -158,6 +169,12 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             if (!submission.getSubmitterId().equals(currentUser.getId())) {
                 throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能删除自己的提交", null);
             }
+            
+            // 学生不能删除已过截止时间的作业
+            top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
+            if (workInfo != null && workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
+                throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "已过截止时间的作业不能删除", null);
+            }
         }
 
         workSubmissionMapper.deleteById(submissionId);
@@ -176,6 +193,89 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     public List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId) {
         // 此方法已废弃，应该使用 getCurrentUserSubmissions 代替
         return List.of();
+    }
+
+    @Override
+    public List<WorkSubmissionResponse> getSubmittedStudents(Integer workId) {
+        // 获取当前用户
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 查询作业信息
+        top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo workInfo = workMapper.selectById(workId);
+        if (workInfo == null) {
+            throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
+        }
+
+        // 检查权限（只有班级老师可以查看）
+        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看", null);
+        }
+
+        // 获取已提交的学生列表
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<WorkSubmission> submissionQuery = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        submissionQuery.eq("work_id", workId).orderByDesc("submit_time");
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
+        
+        return submissions.stream()
+            .map(this::convertToResponse)
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public List<top.thexiaola.dreamhwhub.module.login.domain.User> getUnsubmittedStudents(Integer workId) {
+        // 获取当前用户
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 查询作业信息
+        top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo workInfo = workMapper.selectById(workId);
+        if (workInfo == null) {
+            throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
+        }
+
+        // 检查权限（只有班级老师可以查看）
+        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看", null);
+        }
+
+        // 获取班级所有学生成员
+        List<top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse> allMembers = 
+            classService.getClassMembers(workInfo.getClassId());
+        
+        // 过滤出学生（排除OWNER和ASSISTANT）
+        java.util.Set<Integer> allStudentIds = allMembers.stream()
+            .filter(m -> "STUDENT".equals(m.getRole()))
+            .map(top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse::getUserId)
+            .collect(java.util.stream.Collectors.toSet());
+
+        // 获取已提交的学生 ID 列表
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<WorkSubmission> submissionQuery = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        submissionQuery.eq("work_id", workId);
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
+        java.util.Set<Integer> submittedStudentIds = submissions.stream()
+            .map(WorkSubmission::getSubmitterId)
+            .collect(java.util.stream.Collectors.toSet());
+
+        // 计算未交学生 ID
+        allStudentIds.removeAll(submittedStudentIds);
+        
+        // 查询未交学生的详细信息
+        if (allStudentIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<top.thexiaola.dreamhwhub.module.login.domain.User> userQuery = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        userQuery.in("id", allStudentIds);
+        
+        return userMapper.selectList(userQuery);
     }
 
     @Override
@@ -228,7 +328,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.SCORE_OUT_OF_RANGE, "分数超过作业总分", null);
         }
 
-        // 批改作业
+        // 批改作业（支持重新批改）
         submission.setScore(request.getScore());
         submission.setComment(request.getComment());
         submission.setStatus(2); // 已批改
@@ -346,8 +446,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             return false;
         }
         
-        // 如果当前时间在截止时间之后，已结束
-        return workInfo.getDeadline() == null || !now.isAfter(workInfo.getDeadline());
+        // 注意：允许逾期提交，所以不检查截止时间
+        // 逾期会在提交时标记 isOverdue = true
+        return true;
     }
     
 }

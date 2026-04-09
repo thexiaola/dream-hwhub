@@ -11,7 +11,7 @@ import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.WorkSubmissionResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.util.LogUtil;
 import top.thexiaola.dreamhwhub.util.UserUtils;
@@ -147,6 +147,44 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {
             log.warn("User query work submissions failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
+    }
+
+    /**
+     * 查询某次作业的已交名单（教师专用）
+     */
+    @GetMapping("/work/submitted")
+    public ResponseEntity<ApiResponse<List<WorkSubmissionResponse>>> getSubmittedStudents(@RequestParam Integer workId) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
+            List<WorkSubmissionResponse> submitted = workSubmissionService.getSubmittedStudents(workId);
+            log.info("User ({}) queried submitted students, workId: {}, size: {}", userInfo, workId, submitted.size());
+            return ResponseEntity.ok(ApiResponse.success(submitted));
+        } catch (BusinessException e) {
+            log.warn("User query submitted students failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
+    }
+
+    /**
+     * 查询某次作业的未交名单（教师专用）
+     */
+    @GetMapping("/work/unsubmitted")
+    public ResponseEntity<ApiResponse<List<top.thexiaola.dreamhwhub.module.login.domain.User>>> getUnsubmittedStudents(@RequestParam Integer workId) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+            
+            List<top.thexiaola.dreamhwhub.module.login.domain.User> unsubmitted = workSubmissionService.getUnsubmittedStudents(workId);
+            log.info("User ({}) queried unsubmitted students, workId: {}, size: {}", userInfo, workId, unsubmitted.size());
+            return ResponseEntity.ok(ApiResponse.success(unsubmitted));
+        } catch (BusinessException e) {
+            log.warn("User query unsubmitted students failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }

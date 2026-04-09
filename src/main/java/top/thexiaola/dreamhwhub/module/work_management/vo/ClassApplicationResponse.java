@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.module.work_management.dto;
+package top.thexiaola.dreamhwhub.module.work_management.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 班级申请响应
+ * 班级申请响应VO
  */
 @Data
 @NoArgsConstructor

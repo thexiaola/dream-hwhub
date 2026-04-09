@@ -50,6 +50,11 @@ public class UpdateWorkRequest {
     private Integer totalScore;
 
     /**
+     * 发布时间（仅未发布的作业可以修改）
+     */
+    private LocalDateTime publishTime;
+
+    /**
      * 附件列表（文件路径）
      */
     private java.util.List<String> attachmentPaths;
