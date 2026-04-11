@@ -1,15 +1,13 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassCreateApplication;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInvitation;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInviteApplication;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassJoinApplication;
+import top.thexiaola.dreamhwhub.module.work_management.domain.*;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ApproveJoinClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.JoinClassRequest;
@@ -124,7 +122,7 @@ public class ClassController {
      * 获取我加入的班级列表
      */
     @GetMapping("/mylist")
-    public ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassDetailResponse>> getMyClasses(
+    public ApiResponse<Page<ClassDetailResponse>> getMyClasses(
             @RequestParam(required = false, defaultValue = "1") Integer pageNum,
             @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
@@ -133,7 +131,7 @@ public class ClassController {
         if (currentUser == null) {
             return ApiResponse.error(401, "用户未登录");
         }
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId(), pageNum, pageSize);
+        Page<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId(), pageNum, pageSize);
         log.info("User {} queried {} classes", userInfo, classes.getTotal());
         return ApiResponse.success(classes);
     }
@@ -142,14 +140,14 @@ public class ClassController {
      * 获取班级成员列表（分页）
      */
     @GetMapping("/members")
-    public ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassMemberResponse>> getClassMembers(
+    public ApiResponse<Page<ClassMemberResponse>> getClassMembers(
             @RequestParam Integer classId,
             @RequestParam(required = false, defaultValue = "1") Integer pageNum,
             @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} querying class members, class ID: {}, page={}, size={}", userInfo, classId, pageNum, pageSize);
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassMemberResponse> members = classService.getClassMembers(classId, pageNum, pageSize);
+        Page<ClassMemberResponse> members = classService.getClassMembers(classId, pageNum, pageSize);
         log.info("User {} queried {} members", userInfo, members.getTotal());
         return ApiResponse.success(members);
     }
@@ -169,7 +167,7 @@ public class ClassController {
         String role = null;
         if (isMember) {
             // 获取班级信息以确定是否是创建者
-            top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo classInfo = classService.getClassById(classId);
+            ClassInfo classInfo = classService.getClassById(classId);
             if (classInfo != null && classInfo.getOwnerId().equals(currentUser.getId())) {
                 role = "OWNER";
             } else if (classService.isTeacher(classId, currentUser.getId())) {
@@ -184,17 +182,23 @@ public class ClassController {
     }
 
     /**
-     * 获取创建班级申请列表（管理员专用）
+     * 获取创建班级申请列表（管理员专用，分页）
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     * @param pageNum 页码，默认1
+     * @param pageSize 每页大小，默认20，最大100
      */
     @GetMapping("/applications/create/list")
-    public ApiResponse<List<ClassCreateApplication>> getCreateApplications(
-            @RequestParam(required = false) Integer status) {
+    public ApiResponse<Page<ClassCreateApplication>> getCreateApplications(
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
+            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying create class applications with filter: status={}", userInfo, status);
-        List<ClassCreateApplication> applications = classService.getCreateApplications(status);
-        log.info("User {} queried {} create class applications", userInfo, applications.size());
+        log.info("User {} querying create class applications with filter: status={}, page={}, size={}", 
+                userInfo, status, pageNum, pageSize);
+        Page<ClassCreateApplication> applications = classService.getCreateApplications(status, pageNum, pageSize);
+        log.info("User {} queried {} create class applications (total: {})", 
+                userInfo, applications.getRecords().size(), applications.getTotal());
         return ApiResponse.success(applications, "查询创建申请列表成功");
     }
 
@@ -214,20 +218,25 @@ public class ClassController {
     }
 
     /**
-     * 获取加入班级申请列表（老师和管理员专用）
+     * 获取加入班级申请列表（老师和管理员专用，分页）
      * @param classId 班级 ID 筛选，可选
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     * @param pageNum 页码，默认1
+     * @param pageSize 每页大小，默认20，最大100
      */
     @GetMapping("/applications/join/list")
-    public ApiResponse<List<ClassJoinApplication>> getJoinApplications(
+    public ApiResponse<Page<ClassJoinApplication>> getJoinApplications(
             @RequestParam(required = false) Integer classId,
-            @RequestParam(required = false) Integer status) {
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
+            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying join class applications with filters: classId={}, status={}", 
-                userInfo, classId, status);
-        List<ClassJoinApplication> applications = classService.getJoinApplications(classId, status);
-        log.info("User {} queried {} join class applications", userInfo, applications.size());
+        log.info("User {} querying join class applications with filters: classId={}, status={}, page={}, size={}", 
+                userInfo, classId, status, pageNum, pageSize);
+        Page<ClassJoinApplication> applications = classService.getJoinApplications(classId, status, pageNum, pageSize);
+        log.info("User {} queried {} join class applications (total: {})", 
+                userInfo, applications.getRecords().size(), applications.getTotal());
         return ApiResponse.success(applications, "查询加入申请列表成功");
     }
 

@@ -3,6 +3,7 @@ package top.thexiaola.dreamhwhub.module.login.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
 
 import java.time.LocalDateTime;
 
@@ -50,7 +51,7 @@ public class UserResponse {
      * @param user 用户实体
      * @return 用户响应对象
      */
-    public static UserResponse fromEntity(top.thexiaola.dreamhwhub.module.login.domain.User user) {
+    public static UserResponse fromEntity(User user) {
         if (user == null) {
             return null;
         }

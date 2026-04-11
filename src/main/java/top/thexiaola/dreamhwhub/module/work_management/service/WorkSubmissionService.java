@@ -1,13 +1,13 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 
 import java.util.List;
-
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**
  * 作业提交服务接口
@@ -87,5 +87,5 @@ public interface WorkSubmissionService {
      * @param workId 作业 ID
      * @return 未交学生列表（仅包含学生基本信息）
      */
-    List<top.thexiaola.dreamhwhub.module.login.domain.User> getUnsubmittedStudents(Integer workId);
+    List<User> getUnsubmittedStudents(Integer workId);
 }

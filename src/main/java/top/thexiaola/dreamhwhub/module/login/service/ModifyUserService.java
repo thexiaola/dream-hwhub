@@ -4,6 +4,7 @@ import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
 
 public interface ModifyUserService {
     /**
@@ -55,5 +56,5 @@ public interface ModifyUserService {
      * @param retrievePasswordModifyRequest 找回密码修改密码请求
      * @return 用户对象
      */
-    User retrievePassword(top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest retrievePasswordModifyRequest);
+    User retrievePassword(RetrievePasswordModifyRequest retrievePasswordModifyRequest);
 }

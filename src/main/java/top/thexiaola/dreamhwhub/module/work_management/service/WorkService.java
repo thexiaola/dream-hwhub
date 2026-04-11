@@ -1,13 +1,10 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
-
-import java.util.List;
-
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**
  * 作业服务接口

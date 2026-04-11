@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +137,7 @@ public class WorkSubmissionController {
      * 查询某次作业的所有提交（教师专用，分页）
      */
     @GetMapping("/work/list")
-    public ResponseEntity<ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkSubmissionResponse>>> getWorkSubmissions(
+    public ResponseEntity<ApiResponse<Page<WorkSubmissionResponse>>> getWorkSubmissions(
             @RequestParam Integer workId,
             @RequestParam(required = false, defaultValue = "1") Integer pageNum,
             @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
@@ -144,8 +145,7 @@ public class WorkSubmissionController {
         try {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
-            
-            com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkSubmissionResponse> submissions = workSubmissionService.getWorkSubmissions(workId, pageNum, pageSize);
+            Page<WorkSubmissionResponse> submissions = workSubmissionService.getWorkSubmissions(workId, pageNum, pageSize);
             log.info("User ({}) queried work submissions, workId: {}, total: {}", userInfo, workId, submissions.getTotal());
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {
@@ -177,13 +177,13 @@ public class WorkSubmissionController {
      * 查询某次作业的未交名单（教师专用）
      */
     @GetMapping("/work/unsubmitted")
-    public ResponseEntity<ApiResponse<List<top.thexiaola.dreamhwhub.module.login.domain.User>>> getUnsubmittedStudents(@RequestParam Integer workId) {
+    public ResponseEntity<ApiResponse<List<User>>> getUnsubmittedStudents(@RequestParam Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             
-            List<top.thexiaola.dreamhwhub.module.login.domain.User> unsubmitted = workSubmissionService.getUnsubmittedStudents(workId);
+            List<User> unsubmitted = workSubmissionService.getUnsubmittedStudents(workId);
             log.info("User ({}) queried unsubmitted students, workId: {}, size: {}", userInfo, workId, unsubmitted.size());
             return ResponseEntity.ok(ApiResponse.success(unsubmitted));
         } catch (BusinessException e) {

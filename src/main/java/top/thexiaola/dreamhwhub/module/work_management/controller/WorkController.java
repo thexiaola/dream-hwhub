@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +16,6 @@ import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
-
-import java.util.List;
 
 /**
  * 作业管理控制器
@@ -111,7 +110,7 @@ public class WorkController {
      * 查询作业列表
      */
     @GetMapping("/list")
-    public ResponseEntity<ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkResponse>>> getWorkList(
+    public ResponseEntity<ApiResponse<Page<WorkResponse>>> getWorkList(
             @RequestParam(required = false) String publisherUserNo,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false, defaultValue = "1") Integer pageNum,
@@ -120,8 +119,7 @@ public class WorkController {
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
-            com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkResponse> works = workService.getWorkList(publisherUserNo, status, pageNum, pageSize);
+            Page<WorkResponse> works = workService.getWorkList(publisherUserNo, status, pageNum, pageSize);
             log.info("User ({}) queried work list, total: {}", userInfo, works.getTotal());
             return ResponseEntity.ok(ApiResponse.success(works));
         } catch (BusinessException e) {

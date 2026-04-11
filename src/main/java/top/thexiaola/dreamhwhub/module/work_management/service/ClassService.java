@@ -1,13 +1,12 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.thexiaola.dreamhwhub.module.work_management.domain.*;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
 
 import java.util.List;
-
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**
  * 班级管理服务接口
@@ -115,11 +114,13 @@ public interface ClassService {
     ClassCreateApplication submitCreateClassRequest(String className, String description);
 
     /**
-     * 获取创建班级申请列表（管理员专用）
+     * 获取创建班级申请列表（管理员专用，分页）
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
-     * @return 按创建时间倒序排列的申请列表
+     * @param pageNum 页码，默认1
+     * @param pageSize 每页大小，默认20，最大100
+     * @return 按创建时间倒序排列的申请分页结果
      */
-    List<ClassCreateApplication> getCreateApplications(Integer status);
+    Page<ClassCreateApplication> getCreateApplications(Integer status, Integer pageNum, Integer pageSize);
 
     /**
      * 审核创建班级申请
@@ -132,12 +133,14 @@ public interface ClassService {
     ClassJoinApplication submitJoinClassRequest(Integer classId);
 
     /**
-     * 获取加入班级申请列表（老师和管理员专用）
+     * 获取加入班级申请列表（老师和管理员专用，分页）
      * @param classId 班级 ID 筛选，可选
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
-     * @return 按创建时间倒序排列的申请列表
+     * @param pageNum 页码，默认1
+     * @param pageSize 每页大小，默认20，最大100
+     * @return 按创建时间倒序排列的申请分页结果
      */
-    List<ClassJoinApplication> getJoinApplications(Integer classId, Integer status);
+    Page<ClassJoinApplication> getJoinApplications(Integer classId, Integer status, Integer pageNum, Integer pageSize);
 
     /**
      * 审核加入班级申请

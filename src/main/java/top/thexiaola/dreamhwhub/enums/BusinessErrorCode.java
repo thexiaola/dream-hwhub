@@ -65,6 +65,12 @@ public enum BusinessErrorCode {
     NOT_IN_CLASS(8504, "你不是该班级的成员"),
     CREATOR_CANNOT_LEAVE(8505, "创建者不能退出班级"),
     
+    // 参数相关错误
+    PARAMETER_MISSING(9002, "缺少必要参数"),
+    PARAMETER_ERROR(9003, "参数错误"),
+    DUPLICATE_APPLICATION(9004, "已有待处理的申请"),
+    ALREADY_MEMBER(9005, "已经是班级成员"),
+    
     PERMISSION_DENIED(9001, "权限不足");
 
     private final int code;

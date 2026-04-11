@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
@@ -18,6 +20,7 @@ import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAtta
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
@@ -40,9 +43,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkMapper workMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
-    private final top.thexiaola.dreamhwhub.module.login.mapper.UserMapper userMapper;
+    private final UserMapper userMapper;
 
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, top.thexiaola.dreamhwhub.module.login.mapper.UserMapper userMapper) {
+    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, UserMapper userMapper) {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workMapper = workMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
@@ -173,7 +176,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             }
             
             // 学生不能删除已过截止时间的作业
-            top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
+            WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
             if (workInfo != null && workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
                 throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "已过截止时间的作业不能删除", null);
             }
@@ -206,7 +209,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 查询作业信息
-        top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo workInfo = workMapper.selectById(workId);
+        WorkInfo workInfo = workMapper.selectById(workId);
         if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
@@ -217,8 +220,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 获取已提交的学生列表
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<WorkSubmission> submissionQuery = 
-            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
         submissionQuery.eq("work_id", workId).orderByDesc("submit_time");
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
@@ -228,7 +230,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
 
     @Override
-    public List<top.thexiaola.dreamhwhub.module.login.domain.User> getUnsubmittedStudents(Integer workId) {
+    public List<User> getUnsubmittedStudents(Integer workId) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -236,7 +238,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 查询作业信息
-        top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo workInfo = workMapper.selectById(workId);
+        WorkInfo workInfo = workMapper.selectById(workId);
         if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
@@ -247,35 +249,22 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 使用MyBatisPlus查询未交学生
-        // 1. 查询班级所有学生ID
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember> memberQuery = 
-            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-        memberQuery.eq("class_id", workInfo.getClassId())
-                  .eq("is_teacher", false)
-                  .select("user_id");
-        List<top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember> allStudents = 
-            classService.getClassMembers(workInfo.getClassId()).stream()
-                .filter(m -> "STUDENT".equals(m.getRole()))
-                .map(m -> {
-                    top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember member = new top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember();
-                    member.setUserId(m.getUserId());
-                    return member;
-                })
-                .collect(java.util.stream.Collectors.toList());
+        // 1. 获取班级所有学生（使用分页接口，设置较大的pageSize以获取全部数据）
+        Page<ClassMemberResponse> allMembersPage =
+            classService.getClassMembers(workInfo.getClassId(), 1, 1000);
         
-        java.util.Set<Integer> allStudentIds = allStudents.stream()
-            .map(top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember::getUserId)
-            .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<Integer> allStudentIds = allMembersPage.getRecords().stream()
+            .filter(m -> "STUDENT".equals(m.getRole()))
+            .map(ClassMemberResponse::getUserId)
+            .collect(Collectors.toSet());
 
         if (allStudentIds.isEmpty()) {
             return java.util.Collections.emptyList();
         }
 
         // 2. 查询已提交的学生ID
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<WorkSubmission> submissionQuery = 
-            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-        submissionQuery.eq("work_id", workId)
-                      .select("submitter_id");
+        QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
+        submissionQuery.eq("work_id", workId).select("submitter_id");
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         java.util.Set<Integer> submittedStudentIds = submissions.stream()
             .map(WorkSubmission::getSubmitterId)
@@ -289,14 +278,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 4. 查询未交学生详情
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<top.thexiaola.dreamhwhub.module.login.domain.User> userQuery = 
-            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        QueryWrapper<User> userQuery =
+            new QueryWrapper<>();
         userQuery.in("id", allStudentIds);
         
         return userMapper.selectList(userQuery);
     }
 
-    @Override
     @Override
     public Page<WorkSubmissionResponse> getWorkSubmissions(Integer workId, Integer pageNum, Integer pageSize) {
         // 默认分页参数
@@ -472,11 +460,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         LocalDateTime now = LocalDateTime.now();
         
         // 如果当前时间在发布时间之前，未发布
-        if (workInfo.getPublishTime() != null && now.isBefore(workInfo.getPublishTime())) {
-            return false;
-        }
-        
-        return true;
+        return workInfo.getPublishTime() == null || !now.isBefore(workInfo.getPublishTime());
     }
     
 }

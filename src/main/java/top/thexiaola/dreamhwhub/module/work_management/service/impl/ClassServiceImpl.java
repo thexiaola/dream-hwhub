@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -566,25 +567,20 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    @Override
     public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize) {
         // 默认分页参数
         if (pageNum == null || pageNum < 1) pageNum = 1;
         if (pageSize == null || pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
 
+        // 第一步：使用MyBatisPlus分页查询用户的班级成员关系
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("user_id", userId);
-        List<ClassMember> members = classMemberMapper.selectList(memberQuery);
+        Page<ClassMember> memberPage = new Page<>(pageNum, pageSize);
+        Page<ClassMember> pagedMembers = classMemberMapper.selectPage(memberPage, memberQuery);
 
-        // 手动分页
-        int total = members.size();
-        int fromIndex = (pageNum - 1) * pageSize;
-        int toIndex = Math.min(fromIndex + pageSize, total);
-        
-        List<ClassMember> pagedMembers = fromIndex < total ? members.subList(fromIndex, toIndex) : List.of();
-
-        List<ClassDetailResponse> responses = pagedMembers.stream()
+        // 第二步：转换为响应对象
+        List<ClassDetailResponse> responses = pagedMembers.getRecords().stream()
                 .map(member -> {
                     ClassInfo classInfo = classInfoMapper.selectById(member.getClassId());
                     if (classInfo == null) {
@@ -633,7 +629,7 @@ public class ClassServiceImpl implements ClassService {
                 .toList();
 
         // 构建分页结果
-        Page<ClassDetailResponse> page = new Page<>(pageNum, pageSize, total);
+        Page<ClassDetailResponse> page = new Page<>(pageNum, pageSize, pagedMembers.getTotal());
         page.setRecords(responses);
         return page;
     }
@@ -736,7 +732,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public List<ClassCreateApplication> getCreateApplications(Integer status) {
+    public Page<ClassCreateApplication> getCreateApplications(Integer status, Integer pageNum, Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -747,6 +743,11 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看创建申请列表", null);
         }
 
+        // 默认分页参数
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
+
         QueryWrapper<ClassCreateApplication> queryWrapper = new QueryWrapper<>();
         
         if (status != null) {
@@ -756,7 +757,9 @@ public class ClassServiceImpl implements ClassService {
         // 按创建时间倒序排列
         queryWrapper.orderByDesc("create_time");
         
-        return classCreateApplicationMapper.selectList(queryWrapper);
+        // 使用MyBatisPlus分页
+        Page<ClassCreateApplication> appPage = new Page<>(pageNum, pageSize);
+        return classCreateApplicationMapper.selectPage(appPage, queryWrapper);
     }
 
     @Override
@@ -860,13 +863,13 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public List<ClassJoinApplication> getJoinApplications(Integer classId, Integer status) {
+    public Page<ClassJoinApplication> getJoinApplications(Integer classId, Integer status, Integer pageNum, Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 检查是否是管理员或老师
+        // 检查权限：管理员或班级老师
         boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
         
         if (!isAdmin && classId != null) {
@@ -877,6 +880,11 @@ public class ClassServiceImpl implements ClassService {
         } else if (!isAdmin) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看所有加入申请", null);
         }
+
+        // 默认分页参数
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
 
         QueryWrapper<ClassJoinApplication> queryWrapper = new QueryWrapper<>();
         
@@ -890,7 +898,9 @@ public class ClassServiceImpl implements ClassService {
         // 按创建时间倒序排列
         queryWrapper.orderByDesc("create_time");
         
-        return classJoinApplicationMapper.selectList(queryWrapper);
+        // 使用MyBatisPlus分页
+        Page<ClassJoinApplication> appPage = new Page<>(pageNum, pageSize);
+        return classJoinApplicationMapper.selectPage(appPage, queryWrapper);
     }
 
     @Override
