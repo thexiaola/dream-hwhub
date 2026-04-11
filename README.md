@@ -471,7 +471,13 @@ curl -X GET "http://localhost:8080/api/work/submissions?workId=1&pageNum=1&pageS
   "code": 200,
   "message": "success",
   "data": {
-    "records": [...],
+    "records": [
+      {
+        "id": 1,
+        "workId": 1,
+        "submitterId": 1001
+      }
+    ],
     "total": 45,
     "size": 20,
     "current": 1,

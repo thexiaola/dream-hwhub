@@ -51,13 +51,22 @@ public class ClassServiceImpl implements ClassService {
         this.classInvitationMapper = classInvitationMapper;
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ClassMember addTeacherToClass(Integer classId, String userAccount) {
+    /**
+     * 获取当前登录用户，如果未登录则抛出异常
+     * @return 当前用户对象
+     */
+    private User getCurrentUserOrThrow() {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
+        return currentUser;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ClassMember addTeacherToClass(Integer classId, String userAccount) {
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -112,10 +121,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void setStudentAsAssistantTeacher(Integer classId, Integer studentUserId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -157,10 +163,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void removeStudentFromClass(Integer classId, Integer studentUserId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -207,10 +210,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void demoteAssistantTeacher(Integer classId, Integer teacherUserId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -272,10 +272,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClassInviteApplication studentInviteUser(Integer classId, String userAccount) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -335,10 +332,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approveInviteApplication(Integer applicationId, Boolean approved, String comment) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         ClassInviteApplication application = classInviteApplicationMapper.selectById(applicationId);
         if (application == null) {
@@ -400,10 +394,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public List<ClassInviteApplication> getPendingInviteApplications(Integer classId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是班级内的老师或管理员
         boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
@@ -423,10 +414,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void leaveClass(Integer classId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是成员
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
@@ -451,10 +439,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteClass(Integer classId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         ClassInfo classInfo = classInfoMapper.selectById(classId);
         if (classInfo == null) {
@@ -685,10 +670,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateMemberRole(Integer classId, Integer userId, Boolean isTeacher) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 检查当前用户是否是老师
         if (!isTeacher(classId, currentUser.getId())) {
@@ -713,10 +695,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClassCreateApplication submitCreateClassRequest(String className, String description) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 创建申请记录
         ClassCreateApplication application = new ClassCreateApplication();
@@ -733,10 +712,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public Page<ClassCreateApplication> getCreateApplications(Integer status, Integer pageNum, Integer pageSize) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是管理员（permission >= 100）
         if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
@@ -765,10 +741,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approveCreateApplication(Integer applicationId, Boolean approved, String comment) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是管理员（permission >= 100）
         if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
@@ -822,10 +795,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClassJoinApplication submitJoinClassRequest(Integer classId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -864,10 +834,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public Page<ClassJoinApplication> getJoinApplications(Integer classId, Integer status, Integer pageNum, Integer pageSize) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 检查权限：管理员或班级老师
         boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
@@ -906,10 +873,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approveJoinApplication(Integer applicationId, Boolean approved, String comment) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         ClassJoinApplication application = classJoinApplicationMapper.selectById(applicationId);
         if (application == null) {
@@ -955,10 +919,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClassInvitation inviteUserToClassWithApproval(Integer classId, String userAccount) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -1016,10 +977,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public List<InvitationResponse> getMyInvitations(Integer userId, Integer status) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 只能查看自己的邀请
         if (!userId.equals(currentUser.getId())) {
@@ -1070,10 +1028,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void respondInvitation(Integer invitationId, Boolean accepted, String comment) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         ClassInvitation invitation = classInvitationMapper.selectById(invitationId);
         if (invitation == null) {
@@ -1129,10 +1084,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String generateOrRefreshInviteCode(Integer classId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -1162,10 +1114,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClassJoinApplication joinClassByInviteCode(String inviteCode) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         if (inviteCode == null || inviteCode.trim().isEmpty()) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_MISSING, "邀请码不能为空", null);
@@ -1213,10 +1162,7 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void transferClassOwnership(Integer classId, Integer newOwnerId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
