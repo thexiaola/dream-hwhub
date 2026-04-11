@@ -373,7 +373,7 @@ public class ClassServiceImpl implements ClassService {
         application.setReviewComment(comment);
         classInviteApplicationMapper.updateById(application);
 
-        // 如果审核通过，添加被邀请人到班级
+        // 如果审核通过，创建邀请记录等待被邀请人确认
         if (approved) {
             // 根据账号查询目标用户
             QueryWrapper<User> userQuery = new QueryWrapper<>();
@@ -386,16 +386,18 @@ public class ClassServiceImpl implements ClassService {
                 memberQuery.eq("class_id", application.getClassId())
                           .eq("user_id", targetUser.getId());
                 if (classMemberMapper.selectCount(memberQuery) == 0) {
-                    ClassMember member = new ClassMember();
-                    member.setClassId(application.getClassId());
-                    member.setUserId(targetUser.getId());
-                    member.setIsTeacher(false);  // 学生邀请的人只能作为学生加入
-                    member.setJoinTime(LocalDateTime.now());
-                    member.setInviteBy(application.getInviterId());
+                    // 创建邀请记录，等待被邀请人确认
+                    ClassInvitation invitation = new ClassInvitation();
+                    invitation.setClassId(application.getClassId());
+                    invitation.setInviterId(application.getInviterId());
+                    invitation.setInviteeUserId(targetUser.getId());
+                    invitation.setStatus(0); // 待确认
+                    invitation.setExpireTime(LocalDateTime.now().plusDays(7)); // 7天有效期
+                    invitation.setCreateTime(LocalDateTime.now());
                     
-                    classMemberMapper.insert(member);
+                    classInvitationMapper.insert(invitation);
 
-                    log.info("Invite application approved, user {} joined class {} as STUDENT", 
+                    log.info("Invite application approved, invitation created for user {} to join class {}", 
                             targetUser.getId(), application.getClassId());
                 }
             }
