@@ -238,7 +238,7 @@ public class DatabaseInitializer {
     private String extractCreateTableSql(String sqlScript, String tableName) {
         // 使用正则表达式匹配 CREATE TABLE IF NOT EXISTS `work_info` (...) 语句
         // 支持带反引号和不带反引号的表名
-        String regex = "CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?(?:`)?" + tableName + "(?:`)?\\s*\\(([^;]+)\\)";
+        String regex = "CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?`?" + tableName + "`?\\s*\\(([^;]+)\\)";
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex, java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL);
         java.util.regex.Matcher matcher = pattern.matcher(sqlScript);
 

@@ -63,6 +63,22 @@ public class ClassServiceImpl implements ClassService {
         return currentUser;
     }
 
+    /**
+     * 根据账号查询用户，如果不存在则抛出异常
+     * @param userAccount 用户账号（学号）
+     * @return 用户对象
+     */
+    private User getUserByAccountOrThrow(String userAccount) {
+        QueryWrapper<User> userQuery = new QueryWrapper<>();
+        userQuery.eq("user_no", userAccount);
+        User targetUser = userMapper.selectOne(userQuery);
+        
+        if (targetUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
+        }
+        return targetUser;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClassMember addTeacherToClass(Integer classId, String userAccount) {
@@ -83,13 +99,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 根据账号查询目标用户
-        QueryWrapper<User> userQuery = new QueryWrapper<>();
-        userQuery.eq("user_no", userAccount);
-        User targetUser = userMapper.selectOne(userQuery);
-        
-        if (targetUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
-        }
+        User targetUser = getUserByAccountOrThrow(userAccount);
 
         // 检查目标用户是否已经是成员
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
@@ -289,13 +299,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 根据账号查询目标用户
-        QueryWrapper<User> userQuery = new QueryWrapper<>();
-        userQuery.eq("user_no", userAccount);
-        User targetUser = userMapper.selectOne(userQuery);
-        
-        if (targetUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
-        }
+        User targetUser = getUserByAccountOrThrow(userAccount);
 
         // 检查目标用户是否已经是成员
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
@@ -936,13 +940,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 根据账号查询目标用户
-        QueryWrapper<User> userQuery = new QueryWrapper<>();
-        userQuery.eq("user_no", userAccount);
-        User targetUser = userMapper.selectOne(userQuery);
-        
-        if (targetUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
-        }
+        User targetUser = getUserByAccountOrThrow(userAccount);
 
         // 检查目标用户是否已经是成员
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();

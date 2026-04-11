@@ -2,9 +2,8 @@ package top.thexiaola.dreamhwhub.support.session;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 
 /**
  * 用户工具类，提供获取当前登录用户等常用功能
@@ -60,8 +59,7 @@ public class UserUtils {
      * @return HttpServletRequest对象
      */
     private static HttpServletRequest getCurrentRequest() {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return attributes != null ? attributes.getRequest() : null;
+        return LogUtil.getRequest();
     }
     
     /**
