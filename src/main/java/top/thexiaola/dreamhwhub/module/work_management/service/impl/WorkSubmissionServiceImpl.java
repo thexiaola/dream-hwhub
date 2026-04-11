@@ -78,11 +78,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业未发布或已结束", null);
         }
 
-        // 检查是否已过截止时间，禁止逾期提交
-        if (workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
-            throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，无法提交", null);
-        }
-
         // 检查是否已提交过
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("work_id", request.getWorkId())
@@ -93,6 +88,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.WORK_ALREADY_SUBMITTED, "您已经提交过该作业", null);
         }
 
+        // 判断是否逾期提交
+        boolean isLate = workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline());
+
         // 创建提交记录
         WorkSubmission submission = new WorkSubmission();
         submission.setWorkId(Integer.parseInt(request.getWorkId()));
@@ -100,6 +98,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setClassId(workInfo.getClassId());
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1);
+        submission.setIsLate(isLate);  // 标记是否逾期
         submission.setSubmitTime(LocalDateTime.now());
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
@@ -376,6 +375,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         response.setGradeTime(submission.getGradeTime());
         response.setGraderId(submission.getGraderId());
         response.setStatus(submission.getStatus());
+        response.setIsLate(submission.getIsLate());  // 映射逾期标记
         response.setCreateTime(submission.getCreateTime());
         response.setUpdateTime(submission.getUpdateTime());
         

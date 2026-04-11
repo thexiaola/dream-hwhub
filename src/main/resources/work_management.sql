@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS `work_submission` (
     `grade_time` DATETIME DEFAULT NULL COMMENT '批改时间',
     `grader_id` INT DEFAULT NULL COMMENT '批改人ID',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-未提交，1-已提交，2-已批改',
-    `is_overdue` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否逾期：0-否，1-是',
+    `is_late` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否逾期提交：0-否，1-是',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_work_id (`work_id`),

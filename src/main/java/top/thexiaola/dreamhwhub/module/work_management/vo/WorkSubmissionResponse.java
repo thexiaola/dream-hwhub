@@ -71,6 +71,11 @@ public class WorkSubmissionResponse {
     private Integer status;
 
     /**
+     * 是否逾期提交：true-逾期，false-按时
+     */
+    private Boolean isLate;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;

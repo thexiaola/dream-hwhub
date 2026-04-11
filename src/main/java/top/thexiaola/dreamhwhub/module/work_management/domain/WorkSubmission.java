@@ -88,6 +88,12 @@ public class WorkSubmission implements Serializable {
     private Integer status = 1;
 
     /**
+     * 是否逾期提交：true-逾期，false-按时
+     */
+    @TableField("is_late")
+    private Boolean isLate = false;
+
+    /**
      * 创建时间
      */
     @TableField("create_time")

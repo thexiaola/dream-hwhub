@@ -13,10 +13,12 @@ import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
@@ -41,14 +43,17 @@ public class WorkServiceImpl implements WorkService {
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
     private final WorkSubmissionMapper workSubmissionMapper;
+    private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
 
     public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper, 
-                          WorkSubmissionMapper workSubmissionMapper, ClassService classService, UserMapper userMapper) {
+                          WorkSubmissionMapper workSubmissionMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper,
+                          ClassService classService, UserMapper userMapper) {
         this.workMapper = workMapper;
         this.workAttachmentMapper = workAttachmentMapper;
         this.workSubmissionMapper = workSubmissionMapper;
+        this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
         this.classService = classService;
         this.userMapper = userMapper;
     }
@@ -147,6 +152,10 @@ public class WorkServiceImpl implements WorkService {
         workInfo.setUpdateTime(LocalDateTime.now());
 
         workMapper.updateById(workInfo);
+        
+        // 处理附件更新
+        handleAttachmentUpdates(workInfo.getId(), request.getRemovedAttachmentIds(), request.getAttachmentPaths());
+        
         return workInfo;
     }
 
@@ -178,9 +187,8 @@ public class WorkServiceImpl implements WorkService {
         // 计算当前状态
         Integer currentStatus = calculateWorkStatus(workInfo);
         
-        // 如果作业已发布且有学生提交，需要二次确认（由Controller层处理）
-        // 这里只执行删除逻辑
-        workMapper.deleteById(workId);
+        // 级联删除所有关联数据
+        cascadeDeleteWork(workId);
         
         log.info("User {} deleted work {}, status was: {}", currentUser.getId(), workId, currentStatus);
     }
@@ -368,5 +376,100 @@ public class WorkServiceImpl implements WorkService {
                         attachment.getUploadTime()
                 ))
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 处理附件更新（增量更新）
+     * @param workId 作业ID
+     * @param removedAttachmentIds 要删除的附件ID列表
+     * @param newAttachmentPaths 新增的附件路径列表
+     */
+    private void handleAttachmentUpdates(Integer workId, List<Integer> removedAttachmentIds, List<String> newAttachmentPaths) {
+        // 1. 删除指定的附件
+        if (removedAttachmentIds != null && !removedAttachmentIds.isEmpty()) {
+            for (Integer attachmentId : removedAttachmentIds) {
+                WorkAttachment attachment = workAttachmentMapper.selectById(attachmentId);
+                if (attachment != null && attachment.getWorkId().equals(workId)) {
+                    // 物理删除文件
+                    try {
+                        Path filePath = Paths.get(attachment.getFilePath());
+                        if (Files.exists(filePath)) {
+                            Files.delete(filePath);
+                            log.info("Deleted attachment file: {}", attachment.getFilePath());
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to delete attachment file: {}", attachment.getFilePath(), e);
+                    }
+                    // 删除数据库记录
+                    workAttachmentMapper.deleteById(attachmentId);
+                    log.info("Deleted attachment record: id={}", attachmentId);
+                }
+            }
+        }
+        
+        // 2. 添加新附件
+        if (newAttachmentPaths != null && !newAttachmentPaths.isEmpty()) {
+            saveWorkAttachments(workId, newAttachmentPaths);
+        }
+    }
+    
+    /**
+     * 级联删除作业及其所有关联数据
+     * @param workId 作业ID
+     */
+    private void cascadeDeleteWork(Integer workId) {
+        // 1. 查询该作业的所有提交记录
+        QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
+        submissionQuery.eq("work_id", workId);
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
+        
+        // 2. 删除每个提交的附件文件和记录
+        for (WorkSubmission submission : submissions) {
+            QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
+            attQuery.eq("submission_id", submission.getId());
+            List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
+            
+            // 物理删除附件文件
+            for (WorkSubmissionAttachment attachment : attachments) {
+                try {
+                    Path filePath = Paths.get(attachment.getFilePath());
+                    if (Files.exists(filePath)) {
+                        Files.delete(filePath);
+                        log.info("Deleted submission attachment file: {}", attachment.getFilePath());
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to delete submission attachment file: {}", attachment.getFilePath(), e);
+                }
+            }
+            
+            // 删除附件记录
+            workSubmissionAttachmentMapper.delete(attQuery);
+        }
+        
+        // 3. 删除所有提交记录
+        workSubmissionMapper.delete(submissionQuery);
+        log.info("Deleted {} submission records for work {}", submissions.size(), workId);
+        
+        // 4. 删除作业本身的附件
+        QueryWrapper<WorkAttachment> workAttQuery = new QueryWrapper<>();
+        workAttQuery.eq("work_id", workId);
+        List<WorkAttachment> workAttachments = workAttachmentMapper.selectList(workAttQuery);
+        
+        for (WorkAttachment attachment : workAttachments) {
+            try {
+                Path filePath = Paths.get(attachment.getFilePath());
+                if (Files.exists(filePath)) {
+                    Files.delete(filePath);
+                    log.info("Deleted work attachment file: {}", attachment.getFilePath());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to delete work attachment file: {}", attachment.getFilePath(), e);
+            }
+        }
+        workAttachmentMapper.delete(workAttQuery);
+        
+        // 5. 最后删除作业本身
+        workMapper.deleteById(workId);
+        log.info("Deleted work {} and all related data", workId);
     }
 }

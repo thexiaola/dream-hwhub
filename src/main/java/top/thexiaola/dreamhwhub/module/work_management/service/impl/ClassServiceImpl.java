@@ -18,6 +18,9 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -36,12 +39,16 @@ public class ClassServiceImpl implements ClassService {
     private final ClassJoinApplicationMapper classJoinApplicationMapper;
     private final ClassInviteApplicationMapper classInviteApplicationMapper;
     private final ClassInvitationMapper classInvitationMapper;
+    private final WorkSubmissionMapper workSubmissionMapper;
+    private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
 
     public ClassServiceImpl(ClassInfoMapper classInfoMapper, ClassMemberMapper classMemberMapper, 
                            UserMapper userMapper, ClassCreateApplicationMapper classCreateApplicationMapper,
                            ClassJoinApplicationMapper classJoinApplicationMapper,
                            ClassInviteApplicationMapper classInviteApplicationMapper,
-                           ClassInvitationMapper classInvitationMapper) {
+                           ClassInvitationMapper classInvitationMapper,
+                           WorkSubmissionMapper workSubmissionMapper,
+                           WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper) {
         this.classInfoMapper = classInfoMapper;
         this.classMemberMapper = classMemberMapper;
         this.userMapper = userMapper;
@@ -49,6 +56,8 @@ public class ClassServiceImpl implements ClassService {
         this.classJoinApplicationMapper = classJoinApplicationMapper;
         this.classInviteApplicationMapper = classInviteApplicationMapper;
         this.classInvitationMapper = classInvitationMapper;
+        this.workSubmissionMapper = workSubmissionMapper;
+        this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
     }
 
     /**
@@ -209,6 +218,9 @@ public class ClassServiceImpl implements ClassService {
         if (studentMember == null) {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "该用户不是班级学生或不在该班级中", null);
         }
+
+        // 级联删除该学生在该班级的所有作业提交和附件
+        cleanupStudentSubmissions(classId, studentUserId);
 
         // 删除学生成员记录
         classMemberMapper.deleteById(studentMember.getId());
@@ -434,6 +446,9 @@ public class ClassServiceImpl implements ClassService {
         if (classInfo != null && classInfo.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.CREATOR_CANNOT_LEAVE, "创建者不能退出班级", null);
         }
+
+        // 级联删除该学生在该班级的所有作业提交和附件
+        cleanupStudentSubmissions(classId, currentUser.getId());
 
         classMemberMapper.delete(queryWrapper);
 
@@ -1134,26 +1149,26 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.ALREADY_MEMBER, "您已经是该班级成员", null);
         }
 
-        // 检查是否已经有待审核的申请
-        QueryWrapper<ClassJoinApplication> appQuery = new QueryWrapper<>();
-        appQuery.eq("class_id", classInfo.getId())
-                .eq("applicant_id", currentUser.getId())
-                .eq("status", 0);  // 待审核
-        if (classJoinApplicationMapper.selectCount(appQuery) > 0) {
-            throw new BusinessException(BusinessErrorCode.DUPLICATE_APPLICATION, "您已有待审核的加入申请", null);
-        }
+        // 通过邀请码直接加入班级，无需审核
+        ClassMember member = new ClassMember();
+        member.setClassId(classInfo.getId());
+        member.setUserId(currentUser.getId());
+        member.setIsTeacher(false);  // 以学生身份加入
+        member.setJoinTime(LocalDateTime.now());
+        classMemberMapper.insert(member);
 
-        // 创建加入申请（状态为待审核）
+        log.info("User {} joined class {} directly via invite code {}", 
+                currentUser.getId(), classInfo.getId(), inviteCode);
+        
+        // 为了保持接口一致性，返回一个“已通过”的申请记录（虚拟）
         ClassJoinApplication application = new ClassJoinApplication();
         application.setClassId(classInfo.getId());
         application.setApplicantId(currentUser.getId());
-        application.setStatus(0);  // 待审核
+        application.setStatus(1);  // 直接设置为已通过
+        application.setReviewerId(currentUser.getId());  // 自动审核
+        application.setReviewTime(LocalDateTime.now());
         application.setCreateTime(LocalDateTime.now());
         
-        classJoinApplicationMapper.insert(application);
-
-        log.info("User {} submitted join application for class {} via invite code {}", 
-                currentUser.getId(), classInfo.getId(), inviteCode);
         return application;
     }
 
@@ -1219,5 +1234,51 @@ public class ClassServiceImpl implements ClassService {
             code.append(chars.charAt(random.nextInt(chars.length())));
         }
         return code.toString();
+    }
+
+    /**
+     * 清理学生在该班级的所有作业提交和附件
+     * @param classId 班级ID
+     * @param userId 学生用户ID
+     */
+    private void cleanupStudentSubmissions(Integer classId, Integer userId) {
+        // 1. 查询该学生在该班级所有作业中的提交记录
+        QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
+        submissionQuery.eq("user_id", userId)
+                      .inSql("work_id", "SELECT id FROM work_info WHERE class_id = " + classId);
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
+        
+        if (submissions.isEmpty()) {
+            log.info("No submissions found for user {} in class {}", userId, classId);
+            return;
+        }
+
+        // 2. 删除每个提交的附件文件和记录
+        for (WorkSubmission submission : submissions) {
+            QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
+            attQuery.eq("submission_id", submission.getId());
+            List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
+            
+            // 物理删除附件文件
+            for (WorkSubmissionAttachment attachment : attachments) {
+                try {
+                    Path filePath = Paths.get(attachment.getFilePath());
+                    if (Files.exists(filePath)) {
+                        Files.delete(filePath);
+                        log.info("Deleted student submission attachment file: {}", attachment.getFilePath());
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to delete student submission attachment file: {}", attachment.getFilePath(), e);
+                }
+            }
+            
+            // 删除附件记录
+            workSubmissionAttachmentMapper.delete(attQuery);
+        }
+        
+        // 3. 删除所有提交记录
+        workSubmissionMapper.delete(submissionQuery);
+        log.info("Cleaned up {} submission records for user {} in class {}", 
+                submissions.size(), userId, classId);
     }
 }

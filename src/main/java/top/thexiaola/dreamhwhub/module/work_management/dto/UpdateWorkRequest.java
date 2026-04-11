@@ -55,7 +55,12 @@ public class UpdateWorkRequest {
     private LocalDateTime publishTime;
 
     /**
-     * 附件列表（文件路径）
+     * 附件列表（文件路径）- 新增的附件
      */
     private java.util.List<String> attachmentPaths;
+
+    /**
+     * 要删除的附件ID列表
+     */
+    private java.util.List<Integer> removedAttachmentIds;
 }
