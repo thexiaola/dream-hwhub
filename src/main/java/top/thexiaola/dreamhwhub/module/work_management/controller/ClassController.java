@@ -10,14 +10,12 @@ import top.thexiaola.dreamhwhub.module.work_management.domain.ClassCreateApplica
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInvitation;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInviteApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassJoinApplication;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
-import top.thexiaola.dreamhwhub.module.work_management.dto.*;
-import top.thexiaola.dreamhwhub.module.work_management.vo.ClassApplicationResponse;
-import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
-import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
-import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
-import top.thexiaola.dreamhwhub.module.work_management.vo.MemberCheckResponse;
+import top.thexiaola.dreamhwhub.module.work_management.dto.ApproveJoinClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.JoinClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.RespondInvitationRequest;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
+import top.thexiaola.dreamhwhub.module.work_management.vo.*;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 

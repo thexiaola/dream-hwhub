@@ -1,11 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassCreateApplication;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInfo;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInvitation;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInviteApplication;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassJoinApplication;
-import top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember;
+import top.thexiaola.dreamhwhub.module.work_management.domain.*;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
