@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.util;
+package top.thexiaola.dreamhwhub.support.validation;
 
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;

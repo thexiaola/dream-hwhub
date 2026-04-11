@@ -12,10 +12,10 @@ import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
-import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
-import top.thexiaola.dreamhwhub.util.LogUtil;
-import top.thexiaola.dreamhwhub.util.SessionManager;
-import top.thexiaola.dreamhwhub.util.UserUtils;
+import top.thexiaola.dreamhwhub.support.encryption.AESEncryptionUtil;
+import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.session.SessionManager;
+import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import static top.thexiaola.dreamhwhub.module.login.service.impl.LoginUserServiceImpl.getUser;
 

@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.interceptor;
+package top.thexiaola.dreamhwhub.config.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
-import top.thexiaola.dreamhwhub.util.UserUtils;
+import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 /**
  * 认证拦截器，检查用户是否登录

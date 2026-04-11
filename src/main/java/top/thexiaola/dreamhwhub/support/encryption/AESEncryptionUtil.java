@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.util;
+package top.thexiaola.dreamhwhub.support.encryption;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

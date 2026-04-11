@@ -5,13 +5,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import top.thexiaola.dreamhwhub.dto.ApiResponse;
+import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
-import top.thexiaola.dreamhwhub.util.LogUtil;
+import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 
 @RestController
 @RequestMapping("/api/users/retrieve")

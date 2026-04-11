@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.util;
+package top.thexiaola.dreamhwhub.support.session;
 
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;

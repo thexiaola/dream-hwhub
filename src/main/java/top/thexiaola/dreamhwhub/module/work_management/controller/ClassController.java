@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-import top.thexiaola.dreamhwhub.dto.ApiResponse;
+import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassCreateApplication;
 import top.thexiaola.dreamhwhub.module.work_management.domain.ClassInvitation;
@@ -18,8 +18,8 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.MemberCheckResponse;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
-import top.thexiaola.dreamhwhub.util.LogUtil;
-import top.thexiaola.dreamhwhub.util.UserUtils;
+import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.util.List;
 

@@ -18,8 +18,8 @@ import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapp
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
-import top.thexiaola.dreamhwhub.util.FileUploadValidator;
-import top.thexiaola.dreamhwhub.util.UserUtils;
+import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
+import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -1,5 +1,17 @@
 # Work Management API 接口文档
 
+## 项目架构
+
+本项目采用模块化设计，主要包含以下模块：
+
+- **common**: 公共模块（API响应、上下文管理等）
+- **support**: 支撑模块（加密、验证、日志、会话管理）
+- **config**: 配置层（安全配置、基础设施配置、异常处理）
+- **module/user**: 用户模块（登录、注册、用户管理）
+- **module/work_management**: 课堂管理模块（班级、作业、提交）
+
+---
+
 ## 目录
 
 - [1. 作业管理接口 (WorkController)](#1-作业管理接口-workcontroller)

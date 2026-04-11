@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.util;
+package top.thexiaola.dreamhwhub.support.logging;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;

@@ -11,8 +11,8 @@ import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
-import top.thexiaola.dreamhwhub.util.AESEncryptionUtil;
-import top.thexiaola.dreamhwhub.util.LogUtil;
+import top.thexiaola.dreamhwhub.support.encryption.AESEncryptionUtil;
+import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 
 import java.time.LocalDateTime;
 

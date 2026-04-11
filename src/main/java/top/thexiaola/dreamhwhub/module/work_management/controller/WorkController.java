@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import top.thexiaola.dreamhwhub.dto.ApiResponse;
+import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
@@ -13,8 +13,8 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
-import top.thexiaola.dreamhwhub.util.LogUtil;
-import top.thexiaola.dreamhwhub.util.UserUtils;
+import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.util.List;
 

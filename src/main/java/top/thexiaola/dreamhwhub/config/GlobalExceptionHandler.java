@@ -12,7 +12,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-import top.thexiaola.dreamhwhub.dto.ApiResponse;
+import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 
 import java.util.Objects;

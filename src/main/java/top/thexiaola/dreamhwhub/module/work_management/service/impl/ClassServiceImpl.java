@@ -25,7 +25,7 @@ import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInviteApplica
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassJoinApplicationMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
-import top.thexiaola.dreamhwhub.util.UserUtils;
+import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
