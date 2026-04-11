@@ -7,6 +7,8 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 
 import java.util.List;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 /**
  * 作业服务接口
  */
@@ -44,11 +46,13 @@ public interface WorkService {
     WorkInfo getWorkById(Integer workId);
 
     /**
-     * 查询作业列表
+     * 查询作业列表（分页）
      *
      * @param teacherNo 教师工号（可选）
      * @param status 作业状态（可选）
-     * @return 作业列表
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @return 作业分页结果
      */
-    List<WorkResponse> getWorkList(String teacherNo, Integer status);
+    Page<WorkResponse> getWorkList(String teacherNo, Integer status, Integer pageNum, Integer pageSize);
 }

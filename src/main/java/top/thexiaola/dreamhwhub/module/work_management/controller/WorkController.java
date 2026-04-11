@@ -111,16 +111,18 @@ public class WorkController {
      * 查询作业列表
      */
     @GetMapping("/list")
-    public ResponseEntity<ApiResponse<List<WorkResponse>>> getWorkList(
+    public ResponseEntity<ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkResponse>>> getWorkList(
             @RequestParam(required = false) String publisherUserNo,
-            @RequestParam(required = false) Integer status) {
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
+            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             
-            List<WorkResponse> works = workService.getWorkList(publisherUserNo, status);
-            log.info("User ({}) queried work list, size: {}", userInfo, works.size());
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkResponse> works = workService.getWorkList(publisherUserNo, status, pageNum, pageSize);
+            log.info("User ({}) queried work list, total: {}", userInfo, works.getTotal());
             return ResponseEntity.ok(ApiResponse.success(works));
         } catch (BusinessException e) {
             log.warn("User query work list failed: {}", e.getMessage());

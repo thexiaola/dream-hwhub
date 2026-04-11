@@ -297,7 +297,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
 
     @Override
-    public List<WorkSubmissionResponse> getWorkSubmissions(Integer workId) {
+    @Override
+    public Page<WorkSubmissionResponse> getWorkSubmissions(Integer workId, Integer pageNum, Integer pageSize) {
+        // 默认分页参数
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
+
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -313,11 +319,18 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("work_id", workId).orderByDesc("submit_time");
         
-        List<WorkSubmission> submissions = workSubmissionMapper.selectList(queryWrapper);
+        // 使用MyBatisPlus分页
+        Page<WorkSubmission> submissionPage = new Page<>(pageNum, pageSize);
+        Page<WorkSubmission> pagedResult = workSubmissionMapper.selectPage(submissionPage, queryWrapper);
         
-        return submissions.stream()
+        List<WorkSubmissionResponse> responses = pagedResult.getRecords().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+
+        // 构建分页结果
+        Page<WorkSubmissionResponse> page = new Page<>(pageNum, pageSize, pagedResult.getTotal());
+        page.setRecords(responses);
+        return page;
     }
 
     @Override

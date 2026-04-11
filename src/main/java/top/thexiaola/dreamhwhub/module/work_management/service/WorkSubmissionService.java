@@ -7,6 +7,8 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse
 
 import java.util.List;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 /**
  * 作业提交服务接口
  */
@@ -54,12 +56,14 @@ public interface WorkSubmissionService {
     List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId);
 
     /**
-     * 查询某次作业的所有提交
+     * 查询某次作业的所有提交（分页）
      *
      * @param workId 作业 ID
-     * @return 提交列表
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @return 提交分页结果
      */
-    List<WorkSubmissionResponse> getWorkSubmissions(Integer workId);
+    Page<WorkSubmissionResponse> getWorkSubmissions(Integer workId, Integer pageNum, Integer pageSize);
 
     /**
      * 批改作业

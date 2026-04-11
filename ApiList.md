@@ -188,9 +188,14 @@
 | title | String | 是 | 作业标题，最长 128 字符 |
 | description | String | 是 | 作业描述，最长 1024 字符 |
 | deadline | LocalDateTime | 是 | 截止时间 |
-| totalScore | Integer | 是 | 作业总分 |
-| publishTime | LocalDateTime | 否 | 发布时间（仅未发布的作业可修改） |
+| totalScore | Integer | 是 | 作业总分（无学生提交时可修改） |
+| publishTime | LocalDateTime | 否 | 发布时间（仅未发布的作业可修改，status=0时可更新） |
 | attachmentPaths | List<String> | 否 | 附件文件路径列表 |
+
+**注意**: 
+- 已发布作业(status=1)不允许修改publishTime，只能修改其他字段
+- **当没有学生提交作业时，允许修改totalScore**；有提交记录后禁止修改，保护数据一致性
+- 当前版本不支持通过此接口修改附件，如需修改附件请先删除再重新创建
 
 **成功响应 (200)**:
 
@@ -287,6 +292,11 @@
 - "作业不存在"
 - "用户无权限删除此作业"
 
+**注意**: 
+- **允许删除任何状态的作业**（包括已发布、已结束）
+- 只能删除自己发布的作业
+- 如果作业已有学生提交，建议二次确认后删除
+
 ---
 
 ### 1.4 查询作业详情
@@ -351,7 +361,7 @@
 
 ---
 
-### 1.5 查询作业列表
+### 1.5 查询作业列表（分页）
 
 **接口地址**: `GET /api/works/list`
 
@@ -360,11 +370,14 @@
 |------|------|------|------|
 | publisherUserNo | String | 否 | 发布人学号/工号筛选 |
 | status | Integer | 否 | 作业状态筛选（0-未发布，1-已发布，2-已结束） |
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大100 |
 
 **请求示例**:
 
 - `GET /api/works/list`
 - `GET /api/works/list?publisherUserNo=2021001&status=1`
+- `GET /api/works/list?pageNum=1&pageSize=20`
 
 **成功响应 (200)**:
 
@@ -372,34 +385,49 @@
 {
   "code": 200,
   "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "title": "作业标题",
-      "description": "作业描述",
-      "publisherId": 1001,
-      "deadline": "2026-04-15T23:59:59",
-      "totalScore": 100,
-      "publishTime": "2026-04-09T10:00:00",
-      "status": 1,
-      "createTime": "2026-04-09T10:00:00",
-      "updateTime": "2026-04-09T10:00:00",
-      "attachments": [
-        {
-          "id": 1,
-          "fileName": "example.pdf",
-          "filePath": "/uploads/works/example.pdf",
-          "fileSize": 1024000,
-          "fileType": "application/pdf",
-          "uploadTime": "2026-04-09T10:00:00"
-        }
-      ]
-    }
-  ]
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "title": "作业标题",
+        "description": "作业描述",
+        "publisherId": 1001,
+        "deadline": "2026-04-15T23:59:59",
+        "totalScore": 100,
+        "publishTime": "2026-04-09T10:00:00",
+        "status": 1,
+        "createTime": "2026-04-09T10:00:00",
+        "updateTime": "2026-04-09T10:00:00",
+        "attachments": [
+          {
+            "id": 1,
+            "fileName": "example.pdf",
+            "filePath": "/uploads/works/example.pdf",
+            "fileSize": 1024000,
+            "fileType": "application/pdf",
+            "uploadTime": "2026-04-09T10:00:00"
+          }
+        ]
+      }
+    ],
+    "total": 15,
+    "size": 20,
+    "current": 1,
+    "pages": 1
+  }
 }
 ```
 
 **响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| records | Array | 作业列表数据 |
+| total | Long | 总记录数 |
+| size | Long | 每页大小 |
+| current | Long | 当前页码 |
+| pages | Long | 总页数 |
+
+**records内部字段说明**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Integer | 作业 ID |
@@ -732,13 +760,19 @@
 
 ---
 
-### 2.6 获取我加入的班级列表
+### 2.6 获取我加入的班级列表（分页）
 
 **接口地址**: `GET /api/class/mylist`
 
-**请求参数**: 无
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认10，最大100 |
 
-**请求示例**: `GET /api/class/mylist`
+**请求示例**: 
+- `GET /api/class/mylist`
+- `GET /api/class/mylist?pageNum=1&pageSize=10`
 
 **成功响应 (200)**:
 
@@ -746,29 +780,57 @@
 {
   "code": 200,
   "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "className": "计算机科学2024级1班",
-      "ownerId": 1001,
-      "ownerName": "张三",
-      "userRole": "STUDENT",
-      "memberCount": 50,
-      "teacherCount": 2,
-      "studentCount": 48
-    },
-    {
-      "id": 2,
-      "className": "软件工程2024级1班",
-      "ownerId": 1003,
-      "ownerName": "李四",
-      "userRole": "TEACHER",
-      "memberCount": 45,
-      "teacherCount": 1,
-      "studentCount": 44
-    }
-  ]
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "className": "计算机科学2024级1班",
+        "ownerId": 1001,
+        "ownerName": "张三",
+        "userRole": "STUDENT",
+        "memberCount": 50,
+        "teacherCount": 2,
+        "studentCount": 48
+      },
+      {
+        "id": 2,
+        "className": "软件工程2024级1班",
+        "ownerId": 1003,
+        "ownerName": "李四",
+        "userRole": "TEACHER",
+        "memberCount": 45,
+        "teacherCount": 1,
+        "studentCount": 44
+      }
+    ],
+    "total": 2,
+    "size": 10,
+    "current": 1,
+    "pages": 1
+  }
 }
+```
+
+**响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| records | Array | 班级列表数据 |
+| total | Long | 总记录数 |
+| size | Long | 每页大小 |
+| current | Long | 当前页码 |
+| pages | Long | 总页数 |
+
+**records内部字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | Integer | 班级 ID |
+| className | String | 班级名称 |
+| ownerId | Integer | 班级所有者 ID |
+| ownerName | String | 班级所有者姓名 |
+| userRole | String | 用户在该班级的角色(OWNER/ASSISTANT/STUDENT) |
+| memberCount | Long | 成员总数 |
+| teacherCount | Long | 教师数量 |
+| studentCount | Long | 学生数量 |
 ```
 
 **失败响应**:
@@ -783,7 +845,7 @@
 
 ---
 
-### 2.7 获取班级成员列表
+### 2.7 获取班级成员列表（分页）
 
 **接口地址**: `GET /api/class/members`
 
@@ -791,8 +853,12 @@
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | classId | Integer | 是 | 班级 ID |
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大100 |
 
-**请求示例**: `GET /api/class/members?classId=1`
+**请求示例**: 
+- `GET /api/class/members?classId=1`
+- `GET /api/class/members?classId=1&pageNum=1&pageSize=20`
 
 **成功响应 (200)**:
 
@@ -800,28 +866,43 @@
 {
   "code": 200,
   "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "userId": 1001,
-      "userName": "张三",
-      "userNo": "2021001",
-      "role": "TEACHER",
-      "joinTime": "2026-04-01T10:00:00"
-    },
-    {
-      "id": 2,
-      "userId": 1002,
-      "userName": "王五",
-      "userNo": "2024001",
-      "role": "STUDENT",
-      "joinTime": "2026-04-02T10:00:00"
-    }
-  ]
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "userId": 1001,
+        "userName": "张三",
+        "userNo": "2021001",
+        "role": "OWNER",
+        "joinTime": "2026-04-01T10:00:00"
+      },
+      {
+        "id": 2,
+        "userId": 1002,
+        "userName": "王五",
+        "userNo": "2024001",
+        "role": "STUDENT",
+        "joinTime": "2026-04-02T10:00:00"
+      }
+    ],
+    "total": 2,
+    "size": 20,
+    "current": 1,
+    "pages": 1
+  }
 }
 ```
 
 **响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| records | Array | 成员列表数据 |
+| total | Long | 总记录数 |
+| size | Long | 每页大小 |
+| current | Long | 当前页码 |
+| pages | Long | 总页数 |
+
+**records内部字段说明**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Integer | 成员 ID |
@@ -1389,6 +1470,7 @@
 - "该申请已审核"
 
 **注意**: 
+- **参数命名**：使用`applicationId`而非`memberId`，准确表示“邀请申请ID”
 - 审核通过后，系统会创建一条邀请记录发送给被邀请人
 - **被邀请人需要调用“同意邀请”接口（2.21）才能加入班级**
 - 邀请有效期为7天，过期后需重新发起邀请
@@ -1692,6 +1774,173 @@
 - "只能响应发给自己的邀请"
 - "该邀请已处理"
 - "邀请已过期"
+
+---
+
+### 2.22 生成/刷新班级邀请码（教师专用）
+
+**接口地址**: `POST /api/class/generate-invite-code`
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| classId | Integer | 是 | 班级 ID |
+
+**请求示例**: `POST /api/class/generate-invite-code?classId=1`
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "邀请码生成成功",
+  "data": "A3F9K2"
+}
+```
+
+**响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| data | String | 6位随机邀请码（大写字母+数字） |
+
+**注意**: 
+- 只有老师可以生成邀请码
+- 每次调用会生成新的邀请码，旧码失效
+- 邀请码有效期直到下次刷新
+- 学生可通过`2.23`接口使用邀请码加入班级
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "只有老师可以生成邀请码",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- "用户未登录"
+- "班级不存在"
+- "只有老师可以生成邀请码"
+
+---
+
+### 2.23 通过邀请码加入班级
+
+**接口地址**: `POST /api/class/join-by-code`
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| inviteCode | String | 是 | 6位邀请码 |
+
+**请求示例**: `POST /api/class/join-by-code?inviteCode=A3F9K2`
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "加入申请已提交，待审核",
+  "data": {
+    "id": 1,
+    "classId": 1,
+    "applicantId": 1002,
+    "status": 0,
+    "reviewerId": null,
+    "reviewTime": null,
+    "reviewComment": null,
+    "createTime": "2026-04-09T10:00:00"
+  }
+}
+```
+
+**响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | Integer | 申请 ID |
+| classId | Integer | 班级 ID |
+| applicantId | Integer | 申请人 ID |
+| status | Integer | 审核状态(0-待审核,1-已通过,2-已拒绝) |
+| reviewerId | Integer | 审核人 ID |
+| reviewTime | LocalDateTime | 审核时间 |
+| reviewComment | String | 审核意见 |
+| createTime | LocalDateTime | 申请时间 |
+
+**注意**: 
+- 邀请码由教师通过`2.22`接口生成
+- 提交后需等待老师审核通过才能加入班级
+- 不能重复申请同一班级
+- 已是班级成员不能再次申请
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "邀请码无效或已过期",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- "用户未登录"
+- "邀请码不能为空"
+- "邀请码无效或已过期"
+- "您已经是该班级成员"
+- "您已有待审核的加入申请"
+
+---
+
+### 2.24 转让班级所有权（仅创建者）
+
+**接口地址**: `PUT /api/class/transfer-ownership`
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| classId | Integer | 是 | 班级 ID |
+| newOwnerId | Integer | 是 | 新所有者 ID |
+
+**请求示例**: `PUT /api/class/transfer-ownership?classId=1&newOwnerId=1003`
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "班级所有权转让成功",
+  "data": null
+}
+```
+
+**注意**: 
+- 只有班级创建者(OWNER)可以转让所有权
+- 新所有者必须是班级现有成员
+- 转让后原创建者自动降级为助理老师(ASSISTANT)
+- 新所有者自动升级为老师并拥有OWNER权限
+- 不能转让给自己
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "只有班级所有者可以转让所有权",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- "用户未登录"
+- "班级不存在"
+- "只有班级所有者可以转让所有权"
+- "新所有者必须是班级成员"
+- "不能转让给自己"
 
 ---
 
@@ -2071,7 +2320,7 @@
 
 ---
 
-### 3.6 查询某次作业的所有提交（教师专用）
+### 3.6 查询某次作业的所有提交（教师专用，分页）
 
 **接口地址**: `GET /api/submissions/work/list`
 
@@ -2079,8 +2328,10 @@
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | workId | Integer | 是 | 作业 ID |
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大100 |
 
-**请求示例**: `GET /api/submissions/work/list?workId=1`
+**请求示例**: `GET /api/submissions/work/list?workId=1&pageNum=1&pageSize=20`
 
 **成功响应 (200)**:
 
@@ -2088,44 +2339,59 @@
 {
   "code": 200,
   "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "workId": 1,
-      "workTitle": "第一次作业",
-      "submitterId": 1002,
-      "submissionContent": "作业内容",
-      "score": 90.5,
-      "comment": "完成得很好",
-      "submitTime": "2026-04-09T10:00:00",
-      "gradeTime": "2026-04-10T10:00:00",
-      "graderId": 1001,
-      "status": 2,
-      "createTime": "2026-04-09T10:00:00",
-      "updateTime": "2026-04-10T10:00:00",
-      "attachments": []
-    },
-    {
-      "id": 2,
-      "workId": 1,
-      "workTitle": "第一次作业",
-      "submitterId": 1003,
-      "submissionContent": "另一个学生的作业",
-      "score": null,
-      "comment": null,
-      "submitTime": "2026-04-09T11:00:00",
-      "gradeTime": null,
-      "graderId": null,
-      "status": 1,
-      "createTime": "2026-04-09T11:00:00",
-      "updateTime": "2026-04-09T11:00:00",
-      "attachments": []
-    }
-  ]
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "workId": 1,
+        "workTitle": "第一次作业",
+        "submitterId": 1002,
+        "submissionContent": "作业内容",
+        "score": 90.5,
+        "comment": "完成得很好",
+        "submitTime": "2026-04-09T10:00:00",
+        "gradeTime": "2026-04-10T10:00:00",
+        "graderId": 1001,
+        "status": 2,
+        "createTime": "2026-04-09T10:00:00",
+        "updateTime": "2026-04-10T10:00:00",
+        "attachments": []
+      },
+      {
+        "id": 2,
+        "workId": 1,
+        "workTitle": "第一次作业",
+        "submitterId": 1003,
+        "submissionContent": "另一个学生的作业",
+        "score": null,
+        "comment": null,
+        "submitTime": "2026-04-09T11:00:00",
+        "gradeTime": null,
+        "graderId": null,
+        "status": 1,
+        "createTime": "2026-04-09T11:00:00",
+        "updateTime": "2026-04-09T11:00:00",
+        "attachments": []
+      }
+    ],
+    "total": 45,
+    "size": 20,
+    "current": 1,
+    "pages": 3
+  }
 }
 ```
 
 **响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| records | List | 提交记录列表 |
+| total | Long | 总记录数 |
+| size | Long | 每页大小 |
+| current | Long | 当前页码 |
+| pages | Long | 总页数 |
+
+**records 内部字段**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Integer | 提交 ID |
@@ -2281,10 +2547,11 @@
 
 **注意**: 
 - 此接口直接返回未提交作业的学生列表（User对象）
-- **后端使用MyBatisPlus查询并计算**，自动过滤已提交学生
+- **后端使用MyBatisPlus QueryWrapper自动计算**：查询班级所有学生，过滤已提交学生，返回差集
 - 只返回STUDENT角色的学生，不包括OWNER和ASSISTANT
 - 只有班级老师可以调用此接口
-- **前端零计算**：直接展示返回数据，无需任何处理
+- **前端零计算**：直接展示返回数据，无需手动对比或过滤
+- **实现位置**：`WorkSubmissionServiceImpl.getUnsubmittedStudents()`
 
 **失败响应**:
 
@@ -2386,15 +2653,16 @@
 - "提交 ID 必须是数字"
 - "分数不能为空"
 - "分数不能小于 0"
-- "分数超过作业总分"
+- "分数超过作业总分"（动态校验：不能超过作业的totalScore，而非固定100分）
 - "评语不能为空"
 - "评语不能包含特殊字符（制表符等）"
 - "提交记录不存在"
 - "您没有权限批改此作业"
 
 **注意**: 
-- 系统支持重新批改已批改的作业，教师可以修改分数和评语
-- 分数上限动态校验，不能超过作业的 `totalScore`
+- 系统支持重新批改已批改的作业，教师可以多次修改分数和评语
+- **分数动态校验**：上限为作业的`totalScore`字段值，不再硬编码限制为100分
+- 例如：作业总分为150分时，学生可获得0-150分的评分
 
 ---
 
@@ -2416,13 +2684,14 @@
 
 #### 提交状态 (WorkSubmission.status)
 
-- `1`: 已提交
-- `2`: 已批改
+- `1`: 已提交（学生已提交，待批改）
+- `2`: 已批改（教师已完成评分）
 
 **注意**: 
-- 不存在“未提交”状态（0），未交作业的学生在数据库中没有对应的 Submission 记录
+- **不存在“未提交”状态（0）**：未交作业的学生在数据库中没有对应的 Submission 记录
 - **后端直接计算未交学生**：调用 `GET /api/submissions/work/unsubmitted` 接口即可获取未交学生列表，无需前端手动计算
 - **使用MyBatisPlus实现**：通过QueryWrapper查询并过滤，符合项目规范
+- **禁止逾期提交**：超过deadline后不允许创建新的提交记录，因此不需要isOverdue字段
 
 #### 角色类型
 

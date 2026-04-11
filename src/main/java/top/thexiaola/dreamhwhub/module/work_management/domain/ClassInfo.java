@@ -24,6 +24,9 @@ public class ClassInfo {
     @TableField("owner_id")
     private Integer ownerId;
 
+    @TableField("invite_code")
+    private String inviteCode;  // 班级邀请码（6位随机码）
+
     @TableField("approval_status")
     private Integer approvalStatus;  // 0-待审核，1-已通过，2-已拒绝
 

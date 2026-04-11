@@ -8,10 +8,12 @@ CREATE TABLE IF NOT EXISTS `class_info` (
     `class_name` VARCHAR(100) NOT NULL COMMENT '班级名称',
     `description` VARCHAR(500) DEFAULT NULL COMMENT '班级描述',
     `owner_id` INT NOT NULL COMMENT '班级所有者ID',
+    `invite_code` VARCHAR(20) DEFAULT NULL COMMENT '班级邀请码（6位随机码）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_class_name (`class_name`),
     INDEX idx_owner_id (`owner_id`),
+    INDEX idx_invite_code (`invite_code`),
     CONSTRAINT fk_class_owner FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级信息表';
 

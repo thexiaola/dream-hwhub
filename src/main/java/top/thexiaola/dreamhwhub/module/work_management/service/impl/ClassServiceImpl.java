@@ -566,12 +566,25 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public List<ClassDetailResponse> getMyClasses(Integer userId) {
+    @Override
+    public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize) {
+        // 默认分页参数
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 10;
+        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
+
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("user_id", userId);
         List<ClassMember> members = classMemberMapper.selectList(memberQuery);
 
-        return members.stream()
+        // 手动分页
+        int total = members.size();
+        int fromIndex = (pageNum - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        
+        List<ClassMember> pagedMembers = fromIndex < total ? members.subList(fromIndex, toIndex) : List.of();
+
+        List<ClassDetailResponse> responses = pagedMembers.stream()
                 .map(member -> {
                     ClassInfo classInfo = classInfoMapper.selectById(member.getClassId());
                     if (classInfo == null) {
@@ -618,15 +631,28 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .filter(Objects::nonNull)
                 .toList();
+
+        // 构建分页结果
+        Page<ClassDetailResponse> page = new Page<>(pageNum, pageSize, total);
+        page.setRecords(responses);
+        return page;
     }
 
     @Override
-    public List<ClassMemberResponse> getClassMembers(Integer classId) {
+    public Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize) {
+        // 默认分页参数
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
+
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId);
-        List<ClassMember> members = classMemberMapper.selectList(queryWrapper);
+        
+        // 使用MyBatisPlus分页
+        Page<ClassMember> memberPage = new Page<>(pageNum, pageSize);
+        Page<ClassMember> pagedResult = classMemberMapper.selectPage(memberPage, queryWrapper);
 
-        return members.stream()
+        List<ClassMemberResponse> responses = pagedResult.getRecords().stream()
                 .map(member -> {
                     User user = userMapper.selectById(member.getUserId());
                     String userName = user != null ? user.getUsername() : "未知";
@@ -653,6 +679,11 @@ public class ClassServiceImpl implements ClassService {
                     );
                 })
                 .toList();
+
+        // 构建分页结果
+        Page<ClassMemberResponse> page = new Page<>(pageNum, pageSize, pagedResult.getTotal());
+        page.setRecords(responses);
+        return page;
     }
 
     @Override
@@ -1083,5 +1114,156 @@ public class ClassServiceImpl implements ClassService {
             log.info("User {} rejected invitation to class {}", 
                     currentUser.getId(), invitation.getClassId());
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String generateOrRefreshInviteCode(Integer classId) {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 验证班级是否存在
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        // 检查当前用户是否是老师或管理员
+        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isTeacher = isTeacher(classId, currentUser.getId());
+        
+        if (!isAdmin && !isTeacher) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以生成邀请码", null);
+        }
+
+        // 生成6位随机邀请码
+        String inviteCode = generateRandomCode(6);
+        
+        // 更新班级邀请码
+        classInfo.setInviteCode(inviteCode);
+        classInfoMapper.updateById(classInfo);
+
+        log.info("User {} generated invite code {} for class {}", currentUser.getId(), inviteCode, classId);
+        return inviteCode;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ClassJoinApplication joinClassByInviteCode(String inviteCode) {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        if (inviteCode == null || inviteCode.trim().isEmpty()) {
+            throw new BusinessException(BusinessErrorCode.PARAMETER_MISSING, "邀请码不能为空", null);
+        }
+
+        // 根据邀请码查找班级
+        QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
+        classQuery.eq("invite_code", inviteCode.trim());
+        ClassInfo classInfo = classInfoMapper.selectOne(classQuery);
+        
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "邀请码无效或已过期", null);
+        }
+
+        // 检查是否已经是成员
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classInfo.getId()).eq("user_id", currentUser.getId());
+        if (classMemberMapper.selectCount(memberQuery) > 0) {
+            throw new BusinessException(BusinessErrorCode.ALREADY_MEMBER, "您已经是该班级成员", null);
+        }
+
+        // 检查是否已经有待审核的申请
+        QueryWrapper<ClassJoinApplication> appQuery = new QueryWrapper<>();
+        appQuery.eq("class_id", classInfo.getId())
+                .eq("applicant_id", currentUser.getId())
+                .eq("status", 0);  // 待审核
+        if (classJoinApplicationMapper.selectCount(appQuery) > 0) {
+            throw new BusinessException(BusinessErrorCode.DUPLICATE_APPLICATION, "您已有待审核的加入申请", null);
+        }
+
+        // 创建加入申请（状态为待审核）
+        ClassJoinApplication application = new ClassJoinApplication();
+        application.setClassId(classInfo.getId());
+        application.setApplicantId(currentUser.getId());
+        application.setStatus(0);  // 待审核
+        application.setCreateTime(LocalDateTime.now());
+        
+        classJoinApplicationMapper.insert(application);
+
+        log.info("User {} submitted join application for class {} via invite code {}", 
+                currentUser.getId(), classInfo.getId(), inviteCode);
+        return application;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void transferClassOwnership(Integer classId, Integer newOwnerId) {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 验证班级是否存在
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        // 检查当前用户是否是班级所有者
+        if (!classInfo.getOwnerId().equals(currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级所有者可以转让所有权", null);
+        }
+
+        // 检查新所有者是否是班级成员
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).eq("user_id", newOwnerId);
+        ClassMember newOwnerMember = classMemberMapper.selectOne(memberQuery);
+        
+        if (newOwnerMember == null) {
+            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "新所有者必须是班级成员", null);
+        }
+
+        // 不能转让给自己
+        if (newOwnerId.equals(currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "不能转让给自己", null);
+        }
+
+        // 更新班级所有者
+        classInfo.setOwnerId(newOwnerId);
+        classInfoMapper.updateById(classInfo);
+
+        // 将新所有者设置为老师
+        newOwnerMember.setIsTeacher(true);
+        classMemberMapper.updateById(newOwnerMember);
+
+        // 将原所有者降级为助理老师（保留在班级中）
+        QueryWrapper<ClassMember> oldOwnerQuery = new QueryWrapper<>();
+        oldOwnerQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
+        ClassMember oldOwnerMember = classMemberMapper.selectOne(oldOwnerQuery);
+        if (oldOwnerMember != null) {
+            oldOwnerMember.setIsTeacher(true);  // 保持老师身份
+            classMemberMapper.updateById(oldOwnerMember);
+        }
+
+        log.info("User {} transferred ownership of class {} to user {}", 
+                currentUser.getId(), classId, newOwnerId);
+    }
+
+    /**
+     * 生成指定长度的随机码
+     */
+    private String generateRandomCode(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder code = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        for (int i = 0; i < length; i++) {
+            code.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return code.toString();
     }
 }

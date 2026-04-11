@@ -7,6 +7,8 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
 
 import java.util.List;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 /**
  * 班级管理服务接口
  */
@@ -93,14 +95,14 @@ public interface ClassService {
     ClassDetailResponse getClassDetail(Integer classId);
 
     /**
-     * 获取用户加入的所有班级
+     * 获取用户加入的所有班级（分页）
      */
-    List<ClassDetailResponse> getMyClasses(Integer userId);
+    Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize);
 
     /**
-     * 获取班级成员列表
+     * 获取班级成员列表（分页）
      */
-    List<ClassMemberResponse> getClassMembers(Integer classId);
+    Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize);
 
     /**
      * 更新成员角色
@@ -156,4 +158,19 @@ public interface ClassService {
      * 用户响应邀请（同意/拒绝）
      */
     void respondInvitation(Integer invitationId, Boolean accepted, String comment);
+
+    /**
+     * 生成或刷新班级邀请码
+     */
+    String generateOrRefreshInviteCode(Integer classId);
+
+    /**
+     * 通过邀请码加入班级
+     */
+    ClassJoinApplication joinClassByInviteCode(String inviteCode);
+
+    /**
+     * 转让班级所有权
+     */
+    void transferClassOwnership(Integer classId, Integer newOwnerId);
 }

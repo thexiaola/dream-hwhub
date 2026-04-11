@@ -124,28 +124,33 @@ public class ClassController {
      * 获取我加入的班级列表
      */
     @GetMapping("/mylist")
-    public ApiResponse<List<ClassDetailResponse>> getMyClasses() {
+    public ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassDetailResponse>> getMyClasses(
+            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
+            @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying my classes list", userInfo);
+        log.info("User {} querying my classes list, page={}, size={}", userInfo, pageNum, pageSize);
         if (currentUser == null) {
             return ApiResponse.error(401, "用户未登录");
         }
-        List<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId());
-        log.info("User {} queried {} classes", userInfo, classes.size());
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId(), pageNum, pageSize);
+        log.info("User {} queried {} classes", userInfo, classes.getTotal());
         return ApiResponse.success(classes);
     }
 
     /**
-     * 获取班级成员列表
+     * 获取班级成员列表（分页）
      */
     @GetMapping("/members")
-    public ApiResponse<List<ClassMemberResponse>> getClassMembers(@RequestParam Integer classId) {
+    public ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassMemberResponse>> getClassMembers(
+            @RequestParam Integer classId,
+            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
+            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying class members, class ID: {}", userInfo, classId);
-        List<ClassMemberResponse> members = classService.getClassMembers(classId);
-        log.info("User {} queried {} members", userInfo, members.size());
+        log.info("User {} querying class members, class ID: {}, page={}, size={}", userInfo, classId, pageNum, pageSize);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ClassMemberResponse> members = classService.getClassMembers(classId, pageNum, pageSize);
+        log.info("User {} queried {} members", userInfo, members.getTotal());
         return ApiResponse.success(members);
     }
 
@@ -378,5 +383,47 @@ public class ClassController {
         String result = request.getAccepted() ? "accepted" : "rejected";
         log.info("User {} invitation {}", userInfo, result);
         return ApiResponse.success(null);
+    }
+
+    /**
+     * 生成或刷新班级邀请码
+     */
+    @PostMapping("/generate-invite-code")
+    public ApiResponse<String> generateInviteCode(@RequestParam Integer classId) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} generating invite code for class {}", userInfo, classId);
+        String inviteCode = classService.generateOrRefreshInviteCode(classId);
+        log.info("User {} generated invite code successfully", userInfo);
+        return ApiResponse.success(inviteCode, "邀请码生成成功");
+    }
+
+    /**
+     * 通过邀请码加入班级
+     */
+    @PostMapping("/join-by-code")
+    public ApiResponse<ClassJoinApplication> joinByInviteCode(@RequestParam String inviteCode) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} joining class by invite code: {}", userInfo, inviteCode);
+        ClassJoinApplication application = classService.joinClassByInviteCode(inviteCode);
+        log.info("User {} submitted join application via invite code, id: {}", userInfo, application.getId());
+        return ApiResponse.success(application, "加入申请已提交，待审核");
+    }
+
+    /**
+     * 转让班级所有权
+     */
+    @PutMapping("/transfer-ownership")
+    public ApiResponse<Void> transferOwnership(@RequestParam Integer classId,
+                                                @RequestParam Integer newOwnerId) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} transferring ownership of class {} to user {}", 
+                userInfo, classId, newOwnerId);
+        classService.transferClassOwnership(classId, newOwnerId);
+        log.info("User {} transferred ownership of class {} to user {} successfully", 
+                userInfo, classId, newOwnerId);
+        return ApiResponse.success(null, "班级所有权转让成功");
     }
 }

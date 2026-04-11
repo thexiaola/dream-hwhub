@@ -133,17 +133,20 @@ public class WorkSubmissionController {
     }
 
     /**
-     * 查询某次作业的所有提交（教师专用）
+     * 查询某次作业的所有提交（教师专用，分页）
      */
     @GetMapping("/work/list")
-    public ResponseEntity<ApiResponse<List<WorkSubmissionResponse>>> getWorkSubmissions(@RequestParam Integer workId) {
+    public ResponseEntity<ApiResponse<com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkSubmissionResponse>>> getWorkSubmissions(
+            @RequestParam Integer workId,
+            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
+            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             
-            List<WorkSubmissionResponse> submissions = workSubmissionService.getWorkSubmissions(workId);
-            log.info("User ({}) queried work submissions, workId: {}, size: {}", userInfo, workId, submissions.size());
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<WorkSubmissionResponse> submissions = workSubmissionService.getWorkSubmissions(workId, pageNum, pageSize);
+            log.info("User ({}) queried work submissions, workId: {}, total: {}", userInfo, workId, submissions.getTotal());
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {
             log.warn("User query work submissions failed: {}", e.getMessage());

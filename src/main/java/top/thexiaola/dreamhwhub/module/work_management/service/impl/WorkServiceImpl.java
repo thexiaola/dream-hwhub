@@ -11,10 +11,12 @@ import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
+import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
@@ -37,12 +39,15 @@ public class WorkServiceImpl implements WorkService {
 
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
+    private final WorkSubmissionMapper workSubmissionMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
 
-    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper, ClassService classService, UserMapper userMapper) {
+    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper, 
+                          WorkSubmissionMapper workSubmissionMapper, ClassService classService, UserMapper userMapper) {
         this.workMapper = workMapper;
         this.workAttachmentMapper = workAttachmentMapper;
+        this.workSubmissionMapper = workSubmissionMapper;
         this.classService = classService;
         this.userMapper = userMapper;
     }
@@ -119,6 +124,17 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "已发布的作业不能修改发布时间", null);
         }
 
+        // 如果已有学生提交，不允许修改总分
+        if (!request.getTotalScore().equals(workInfo.getTotalScore())) {
+            QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
+            submissionQuery.eq("work_id", workInfo.getId());
+            long submissionCount = workSubmissionMapper.selectCount(submissionQuery);
+            if (submissionCount > 0) {
+                throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, 
+                        "已有学生提交作业，无法修改总分", null);
+            }
+        }
+
         // 更新作业
         workInfo.setTitle(request.getTitle());
         workInfo.setDescription(request.getDescription());
@@ -158,7 +174,14 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能删除自己发布的作业", null);
         }
 
+        // 计算当前状态
+        Integer currentStatus = calculateWorkStatus(workInfo);
+        
+        // 如果作业已发布且有学生提交，需要二次确认（由Controller层处理）
+        // 这里只执行删除逻辑
         workMapper.deleteById(workId);
+        
+        log.info("User {} deleted work {}, status was: {}", currentUser.getId(), workId, currentStatus);
     }
 
     @Override
@@ -181,7 +204,12 @@ public class WorkServiceImpl implements WorkService {
     }
 
     @Override
-    public List<WorkResponse> getWorkList(String publisherUserNo, Integer status) {
+    public Page<WorkResponse> getWorkList(String publisherUserNo, Integer status, Integer pageNum, Integer pageSize) {
+        // 默认分页参数
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
+
         User currentUser = UserUtils.getCurrentUser();
         QueryWrapper<WorkInfo> queryWrapper = new QueryWrapper<>();
         
@@ -190,17 +218,19 @@ public class WorkServiceImpl implements WorkService {
             if (publisherId != null) {
                 queryWrapper.eq("publisher_id", publisherId);
             } else {
-                // 如果用户不存在，返回空列表
-                return List.of();
+                // 如果用户不存在，返回空分页
+                return new Page<>(pageNum, pageSize, 0);
             }
         }
         
         queryWrapper.orderByDesc("create_time");
         
-        List<WorkInfo> workInfos = workMapper.selectList(queryWrapper);
+        // 使用MyBatisPlus分页
+        Page<WorkInfo> workPage = new Page<>(pageNum, pageSize);
+        Page<WorkInfo> pagedResult = workMapper.selectPage(workPage, queryWrapper);
         LocalDateTime now = LocalDateTime.now();
         
-        return workInfos.stream()
+        List<WorkResponse> responses = pagedResult.getRecords().stream()
                 .filter(work -> {
                     // 过滤未发布作业：学生看不到
                     Integer workStatus = calculateWorkStatus(work);
@@ -230,6 +260,11 @@ public class WorkServiceImpl implements WorkService {
                     return response;
                 })
                 .collect(Collectors.toList());
+
+        // 构建分页结果
+        Page<WorkResponse> page = new Page<>(pageNum, pageSize, pagedResult.getTotal());
+        page.setRecords(responses);
+        return page;
     }
     
     /**
