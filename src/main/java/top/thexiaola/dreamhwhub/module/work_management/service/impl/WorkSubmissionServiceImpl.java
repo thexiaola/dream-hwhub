@@ -75,6 +75,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业未发布或已结束", null);
         }
 
+        // 检查是否已过截止时间，禁止逾期提交
+        if (workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
+            throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，无法提交", null);
+        }
+
         // 检查是否已提交过
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("work_id", request.getWorkId())
@@ -92,9 +97,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setClassId(workInfo.getClassId());
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1); // 已提交
-        // 判断是否逾期：如果当前时间超过截止时间，则标记为逾期
-        boolean isOverdue = workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline());
-        submission.setIsOverdue(isOverdue);
+        submission.setIsOverdue(false); // 禁止逾期提交，始终为false
         submission.setSubmitTime(LocalDateTime.now());
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
@@ -244,38 +247,8 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看", null);
         }
 
-        // 获取班级所有学生成员
-        List<top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse> allMembers = 
-            classService.getClassMembers(workInfo.getClassId());
-        
-        // 过滤出学生（排除OWNER和ASSISTANT）
-        java.util.Set<Integer> allStudentIds = allMembers.stream()
-            .filter(m -> "STUDENT".equals(m.getRole()))
-            .map(top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse::getUserId)
-            .collect(java.util.stream.Collectors.toSet());
-
-        // 获取已提交的学生 ID 列表
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<WorkSubmission> submissionQuery = 
-            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-        submissionQuery.eq("work_id", workId);
-        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
-        java.util.Set<Integer> submittedStudentIds = submissions.stream()
-            .map(WorkSubmission::getSubmitterId)
-            .collect(java.util.stream.Collectors.toSet());
-
-        // 计算未交学生 ID
-        allStudentIds.removeAll(submittedStudentIds);
-        
-        // 查询未交学生的详细信息
-        if (allStudentIds.isEmpty()) {
-            return java.util.Collections.emptyList();
-        }
-        
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<top.thexiaola.dreamhwhub.module.login.domain.User> userQuery = 
-            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-        userQuery.in("id", allStudentIds);
-        
-        return userMapper.selectList(userQuery);
+        // 数据库层面直接查询未交学生（LEFT JOIN优化）
+        return workSubmissionMapper.selectUnsubmittedStudents(workId);
     }
 
     @Override

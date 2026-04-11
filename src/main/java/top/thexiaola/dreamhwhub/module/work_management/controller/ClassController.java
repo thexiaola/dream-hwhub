@@ -244,23 +244,6 @@ public class ClassController {
     }
 
     /**
-     * 邀请用户加入班级（通过账号）- 老师/管理员专用，直接加入（只能为学生）
-     * @deprecated 此接口会强制拉人入班，缺乏用户知情权。请使用 /api/class/invite-with-approval 代替
-     */
-    @Deprecated
-    @PostMapping("/invite")
-    public ApiResponse<ClassMember> inviteUser(@RequestParam Integer classId,
-                                                @RequestParam String userAccount) {
-        User currentUser = UserUtils.getCurrentUser();
-        String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} inviting user {} to class {} as STUDENT", 
-                userInfo, userAccount, classId);
-        ClassMember member = classService.inviteUserToClass(classId, userAccount);
-        log.info("User {} invited user {} to class {} successfully", userInfo, userAccount, classId);
-        return ApiResponse.success(member);
-    }
-
-    /**
      * 设置学生为助理老师（老师专用）
      */
     @PutMapping("/set-assistant-teacher")

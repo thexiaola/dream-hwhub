@@ -120,67 +120,6 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassMember inviteUserToClass(Integer classId, String userAccount) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
-
-        // 验证班级是否存在
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
-            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
-        }
-
-        // 检查当前用户是否有权限邀请（班级成员或管理员）
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
-        boolean isClassMember = isClassMember(classId, currentUser.getId());
-        
-        if (!isAdmin && !isClassMember) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级成员或管理员可以邀请用户加入班级", null);
-        }
-
-        // 如果是学生邀请，需要走审核流程
-        boolean isClassStudent = isStudent(classId, currentUser.getId());
-        if (isClassStudent && !isAdmin) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "学生邀请用户需要通过审核流程，请使用 studentInviteUser 方法", null);
-        }
-
-        // 根据账号查询目标用户
-        QueryWrapper<User> userQuery = new QueryWrapper<>();
-        userQuery.eq("user_no", userAccount);
-        User targetUser = userMapper.selectOne(userQuery);
-        
-        if (targetUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
-        }
-
-        // 检查目标用户是否已经是成员
-        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
-        memberQuery.eq("class_id", classId).eq("user_id", targetUser.getId());
-        ClassMember existingMember = classMemberMapper.selectOne(memberQuery);
-        
-        if (existingMember != null) {
-            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该用户已经在班级中", null);
-        }
-
-        // 创建新的成员记录（邀请加入也只能是学生）
-        ClassMember member = new ClassMember();
-        member.setClassId(classId);
-        member.setUserId(targetUser.getId());
-        member.setIsTeacher(false);  // 固定为学生
-        member.setJoinTime(LocalDateTime.now());
-        member.setInviteBy(currentUser.getId());
-
-        classMemberMapper.insert(member);
-
-        log.info("User {} invited user {} to class {} as STUDENT", 
-                currentUser.getId(), userAccount, classId);
-        return member;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public void setStudentAsAssistantTeacher(Integer classId, Integer studentUserId) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {

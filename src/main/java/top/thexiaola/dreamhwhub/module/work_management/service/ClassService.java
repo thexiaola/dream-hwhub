@@ -23,11 +23,6 @@ public interface ClassService {
     ClassMember addTeacherToClass(Integer classId, String userAccount);
 
     /**
-     * 邀请用户加入班级（只能邀请为学生）
-     */
-    ClassMember inviteUserToClass(Integer classId, String userAccount);
-
-    /**
      * 设置学生为助理老师（老师专用）
      */
     void setStudentAsAssistantTeacher(Integer classId, Integer studentUserId);
