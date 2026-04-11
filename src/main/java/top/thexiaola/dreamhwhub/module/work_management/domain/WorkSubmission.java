@@ -88,12 +88,6 @@ public class WorkSubmission implements Serializable {
     private Integer status = 1;
 
     /**
-     * 是否逾期：0-否，1-是
-     */
-    @TableField("is_overdue")
-    private Boolean isOverdue = false;
-
-    /**
      * 创建时间
      */
     @TableField("create_time")

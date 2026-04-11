@@ -370,7 +370,6 @@
       "totalScore": 100,
       "publishTime": "2026-04-09T10:00:00",
       "status": 1,
-      "isOverdue": false,
       "createTime": "2026-04-09T10:00:00",
       "updateTime": "2026-04-09T10:00:00",
       "attachments": [
@@ -399,7 +398,6 @@
 | totalScore | Integer | 作业总分 |
 | publishTime | LocalDateTime | 发布时间 |
 | status | Integer | 作业状态(0-未发布,1-已发布,2-已结束) |
-| isOverdue | Boolean | 是否已逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 | attachments | List | 附件列表 |
@@ -1708,7 +1706,6 @@
 | gradeTime | LocalDateTime | 批改时间(未批改时为null) |
 | graderId | Integer | 批改人 ID(未批改时为null) |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
-| isOverdue | Boolean | 是否逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 
@@ -1789,7 +1786,6 @@
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
-| isOverdue | Boolean | 是否逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 
@@ -1911,7 +1907,6 @@
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
-| isOverdue | Boolean | 是否逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 
@@ -1965,7 +1960,6 @@
       "gradeTime": "2026-04-10T10:00:00",
       "graderId": 1001,
       "status": 2,
-      "isOverdue": false,
       "createTime": "2026-04-09T10:00:00",
       "updateTime": "2026-04-10T10:00:00",
       "attachments": [
@@ -1997,7 +1991,6 @@
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
-| isOverdue | Boolean | 是否逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 | attachments | List | 附件列表 |
@@ -2050,7 +2043,6 @@
       "gradeTime": "2026-04-10T10:00:00",
       "graderId": 1001,
       "status": 2,
-      "isOverdue": false,
       "createTime": "2026-04-09T10:00:00",
       "updateTime": "2026-04-10T10:00:00",
       "attachments": []
@@ -2067,7 +2059,6 @@
       "gradeTime": null,
       "graderId": null,
       "status": 1,
-      "isOverdue": false,
       "createTime": "2026-04-09T11:00:00",
       "updateTime": "2026-04-09T11:00:00",
       "attachments": []
@@ -2090,7 +2081,6 @@
 | gradeTime | LocalDateTime | 批改时间(未批改时为null) |
 | graderId | Integer | 批改人 ID(未批改时为null) |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
-| isOverdue | Boolean | 是否逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 | attachments | List | 附件列表 |
@@ -2141,7 +2131,6 @@
       "gradeTime": "2026-04-10T10:00:00",
       "graderId": 1001,
       "status": 2,
-      "isOverdue": false,
       "createTime": "2026-04-09T10:00:00",
       "updateTime": "2026-04-10T10:00:00",
       "attachments": []
@@ -2164,7 +2153,6 @@
 | gradeTime | LocalDateTime | 批改时间(未批改时为null) |
 | graderId | Integer | 批改人 ID(未批改时为null) |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
-| isOverdue | Boolean | 是否逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 | attachments | List | 附件列表 |
@@ -2235,26 +2223,10 @@
 
 **注意**: 
 - 此接口直接返回未提交作业的学生列表（User对象）
-- **后端使用SQL LEFT JOIN在数据库层面直接计算**，单次查询高效获取结果
+- **后端使用MyBatisPlus查询并计算**，自动过滤已提交学生
 - 只返回STUDENT角色的学生，不包括OWNER和ASSISTANT
 - 只有班级老师可以调用此接口
 - **前端零计算**：直接展示返回数据，无需任何处理
-
-**技术实现**:
-```sql
-SELECT u.* FROM user u 
-INNER JOIN class_member cm ON u.id = cm.user_id 
-LEFT JOIN work_submission ws ON u.id = ws.submitter_id AND ws.work_id = #{workId} 
-WHERE cm.class_id = (SELECT class_id FROM work_info WHERE id = #{workId}) 
-AND cm.is_teacher = 0 
-AND ws.id IS NULL
-```
-
-**性能优势**:
-- ✅ 单次数据库查询，减少网络往返
-- ✅ 利用数据库索引优化（class_member.user_id, work_submission.work_id）
-- ✅ 避免内存中处理大量数据
-- ✅ 只返回需要的数据，无冗余传输
 
 **失败响应**:
 
@@ -2338,7 +2310,6 @@ AND ws.id IS NULL
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
-| isOverdue | Boolean | 是否逾期 |
 | createTime | LocalDateTime | 创建时间 |
 | updateTime | LocalDateTime | 更新时间 |
 
@@ -2380,11 +2351,6 @@ AND ws.id IS NULL
 - `1`: 已发布
 - `2`: 已结束
 
-#### 申请类型 (ClassApplication.type)
-
-- `1`: 创建班级申请
-- `2`: 加入班级申请
-
 #### 申请状态 (ClassApplication.status / ClassInviteApplication.status)
 
 - `0`: 待审核
@@ -2399,7 +2365,7 @@ AND ws.id IS NULL
 **注意**: 
 - 不存在“未提交”状态（0），未交作业的学生在数据库中没有对应的 Submission 记录
 - **后端直接计算未交学生**：调用 `GET /api/submissions/work/unsubmitted` 接口即可获取未交学生列表，无需前端手动计算
-- **数据库级优化**：使用 SQL LEFT JOIN 在数据库层面完成计算，单次查询高效返回结果
+- **使用MyBatisPlus实现**：通过QueryWrapper查询并过滤，符合项目规范
 
 #### 角色类型
 

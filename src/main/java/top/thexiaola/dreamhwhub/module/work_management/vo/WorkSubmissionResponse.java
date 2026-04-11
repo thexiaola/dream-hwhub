@@ -66,14 +66,9 @@ public class WorkSubmissionResponse {
     private Integer graderId;
 
     /**
-     * 提交状态：0-未提交，1-已提交，2-已批改
+     * 提交状态：1-已提交，2-已批改
      */
     private Integer status;
-
-    /**
-     * 是否逾期：0-否，1-是
-     */
-    private Boolean isOverdue;
 
     /**
      * 创建时间

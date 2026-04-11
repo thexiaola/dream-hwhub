@@ -96,8 +96,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setSubmitterId(currentUser.getId());
         submission.setClassId(workInfo.getClassId());
         submission.setSubmissionContent(request.getSubmissionContent());
-        submission.setStatus(1); // 已提交
-        submission.setIsOverdue(false); // 禁止逾期提交，始终为false
+        submission.setStatus(1);
         submission.setSubmitTime(LocalDateTime.now());
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
@@ -247,8 +246,54 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看", null);
         }
 
-        // 数据库层面直接查询未交学生（LEFT JOIN优化）
-        return workSubmissionMapper.selectUnsubmittedStudents(workId);
+        // 使用MyBatisPlus查询未交学生
+        // 1. 查询班级所有学生ID
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember> memberQuery = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        memberQuery.eq("class_id", workInfo.getClassId())
+                  .eq("is_teacher", false)
+                  .select("user_id");
+        List<top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember> allStudents = 
+            classService.getClassMembers(workInfo.getClassId()).stream()
+                .filter(m -> "STUDENT".equals(m.getRole()))
+                .map(m -> {
+                    top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember member = new top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember();
+                    member.setUserId(m.getUserId());
+                    return member;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        
+        java.util.Set<Integer> allStudentIds = allStudents.stream()
+            .map(top.thexiaola.dreamhwhub.module.work_management.domain.ClassMember::getUserId)
+            .collect(java.util.stream.Collectors.toSet());
+
+        if (allStudentIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        // 2. 查询已提交的学生ID
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<WorkSubmission> submissionQuery = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        submissionQuery.eq("work_id", workId)
+                      .select("submitter_id");
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
+        java.util.Set<Integer> submittedStudentIds = submissions.stream()
+            .map(WorkSubmission::getSubmitterId)
+            .collect(java.util.stream.Collectors.toSet());
+
+        // 3. 计算差集
+        allStudentIds.removeAll(submittedStudentIds);
+        
+        if (allStudentIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        // 4. 查询未交学生详情
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<top.thexiaola.dreamhwhub.module.login.domain.User> userQuery = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        userQuery.in("id", allStudentIds);
+        
+        return userMapper.selectList(userQuery);
     }
 
     @Override
@@ -330,7 +375,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         response.setGradeTime(submission.getGradeTime());
         response.setGraderId(submission.getGraderId());
         response.setStatus(submission.getStatus());
-        response.setIsOverdue(submission.getIsOverdue());
         response.setCreateTime(submission.getCreateTime());
         response.setUpdateTime(submission.getUpdateTime());
         
@@ -419,8 +463,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             return false;
         }
         
-        // 注意：允许逾期提交，所以不检查截止时间
-        // 逾期会在提交时标记 isOverdue = true
         return true;
     }
     
