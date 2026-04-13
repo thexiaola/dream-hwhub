@@ -11,29 +11,29 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 作业提交附件实体类
+ * 临时文件上传实体类
  */
 @Data
-@TableName("work_submission_attachment")
-public class WorkSubmissionAttachment implements Serializable {
+@TableName("temp_file_upload")
+public class TempFileUpload implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     /**
-     * 提交附件 ID
+     * 文件ID
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
-     * 提交 ID
+     * 上传者ID
      */
-    @TableField("submission_id")
-    private Integer submissionId;
+    @TableField("uploader_id")
+    private Integer uploaderId;
 
     /**
-     * 文件名称
+     * 文件名
      */
     @TableField("file_name")
     private String fileName;
@@ -45,7 +45,7 @@ public class WorkSubmissionAttachment implements Serializable {
     private String filePath;
 
     /**
-     * 文件大小
+     * 文件大小（字节）
      */
     @TableField("file_size")
     private Long fileSize;
@@ -63,8 +63,14 @@ public class WorkSubmissionAttachment implements Serializable {
     private LocalDateTime uploadTime;
 
     /**
-     * 是否删除：true-已删除（软删除），false-未删除
+     * 过期时间
      */
-    @TableField("is_deleted")
-    private Boolean isDeleted = false;
+    @TableField("expire_time")
+    private LocalDateTime expireTime;
+
+    /**
+     * 是否已使用
+     */
+    @TableField("is_used")
+    private Boolean isUsed = false;
 }

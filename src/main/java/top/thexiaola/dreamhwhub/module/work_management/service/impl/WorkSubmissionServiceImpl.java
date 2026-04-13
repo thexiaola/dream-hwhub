@@ -10,15 +10,18 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.work_management.domain.TempFileUpload;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.TempFileUploadMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
+import top.thexiaola.dreamhwhub.module.work_management.service.FileUploadService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
@@ -44,13 +47,17 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
+    private final FileUploadService fileUploadService;
+    private final TempFileUploadMapper tempFileUploadMapper;
 
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, UserMapper userMapper) {
+    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, UserMapper userMapper, FileUploadService fileUploadService, TempFileUploadMapper tempFileUploadMapper) {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workMapper = workMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
         this.classService = classService;
         this.userMapper = userMapper;
+        this.fileUploadService = fileUploadService;
+        this.tempFileUploadMapper = tempFileUploadMapper;
     }
 
     @Override
@@ -78,10 +85,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业未发布或已结束", null);
         }
 
-        // 检查是否已提交过
+        // 检查是否已提交过（排除已软删除的记录）
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("work_id", request.getWorkId())
-                .eq("submitter_id", currentUser.getId());
+                .eq("submitter_id", currentUser.getId())
+                .eq("is_deleted", false);
         WorkSubmission existingSubmission = workSubmissionMapper.selectOne(queryWrapper);
         
         if (existingSubmission != null) {
@@ -90,6 +98,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
         // 判断是否逾期提交
         boolean isLate = workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline());
+        
+        // 如果不允许逾期提交且已截止，则拒绝
+        if (isLate && Boolean.FALSE.equals(workInfo.getAllowLateSubmit())) {
+            throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，不允许逾期提交", null);
+        }
 
         // 创建提交记录
         WorkSubmission submission = new WorkSubmission();
@@ -105,9 +118,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
         workSubmissionMapper.insert(submission);
         
-        // 保存附件
-        if (request.getAttachmentPaths() != null && !request.getAttachmentPaths().isEmpty()) {
-            saveSubmissionAttachments(submission.getId(), request.getAttachmentPaths());
+        // 验证并保存附件
+        if (request.getAttachmentIds() != null && !request.getAttachmentIds().isEmpty()) {
+            saveSubmissionAttachmentsWithValidation(submission.getId(), request.getAttachmentIds(), currentUser.getId());
         }
         
         return submission;
@@ -122,9 +135,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 查询提交记录
+        // 查询提交记录（排除已软删除的）
         WorkSubmission submission = workSubmissionMapper.selectById(submissionId);
-        if (submission == null) {
+        if (submission == null || Boolean.TRUE.equals(submission.getIsDeleted())) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
         }
 
@@ -161,9 +174,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 查询提交记录
+        // 查询提交记录（排除已软删除的）
         WorkSubmission submission = workSubmissionMapper.selectById(submissionId);
-        if (submission == null) {
+        if (submission == null || Boolean.TRUE.equals(submission.getIsDeleted())) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
         }
 
@@ -181,13 +194,16 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             }
         }
 
-        workSubmissionMapper.deleteById(submissionId);
+        // 软删除提交记录
+        submission.setIsDeleted(true);
+        workSubmissionMapper.updateById(submission);
+        log.info("Soft deleted submission: id={}", submissionId);
     }
 
     @Override
     public WorkSubmission getSubmissionById(Integer submissionId) {
         WorkSubmission submission = workSubmissionMapper.selectById(submissionId);
-        if (submission == null) {
+        if (submission == null || Boolean.TRUE.equals(submission.getIsDeleted())) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
         }
         return submission;
@@ -218,9 +234,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看", null);
         }
 
-        // 获取已提交的学生列表
+        // 获取已提交的学生列表（排除已软删除的）
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
-        submissionQuery.eq("work_id", workId).orderByDesc("submit_time");
+        submissionQuery.eq("work_id", workId)
+                      .eq("is_deleted", false)
+                      .orderByDesc("submit_time");
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
         return submissions.stream()
@@ -261,9 +279,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             return java.util.Collections.emptyList();
         }
 
-        // 2. 查询已提交的学生ID
+        // 2. 查询已提交的学生ID（排除已软删除的）
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
-        submissionQuery.eq("work_id", workId).select("submitter_id");
+        submissionQuery.eq("work_id", workId)
+                      .eq("is_deleted", false)
+                      .select("submitter_id");
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         java.util.Set<Integer> submittedStudentIds = submissions.stream()
             .map(WorkSubmission::getSubmitterId)
@@ -304,7 +324,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("work_id", workId).orderByDesc("submit_time");
+        queryWrapper.eq("work_id", workId)
+                   .eq("is_deleted", false)
+                   .orderByDesc("submit_time");
         
         // 使用MyBatisPlus分页
         Page<WorkSubmission> submissionPage = new Page<>(pageNum, pageSize);
@@ -329,9 +351,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
 
-        // 查询提交记录
+        // 查询提交记录（排除已软删除的）
         WorkSubmission submission = workSubmissionMapper.selectById(Integer.parseInt(request.getSubmissionId()));
-        if (submission == null) {
+        if (submission == null || Boolean.TRUE.equals(submission.getIsDeleted())) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
         }
 
@@ -387,7 +409,39 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
     
     /**
-     * 保存提交附件
+     * 保存提交附件（通过文件ID，验证归属权）
+     */
+    private void saveSubmissionAttachmentsWithValidation(Integer submissionId, List<Integer> attachmentIds, Integer userId) {
+        if (attachmentIds == null || attachmentIds.isEmpty()) {
+            return;
+        }
+        
+        for (Integer fileId : attachmentIds) {
+            // 1. 验证文件归属权并标记为已使用
+            fileUploadService.validateAndMarkAsUsed(fileId, userId);
+            
+            // 2. 查询临时文件信息
+            TempFileUpload tempFile = tempFileUploadMapper.selectById(fileId);
+            if (tempFile == null) {
+                throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, "文件不存在", null);
+            }
+            
+            // 3. 复制到正式提交附件表
+            WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
+            attachment.setSubmissionId(submissionId);
+            attachment.setFileName(tempFile.getFileName());
+            attachment.setFilePath(tempFile.getFilePath());
+            attachment.setFileSize(tempFile.getFileSize());
+            attachment.setFileType(tempFile.getFileType());
+            attachment.setUploadTime(LocalDateTime.now());
+            workSubmissionAttachmentMapper.insert(attachment);
+            
+            log.info("Saved submission attachment from temp file: id={}, name={}", fileId, tempFile.getFileName());
+        }
+    }
+    
+    /**
+     * 保存提交附件（旧方法，保留兼容）
      */
     private void saveSubmissionAttachments(Integer submissionId, List<String> attachmentPaths) {
         if (attachmentPaths == null || attachmentPaths.isEmpty()) {

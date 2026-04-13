@@ -42,6 +42,11 @@ public class CreateWorkRequest {
     private Integer totalScore = 100;
 
     /**
+     * 是否允许逾期提交（默认true）
+     */
+    private Boolean allowLateSubmit = true;
+
+    /**
      * 所属班级 ID（数字格式）
      */
     @NotNull(message = "所属班级 ID 不能为空")
@@ -55,7 +60,7 @@ public class CreateWorkRequest {
     private LocalDateTime publishTime;
 
     /**
-     * 附件列表（文件路径）
+     * 附件ID列表（通过 /api/upload/file 上传后返回的文件ID）
      */
-    private java.util.List<String> attachmentPaths;
+    private java.util.List<Integer> attachmentIds;
 }

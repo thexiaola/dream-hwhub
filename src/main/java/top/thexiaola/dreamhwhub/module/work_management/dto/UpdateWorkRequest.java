@@ -50,14 +50,19 @@ public class UpdateWorkRequest {
     private Integer totalScore;
 
     /**
+     * 是否允许逾期提交
+     */
+    private Boolean allowLateSubmit;
+
+    /**
      * 发布时间（仅未发布的作业可以修改）
      */
     private LocalDateTime publishTime;
 
     /**
-     * 附件列表（文件路径）- 新增的附件
+     * 附件ID列表 - 新增的附件（通过 /api/upload/file 上传后返回的文件ID）
      */
-    private java.util.List<String> attachmentPaths;
+    private java.util.List<Integer> attachmentIds;
 
     /**
      * 要删除的附件ID列表

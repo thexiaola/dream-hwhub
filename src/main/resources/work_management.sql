@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS `work_info` (
     `class_id` INT NOT NULL COMMENT '所属班级ID',
     `deadline` DATETIME DEFAULT NULL COMMENT '截止时间',
     `total_score` INT NOT NULL DEFAULT 100 COMMENT '作业总分',
+    `allow_late_submit` BIT(1) NOT NULL DEFAULT b'1' COMMENT '是否允许逾期提交：0-否，1-是',
     `publish_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -157,6 +158,7 @@ CREATE TABLE IF NOT EXISTS `work_submission` (
     `grader_id` INT DEFAULT NULL COMMENT '批改人ID',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-未提交，1-已提交，2-已批改',
     `is_late` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否逾期提交：0-否，1-是',
+    `is_deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除：0-否，1-是（软删除）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_work_id (`work_id`),
@@ -179,6 +181,24 @@ CREATE TABLE IF NOT EXISTS `work_submission_attachment` (
      `file_size` BIGINT NOT NULL COMMENT '文件大小（字节）',
      `file_type` VARCHAR(100) DEFAULT NULL COMMENT '文件类型',
      `upload_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+     `is_deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除：0-否，1-是（软删除）',
      INDEX idx_submission_id (`submission_id`),
      CONSTRAINT fk_submission_attachment FOREIGN KEY (`submission_id`) REFERENCES `work_submission`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业提交附件表';
+
+-- 临时文件上传表（用于文件上传后暂存，提交时验证归属）
+CREATE TABLE IF NOT EXISTS `temp_file_upload` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '文件ID',
+    `uploader_id` INT NOT NULL COMMENT '上传者ID',
+    `file_name` VARCHAR(255) NOT NULL COMMENT '文件名',
+    `file_path` VARCHAR(500) NOT NULL COMMENT '文件路径',
+    `file_size` BIGINT NOT NULL COMMENT '文件大小（字节）',
+    `file_type` VARCHAR(100) DEFAULT NULL COMMENT '文件类型',
+    `upload_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+    `expire_time` DATETIME NOT NULL COMMENT '过期时间（24小时后）',
+    `is_used` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否已使用：0-未使用，1-已关联到作业/提交',
+    INDEX idx_uploader_id (`uploader_id`),
+    INDEX idx_expire_time (`expire_time`),
+    INDEX idx_is_used (`is_used`),
+    CONSTRAINT fk_temp_file_uploader FOREIGN KEY (`uploader_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='临时文件上传表';

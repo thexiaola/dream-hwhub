@@ -63,6 +63,12 @@ public class WorkInfo implements Serializable {
     private Integer totalScore = 100;
 
     /**
+     * 是否允许逾期提交：true-允许，false-不允许
+     */
+    @TableField("allow_late_submit")
+    private Boolean allowLateSubmit = true;
+
+    /**
      * 发布时间
      */
     @TableField("publish_time")

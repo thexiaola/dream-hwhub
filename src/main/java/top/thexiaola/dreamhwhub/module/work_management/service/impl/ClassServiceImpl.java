@@ -18,9 +18,6 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -1237,14 +1234,15 @@ public class ClassServiceImpl implements ClassService {
     }
 
     /**
-     * 清理学生在该班级的所有作业提交和附件
+     * 清理学生在该班级的所有作业提交和附件（软删除）
      * @param classId 班级ID
      * @param userId 学生用户ID
      */
     private void cleanupStudentSubmissions(Integer classId, Integer userId) {
         // 1. 查询该学生在该班级所有作业中的提交记录
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
-        submissionQuery.eq("user_id", userId)
+        submissionQuery.eq("submitter_id", userId)
+                      .eq("is_deleted", false)
                       .inSql("work_id", "SELECT id FROM work_info WHERE class_id = " + classId);
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
@@ -1253,32 +1251,27 @@ public class ClassServiceImpl implements ClassService {
             return;
         }
 
-        // 2. 删除每个提交的附件文件和记录
+        // 2. 软删除每个提交的附件记录
         for (WorkSubmission submission : submissions) {
             QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
-            attQuery.eq("submission_id", submission.getId());
+            attQuery.eq("submission_id", submission.getId())
+                   .eq("is_deleted", false);
             List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
             
-            // 物理删除附件文件
+            // 软删除附件记录
             for (WorkSubmissionAttachment attachment : attachments) {
-                try {
-                    Path filePath = Paths.get(attachment.getFilePath());
-                    if (Files.exists(filePath)) {
-                        Files.delete(filePath);
-                        log.info("Deleted student submission attachment file: {}", attachment.getFilePath());
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to delete student submission attachment file: {}", attachment.getFilePath(), e);
-                }
+                attachment.setIsDeleted(true);
+                workSubmissionAttachmentMapper.updateById(attachment);
+                log.info("Soft deleted student submission attachment record: id={}", attachment.getId());
             }
-            
-            // 删除附件记录
-            workSubmissionAttachmentMapper.delete(attQuery);
         }
         
-        // 3. 删除所有提交记录
-        workSubmissionMapper.delete(submissionQuery);
-        log.info("Cleaned up {} submission records for user {} in class {}", 
+        // 3. 软删除所有提交记录
+        for (WorkSubmission submission : submissions) {
+            submission.setIsDeleted(true);
+            workSubmissionMapper.updateById(submission);
+        }
+        log.info("Soft deleted {} submission records for user {} in class {}", 
                 submissions.size(), userId, classId);
     }
 }

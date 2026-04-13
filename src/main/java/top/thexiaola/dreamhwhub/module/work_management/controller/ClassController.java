@@ -27,6 +27,7 @@ import java.util.List;
 public class ClassController {
     private static final Logger log = LoggerFactory.getLogger(ClassController.class);
     private final ClassService classService;
+    
     public ClassController(ClassService classService) {
         this.classService = classService;
     }

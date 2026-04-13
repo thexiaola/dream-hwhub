@@ -24,7 +24,7 @@ public class SubmitWorkRequest {
     private String submissionContent;
 
     /**
-     * 附件列表（文件路径）
+     * 附件ID列表（通过 /api/upload/file 上传后返回的文件ID）
      */
-    private java.util.List<String> attachmentPaths;
+    private java.util.List<Integer> attachmentIds;
 }

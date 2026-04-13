@@ -94,6 +94,12 @@ public class WorkSubmission implements Serializable {
     private Boolean isLate = false;
 
     /**
+     * 是否删除：true-已删除（软删除），false-未删除
+     */
+    @TableField("is_deleted")
+    private Boolean isDeleted = false;
+
+    /**
      * 创建时间
      */
     @TableField("create_time")
