@@ -6,22 +6,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.domain.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
-import top.thexiaola.dreamhwhub.module.work_management.domain.TempFileUpload;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.TempFileUploadMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
-import top.thexiaola.dreamhwhub.module.work_management.service.FileUploadService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
@@ -33,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -42,22 +41,21 @@ import java.util.stream.Collectors;
 public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private static final Logger log = LoggerFactory.getLogger(WorkSubmissionServiceImpl.class);
 
+    // 文件存储根目录
+    private static final String UPLOAD_DIR = "uploads/submissions/";
+
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
-    private final FileUploadService fileUploadService;
-    private final TempFileUploadMapper tempFileUploadMapper;
 
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, UserMapper userMapper, FileUploadService fileUploadService, TempFileUploadMapper tempFileUploadMapper) {
+    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, UserMapper userMapper) {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workMapper = workMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
         this.classService = classService;
         this.userMapper = userMapper;
-        this.fileUploadService = fileUploadService;
-        this.tempFileUploadMapper = tempFileUploadMapper;
     }
 
     @Override
@@ -118,9 +116,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
         workSubmissionMapper.insert(submission);
         
-        // 验证并保存附件
-        if (request.getAttachmentIds() != null && !request.getAttachmentIds().isEmpty()) {
-            saveSubmissionAttachmentsWithValidation(submission.getId(), request.getAttachmentIds(), currentUser.getId());
+        // 保存附件（直接上传的文件）
+        if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
+            saveSubmissionAttachmentsDirectly(submission.getId(), request.getAttachments());
         }
         
         return submission;
@@ -211,8 +209,25 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     public List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId) {
-        // 此方法已废弃，应该使用 getCurrentUserSubmissions 代替
-        return List.of();
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("submitter_id", currentUser.getId())
+                   .eq("is_deleted", false);
+        
+        if (workId != null) {
+            queryWrapper.eq("work_id", workId);
+        }
+        
+        queryWrapper.orderByDesc("submit_time");
+        
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(queryWrapper);
+        return submissions.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -409,82 +424,68 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
     
     /**
-     * 保存提交附件（通过文件ID，验证归属权）
+     * 保存提交附件（直接上传的文件）
      */
-    private void saveSubmissionAttachmentsWithValidation(Integer submissionId, List<Integer> attachmentIds, Integer userId) {
-        if (attachmentIds == null || attachmentIds.isEmpty()) {
+    private void saveSubmissionAttachmentsDirectly(Integer submissionId, List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
             return;
         }
         
-        for (Integer fileId : attachmentIds) {
-            // 1. 验证文件归属权并标记为已使用
-            fileUploadService.validateAndMarkAsUsed(fileId, userId);
-            
-            // 2. 查询临时文件信息
-            TempFileUpload tempFile = tempFileUploadMapper.selectById(fileId);
-            if (tempFile == null) {
-                throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, "文件不存在", null);
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
             }
             
-            // 3. 复制到正式提交附件表
-            WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
-            attachment.setSubmissionId(submissionId);
-            attachment.setFileName(tempFile.getFileName());
-            attachment.setFilePath(tempFile.getFilePath());
-            attachment.setFileSize(tempFile.getFileSize());
-            attachment.setFileType(tempFile.getFileType());
-            attachment.setUploadTime(LocalDateTime.now());
-            workSubmissionAttachmentMapper.insert(attachment);
-            
-            log.info("Saved submission attachment from temp file: id={}, name={}", fileId, tempFile.getFileName());
-        }
-    }
-    
-    /**
-     * 保存提交附件（旧方法，保留兼容）
-     */
-    private void saveSubmissionAttachments(Integer submissionId, List<String> attachmentPaths) {
-        if (attachmentPaths == null || attachmentPaths.isEmpty()) {
-            return;
-        }
-        
-        for (String filePath : attachmentPaths) {
             try {
-                // 1. 获取文件信息
-                Path path = Paths.get(filePath);
-                long fileSize = Files.size(path);
-                String fileName = path.getFileName().toString();
+                // 1. 获取原始文件名
+                String originalFilename = file.getOriginalFilename();
+                if (originalFilename == null || originalFilename.contains("..")) {
+                    throw new BusinessException(BusinessErrorCode.INVALID_FILE_PATH, "非法的文件名", null);
+                }
                 
-                // 2. 执行完整的安全检查
-                FileUploadValidator.performFullSecurityCheck(filePath, fileSize);
+                // 2. 生成安全的文件名
+                String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                String safeFileName = UUID.randomUUID() + extension;
                 
-                // 3. 获取文件类型
-                String fileType = FileUploadValidator.detectFileType(filePath);
+                // 3. 确保上传目录存在
+                Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+                Files.createDirectories(uploadPath);
                 
-                // 4. 保存到数据库
+                // 4. 保存文件
+                Path filePath = uploadPath.resolve(safeFileName);
+                Files.copy(file.getInputStream(), filePath);
+                
+                // 5. 获取文件信息
+                long fileSize = Files.size(filePath);
+                String fileType = FileUploadValidator.detectFileType(filePath.toString());
+                
+                // 6. 执行完整的安全检查
+                FileUploadValidator.performFullSecurityCheck(filePath.toString(), fileSize);
+                
+                // 7. 保存到数据库
                 WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
                 attachment.setSubmissionId(submissionId);
-                attachment.setFileName(fileName);
-                attachment.setFilePath(filePath);
+                attachment.setFileName(originalFilename);
+                attachment.setFilePath(filePath.toString());
                 attachment.setFileSize(fileSize);
                 attachment.setFileType(fileType);
                 attachment.setUploadTime(LocalDateTime.now());
                 workSubmissionAttachmentMapper.insert(attachment);
                 
-                log.info("Saved submission attachment: {}, size: {}, type: {}", 
-                        fileName, fileSize, fileType);
+                log.info("Saved submission attachment directly: {}, size: {}, type: {}", 
+                        originalFilename, fileSize, fileType);
                         
             } catch (BusinessException e) {
-                log.error("File security check failed: {}", filePath, e);
                 throw e;
             } catch (Exception e) {
-                log.error("Failed to save submission attachment: {}", filePath, e);
+                log.error("Failed to save submission attachment", e);
                 throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, 
                         "文件上传失败：" + e.getMessage(), null);
             }
         }
     }
     
+
     /**
      * 获取提交附件列表
      */

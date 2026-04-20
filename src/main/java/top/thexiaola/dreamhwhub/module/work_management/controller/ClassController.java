@@ -44,7 +44,6 @@ public class ClassController {
                 request.getClassName(), request.getDescription());
         ClassApplicationResponse response = new ClassApplicationResponse(
                 application.getId(),
-                null,  // type字段已废弃
                 null,  // classId在审核通过后才会有
                 application.getApplicantId(),
                 application.getClassName(),
@@ -68,7 +67,6 @@ public class ClassController {
         ClassJoinApplication application = classService.submitJoinClassRequest(classId);
         ClassApplicationResponse response = new ClassApplicationResponse(
                 application.getId(),
-                null,  // type字段已废弃
                 application.getClassId(),
                 application.getApplicantId(),
                 null,  // className

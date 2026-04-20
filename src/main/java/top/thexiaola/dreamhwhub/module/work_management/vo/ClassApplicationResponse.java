@@ -21,11 +21,6 @@ public class ClassApplicationResponse {
     private Integer id;
 
     /**
-     * 申请类型：1-创建班级申请，2-加入班级申请
-     */
-    private Integer type;
-
-    /**
      * 班级 ID（加入班级申请时有值）
      */
     private Integer classId;

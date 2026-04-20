@@ -35,12 +35,29 @@ public class WorkSubmissionController {
     /**
      * 提交作业
      */
-    @PostMapping("/submit")
-    public ResponseEntity<ApiResponse<WorkSubmission>> submitWork(@Valid @RequestBody SubmitWorkRequest request) {
+    @PostMapping(value = "/submit", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<WorkSubmission>> submitWork(
+            @RequestParam("workId") String workId,
+            @RequestParam(value = "submissionContent", required = false) String submissionContent,
+            @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            // 参数验证
+            if (workId == null || workId.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 不能为空"));
+            }
+            if (!workId.matches("^[0-9]+$")) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 必须是数字"));
+            }
+            
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
+            
+            // 构建请求对象
+            SubmitWorkRequest request = new SubmitWorkRequest();
+            request.setWorkId(workId);
+            request.setSubmissionContent(submissionContent);
+            request.setAttachments(attachments);
             
             WorkSubmission submission = workSubmissionService.submitWork(request);
             log.info("User ({}) submitted work, id: {}", userInfo, submission.getId());

@@ -5,8 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 创建作业请求
@@ -60,7 +62,7 @@ public class CreateWorkRequest {
     private LocalDateTime publishTime;
 
     /**
-     * 附件ID列表（通过 /api/upload/file 上传后返回的文件ID）
+     * 附件文件列表（直接上传的文件）
      */
-    private java.util.List<Integer> attachmentIds;
+    private List<MultipartFile> attachments;
 }

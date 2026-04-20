@@ -69,33 +69,35 @@
 
 **请求头**:
 
-- Content-Type: application/json
+- Content-Type: multipart/form-data
 - 需要登录认证（Session）
 
-**请求体**:
-
-```json
-{
-  "title": "作业标题",
-  "description": "作业描述",
-  "deadline": "2026-04-15T23:59:59",
-  "totalScore": 100,
-  "classId": "1",
-  "publishTime": "2026-04-09T10:00:00",
-  "attachmentPaths": ["/path/to/file1.pdf", "/path/to/file2.doc"]
-}
-```
-
-**字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
+**请求参数** (multipart/form-data):
+| 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | title | String | 是 | 作业标题，最长 128 字符，不能包含换行符、制表符等特殊字符 |
 | description | String | 是 | 作业描述，不能包含制表符等特殊字符 |
-| deadline | LocalDateTime | 是 | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
+| deadline | String | 是 | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
 | totalScore | Integer | 是 | 作业总分，默认 100 |
 | classId | String | 是 | 所属班级 ID，必须是数字字符串 |
-| publishTime | LocalDateTime | 是 | 发布时间，格式：yyyy-MM-dd'T'HH:mm:ss |
-| attachmentPaths | List<String> | 否 | 附件文件路径列表 |
+| publishTime | String | 是 | 发布时间，格式：yyyy-MM-dd'T'HH:mm:ss |
+| allowLateSubmit | Boolean | 否 | 是否允许逾期提交，默认 true |
+| attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
+
+**请求示例**:
+```
+POST /api/works/create
+Content-Type: multipart/form-data
+
+title: 第一次作业
+description: 请完成第一章习题
+deadline: 2026-04-15T23:59:59
+totalScore: 100
+classId: 1
+publishTime: 2026-04-09T10:00:00
+allowLateSubmit: true
+attachments: [file1.pdf, file2.doc]
+```
 
 **成功响应 (200)**:
 
@@ -146,16 +148,19 @@
 
 - "作业标题不能为空"
 - "作业标题长度不能超过 128 位"
-- "作业标题不能包含特殊字符（换行符、制表符等）"
 - "作业描述不能为空"
-- "作业描述不能包含特殊字符（制表符等）"
 - "截止时间不能为空"
 - "作业总分不能为空"
 - "所属班级 ID 不能为空"
 - "班级 ID 必须是数字"
 - "发布时间不能为空"
-- "用户无权限在此班级发布作业"
-- "班级不存在"
+- "只有班级老师可以发布作业"
+- "文件上传失败：xxx"
+
+**注意**: 
+- **直接上传附件**：通过 `attachments` 参数直接上传文件，无需预先调用文件上传接口
+- **文件安全检查**：系统会对上传的文件进行病毒扫描、文件类型白名单验证等安全检查
+- **文件存储位置**：`uploads/works/` 目录
 
 ---
 
@@ -165,39 +170,42 @@
 
 **请求头**:
 
-- Content-Type: application/json
+- Content-Type: multipart/form-data
 - 需要登录认证（Session）
 
-**请求体**:
-
-```json
-{
-  "id": "1",
-  "title": "更新后的作业标题",
-  "description": "更新后的作业描述",
-  "deadline": "2026-04-20T23:59:59",
-  "totalScore": 100,
-  "attachmentPaths": ["/path/to/newfile.pdf"]
-}
-```
-
-**字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
+**请求参数** (multipart/form-data):
+| 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | id | String | 是 | 作业 ID，必须是数字字符串 |
 | title | String | 是 | 作业标题，最长 128 字符 |
 | description | String | 是 | 作业描述，最长 1024 字符 |
-| deadline | LocalDateTime | 是 | 截止时间 |
+| deadline | String | 是 | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
 | totalScore | Integer | 是 | 作业总分（无学生提交时可修改） |
-| publishTime | LocalDateTime | 否 | 发布时间（仅未发布的作业可修改，status=0时可更新） |
-| attachmentPaths | List<String> | 否 | 新增的附件文件路径列表 |
-| removedAttachmentIds | List<Integer> | 否 | 要删除的附件ID列表 |
+| allowLateSubmit | Boolean | 否 | 是否允许逾期提交 |
+| publishTime | String | 否 | 发布时间（仅未发布的作业可修改） |
+| attachments | File[] | 否 | 新增的附件文件列表 |
+| removedAttachmentIds | Integer[] | 否 | 要删除的附件ID列表 |
+
+**请求示例**:
+```
+PUT /api/works/update
+Content-Type: multipart/form-data
+
+id: 1
+title: 更新后的作业标题
+description: 更新后的作业描述
+deadline: 2026-04-20T23:59:59
+totalScore: 100
+attachments: [newfile.pdf]
+removedAttachmentIds: [1, 2]
+```
 
 **注意**: 
 - 已发布作业(status=1)不允许修改publishTime，只能修改其他字段
 - **当没有学生提交作业时，允许修改totalScore**；有提交记录后禁止修改，保护数据一致性
-- **支持附件增量更新**：可以通过`removedAttachmentIds`删除指定附件，通过`attachmentPaths`添加新附件
+- **支持附件增量更新**：可以通过`removedAttachmentIds`删除指定附件，通过`attachments`添加新附件
 - **不会导致数据丢失**：修改附件不会影响学生的提交记录
+- **直接上传附件**：新增附件通过 `attachments` 参数直接上传文件
 
 **成功响应 (200)**:
 
@@ -253,8 +261,11 @@
 - "截止时间不能为空"
 - "作业总分不能为空"
 - "已发布的作业不能修改发布时间"
+- "已有学生提交作业，无法修改总分"
 - "作业不存在"
-- "用户无权限修改此作业"
+- "只有班级老师可以修改作业"
+- "只能修改自己发布的作业"
+- "文件上传失败：xxx"
 
 ---
 
@@ -1976,28 +1987,25 @@
 
 **请求头**:
 
-- Content-Type: application/json
+- Content-Type: multipart/form-data
 - 需要登录认证（Session）
 
-**请求体**:
-
-```json
-{
-  "workId": "1",
-  "submissionContent": "这是我的作业内容",
-  "attachmentPaths": [
-    "/uploads/submissions/file1.pdf",
-    "/uploads/submissions/file2.docx"
-  ]
-}
-```
-
-**字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
+**请求参数** (multipart/form-data):
+| 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | workId | String | 是 | 作业 ID，必须是数字字符串 |
-| submissionContent | String | 否 | 提交内容/文本描述，不能包含制表符等特殊字符 |
-| attachmentPaths | List<String> | 否 | 附件文件路径列表 |
+| submissionContent | String | 否 | 提交内容/文本描述 |
+| attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
+
+**请求示例**:
+```
+POST /api/submissions/submit
+Content-Type: multipart/form-data
+
+workId: 1
+submissionContent: 这是我的作业内容
+attachments: [file1.pdf, file2.docx]
+```
 
 **成功响应 (200)**:
 
@@ -2055,15 +2063,20 @@
 
 - "作业 ID 不能为空"
 - "作业 ID 必须是数字"
-- "提交内容不能包含特殊字符（制表符等）"
 - "作业不存在"
-- "您不是该班级的成员"
-- "您已经提交过此作业"
+- "只有班级学生可以提交作业"
+- "作业未发布或已结束"
+- "您已经提交过该作业"
+- "作业已截止，不允许逾期提交"
+- "文件上传失败：xxx"
 
 **注意**: 
 - **支持逾期提交**：即使超过截止时间，学生仍然可以提交作业
 - 系统会自动标记逾期提交（`isLate: true`），教师可以看到哪些学生是迟交的
-- 教师可以根据实际情况决定是否扣减"迟交分"
+- 教师可以根据实际情况决定是否扣减“迟交分”
+- **直接上传附件**：通过 `attachments` 参数直接上传文件，无需预先调用文件上传接口
+- **文件安全检查**：系统会对上传的文件进行病毒扫描、文件类型白名单验证等安全检查
+- **文件存储位置**：`uploads/submissions/` 目录
 
 ---
 
@@ -2257,19 +2270,25 @@
 
 ---
 
-### 3.5 查询学生的提交列表
+### 3.5 查询当前用户的提交列表
 
 **接口地址**: `GET /api/submissions/student/list`
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| workId | Integer | 否 | 作业 ID 筛选 |
+| workId | Integer | 否 | 作业 ID 筛选（可选） |
 
 **请求示例**:
 
-- `GET /api/submissions/student/list`
-- `GET /api/submissions/student/list?workId=1`
+- `GET /api/submissions/student/list` - 查询当前用户的所有提交
+- `GET /api/submissions/student/list?workId=1` - 查询当前用户在指定作业的提交
+
+**功能说明**:
+- 查询当前登录用户（学生）的作业提交记录
+- 支持按作业 ID 筛选特定作业的提交
+- 返回结果按提交时间倒序排列
+- 包含完整的提交信息和附件列表
 
 **成功响应 (200)**:
 
@@ -2733,6 +2752,9 @@
 
 1. 所有接口均需要进行身份验证，未登录用户将返回 401 错误
 2. 部分接口需要特定权限（如教师权限、班级创建者权限等）
-3. 文件上传功能需要先调用文件上传接口获取文件路径，再将路径传入相应接口
+3. **作业相关接口使用 multipart/form-data 格式**，直接上传文件，无需预先调用文件上传接口
+   - 创建作业：`POST /api/works/create`
+   - 更新作业：`PUT /api/works/update`
+   - 提交作业：`POST /api/submissions/submit`
 4. 日期时间参数需使用 ISO 8601 格式
-5. 所有数值型 ID 在请求体中均以字符串形式传递，在请求参数中以整数形式传递
+5. 所有数值型 ID 在请求参数中以字符串形式传递
