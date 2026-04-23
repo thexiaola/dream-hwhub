@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
@@ -156,13 +157,12 @@ public class WorkSubmissionController {
     @GetMapping("/work/list")
     public ResponseEntity<ApiResponse<Page<WorkSubmissionResponse>>> getWorkSubmissions(
             @RequestParam Integer workId,
-            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
-            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
+            @Valid @ModelAttribute PageRequest pageRequest) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
-            Page<WorkSubmissionResponse> submissions = workSubmissionService.getWorkSubmissions(workId, pageNum, pageSize);
+            Page<WorkSubmissionResponse> submissions = workSubmissionService.getWorkSubmissions(workId, pageRequest.getPageNum(), pageRequest.getPageSize());
             log.info("User ({}) queried work submissions, workId: {}, total: {}", userInfo, workId, submissions.getTotal());
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {

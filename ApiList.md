@@ -893,8 +893,8 @@ removedAttachmentIds: [1, 2]
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | classId | Integer | 是 | 班级 ID |
-| pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大100 |
+| pageNum | Integer | 否 | 页码，默认1，必须大于等于1 |
+| pageSize | Integer | 否 | 每页大小，默认20，必须在1-300之间 |
 
 **请求示例**:
 
@@ -964,7 +964,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 400,
-  "message": "您不是该班级成员",
+  "message": "每页大小必须在1-100之间",
   "data": null
 }
 ```
@@ -973,6 +973,8 @@ removedAttachmentIds: [1, 2]
 
 - "班级不存在"
 - "您不是该班级成员"
+- "每页大小必须在1-100之间" - pageSize 超出限制
+- "页码必须大于等于1" - pageNum 小于1
 
 ---
 
@@ -1214,8 +1216,9 @@ removedAttachmentIds: [1, 2]
 
 **注意**:
 
-- 管理员可查看所有班级的申请
-- 老师只能查看自己所在班级的申请
+- **管理员**: `classId` 为空时返回所有班级的申请，提供 `classId` 时只返回指定班级的申请
+- **老师/班级助理**: `classId` 为空时返回自己担任老师的所有班级的申请，提供 `classId` 时只返回该班级的申请（需验证是该班老师）
+- **学生**: 无权限访问此接口
 - 按创建时间倒序排列
 
 ---

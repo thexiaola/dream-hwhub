@@ -281,11 +281,10 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
 
         // 使用MyBatisPlus查询未交学生
-        // 1. 获取班级所有学生（使用分页接口，设置较大的pageSize以获取全部数据）
-        Page<ClassMemberResponse> allMembersPage =
-            classService.getClassMembers(workInfo.getClassId(), 1, 1000);
+        // 1. 获取班级所有学生（不分页）
+        List<ClassMemberResponse> allMembers = classService.getAllClassMembers(workInfo.getClassId());
         
-        java.util.Set<Integer> allStudentIds = allMembersPage.getRecords().stream()
+        java.util.Set<Integer> allStudentIds = allMembers.stream()
             .filter(m -> "STUDENT".equals(m.getRole()))
             .map(ClassMemberResponse::getUserId)
             .collect(Collectors.toSet());

@@ -765,11 +765,6 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize) {
-        // 默认分页参数
-        if (pageNum == null || pageNum < 1) pageNum = 1;
-        if (pageSize == null || pageSize < 1) pageSize = 20;
-        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
-
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId);
         
@@ -802,6 +797,36 @@ public class ClassServiceImpl implements ClassService {
         Page<ClassMemberResponse> page = new Page<>(pageNum, pageSize, pagedResult.getTotal());
         page.setRecords(responses);
         return page;
+    }
+
+    @Override
+    public List<ClassMemberResponse> getAllClassMembers(Integer classId) {
+        QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("class_id", classId);
+        
+        // 不分页，查询所有成员
+        List<ClassMember> members = classMemberMapper.selectList(queryWrapper);
+
+        return members.stream()
+                .map(member -> {
+                    User user = userMapper.selectById(member.getUserId());
+                    String userName = user != null ? user.getUsername() : "未知";
+                    String userNo = user != null ? user.getUserNo() : "未知";
+                    
+                    // 确定角色
+                    ClassInfo classInfo = classInfoMapper.selectById(classId);
+                    String role = getUserRole(classInfo, member);
+
+                    return new ClassMemberResponse(
+                            member.getId(),
+                            member.getUserId(),
+                            userName,
+                            userNo,
+                            role,
+                            member.getJoinTime()
+                    );
+                })
+                .toList();
     }
 
     @Override
@@ -864,11 +889,6 @@ public class ClassServiceImpl implements ClassService {
         if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看创建申请列表", null);
         }
-
-        // 默认分页参数
-        if (pageNum == null || pageNum < 1) pageNum = 1;
-        if (pageSize == null || pageSize < 1) pageSize = 20;
-        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
 
         QueryWrapper<ClassCreateApplication> queryWrapper = new QueryWrapper<>();
         
@@ -1001,11 +1021,6 @@ public class ClassServiceImpl implements ClassService {
         } else if (!isAdmin) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看所有加入申请", null);
         }
-
-        // 默认分页参数
-        if (pageNum == null || pageNum < 1) pageNum = 1;
-        if (pageSize == null || pageSize < 1) pageSize = 20;
-        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
 
         QueryWrapper<ClassJoinApplication> queryWrapper = new QueryWrapper<>();
         

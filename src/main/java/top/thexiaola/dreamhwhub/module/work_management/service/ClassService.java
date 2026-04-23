@@ -127,6 +127,11 @@ public interface ClassService {
     Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize);
 
     /**
+     * 获取班级所有成员列表（不分页）
+     */
+    List<ClassMemberResponse> getAllClassMembers(Integer classId);
+
+    /**
      * 更新成员角色
      */
     void updateMemberRole(Integer classId, Integer userId, Boolean isTeacher);

@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
@@ -119,13 +120,12 @@ public class WorkController {
     public ResponseEntity<ApiResponse<Page<WorkResponse>>> getWorkList(
             @RequestParam(required = false) String publisherUserNo,
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false, defaultValue = "1") Integer pageNum,
-            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
+            @Validated @ModelAttribute PageRequest pageRequest) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            Page<WorkResponse> works = workService.getWorkList(publisherUserNo, status, pageNum, pageSize);
+            Page<WorkResponse> works = workService.getWorkList(publisherUserNo, status, pageRequest.getPageNum(), pageRequest.getPageSize());
             log.info("User ({}) queried work list, total: {}", userInfo, works.getTotal());
             return ResponseEntity.ok(ApiResponse.success(works));
         } catch (BusinessException e) {
