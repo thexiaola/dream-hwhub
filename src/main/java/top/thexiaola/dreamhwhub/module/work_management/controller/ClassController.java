@@ -147,10 +147,13 @@ public class ClassController {
         if (currentUser == null) {
             return ApiResponse.error(401, "用户未登录");
         }
+        
         boolean isMember = classService.isClassMember(classId, currentUser.getId());
-        String role = classService.getUserRoleInClass(classId, currentUser.getId());
-        MemberCheckResponse response = new MemberCheckResponse(isMember, role);
-        log.info("User {} check result: isMember={}, role={}", userInfo, isMember, role);
+        Integer roleCode = classService.getUserRoleCodeInClass(classId, currentUser.getId());
+        String roleName = classService.getUserRoleNameInClass(classId, currentUser.getId());
+        
+        MemberCheckResponse response = new MemberCheckResponse(isMember, roleCode, roleName);
+        log.info("User {} check result: isMember={}, roleCode={}, roleName={}", userInfo, isMember, roleCode, roleName);
         return ApiResponse.success(response);
     }
 

@@ -91,6 +91,22 @@ public interface ClassService {
     String getUserRoleInClass(Integer classId, Integer userId);
 
     /**
+     * 获取用户在班级中的角色代码
+     * @param classId 班级 ID
+     * @param userId 用户 ID
+     * @return 角色代码：1-创建者，2-班级助理，3-学生，null-非成员
+     */
+    Integer getUserRoleCodeInClass(Integer classId, Integer userId);
+
+    /**
+     * 获取用户在班级中的角色名称
+     * @param classId 班级 ID
+     * @param userId 用户 ID
+     * @return 角色名称（创建者/班级助理/学生），如果不是成员则返回 null
+     */
+    String getUserRoleNameInClass(Integer classId, Integer userId);
+
+    /**
      * 获取班级信息
      */
     ClassInfo getClassById(Integer classId);

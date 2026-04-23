@@ -579,6 +579,38 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
+    public Integer getUserRoleCodeInClass(Integer classId, Integer userId) {
+        // 检查是否是成员
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).eq("user_id", userId);
+        ClassMember member = classMemberMapper.selectOne(memberQuery);
+        
+        if (member == null) {
+            return null;
+        }
+
+        // 获取班级信息
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        return getUserRoleCode(classInfo, member);
+    }
+
+    @Override
+    public String getUserRoleNameInClass(Integer classId, Integer userId) {
+        // 检查是否是成员
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).eq("user_id", userId);
+        ClassMember member = classMemberMapper.selectOne(memberQuery);
+        
+        if (member == null) {
+            return null;
+        }
+
+        // 获取班级信息
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        return getUserRole(classInfo, member);
+    }
+
+    @Override
     public ClassInfo getClassById(Integer classId) {
         return classInfoMapper.selectById(classId);
     }
@@ -708,6 +740,26 @@ public class ClassServiceImpl implements ClassService {
             return "班级助理";
         } else {
             return "学生";
+        }
+    }
+
+    /**
+     * 获取用户在班级中的角色代码
+     * @param classInfo 班级信息
+     * @param member 班级成员信息
+     * @return 角色代码：1-创建者，2-班级助理，3-学生，null-非成员
+     */
+    private Integer getUserRoleCode(ClassInfo classInfo, ClassMember member) {
+        if (classInfo == null || member == null) {
+            return null;
+        }
+        
+        if (classInfo.getOwnerId().equals(member.getUserId())) {
+            return 1;  // 创建者
+        } else if (member.getIsTeacher()) {
+            return 2;  // 班级助理
+        } else {
+            return 3;  // 学生
         }
     }
 

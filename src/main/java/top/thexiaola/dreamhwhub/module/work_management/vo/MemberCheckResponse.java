@@ -18,7 +18,12 @@ public class MemberCheckResponse {
     private boolean isMember;
 
     /**
-     * 角色（TEACHER 或 STUDENT），非成员时为 null
+     * 角色代码（用于前端权限判断）：1-创建者，2-班级助理，3-学生，null-非成员
      */
-    private String role;
+    private Integer roleCode;
+
+    /**
+     * 角色名称（用于展示）：创建者/班级助理/学生，非成员时为 null
+     */
+    private String roleName;
 }
