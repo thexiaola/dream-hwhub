@@ -770,15 +770,15 @@ removedAttachmentIds: [1, 2]
 | className | String | 班级名称 |
 | ownerId | Integer | 班级所有者 ID |
 | ownerName | String | 班级所有者姓名 |
-| userRole | String | 用户在该班级的角色(创建者/助理老师/学生) |
+| userRole | String | 用户在该班级的角色(创建者/班级助理/学生) |
 | memberCount | Long | 成员总数 |
 | teacherCount | Long | 教师数量 |
 | studentCount | Long | 学生数量 |
 
 **角色说明**:
 
-- `创建者`: 班级创建者，拥有最高权限（可解散班级、管理助理老师）
-- `助理老师`: 由创建者设置，拥有教师权限但不能解散班级或降级其他助理老师
+- `创建者`: 班级创建者，拥有最高权限（可解散班级、管理班级助理）
+- `班级助理`: 由创建者设置，拥有教师权限但不能解散班级或降级其他班级助理
 - `学生`: 普通学生
 
 **失败响应**:
@@ -836,7 +836,7 @@ removedAttachmentIds: [1, 2]
         "className": "软件工程2024级1班",
         "ownerId": 1003,
         "ownerName": "李四",
-        "userRole": "助理老师",
+        "userRole": "班级助理",
         "memberCount": 45,
         "teacherCount": 1,
         "studentCount": 44
@@ -866,7 +866,7 @@ removedAttachmentIds: [1, 2]
 | className | String | 班级名称 |
 | ownerId | Integer | 班级所有者 ID |
 | ownerName | String | 班级所有者姓名 |
-| userRole | String | 用户在该班级的角色(创建者/助理老师/学生) |
+| userRole | String | 用户在该班级的角色(创建者/班级助理/学生) |
 | memberCount | Long | 成员总数 |
 | teacherCount | Long | 教师数量 |
 | studentCount | Long | 学生数量 |
@@ -950,13 +950,13 @@ removedAttachmentIds: [1, 2]
 | userId | Integer | 用户 ID |
 | userName | String | 用户姓名 |
 | userNo | String | 学号/工号 |
-| role | String | 角色(创建者/助理老师/学生) |
+| role | String | 角色(创建者/班级助理/学生) |
 | joinTime | LocalDateTime | 加入时间 |
 
 **角色说明**:
 
 - `创建者`: 班级创建者
-- `助理老师`: 助理老师
+- `班级助理`: 班级助理
 - `学生`: 普通学生
 
 **失败响应**:
@@ -1004,12 +1004,12 @@ removedAttachmentIds: [1, 2]
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | isMember | Boolean | 是否是班级成员 |
-| role | String | 角色(创建者/助理老师/学生)，非成员时为 null |
+| role | String | 角色(创建者/班级助理/学生)，非成员时为 null |
 
 **角色说明**:
 
 - `创建者`: 班级创建者
-- `助理老师`: 助理老师
+- `班级助理`: 班级助理
 - `学生`: 普通学生
 
 **非成员响应**:
@@ -1270,7 +1270,7 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 2.13 设置学生为助理老师（老师专用）
+### 2.13 设置学生为班级助理（老师专用）
 
 **接口地址**: `PUT /api/class/set-assistant-teacher`
 
@@ -1310,7 +1310,7 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 2.14 将学生踢出班级（老师/助理老师专用）
+### 2.14 将学生踢出班级（老师/班级助理专用）
 
 **接口地址**: `DELETE /api/class/remove-student`
 
@@ -1358,7 +1358,7 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 2.15 取消助理老师权限（降级为学生，仅创建者可用）
+### 2.15 取消班级助理权限（降级为学生，仅创建者可用）
 
 **接口地址**: `PUT /api/class/demote-assistant-teacher`
 
@@ -1366,7 +1366,7 @@ removedAttachmentIds: [1, 2]
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | classId | Integer | 是 | 班级 ID |
-| teacherUserId | Integer | 是 | 助理老师用户 ID |
+| teacherUserId | Integer | 是 | 班级助理用户 ID |
 
 **请求示例**: `PUT /api/class/demote-assistant-teacher?classId=1&teacherUserId=1002`
 
@@ -1393,7 +1393,7 @@ removedAttachmentIds: [1, 2]
 **可能的错误信息**:
 
 - "只有班级创建者可以执行此操作"
-- "该用户不是助理老师"
+- "该用户不是班级助理"
 
 ---
 
@@ -1985,7 +1985,7 @@ removedAttachmentIds: [1, 2]
 
 - 只有班级创建者(OWNER)可以转让所有权
 - 新所有者必须是班级现有成员
-- 转让后原创建者自动降级为助理老师(ASSISTANT)
+- 转让后原创建者自动降级为班级助理(ASSISTANT)
 - 新所有者自动升级为老师并拥有OWNER权限
 - 不能转让给自己
 
@@ -2779,8 +2779,8 @@ attachments: [file1.pdf, file2.docx]
 
 #### 角色类型
 
-- `OWNER`: 班级创建者，拥有最高权限（可删除班级、管理助理老师）
-- `ASSISTANT`: 助理老师，由创建者设置，拥有教师权限但不能删除班级或降级其他助理老师
+- `OWNER`: 班级创建者，拥有最高权限（可删除班级、管理班级助理）
+- `ASSISTANT`: 班级助理，由创建者设置，拥有教师权限但不能删除班级或降级其他班级助理
 - `STUDENT`: 普通学生
 
 ### 时间格式

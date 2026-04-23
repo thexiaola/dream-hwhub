@@ -435,7 +435,7 @@ curl -X PUT "http://localhost:8080/api/class/transfer-ownership?classId=1&newOwn
 **注意**: 
 - 只有班级所有者可以转让所有权
 - 新所有者必须是班级成员
-- 原所有者自动降级为助理老师
+- 原所有者自动降级为班级助理
 
 ### 分页查询功能
 
