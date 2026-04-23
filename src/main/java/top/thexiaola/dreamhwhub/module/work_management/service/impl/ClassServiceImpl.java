@@ -15,7 +15,9 @@ import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.CreateClassApplicationResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.JoinClassApplicationResponse;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.time.LocalDateTime;
@@ -781,7 +783,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassCreateApplication submitCreateClassRequest(String className, String description) {
+    public CreateClassApplicationResponse submitCreateClassRequest(String className, String description) {
         User currentUser = getCurrentUserOrThrow();
 
         // 创建申请记录
@@ -794,7 +796,16 @@ public class ClassServiceImpl implements ClassService {
         classCreateApplicationMapper.insert(application);
 
         log.info("User {} submitted create class request: {}", currentUser.getId(), className);
-        return application;
+        
+        // 构建响应对象
+        return new CreateClassApplicationResponse(
+                application.getId(),
+                application.getApplicantId(),
+                application.getClassName(),
+                application.getDescription(),
+                application.getStatus(),
+                application.getCreateTime()
+        );
     }
 
     @Override
@@ -881,7 +892,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassJoinApplication submitJoinClassRequest(Integer classId) {
+    public JoinClassApplicationResponse submitJoinClassRequest(Integer classId) {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
@@ -916,7 +927,15 @@ public class ClassServiceImpl implements ClassService {
 
         log.info("User {} submitted join class request: classId={}", 
                 currentUser.getId(), classId);
-        return application;
+        
+        // 构建响应对象
+        return new JoinClassApplicationResponse(
+                application.getId(),
+                application.getClassId(),
+                application.getApplicantId(),
+                application.getStatus(),
+                application.getCreateTime()
+        );
     }
 
     @Override

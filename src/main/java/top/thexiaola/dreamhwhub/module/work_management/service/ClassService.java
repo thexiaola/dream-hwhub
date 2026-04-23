@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.CreateClassApplicationResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.JoinClassApplicationResponse;
 
 import java.util.List;
 
@@ -119,8 +121,9 @@ public interface ClassService {
 
     /**
      * 提交创建班级申请
+     * @return 创建申请响应对象
      */
-    ClassCreateApplication submitCreateClassRequest(String className, String description);
+    CreateClassApplicationResponse submitCreateClassRequest(String className, String description);
 
     /**
      * 获取创建班级申请列表（管理员专用，分页）
@@ -138,8 +141,9 @@ public interface ClassService {
 
     /**
      * 提交加入班级申请
+     * @return 加入申请响应对象
      */
-    ClassJoinApplication submitJoinClassRequest(Integer classId);
+    JoinClassApplicationResponse submitJoinClassRequest(Integer classId);
 
     /**
      * 获取加入班级申请列表（老师和管理员专用，分页）

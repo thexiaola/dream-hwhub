@@ -40,17 +40,9 @@ public class ClassController {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to create class: {}", userInfo, request.getClassName());
-        ClassCreateApplication application = classService.submitCreateClassRequest(
+        CreateClassApplicationResponse response = classService.submitCreateClassRequest(
                 request.getClassName(), request.getDescription());
-        CreateClassApplicationResponse response = new CreateClassApplicationResponse(
-                application.getId(),
-                application.getApplicantId(),
-                application.getClassName(),
-                application.getDescription(),
-                application.getStatus(),
-                application.getCreateTime()
-        );
-        log.info("User {} submitted create class application, id: {}", userInfo, application.getId());
+        log.info("User {} submitted create class application, id: {}", userInfo, response.getId());
         return ApiResponse.success(response, "创建班级的申请已提交，待审核");
     }
 
@@ -63,14 +55,7 @@ public class ClassController {
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to join class by ID: {}", userInfo, request.getClassId());
         int classId = Integer.parseInt(request.getClassId());
-        ClassJoinApplication application = classService.submitJoinClassRequest(classId);
-        JoinClassApplicationResponse response = new JoinClassApplicationResponse(
-                application.getId(),
-                application.getClassId(),
-                application.getApplicantId(),
-                application.getStatus(),
-                application.getCreateTime()
-        );
+        JoinClassApplicationResponse response = classService.submitJoinClassRequest(classId);
         log.info("User {} submitted join class application, role: STUDENT", userInfo);
         return ApiResponse.success(response, "加入班级的申请已提交，待审核");
     }
