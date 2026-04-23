@@ -223,11 +223,6 @@ public class WorkServiceImpl implements WorkService {
 
     @Override
     public Page<WorkResponse> getWorkList(String publisherUserNo, Integer status, Integer pageNum, Integer pageSize) {
-        // 默认分页参数
-        if (pageNum == null || pageNum < 1) pageNum = 1;
-        if (pageSize == null || pageSize < 1) pageSize = 20;
-        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
-
         User currentUser = UserUtils.getCurrentUser();
         QueryWrapper<WorkInfo> queryWrapper = new QueryWrapper<>();
         

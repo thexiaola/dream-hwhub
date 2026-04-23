@@ -492,7 +492,7 @@ curl -X GET "http://localhost:8080/api/work/submissions?workId=1&pageNum=1&pageS
 
 **分页参数说明**:
 - `pageNum`: 页码，从1开始，默认1
-- `pageSize`: 每页大小，默认10或20（根据接口不同），最大100
+- `pageSize`: 每页大小，默认20，最大300
 - `total`: 总记录数
 - `pages`: 总页数
 

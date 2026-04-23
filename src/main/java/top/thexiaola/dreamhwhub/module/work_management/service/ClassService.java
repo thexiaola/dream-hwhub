@@ -146,7 +146,7 @@ public interface ClassService {
      * 获取创建班级申请列表（管理员专用，分页）
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
      * @param pageNum 页码，默认1
-     * @param pageSize 每页大小，默认20，最大100
+     * @param pageSize 每页大小
      * @return 按创建时间倒序排列的申请分页结果
      */
     Page<ClassCreateApplication> getCreateApplications(Integer status, Integer pageNum, Integer pageSize);
@@ -167,7 +167,7 @@ public interface ClassService {
      * @param classId 班级 ID 筛选，可选
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
      * @param pageNum 页码，默认1
-     * @param pageSize 每页大小，默认20，最大100
+     * @param pageSize 每页大小
      * @return 按创建时间倒序排列的申请分页结果
      */
     Page<ClassJoinApplication> getJoinApplications(Integer classId, Integer status, Integer pageNum, Integer pageSize);

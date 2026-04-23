@@ -394,7 +394,7 @@ removedAttachmentIds: [1, 2]
 | publisherUserNo | String | 否 | 发布人学号/工号筛选 |
 | status | Integer | 否 | 作业状态筛选（0-未发布，1-已发布，2-已结束） |
 | pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大100 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
 
 **请求示例**:
 
@@ -806,7 +806,7 @@ removedAttachmentIds: [1, 2]
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认10，最大100 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
 
 **请求示例**:
 
@@ -964,7 +964,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 400,
-  "message": "每页大小必须在1-100之间",
+  "message": "每页大小不能超过300",
   "data": null
 }
 ```
@@ -973,7 +973,7 @@ removedAttachmentIds: [1, 2]
 
 - "班级不存在"
 - "您不是该班级成员"
-- "每页大小必须在1-100之间" - pageSize 超出限制
+- "每页大小不能超过300" - pageSize 超出限制
 - "页码必须大于等于1" - pageNum 小于1
 
 ---
@@ -1057,11 +1057,14 @@ removedAttachmentIds: [1, 2]
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | status | Integer | 否 | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
 
 **请求示例**:
 
 - `GET /api/class/applications/create/list`
 - `GET /api/class/applications/create/list?status=0`
+- `GET /api/class/applications/create/list?pageNum=1&pageSize=20`
 
 **成功响应 (200)**:
 
@@ -1069,7 +1072,8 @@ removedAttachmentIds: [1, 2]
 {
   "code": 200,
   "message": "查询创建申请列表成功",
-  "data": [
+  "data": {
+    "records": [
     {
       "id": 1,
       "applicantId": 1001,
@@ -1082,11 +1086,25 @@ removedAttachmentIds: [1, 2]
       "createdClassId": null,
       "createTime": "2026-04-09T10:00:00"
     }
-  ]
+    ],
+    "total": 1,
+    "size": 20,
+    "current": 1,
+    "pages": 1
+  }
 }
 ```
 
 **响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| records | Array | 申请列表数据 |
+| total | Long | 总记录数 |
+| size | Long | 每页大小 |
+| current | Long | 当前页码 |
+| pages | Long | 总页数 |
+
+**records内部字段说明**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Integer | 申请 ID |
@@ -1175,11 +1193,14 @@ removedAttachmentIds: [1, 2]
 |------|------|------|------|
 | classId | Integer | 否 | 班级 ID 筛选 |
 | status | Integer | 否 | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
 
 **请求示例**:
 
 - `GET /api/class/applications/join/list`
 - `GET /api/class/applications/join/list?classId=1&status=0`
+- `GET /api/class/applications/join/list?pageNum=1&pageSize=20`
 
 **成功响应 (200)**:
 
@@ -1187,7 +1208,8 @@ removedAttachmentIds: [1, 2]
 {
   "code": 200,
   "message": "查询加入申请列表成功",
-  "data": [
+  "data": {
+    "records": [
     {
       "id": 2,
       "classId": 1,
@@ -1198,11 +1220,25 @@ removedAttachmentIds: [1, 2]
       "reviewComment": null,
       "createTime": "2026-04-09T10:00:00"
     }
-  ]
+    ],
+    "total": 1,
+    "size": 20,
+    "current": 1,
+    "pages": 1
+  }
 }
 ```
 
 **响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| records | Array | 申请列表数据 |
+| total | Long | 总记录数 |
+| size | Long | 每页大小 |
+| current | Long | 当前页码 |
+| pages | Long | 总页数 |
+
+**records内部字段说明**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Integer | 申请 ID |
@@ -2421,7 +2457,7 @@ attachments: [file1.pdf, file2.docx]
 |------|------|------|------|
 | workId | Integer | 是 | 作业 ID |
 | pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大100 |
+| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
 
 **请求示例**: `GET /api/submissions/work/list?workId=1&pageNum=1&pageSize=20`
 

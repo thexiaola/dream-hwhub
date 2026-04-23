@@ -320,11 +320,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     public Page<WorkSubmissionResponse> getWorkSubmissions(Integer workId, Integer pageNum, Integer pageSize) {
-        // 默认分页参数
-        if (pageNum == null || pageNum < 1) pageNum = 1;
-        if (pageSize == null || pageSize < 1) pageSize = 20;
-        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
-
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {

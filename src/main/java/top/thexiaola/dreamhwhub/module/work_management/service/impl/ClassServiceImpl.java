@@ -664,11 +664,6 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize) {
-        // 默认分页参数
-        if (pageNum == null || pageNum < 1) pageNum = 1;
-        if (pageSize == null || pageSize < 1) pageSize = 10;
-        if (pageSize > 100) pageSize = 100;  // 限制最大每页数量
-
         // 第一步：使用MyBatisPlus分页查询用户的班级成员关系
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("user_id", userId);
