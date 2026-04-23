@@ -17,7 +17,7 @@ public interface ClassService {
     ClassMember addTeacherToClass(Integer classId, String userAccount);
 
     /**
-     * 设置学生为助理老师（老师专用）
+     * 设置学生为班级助理（老师专用）
      */
     void setStudentAsAssistantTeacher(Integer classId, Integer studentUserId);
 
@@ -27,12 +27,12 @@ public interface ClassService {
     boolean isOrdinaryTeacher(Integer classId, Integer userId);
 
     /**
-     * 将学生踢出班级（老师/助理老师专用）
+     * 将学生踢出班级（老师/班级助理专用）
      */
     void removeStudentFromClass(Integer classId, Integer studentUserId);
 
     /**
-     * 取消助理老师权限（降级为学生，仅创建者可用）
+     * 取消班级助理权限（降级为学生，仅创建者可用）
      */
     void demoteAssistantTeacher(Integer classId, Integer teacherUserId);
 
@@ -86,7 +86,7 @@ public interface ClassService {
      * 获取用户在班级中的角色
      * @param classId 班级 ID
      * @param userId 用户 ID
-     * @return 角色字符串（创建者/助理老师/学生），如果不是成员则返回 null
+     * @return 角色字符串（创建者/班级助理/学生），如果不是成员则返回 null
      */
     String getUserRoleInClass(Integer classId, Integer userId);
 

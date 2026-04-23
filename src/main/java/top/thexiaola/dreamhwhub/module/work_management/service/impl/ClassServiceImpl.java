@@ -149,18 +149,18 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否是老师（包括创建者和助理老师）
+        // 检查当前用户是否是老师（包括创建者和班级助理）
         boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以设置助理老师", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以设置班级助理", null);
         }
 
-        // 助理老师不能设置其他学生为助理老师
+        // 班级助理不能设置其他学生为班级助理
         boolean isOrdinaryTeacher = isOrdinaryTeacher(classId, currentUser.getId());
         if (isOrdinaryTeacher && !isAdmin) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "助理老师不能设置其他学生为助理老师", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "班级助理不能设置其他学生为班级助理", null);
         }
 
         // 检查目标用户是否是学生
@@ -191,7 +191,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否是老师（包括创建者和助理老师）或管理员
+        // 检查当前用户是否是老师（包括创建者和班级助理）或管理员
         boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
@@ -204,7 +204,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能移除自己，请使用退出班级功能", null);
         }
 
-        // 不能移除其他老师（包括创建者和助理老师）
+        // 不能移除其他老师（包括创建者和班级助理）
         QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
         teacherQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("is_teacher", true);
         if (classMemberMapper.selectCount(teacherQuery) > 0) {
@@ -246,7 +246,7 @@ public class ClassServiceImpl implements ClassService {
         boolean isCreator = classInfo.getOwnerId().equals(currentUser.getId());
         
         if (!isAdmin && !isCreator) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级创建者或管理员可以取消助理老师权限", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级创建者或管理员可以取消班级助理权限", null);
         }
 
         // 不能操作自己
@@ -254,7 +254,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能操作自己", null);
         }
 
-        // 检查目标用户是否是老师（包括助理老师）
+        // 检查目标用户是否是老师（包括班级助理）
         QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
         teacherQuery.eq("class_id", classId).eq("user_id", teacherUserId).eq("is_teacher", true);
         ClassMember teacherMember = classMemberMapper.selectOne(teacherQuery);
@@ -263,7 +263,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "该用户不是班级老师或不在该班级中", null);
         }
 
-        // 不能取消创建者的权限（虽然创建者不会是助理老师，但为了安全还是检查一下）
+        // 不能取消创建者的权限（虽然创建者不会是班级助理，但为了安全还是检查一下）
         if (classInfo.getOwnerId().equals(teacherUserId)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能取消创建者的权限", null);
         }
@@ -695,7 +695,7 @@ public class ClassServiceImpl implements ClassService {
      * 获取用户在班级中的角色
      * @param classInfo 班级信息
      * @param member 班级成员信息
-     * @return 角色字符串（创建者/助理老师/学生）
+     * @return 角色字符串（创建者/班级助理/学生）
      */
     private String getUserRole(ClassInfo classInfo, ClassMember member) {
         if (classInfo == null || member == null) {
@@ -705,7 +705,7 @@ public class ClassServiceImpl implements ClassService {
         if (classInfo.getOwnerId().equals(member.getUserId())) {
             return "创建者";
         } else if (member.getIsTeacher()) {
-            return "助理老师";
+            return "班级助理";
         } else {
             return "学生";
         }
@@ -1293,7 +1293,7 @@ public class ClassServiceImpl implements ClassService {
         newOwnerMember.setIsTeacher(true);
         classMemberMapper.updateById(newOwnerMember);
 
-        // 将原所有者降级为助理老师（保留在班级中）
+        // 将原所有者降级为班级助理（保留在班级中）
         QueryWrapper<ClassMember> oldOwnerQuery = new QueryWrapper<>();
         oldOwnerQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
         ClassMember oldOwnerMember = classMemberMapper.selectOne(oldOwnerQuery);

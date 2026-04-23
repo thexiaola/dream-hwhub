@@ -229,7 +229,7 @@ public class ClassController {
     }
 
     /**
-     * 设置学生为助理老师（老师专用）
+     * 设置学生为班级助理（老师专用）
      */
     @PutMapping("/set-assistant-teacher")
     public ApiResponse<Void> setAssistantTeacher(@RequestParam Integer classId,
@@ -244,7 +244,7 @@ public class ClassController {
     }
 
     /**
-     * 将学生踢出班级（老师/助理老师专用）
+     * 将学生踢出班级（老师/班级助理专用）
      */
     @DeleteMapping("/remove-student")
     public ApiResponse<Void> removeStudent(@RequestParam Integer classId,
@@ -260,7 +260,7 @@ public class ClassController {
     }
 
     /**
-     * 取消助理老师权限（降级为学生，仅创建者可用）
+     * 取消班级助理权限（降级为学生，仅创建者可用）
      */
     @PutMapping("/demote-assistant-teacher")
     public ApiResponse<Void> demoteAssistantTeacher(@RequestParam Integer classId,
