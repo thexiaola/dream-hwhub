@@ -565,6 +565,22 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
+    public String getUserRoleInClass(Integer classId, Integer userId) {
+        // 检查是否是成员
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).eq("user_id", userId);
+        ClassMember member = classMemberMapper.selectOne(memberQuery);
+        
+        if (member == null) {
+            return null;
+        }
+
+        // 获取班级信息
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        return getUserRole(classInfo, member);
+    }
+
+    @Override
     public ClassInfo getClassById(Integer classId) {
         return classInfoMapper.selectById(classId);
     }
@@ -601,16 +617,7 @@ public class ClassServiceImpl implements ClassService {
             QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
             memberQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
             ClassMember member = classMemberMapper.selectOne(memberQuery);
-            if (member != null && member.getIsTeacher() != null) {
-                // 区分创建者和助理老师
-                if (classInfo.getOwnerId().equals(currentUser.getId())) {
-                    userRole = "OWNER";
-                } else if (member.getIsTeacher()) {
-                    userRole = "ASSISTANT";
-                } else {
-                    userRole = "STUDENT";
-                }
-            }
+            userRole = getUserRole(classInfo, member);
         }
 
         return new ClassDetailResponse(
@@ -664,14 +671,7 @@ public class ClassServiceImpl implements ClassService {
                     long studentCount = classMemberMapper.selectCount(studentQuery);
 
                     // 确定用户角色
-                    String role;
-                    if (classInfo.getOwnerId().equals(member.getUserId())) {
-                        role = "OWNER";
-                    } else if (member.getIsTeacher()) {
-                        role = "ASSISTANT";
-                    } else {
-                        role = "STUDENT";
-                    }
+                    String role = getUserRole(classInfo, member);
 
                     return new ClassDetailResponse(
                             classInfo.getId(),
@@ -691,6 +691,26 @@ public class ClassServiceImpl implements ClassService {
         Page<ClassDetailResponse> page = new Page<>(pageNum, pageSize, pagedMembers.getTotal());
         page.setRecords(responses);
         return page;
+    }
+
+    /**
+     * 获取用户在班级中的角色
+     * @param classInfo 班级信息
+     * @param member 班级成员信息
+     * @return 角色字符串（创建者/助理老师/学生）
+     */
+    private String getUserRole(ClassInfo classInfo, ClassMember member) {
+        if (classInfo == null || member == null) {
+            return null;
+        }
+        
+        if (classInfo.getOwnerId().equals(member.getUserId())) {
+            return "创建者";
+        } else if (member.getIsTeacher()) {
+            return "助理老师";
+        } else {
+            return "学生";
+        }
     }
 
     @Override
@@ -715,14 +735,7 @@ public class ClassServiceImpl implements ClassService {
                     
                     // 确定角色
                     ClassInfo classInfo = classInfoMapper.selectById(classId);
-                    String role;
-                    if (classInfo != null && classInfo.getOwnerId().equals(member.getUserId())) {
-                        role = "OWNER";
-                    } else if (member.getIsTeacher()) {
-                        role = "ASSISTANT";
-                    } else {
-                        role = "STUDENT";
-                    }
+                    String role = getUserRole(classInfo, member);
 
                     return new ClassMemberResponse(
                             member.getId(),

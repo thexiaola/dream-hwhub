@@ -160,18 +160,7 @@ public class ClassController {
             return ApiResponse.error(401, "用户未登录");
         }
         boolean isMember = classService.isClassMember(classId, currentUser.getId());
-        String role = null;
-        if (isMember) {
-            // 获取班级信息以确定是否是创建者
-            ClassInfo classInfo = classService.getClassById(classId);
-            if (classInfo != null && classInfo.getOwnerId().equals(currentUser.getId())) {
-                role = "OWNER";
-            } else if (classService.isTeacher(classId, currentUser.getId())) {
-                role = "ASSISTANT";
-            } else {
-                role = "STUDENT";
-            }
-        }
+        String role = classService.getUserRoleInClass(classId, currentUser.getId());
         MemberCheckResponse response = new MemberCheckResponse(isMember, role);
         log.info("User {} check result: isMember={}, role={}", userInfo, isMember, role);
         return ApiResponse.success(response);

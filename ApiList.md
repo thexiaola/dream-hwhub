@@ -755,7 +755,7 @@ removedAttachmentIds: [1, 2]
     "className": "计算机科学2024级1班",
     "ownerId": 1001,
     "ownerName": "张三",
-    "userRole": "TEACHER",
+    "userRole": "创建者",
     "memberCount": 50,
     "teacherCount": 2,
     "studentCount": 48
@@ -770,16 +770,16 @@ removedAttachmentIds: [1, 2]
 | className | String | 班级名称 |
 | ownerId | Integer | 班级所有者 ID |
 | ownerName | String | 班级所有者姓名 |
-| userRole | String | 用户在该班级的角色(OWNER/ASSISTANT/STUDENT) |
+| userRole | String | 用户在该班级的角色(创建者/助理老师/学生) |
 | memberCount | Long | 成员总数 |
 | teacherCount | Long | 教师数量 |
 | studentCount | Long | 学生数量 |
 
 **角色说明**:
 
-- `OWNER`: 班级创建者，拥有最高权限（可解散班级、管理助理老师）
-- `ASSISTANT`: 助理老师，由创建者设置，拥有教师权限但不能解散班级或降级其他助理老师
-- `STUDENT`: 普通学生
+- `创建者`: 班级创建者，拥有最高权限（可解散班级、管理助理老师）
+- `助理老师`: 由创建者设置，拥有教师权限但不能解散班级或降级其他助理老师
+- `学生`: 普通学生
 
 **失败响应**:
 
@@ -826,7 +826,7 @@ removedAttachmentIds: [1, 2]
         "className": "计算机科学2024级1班",
         "ownerId": 1001,
         "ownerName": "张三",
-        "userRole": "STUDENT",
+        "userRole": "学生",
         "memberCount": 50,
         "teacherCount": 2,
         "studentCount": 48
@@ -836,7 +836,7 @@ removedAttachmentIds: [1, 2]
         "className": "软件工程2024级1班",
         "ownerId": 1003,
         "ownerName": "李四",
-        "userRole": "TEACHER",
+        "userRole": "助理老师",
         "memberCount": 45,
         "teacherCount": 1,
         "studentCount": 44
@@ -866,7 +866,7 @@ removedAttachmentIds: [1, 2]
 | className | String | 班级名称 |
 | ownerId | Integer | 班级所有者 ID |
 | ownerName | String | 班级所有者姓名 |
-| userRole | String | 用户在该班级的角色(OWNER/ASSISTANT/STUDENT) |
+| userRole | String | 用户在该班级的角色(创建者/助理老师/学生) |
 | memberCount | Long | 成员总数 |
 | teacherCount | Long | 教师数量 |
 | studentCount | Long | 学生数量 |
@@ -914,7 +914,7 @@ removedAttachmentIds: [1, 2]
         "userId": 1001,
         "userName": "张三",
         "userNo": "2021001",
-        "role": "OWNER",
+        "role": "创建者",
         "joinTime": "2026-04-01T10:00:00"
       },
       {
@@ -922,7 +922,7 @@ removedAttachmentIds: [1, 2]
         "userId": 1002,
         "userName": "王五",
         "userNo": "2024001",
-        "role": "STUDENT",
+        "role": "学生",
         "joinTime": "2026-04-02T10:00:00"
       }
     ],
@@ -950,14 +950,14 @@ removedAttachmentIds: [1, 2]
 | userId | Integer | 用户 ID |
 | userName | String | 用户姓名 |
 | userNo | String | 学号/工号 |
-| role | String | 角色(OWNER/ASSISTANT/STUDENT) |
+| role | String | 角色(创建者/助理老师/学生) |
 | joinTime | LocalDateTime | 加入时间 |
 
 **角色说明**:
 
-- `OWNER`: 班级创建者
-- `ASSISTANT`: 助理老师
-- `STUDENT`: 普通学生
+- `创建者`: 班级创建者
+- `助理老师`: 助理老师
+- `学生`: 普通学生
 
 **失败响应**:
 
@@ -995,7 +995,7 @@ removedAttachmentIds: [1, 2]
   "message": "success",
   "data": {
     "isMember": true,
-    "role": "TEACHER"
+    "role": "创建者"
   }
 }
 ```
@@ -1004,13 +1004,13 @@ removedAttachmentIds: [1, 2]
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | isMember | Boolean | 是否是班级成员 |
-| role | String | 角色(OWNER/ASSISTANT/STUDENT)，非成员时为 null |
+| role | String | 角色(创建者/助理老师/学生)，非成员时为 null |
 
 **角色说明**:
 
-- `OWNER`: 班级创建者
-- `ASSISTANT`: 助理老师
-- `STUDENT`: 普通学生
+- `创建者`: 班级创建者
+- `助理老师`: 助理老师
+- `学生`: 普通学生
 
 **非成员响应**:
 

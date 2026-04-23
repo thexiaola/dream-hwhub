@@ -85,6 +85,14 @@ public interface ClassService {
     boolean isClassMember(Integer classId, Integer userId);
 
     /**
+     * 获取用户在班级中的角色
+     * @param classId 班级 ID
+     * @param userId 用户 ID
+     * @return 角色字符串（创建者/助理老师/学生），如果不是成员则返回 null
+     */
+    String getUserRoleInClass(Integer classId, Integer userId);
+
+    /**
      * 获取班级信息
      */
     ClassInfo getClassById(Integer classId);
