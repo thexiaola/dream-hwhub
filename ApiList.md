@@ -35,7 +35,7 @@
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {}
 }
 ```
@@ -105,7 +105,7 @@ attachments: [file1.pdf, file2.doc]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "title": "作业标题",
@@ -216,7 +216,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "title": "更新后的作业标题",
@@ -289,7 +289,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -338,7 +338,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "title": "作业标题",
@@ -407,7 +407,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "records": [
       {
@@ -697,7 +697,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -749,7 +749,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "className": "计算机科学2024级1班",
@@ -818,7 +818,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "records": [
       {
@@ -906,7 +906,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "records": [
       {
@@ -992,7 +992,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "isMember": true,
     "role": "创建者"
@@ -1017,7 +1017,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "isMember": false,
     "role": null
@@ -1126,7 +1126,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -1241,7 +1241,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -1287,7 +1287,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -1327,7 +1327,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -1375,7 +1375,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -1414,7 +1414,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "classId": 1,
@@ -1499,7 +1499,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -1550,7 +1550,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": [
     {
       "id": 1,
@@ -1725,7 +1725,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": [
     {
       "id": 1,
@@ -1808,7 +1808,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -1905,7 +1905,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "classId": 1,
@@ -2045,7 +2045,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "workId": 1,
@@ -2131,7 +2131,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "workId": 1,
@@ -2208,7 +2208,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": null
 }
 ```
@@ -2253,7 +2253,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "workId": 1,
@@ -2332,7 +2332,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": [
     {
       "id": 1,
@@ -2417,7 +2417,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "records": [
       {
@@ -2520,7 +2520,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": [
     {
       "id": 1,
@@ -2599,7 +2599,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": [
     {
       "id": 1003,
@@ -2682,7 +2682,7 @@ attachments: [file1.pdf, file2.docx]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "成功",
   "data": {
     "id": 1,
     "workId": 1,
