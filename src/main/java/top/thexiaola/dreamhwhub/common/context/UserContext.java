@@ -1,6 +1,6 @@
 package top.thexiaola.dreamhwhub.common.context;
 
-import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 /**
  * 用户上下文

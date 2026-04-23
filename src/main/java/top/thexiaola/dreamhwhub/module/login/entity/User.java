@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.module.login.domain;
+package top.thexiaola.dreamhwhub.module.login.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

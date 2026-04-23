@@ -2,7 +2,7 @@ package top.thexiaola.dreamhwhub.support.session;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 
 /**

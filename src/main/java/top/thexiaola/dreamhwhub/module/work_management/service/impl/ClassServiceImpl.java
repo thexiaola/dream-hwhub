@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
-import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
-import top.thexiaola.dreamhwhub.module.work_management.domain.*;
+import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
@@ -1293,9 +1293,9 @@ public class ClassServiceImpl implements ClassService {
      */
     private void hardDeleteAllSubmissionsInClass(Integer classId) {
         // 1. 查询该班级下所有作业的 ID
-        QueryWrapper<top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo> workQuery = new QueryWrapper<>();
+        QueryWrapper<WorkInfo> workQuery = new QueryWrapper<>();
         workQuery.eq("class_id", classId);
-        List<top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo> works = workMapper.selectList(workQuery);
+        List<WorkInfo> works = workMapper.selectList(workQuery);
         
         if (works.isEmpty()) {
             log.info("No works found in class {}", classId);
@@ -1303,7 +1303,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         List<Integer> workIds = works.stream()
-                .map(top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo::getId)
+                .map(WorkInfo::getId)
                 .toList();
 
         // 2. 查询所有提交记录

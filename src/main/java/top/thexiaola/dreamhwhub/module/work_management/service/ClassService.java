@@ -1,7 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.thexiaola.dreamhwhub.module.work_management.domain.*;
+import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;

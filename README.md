@@ -552,7 +552,7 @@ spring.mail.properties.mail.from.nickname=发信人昵称  # 发件人显示名�
 │   │   │   │   │   │   ├── RegisterController.java
 │   │   │   │   │   │   ├── ModifyUserController.java
 │   │   │   │   │   │   └── RetrieveUserController.java
-│   │   │   │   │   ├── domain/                  # 实体类
+│   │   │   │   │   ├── entity/                  # 实体类
 │   │   │   │   │   │   └── User.java
 │   │   │   │   │   ├── dto/                     # 数据传输对象
 │   │   │   │   │   │   ├── LoginRequest.java
@@ -572,7 +572,7 @@ spring.mail.properties.mail.from.nickname=发信人昵称  # 发件人显示名�
 │   │   │   │       │   ├── ClassController.java
 │   │   │   │       │   ├── WorkController.java
 │   │   │   │       │   └── WorkSubmissionController.java
-│   │   │   │       ├── domain/                  # 实体类
+│   │   │   │       ├── entity/                  # 实体类
 │   │   │   │       │   ├── ClassInfo.java
 │   │   │   │       │   ├── ClassMember.java
 │   │   │   │       │   ├── WorkInfo.java

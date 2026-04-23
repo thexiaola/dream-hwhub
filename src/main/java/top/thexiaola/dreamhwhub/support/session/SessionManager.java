@@ -3,7 +3,7 @@ package top.thexiaola.dreamhwhub.support.session;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

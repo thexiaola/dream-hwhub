@@ -2,7 +2,7 @@ package top.thexiaola.dreamhwhub.module.work_management.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import top.thexiaola.dreamhwhub.module.work_management.domain.WorkSubmission;
+import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 
 /**
  * 作业提交 Mapper 接口

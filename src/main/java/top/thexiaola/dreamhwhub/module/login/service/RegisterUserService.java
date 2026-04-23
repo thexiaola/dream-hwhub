@@ -1,6 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.service;
 
-import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
 
 /**

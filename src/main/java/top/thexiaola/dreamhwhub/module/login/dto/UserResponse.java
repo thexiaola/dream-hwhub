@@ -3,7 +3,7 @@ package top.thexiaola.dreamhwhub.module.login.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
-import top.thexiaola.dreamhwhub.module.login.domain.User;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 import java.time.LocalDateTime;
 

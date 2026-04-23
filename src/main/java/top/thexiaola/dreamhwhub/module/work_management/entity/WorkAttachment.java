@@ -1,4 +1,4 @@
-package top.thexiaola.dreamhwhub.module.work_management.domain;
+package top.thexiaola.dreamhwhub.module.work_management.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -11,26 +11,26 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 作业提交附件实体类
+ * 作业附件实体类
  */
 @Data
-@TableName("work_submission_attachment")
-public class WorkSubmissionAttachment implements Serializable {
+@TableName("work_attachment")
+public class WorkAttachment implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     /**
-     * 提交附件 ID
+     * 附件 ID
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
-     * 提交 ID
+     * 作业 ID
      */
-    @TableField("submission_id")
-    private Integer submissionId;
+    @TableField("work_id")
+    private Integer workId;
 
     /**
      * 文件名称
@@ -61,10 +61,4 @@ public class WorkSubmissionAttachment implements Serializable {
      */
     @TableField("upload_time")
     private LocalDateTime uploadTime;
-
-    /**
-     * 是否删除：true-已删除（软删除），false-未删除
-     */
-    @TableField("is_deleted")
-    private Boolean isDeleted = false;
 }
