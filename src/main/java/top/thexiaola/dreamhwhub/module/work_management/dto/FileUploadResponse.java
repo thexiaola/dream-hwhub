@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * 文件上传响应
  */
@@ -35,5 +37,5 @@ public class FileUploadResponse {
     /**
      * 上传时间
      */
-    private java.time.LocalDateTime uploadTime;
+    private LocalDateTime uploadTime;
 }

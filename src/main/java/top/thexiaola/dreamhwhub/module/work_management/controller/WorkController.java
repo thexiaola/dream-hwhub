@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
@@ -33,53 +34,11 @@ public class WorkController {
      * 创建作业
      */
     @PostMapping(value = "/create", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<WorkInfo>> createWork(
-            @RequestParam("title") String title,
-            @RequestParam("description") String description,
-            @RequestParam("deadline") String deadline,
-            @RequestParam("totalScore") Integer totalScore,
-            @RequestParam(value = "allowLateSubmit", required = false, defaultValue = "true") Boolean allowLateSubmit,
-            @RequestParam("classId") String classId,
-            @RequestParam("publishTime") String publishTime,
-            @RequestParam(value = "attachments", required = false) java.util.List<org.springframework.web.multipart.MultipartFile> attachments) {
+    public ResponseEntity<ApiResponse<WorkInfo>> createWork(@Validated CreateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
-            // 参数验证
-            if (title == null || title.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业标题不能为空"));
-            }
-            if (description == null || description.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业描述不能为空"));
-            }
-            if (deadline == null || deadline.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "截止时间不能为空"));
-            }
-            if (totalScore == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业总分不能为空"));
-            }
-            if (classId == null || classId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "所属班级 ID 不能为空"));
-            }
-            if (!classId.matches("^[0-9]+$")) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "班级 ID 必须是数字"));
-            }
-            if (publishTime == null || publishTime.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "发布时间不能为空"));
-            }
-            
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
-            // 构建请求对象
-            CreateWorkRequest request = new CreateWorkRequest();
-            request.setTitle(title);
-            request.setDescription(description);
-            request.setDeadline(java.time.LocalDateTime.parse(deadline));
-            request.setTotalScore(totalScore);
-            request.setAllowLateSubmit(allowLateSubmit);
-            request.setClassId(classId);
-            request.setPublishTime(java.time.LocalDateTime.parse(publishTime));
-            request.setAttachments(attachments);
             
             WorkInfo workInfo = workService.createWork(request);
             log.info("User ({}) created work: {}", userInfo, workInfo.getTitle());
@@ -97,54 +56,11 @@ public class WorkController {
      * 更新作业
      */
     @PutMapping(value = "/update", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<WorkInfo>> updateWork(
-            @RequestParam("id") String id,
-            @RequestParam("title") String title,
-            @RequestParam("description") String description,
-            @RequestParam("deadline") String deadline,
-            @RequestParam("totalScore") Integer totalScore,
-            @RequestParam(value = "allowLateSubmit", required = false) Boolean allowLateSubmit,
-            @RequestParam(value = "publishTime", required = false) String publishTime,
-            @RequestParam(value = "attachments", required = false) java.util.List<org.springframework.web.multipart.MultipartFile> attachments,
-            @RequestParam(value = "removedAttachmentIds", required = false) java.util.List<Integer> removedAttachmentIds) {
+    public ResponseEntity<ApiResponse<WorkInfo>> updateWork(@Validated UpdateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
-            // 参数验证
-            if (id == null || id.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 不能为空"));
-            }
-            if (!id.matches("^[0-9]+$")) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 必须是数字"));
-            }
-            if (title == null || title.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业标题不能为空"));
-            }
-            if (description == null || description.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业描述不能为空"));
-            }
-            if (deadline == null || deadline.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "截止时间不能为空"));
-            }
-            if (totalScore == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业总分不能为空"));
-            }
-            
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
-            // 构建请求对象
-            UpdateWorkRequest request = new UpdateWorkRequest();
-            request.setId(id);
-            request.setTitle(title);
-            request.setDescription(description);
-            request.setDeadline(java.time.LocalDateTime.parse(deadline));
-            request.setTotalScore(totalScore);
-            request.setAllowLateSubmit(allowLateSubmit);
-            if (publishTime != null && !publishTime.trim().isEmpty()) {
-                request.setPublishTime(java.time.LocalDateTime.parse(publishTime));
-            }
-            request.setAttachments(attachments);
-            request.setRemovedAttachmentIds(removedAttachmentIds);
             
             WorkInfo workInfo = workService.updateWork(request);
             log.info("User ({}) updated work: {}", userInfo, workInfo.getTitle());

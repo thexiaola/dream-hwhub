@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -43,6 +44,7 @@ public class UpdateWorkRequest {
      * 截止时间
      */
     @NotNull(message = "截止时间不能为空")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime deadline;
 
     /**
@@ -59,6 +61,7 @@ public class UpdateWorkRequest {
     /**
      * 发布时间（仅未发布的作业可以修改）
      */
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime publishTime;
 
     /**
