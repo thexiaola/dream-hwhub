@@ -1,10 +1,10 @@
 package top.thexiaola.dreamhwhub.module.login.service;
 
-import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 public interface ModifyUserService {
     /**
