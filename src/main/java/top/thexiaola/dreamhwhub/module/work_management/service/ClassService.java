@@ -60,9 +60,9 @@ public interface ClassService {
     String leaveClass(Integer classId);
 
     /**
-     * 删除班级（仅创建者）
+     * 解散班级（仅创建者）
      */
-    void deleteClass(Integer classId);
+    void dissolveClass(Integer classId);
 
     /**
      * 查询用户所在的班级列表

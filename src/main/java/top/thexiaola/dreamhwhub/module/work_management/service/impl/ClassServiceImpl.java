@@ -39,6 +39,7 @@ public class ClassServiceImpl implements ClassService {
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final WorkMapper workMapper;
+    private final WorkAttachmentMapper workAttachmentMapper;
 
     public ClassServiceImpl(ClassInfoMapper classInfoMapper, ClassMemberMapper classMemberMapper, 
                            UserMapper userMapper, ClassCreateApplicationMapper classCreateApplicationMapper,
@@ -47,7 +48,8 @@ public class ClassServiceImpl implements ClassService {
                            ClassInvitationMapper classInvitationMapper,
                            WorkSubmissionMapper workSubmissionMapper,
                            WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper,
-                           WorkMapper workMapper) {
+                           WorkMapper workMapper,
+                           WorkAttachmentMapper workAttachmentMapper) {
         this.classInfoMapper = classInfoMapper;
         this.classMemberMapper = classMemberMapper;
         this.userMapper = userMapper;
@@ -58,6 +60,7 @@ public class ClassServiceImpl implements ClassService {
         this.workSubmissionMapper = workSubmissionMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
         this.workMapper = workMapper;
+        this.workAttachmentMapper = workAttachmentMapper;
     }
 
     /**
@@ -447,7 +450,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 如果是创建者，不能退出（需要先转让或删除班级）
+        // 如果是创建者，不能退出（需要先转让或解散班级）
         if (classInfo.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.CREATOR_CANNOT_LEAVE, "创建者不能退出班级", null);
         }
@@ -463,7 +466,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteClass(Integer classId) {
+    public void dissolveClass(Integer classId) {
         User currentUser = getCurrentUserOrThrow();
 
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -471,18 +474,61 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 只有创建者可以删除班级
+        // 只有创建者可以解散班级
         if (!classInfo.getOwnerId().equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者可以删除班级", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者可以解散班级", null);
         }
 
-        // 硬删除该班级下的所有作业提交记录和附件
+        // 1. 硬删除该班级下的所有作业提交记录和附件
         hardDeleteAllSubmissionsInClass(classId);
 
-        // 直接删除班级（级联删除相关数据）
+        // 2. 硬删除该班级下的所有作业附件记录
+        QueryWrapper<WorkInfo> workQuery = new QueryWrapper<>();
+        workQuery.eq("class_id", classId);
+        List<WorkInfo> works = workMapper.selectList(workQuery);
+        
+        if (!works.isEmpty()) {
+            List<Integer> workIds = works.stream().map(WorkInfo::getId).toList();
+            
+            // 删除作业附件
+            QueryWrapper<WorkAttachment> attQuery = new QueryWrapper<>();
+            attQuery.in("work_id", workIds);
+            int attachmentCount = workAttachmentMapper.delete(attQuery);
+            log.info("Hard deleted {} work attachment records in class {}", attachmentCount, classId);
+            
+            // 删除作业信息
+            int workCount = workMapper.delete(workQuery);
+            log.info("Hard deleted {} work records in class {}", workCount, classId);
+        }
+
+        // 3. 删除班级成员记录
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId);
+        int memberCount = classMemberMapper.delete(memberQuery);
+        log.info("Deleted {} class member records in class {}", memberCount, classId);
+
+        // 4. 删除班级邀请记录
+        QueryWrapper<ClassInvitation> invitationQuery = new QueryWrapper<>();
+        invitationQuery.eq("class_id", classId);
+        int invitationCount = classInvitationMapper.delete(invitationQuery);
+        log.info("Deleted {} class invitation records in class {}", invitationCount, classId);
+
+        // 5. 删除班级加入申请记录
+        QueryWrapper<ClassJoinApplication> joinAppQuery = new QueryWrapper<>();
+        joinAppQuery.eq("class_id", classId);
+        int joinAppCount = classJoinApplicationMapper.delete(joinAppQuery);
+        log.info("Deleted {} join application records in class {}", joinAppCount, classId);
+
+        // 6. 删除班级邀请申请记录
+        QueryWrapper<ClassInviteApplication> inviteAppQuery = new QueryWrapper<>();
+        inviteAppQuery.eq("class_id", classId);
+        int inviteAppCount = classInviteApplicationMapper.delete(inviteAppQuery);
+        log.info("Deleted {} invite application records in class {}", inviteAppCount, classId);
+
+        // 7. 最后删除班级信息
         classInfoMapper.deleteById(classId);
 
-        log.info("User {} deleted class {} and all submissions", currentUser.getId(), classId);
+        log.info("User {} dissolved class {} completely with all related data", currentUser.getId(), classId);
     }
 
     @Override

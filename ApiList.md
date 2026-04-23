@@ -681,16 +681,16 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 2.4 删除班级
+### 2.4 解散班级
 
-**接口地址**: `DELETE /api/class/delete`
+**接口地址**: `DELETE /api/class/dissolve`
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | classId | Integer | 是 | 班级 ID |
 
-**请求示例**: `DELETE /api/class/delete?classId=1`
+**请求示例**: `DELETE /api/class/dissolve?classId=1`
 
 **成功响应 (200)**:
 
@@ -707,7 +707,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 400,
-  "message": "只有班级创建者可以删除班级",
+  "message": "只有班级创建者可以解散班级",
   "data": null
 }
 ```
@@ -715,14 +715,20 @@ removedAttachmentIds: [1, 2]
 **可能的错误信息**:
 
 - "班级不存在"
-- "只有班级创建者可以删除班级"
+- "只有班级创建者可以解散班级"
 
 **注意**:
 
-- **硬删除机制**：删除班级时会永久删除该班级下的所有作业提交数据
-  - 硬删除所有提交附件记录（物理从数据库删除）
-  - 硬删除所有提交记录（物理从数据库删除）
-  - 物理删除所有附件文件
+- **完整级联删除机制**：解散班级时会永久删除该班级下的所有相关数据（按顺序执行）
+  1. 硬删除所有作业提交附件记录（WorkSubmissionAttachment）
+  2. 硬删除所有作业提交记录（WorkSubmission）
+  3. 硬删除所有作业附件记录（WorkAttachment）
+  4. 硬删除所有作业信息记录（WorkInfo）
+  5. 删除所有班级成员记录（ClassMember）
+  6. 删除所有班级邀请记录（ClassInvitation）
+  7. 删除所有班级加入申请记录（ClassJoinApplication）
+  8. 删除所有班级邀请申请记录（ClassInviteApplication）
+  9. 最后删除班级信息（ClassInfo）
 - **不可恢复**：此操作不可逆，请谨慎使用
 
 ---
@@ -771,8 +777,8 @@ removedAttachmentIds: [1, 2]
 
 **角色说明**:
 
-- `OWNER`: 班级创建者，拥有最高权限（可删除班级、管理助理老师）
-- `ASSISTANT`: 助理老师，由创建者设置，拥有教师权限但不能删除班级或降级其他助理老师
+- `OWNER`: 班级创建者，拥有最高权限（可解散班级、管理助理老师）
+- `ASSISTANT`: 助理老师，由创建者设置，拥有教师权限但不能解散班级或降级其他助理老师
 - `STUDENT`: 普通学生
 
 **失败响应**:

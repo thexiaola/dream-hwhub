@@ -89,15 +89,15 @@ public class ClassController {
     }
 
     /**
-     * 删除班级（仅创建者）
+     * 解散班级（仅创建者）
      */
-    @DeleteMapping("/delete")
-    public ApiResponse<Void> deleteClass(@RequestParam Integer classId) {
+    @DeleteMapping("/dissolve")
+    public ApiResponse<Void> dissolveClass(@RequestParam Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} requesting to delete class, ID: {}", userInfo, classId);
-        classService.deleteClass(classId);
-        log.info("User {} deleted class successfully", userInfo);
+        log.info("User {} requesting to dissolve class, ID: {}", userInfo, classId);
+        classService.dissolveClass(classId);
+        log.info("User {} dissolved class successfully", userInfo);
         return ApiResponse.success(null);
     }
 
