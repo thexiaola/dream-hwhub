@@ -38,6 +38,7 @@ public class ClassServiceImpl implements ClassService {
     private final ClassInvitationMapper classInvitationMapper;
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
+    private final WorkMapper workMapper;
 
     public ClassServiceImpl(ClassInfoMapper classInfoMapper, ClassMemberMapper classMemberMapper, 
                            UserMapper userMapper, ClassCreateApplicationMapper classCreateApplicationMapper,
@@ -45,7 +46,8 @@ public class ClassServiceImpl implements ClassService {
                            ClassInviteApplicationMapper classInviteApplicationMapper,
                            ClassInvitationMapper classInvitationMapper,
                            WorkSubmissionMapper workSubmissionMapper,
-                           WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper) {
+                           WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper,
+                           WorkMapper workMapper) {
         this.classInfoMapper = classInfoMapper;
         this.classMemberMapper = classMemberMapper;
         this.userMapper = userMapper;
@@ -55,6 +57,7 @@ public class ClassServiceImpl implements ClassService {
         this.classInvitationMapper = classInvitationMapper;
         this.workSubmissionMapper = workSubmissionMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
+        this.workMapper = workMapper;
     }
 
     /**
@@ -426,7 +429,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void leaveClass(Integer classId) {
+    public String leaveClass(Integer classId) {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是成员
@@ -438,9 +441,14 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "你不是该班级的成员", null);
         }
 
-        // 如果是创建者，不能退出（需要先转让或删除班级）
+        // 获取班级名称
         ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo != null && classInfo.getOwnerId().equals(currentUser.getId())) {
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        // 如果是创建者，不能退出（需要先转让或删除班级）
+        if (classInfo.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.CREATOR_CANNOT_LEAVE, "创建者不能退出班级", null);
         }
 
@@ -450,6 +458,7 @@ public class ClassServiceImpl implements ClassService {
         classMemberMapper.delete(queryWrapper);
 
         log.info("User {} left class {}", currentUser.getId(), classId);
+        return classInfo.getClassName();
     }
 
     @Override
@@ -467,10 +476,13 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者可以删除班级", null);
         }
 
+        // 硬删除该班级下的所有作业提交记录和附件
+        hardDeleteAllSubmissionsInClass(classId);
+
         // 直接删除班级（级联删除相关数据）
         classInfoMapper.deleteById(classId);
 
-        log.info("User {} deleted class {}", currentUser.getId(), classId);
+        log.info("User {} deleted class {} and all submissions", currentUser.getId(), classId);
     }
 
     @Override
@@ -1273,5 +1285,49 @@ public class ClassServiceImpl implements ClassService {
         }
         log.info("Soft deleted {} submission records for user {} in class {}", 
                 submissions.size(), userId, classId);
+    }
+
+    /**
+     * 硬删除班级下的所有作业提交记录和附件
+     * @param classId 班级 ID
+     */
+    private void hardDeleteAllSubmissionsInClass(Integer classId) {
+        // 1. 查询该班级下所有作业的 ID
+        QueryWrapper<top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo> workQuery = new QueryWrapper<>();
+        workQuery.eq("class_id", classId);
+        List<top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo> works = workMapper.selectList(workQuery);
+        
+        if (works.isEmpty()) {
+            log.info("No works found in class {}", classId);
+            return;
+        }
+
+        List<Integer> workIds = works.stream()
+                .map(top.thexiaola.dreamhwhub.module.work_management.domain.WorkInfo::getId)
+                .toList();
+
+        // 2. 查询所有提交记录
+        QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
+        submissionQuery.in("work_id", workIds);
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
+        
+        if (submissions.isEmpty()) {
+            log.info("No submissions found in class {}", classId);
+            return;
+        }
+
+        List<Integer> submissionIds = submissions.stream()
+                .map(WorkSubmission::getId)
+                .toList();
+
+        // 3. 硬删除所有提交附件记录
+        QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
+        attQuery.in("submission_id", submissionIds);
+        int attachmentCount = workSubmissionAttachmentMapper.delete(attQuery);
+        log.info("Hard deleted {} submission attachment records in class {}", attachmentCount, classId);
+
+        // 4. 硬删除所有提交记录
+        int submissionCount = workSubmissionMapper.delete(submissionQuery);
+        log.info("Hard deleted {} submission records in class {}", submissionCount, classId);
     }
 }

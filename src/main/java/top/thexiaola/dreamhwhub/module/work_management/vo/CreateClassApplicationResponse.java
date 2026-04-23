@@ -8,12 +8,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 班级申请响应VO
+ * 创建班级申请响应VO
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClassApplicationResponse {
+public class CreateClassApplicationResponse {
 
     /**
      * 申请 ID
@@ -21,22 +21,17 @@ public class ClassApplicationResponse {
     private Integer id;
 
     /**
-     * 班级 ID（加入班级申请时有值）
-     */
-    private Integer classId;
-
-    /**
      * 申请人 ID
      */
     private Integer applicantId;
 
     /**
-     * 班级名称（创建班级申请时有值）
+     * 申请的班级名称
      */
     private String className;
 
     /**
-     * 班级描述（创建班级申请时有值）
+     * 申请的班级描述
      */
     private String description;
 

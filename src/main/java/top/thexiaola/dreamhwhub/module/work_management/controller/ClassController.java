@@ -36,15 +36,14 @@ public class ClassController {
      * 提交创建班级申请
      */
     @PostMapping("/create")
-    public ApiResponse<ClassApplicationResponse> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
+    public ApiResponse<CreateClassApplicationResponse> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to create class: {}", userInfo, request.getClassName());
         ClassCreateApplication application = classService.submitCreateClassRequest(
                 request.getClassName(), request.getDescription());
-        ClassApplicationResponse response = new ClassApplicationResponse(
+        CreateClassApplicationResponse response = new CreateClassApplicationResponse(
                 application.getId(),
-                null,  // classId在审核通过后才会有
                 application.getApplicantId(),
                 application.getClassName(),
                 application.getDescription(),
@@ -59,18 +58,16 @@ public class ClassController {
      * 提交加入班级申请
      */
     @PostMapping("/join")
-    public ApiResponse<ClassApplicationResponse> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
+    public ApiResponse<JoinClassApplicationResponse> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to join class by ID: {}", userInfo, request.getClassId());
         int classId = Integer.parseInt(request.getClassId());
         ClassJoinApplication application = classService.submitJoinClassRequest(classId);
-        ClassApplicationResponse response = new ClassApplicationResponse(
+        JoinClassApplicationResponse response = new JoinClassApplicationResponse(
                 application.getId(),
                 application.getClassId(),
                 application.getApplicantId(),
-                null,  // className
-                null,  // description
                 application.getStatus(),
                 application.getCreateTime()
         );
@@ -86,9 +83,9 @@ public class ClassController {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} requesting to leave class, ID: {}", userInfo, classId);
-        classService.leaveClass(classId);
+        String className = classService.leaveClass(classId);
         log.info("User {} left class successfully", userInfo);
-        return ApiResponse.success(null);
+        return ApiResponse.success(null, "已成功退出“" + className + "”班级");
     }
 
     /**

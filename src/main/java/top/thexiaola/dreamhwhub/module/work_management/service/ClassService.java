@@ -55,8 +55,9 @@ public interface ClassService {
 
     /**
      * 退出班级
+     * @return 退出的班级名称
      */
-    void leaveClass(Integer classId);
+    String leaveClass(Integer classId);
 
     /**
      * 删除班级（仅创建者）

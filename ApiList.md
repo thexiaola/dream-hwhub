@@ -85,6 +85,7 @@
 | attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
 
 **请求示例**:
+
 ```
 POST /api/works/create
 Content-Type: multipart/form-data
@@ -157,7 +158,8 @@ attachments: [file1.pdf, file2.doc]
 - "只有班级老师可以发布作业"
 - "文件上传失败：xxx"
 
-**注意**: 
+**注意**:
+
 - **直接上传附件**：通过 `attachments` 参数直接上传文件，无需预先调用文件上传接口
 - **文件安全检查**：系统会对上传的文件进行病毒扫描、文件类型白名单验证等安全检查
 - **文件存储位置**：`uploads/works/` 目录
@@ -187,6 +189,7 @@ attachments: [file1.pdf, file2.doc]
 | removedAttachmentIds | Integer[] | 否 | 要删除的附件ID列表 |
 
 **请求示例**:
+
 ```
 PUT /api/works/update
 Content-Type: multipart/form-data
@@ -200,7 +203,8 @@ attachments: [newfile.pdf]
 removedAttachmentIds: [1, 2]
 ```
 
-**注意**: 
+**注意**:
+
 - 已发布作业(status=1)不允许修改publishTime，只能修改其他字段
 - **当没有学生提交作业时，允许修改totalScore**；有提交记录后禁止修改，保护数据一致性
 - **支持附件增量更新**：可以通过`removedAttachmentIds`删除指定附件，通过`attachments`添加新附件
@@ -305,7 +309,8 @@ removedAttachmentIds: [1, 2]
 - "作业不存在"
 - "用户无权限删除此作业"
 
-**注意**: 
+**注意**:
+
 - **允许删除任何状态的作业**（包括已发布、已结束）
 - 只能删除自己发布的作业
 - **级联清理机制**：删除作业时会自动清理所有关联数据
@@ -514,8 +519,6 @@ removedAttachmentIds: [1, 2]
   "message": "创建班级的申请已提交，待审核",
   "data": {
     "id": 1,
-    "type": null,
-    "classId": null,
     "applicantId": 1001,
     "className": "计算机科学2024级1班",
     "description": "计算机科学与技术专业2024级1班",
@@ -529,15 +532,14 @@ removedAttachmentIds: [1, 2]
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Integer | 申请 ID |
-| type | Integer | 申请类型(已废弃，固定为null) |
-| classId | Integer | 班级 ID(审核通过后才会有值) |
 | applicantId | Integer | 申请人 ID |
-| className | String | 班级名称 |
-| description | String | 班级描述 |
+| className | String | 申请的班级名称 |
+| description | String | 申请的班级描述 |
 | status | Integer | 申请状态(0-待审核,1-已通过,2-已拒绝) |
 | createTime | LocalDateTime | 申请时间 |
 
-**注意**: 
+**注意**:
+
 - 创建申请仅管理员可审核
 - 审核通过后自动创建班级，申请人成为班级创建者(OWNER)
 
@@ -591,11 +593,8 @@ removedAttachmentIds: [1, 2]
   "message": "加入班级的申请已提交，待审核",
   "data": {
     "id": 2,
-    "type": null,
     "classId": 1,
     "applicantId": 1002,
-    "className": null,
-    "description": null,
     "status": 0,
     "createTime": "2026-04-09T10:00:00"
   }
@@ -606,15 +605,13 @@ removedAttachmentIds: [1, 2]
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Integer | 申请 ID |
-| type | Integer | 申请类型(已废弃，固定为null) |
-| classId | Integer | 班级 ID |
+| classId | Integer | 申请的班级 ID |
 | applicantId | Integer | 申请人 ID |
-| className | String | 班级名称(固定为null) |
-| description | String | 班级描述(固定为null) |
 | status | Integer | 申请状态(0-待审核,1-已通过,2-已拒绝) |
 | createTime | LocalDateTime | 申请时间 |
 
-**注意**: 
+**注意**:
+
 - 加入申请老师和管理员都可审核
 - 审核通过后申请人以STUDENT身份加入班级
 
@@ -654,7 +651,7 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "已成功退出“计算机科学2024级1班”班级",
   "data": null
 }
 ```
@@ -674,12 +671,13 @@ removedAttachmentIds: [1, 2]
 - "您不是该班级成员"
 - "班级创建者不能退出班级"
 
-**注意**: 
-- **级联清理机制**：退出班级时会自动清理该学生在该班级的所有作业提交数据
-  - 删除学生提交的所有附件文件
-  - 删除提交附件记录
-  - 删除所有提交记录
-- **防止资源浪费**：自动释放服务器存储空间
+**注意**:
+
+- **级联清理机制**：退出班级时会自动清理该学生在该班级的所有作业提交数据（软删除）
+  - 软删除学生提交的所有附件记录（is_deleted = true）
+  - 软删除所有提交记录（is_deleted = true）
+  - 物理删除学生提交的附件文件
+- **数据可恢复**：软删除保留数据完整性，便于审计和恢复
 
 ---
 
@@ -718,6 +716,14 @@ removedAttachmentIds: [1, 2]
 
 - "班级不存在"
 - "只有班级创建者可以删除班级"
+
+**注意**:
+
+- **硬删除机制**：删除班级时会永久删除该班级下的所有作业提交数据
+  - 硬删除所有提交附件记录（物理从数据库删除）
+  - 硬删除所有提交记录（物理从数据库删除）
+  - 物理删除所有附件文件
+- **不可恢复**：此操作不可逆，请谨慎使用
 
 ---
 
@@ -764,6 +770,7 @@ removedAttachmentIds: [1, 2]
 | studentCount | Long | 学生数量 |
 
 **角色说明**:
+
 - `OWNER`: 班级创建者，拥有最高权限（可删除班级、管理助理老师）
 - `ASSISTANT`: 助理老师，由创建者设置，拥有教师权限但不能删除班级或降级其他助理老师
 - `STUDENT`: 普通学生
@@ -795,7 +802,8 @@ removedAttachmentIds: [1, 2]
 | pageNum | Integer | 否 | 页码，默认1 |
 | pageSize | Integer | 否 | 每页大小，默认10，最大100 |
 
-**请求示例**: 
+**请求示例**:
+
 - `GET /api/class/mylist`
 - `GET /api/class/mylist?pageNum=1&pageSize=10`
 
@@ -856,7 +864,8 @@ removedAttachmentIds: [1, 2]
 | memberCount | Long | 成员总数 |
 | teacherCount | Long | 教师数量 |
 | studentCount | Long | 学生数量 |
-```
+
+````
 
 **失败响应**:
 
@@ -866,7 +875,7 @@ removedAttachmentIds: [1, 2]
   "message": "用户未登录",
   "data": null
 }
-```
+````
 
 ---
 
@@ -881,7 +890,8 @@ removedAttachmentIds: [1, 2]
 | pageNum | Integer | 否 | 页码，默认1 |
 | pageSize | Integer | 否 | 每页大小，默认20，最大100 |
 
-**请求示例**: 
+**请求示例**:
+
 - `GET /api/class/members?classId=1`
 - `GET /api/class/members?classId=1&pageNum=1&pageSize=20`
 
@@ -938,6 +948,7 @@ removedAttachmentIds: [1, 2]
 | joinTime | LocalDateTime | 加入时间 |
 
 **角色说明**:
+
 - `OWNER`: 班级创建者
 - `ASSISTANT`: 助理老师
 - `STUDENT`: 普通学生
@@ -990,6 +1001,7 @@ removedAttachmentIds: [1, 2]
 | role | String | 角色(OWNER/ASSISTANT/STUDENT)，非成员时为 null |
 
 **角色说明**:
+
 - `OWNER`: 班级创建者
 - `ASSISTANT`: 助理老师
 - `STUDENT`: 普通学生
@@ -1070,7 +1082,8 @@ removedAttachmentIds: [1, 2]
 | createdClassId | Integer | 审核通过后创建的班级 ID |
 | createTime | LocalDateTime | 申请时间 |
 
-**注意**: 
+**注意**:
+
 - 仅管理员(permission >= 100)可访问
 - 按创建时间倒序排列
 
@@ -1112,7 +1125,8 @@ removedAttachmentIds: [1, 2]
 }
 ```
 
-**注意**: 
+**注意**:
+
 - 仅管理员可审核
 - 审核通过后自动创建班级，申请人成为OWNER
 
@@ -1182,7 +1196,8 @@ removedAttachmentIds: [1, 2]
 | reviewComment | String | 审核意见 |
 | createTime | LocalDateTime | 申请时间 |
 
-**注意**: 
+**注意**:
+
 - 管理员可查看所有班级的申请
 - 老师只能查看自己所在班级的申请
 - 按创建时间倒序排列
@@ -1225,7 +1240,8 @@ removedAttachmentIds: [1, 2]
 }
 ```
 
-**注意**: 
+**注意**:
+
 - 管理员可审核任何班级的申请
 - 老师只能审核自己所在班级的申请
 - 审核通过后申请人以STUDENT身份加入班级
@@ -1326,7 +1342,8 @@ removedAttachmentIds: [1, 2]
 - "该用户不是班级学生"
 - "不能移除班级创建者"
 
-**注意**: 
+**注意**:
+
 - **级联清理机制**：踢出学生时会自动清理该学生在该班级的所有作业提交数据
   - 删除学生提交的所有附件文件
   - 删除提交附件记录
@@ -1436,7 +1453,8 @@ removedAttachmentIds: [1, 2]
 - "用户已经是该班级成员"
 - "已有待审核的邀请申请"
 
-**注意**: 
+**注意**:
+
 - 学生发起邀请后，需要老师审核通过
 - 审核通过后，被邀请人会收到邀请通知
 - **被邀请人需要调用“同意邀请”接口（2.21）才能加入班级**
@@ -1501,7 +1519,8 @@ removedAttachmentIds: [1, 2]
 - "您没有权限审核此申请"
 - "该申请已审核"
 
-**注意**: 
+**注意**:
+
 - **参数命名**：使用`applicationId`而非`memberId`，准确表示“邀请申请ID”
 - 审核通过后，系统会创建一条邀请记录发送给被邀请人
 - **被邀请人需要调用“同意邀请”接口（2.21）才能加入班级**
@@ -1603,6 +1622,7 @@ removedAttachmentIds: [1, 2]
 **适用场景**: 班级学生邀请同学加入，需要老师审核把关
 
 **注意**:
+
 - 所有邀请均需要被邀请人最终确认，保障用户知情权
 - 邀请有效期为7天，过期后需重新发起
 - 被邀请人可以查看邀请详情（班级名称、邀请人等）后再决定
@@ -1654,7 +1674,8 @@ removedAttachmentIds: [1, 2]
 | responseComment | String | 用户回复说明 |
 | createTime | LocalDateTime | 邀请时间 |
 
-**注意**: 
+**注意**:
+
 - 只有老师或管理员可以发送邀请
 - 邀请有效期为7天
 - 防止重复邀请同一用户
@@ -1732,7 +1753,8 @@ removedAttachmentIds: [1, 2]
 | responseComment | String | 用户回复说明 |
 | createTime | LocalDateTime | 邀请时间 |
 
-**注意**: 
+**注意**:
+
 - 只能查看自己的邀请
 - 按创建时间倒序排列
 - 包含班级名称和邀请人姓名，方便用户决策
@@ -1785,7 +1807,8 @@ removedAttachmentIds: [1, 2]
 }
 ```
 
-**注意**: 
+**注意**:
+
 - 只能响应发给自己的邀请
 - 同意则自动以STUDENT身份加入班级
 - 拒绝则标记为已拒绝
@@ -1835,7 +1858,8 @@ removedAttachmentIds: [1, 2]
 |------|------|------|
 | data | String | 6位随机邀请码（大写字母+数字） |
 
-**注意**: 
+**注意**:
+
 - 只有老师可以生成邀请码
 - 每次调用会生成新的邀请码，旧码失效
 - 邀请码有效期直到下次刷新
@@ -1901,7 +1925,8 @@ removedAttachmentIds: [1, 2]
 | reviewComment | String | 审核意见 |
 | createTime | LocalDateTime | 申请时间 |
 
-**注意**: 
+**注意**:
+
 - **邀请码加入免审批**：通过正确邀请码加入的用户，直接以学生身份入班，无需老师审核
 - `status`固定返回`1`（已通过），表示立即生效
 - 邀请码由教师通过`2.22`接口生成
@@ -1950,7 +1975,8 @@ removedAttachmentIds: [1, 2]
 }
 ```
 
-**注意**: 
+**注意**:
+
 - 只有班级创建者(OWNER)可以转让所有权
 - 新所有者必须是班级现有成员
 - 转让后原创建者自动降级为助理老师(ASSISTANT)
@@ -1998,6 +2024,7 @@ removedAttachmentIds: [1, 2]
 | attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
 
 **请求示例**:
+
 ```
 POST /api/submissions/submit
 Content-Type: multipart/form-data
@@ -2070,7 +2097,8 @@ attachments: [file1.pdf, file2.docx]
 - "作业已截止，不允许逾期提交"
 - "文件上传失败：xxx"
 
-**注意**: 
+**注意**:
+
 - **支持逾期提交**：即使超过截止时间，学生仍然可以提交作业
 - 系统会自动标记逾期提交（`isLate: true`），教师可以看到哪些学生是迟交的
 - 教师可以根据实际情况决定是否扣减“迟交分”
@@ -2150,7 +2178,8 @@ attachments: [file1.pdf, file2.docx]
 - "作业已被批改，无法修改"
 - "作业已截止，无法修改"
 
-**注意**: 
+**注意**:
+
 - 学生只能在作业截止时间之前更新自己的提交
 - 已过截止时间的作业不允许更新，即使尚未批改
 - 如果作业已被老师批改，也不允许学生修改
@@ -2195,7 +2224,8 @@ attachments: [file1.pdf, file2.docx]
 - "作业已被批改，无法删除"
 - "已过截止时间的作业不能删除"
 
-**注意**: 
+**注意**:
+
 - 学生在作业截止时间后不能删除自己的提交，防止误操作导致0分
 - 教师依然可以删除任何学生的提交
 
@@ -2285,6 +2315,7 @@ attachments: [file1.pdf, file2.docx]
 - `GET /api/submissions/student/list?workId=1` - 查询当前用户在指定作业的提交
 
 **功能说明**:
+
 - 查询当前登录用户（学生）的作业提交记录
 - 支持按作业 ID 筛选特定作业的提交
 - 返回结果按提交时间倒序排列
@@ -2523,7 +2554,8 @@ attachments: [file1.pdf, file2.docx]
 | updateTime | LocalDateTime | 更新时间 |
 | attachments | List | 附件列表 |
 
-**注意**: 
+**注意**:
+
 - 此接口返回已提交学生的完整提交记录
 - 按提交时间倒序排列
 - 只有班级老师可以调用此接口
@@ -2587,7 +2619,8 @@ attachments: [file1.pdf, file2.docx]
 | userNo | String | 学生学号 |
 | email | String | 学生邮箱 |
 
-**注意**: 
+**注意**:
+
 - 此接口直接返回未提交作业的学生列表（User对象）
 - **后端使用MyBatisPlus QueryWrapper自动计算**：查询班级所有学生，过滤已提交学生，返回差集
 - 只返回STUDENT角色的学生，不包括OWNER和ASSISTANT
@@ -2701,7 +2734,8 @@ attachments: [file1.pdf, file2.docx]
 - "提交记录不存在"
 - "您没有权限批改此作业"
 
-**注意**: 
+**注意**:
+
 - 系统支持重新批改已批改的作业，教师可以多次修改分数和评语
 - **分数动态校验**：上限为作业的`totalScore`字段值，不再硬编码限制为100分
 - 例如：作业总分为150分时，学生可获得0-150分的评分
@@ -2729,7 +2763,8 @@ attachments: [file1.pdf, file2.docx]
 - `1`: 已提交（学生已提交，待批改）
 - `2`: 已批改（教师已完成评分）
 
-**注意**: 
+**注意**:
+
 - **不存在“未提交”状态（0）**：未交作业的学生在数据库中没有对应的 Submission 记录
 - **后端直接计算未交学生**：调用 `GET /api/submissions/work/unsubmitted` 接口即可获取未交学生列表，无需前端手动计算
 - **使用MyBatisPlus实现**：通过QueryWrapper查询并过滤，符合项目规范
