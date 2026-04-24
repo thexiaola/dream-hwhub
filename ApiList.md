@@ -327,9 +327,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/works/detail`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| workId | Integer | 是 | 作业 ID |
+
+| 参数   | 类型    | 必填 | 说明    |
+| ------ | ------- | ---- | ------- |
+| workId | Integer | 是   | 作业 ID |
 
 **请求示例**: `GET /api/works/detail?workId=1`
 
@@ -355,18 +356,19 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 作业 ID |
-| title | String | 作业标题 |
-| description | String | 作业描述 |
-| publisherId | Integer | 发布人 ID |
-| classId | Integer | 所属班级 ID |
-| deadline | LocalDateTime | 截止时间 |
-| totalScore | Integer | 作业总分 |
-| publishTime | LocalDateTime | 发布时间 |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
+
+| 字段        | 类型          | 说明        |
+| ----------- | ------------- | ----------- |
+| id          | Integer       | 作业 ID     |
+| title       | String        | 作业标题    |
+| description | String        | 作业描述    |
+| publisherId | Integer       | 发布人 ID   |
+| classId     | Integer       | 所属班级 ID |
+| deadline    | LocalDateTime | 截止时间    |
+| totalScore  | Integer       | 作业总分    |
+| publishTime | LocalDateTime | 发布时间    |
+| createTime  | LocalDateTime | 创建时间    |
+| updateTime  | LocalDateTime | 更新时间    |
 
 **失败响应**:
 
@@ -389,12 +391,13 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/works/list`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| publisherUserNo | String | 否 | 发布人学号/工号筛选 |
-| status | Integer | 否 | 作业状态筛选（0-未发布，1-已发布，2-已结束） |
-| pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
+
+| 参数            | 类型    | 必填 | 说明                                         |
+| --------------- | ------- | ---- | -------------------------------------------- |
+| publisherUserNo | String  | 否   | 发布人学号/工号筛选                          |
+| status          | Integer | 否   | 作业状态筛选（0-未发布，1-已发布，2-已结束） |
+| pageNum         | Integer | 否   | 页码，默认1                                  |
+| pageSize        | Integer | 否   | 每页大小，默认20，最大300                    |
 
 **请求示例**:
 
@@ -442,34 +445,36 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
+
+| 字段    | 类型  | 说明         |
+| ------- | ----- | ------------ |
 | records | Array | 作业列表数据 |
-| total | Long | 总记录数 |
-| size | Long | 每页大小 |
-| current | Long | 当前页码 |
-| pages | Long | 总页数 |
+| total   | Long  | 总记录数     |
+| size    | Long  | 每页大小     |
+| current | Long  | 当前页码     |
+| pages   | Long  | 总页数       |
 
 **records内部字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 作业 ID |
-| title | String | 作业标题 |
-| description | String | 作业描述 |
-| publisherId | Integer | 发布人 ID |
-| deadline | LocalDateTime | 截止时间 |
-| totalScore | Integer | 作业总分 |
-| publishTime | LocalDateTime | 发布时间 |
-| status | Integer | 作业状态(0-未发布,1-已发布,2-已结束) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
-| attachments | List | 附件列表 |
-| attachments[].id | Integer | 附件 ID |
-| attachments[].fileName | String | 文件名 |
-| attachments[].filePath | String | 文件路径 |
-| attachments[].fileSize | Long | 文件大小(字节) |
-| attachments[].fileType | String | 文件类型(MIME) |
-| attachments[].uploadTime | LocalDateTime | 上传时间 |
+
+| 字段                     | 类型          | 说明                                 |
+| ------------------------ | ------------- | ------------------------------------ |
+| id                       | Integer       | 作业 ID                              |
+| title                    | String        | 作业标题                             |
+| description              | String        | 作业描述                             |
+| publisherId              | Integer       | 发布人 ID                            |
+| deadline                 | LocalDateTime | 截止时间                             |
+| totalScore               | Integer       | 作业总分                             |
+| publishTime              | LocalDateTime | 发布时间                             |
+| status                   | Integer       | 作业状态(0-未发布,1-已发布,2-已结束) |
+| createTime               | LocalDateTime | 创建时间                             |
+| updateTime               | LocalDateTime | 更新时间                             |
+| attachments              | List          | 附件列表                             |
+| attachments[].id         | Integer       | 附件 ID                              |
+| attachments[].fileName   | String        | 文件名                               |
+| attachments[].filePath   | String        | 文件路径                             |
+| attachments[].fileSize   | Long          | 文件大小(字节)                       |
+| attachments[].fileType   | String        | 文件类型(MIME)                       |
+| attachments[].uploadTime | LocalDateTime | 上传时间                             |
 
 **失败响应**:
 
@@ -506,10 +511,11 @@ removedAttachmentIds: [1, 2]
 ```
 
 **字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| className | String | 是 | 班级名称，最长 64 字符，不能包含换行符、制表符等特殊字符 |
-| description | String | 否 | 班级描述，最长 512 字符，不能包含制表符等特殊字符 |
+
+| 字段        | 类型   | 必填 | 说明                                                     |
+| ----------- | ------ | ---- | -------------------------------------------------------- |
+| className   | String | 是   | 班级名称，最长 64 字符，不能包含换行符、制表符等特殊字符 |
+| description | String | 否   | 班级描述，最长 512 字符，不能包含制表符等特殊字符        |
 
 **成功响应 (200)**:
 
@@ -529,14 +535,15 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 申请 ID |
-| applicantId | Integer | 申请人 ID |
-| className | String | 申请的班级名称 |
-| description | String | 申请的班级描述 |
-| status | Integer | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| createTime | LocalDateTime | 申请时间 |
+
+| 字段        | 类型          | 说明                                 |
+| ----------- | ------------- | ------------------------------------ |
+| id          | Integer       | 申请 ID                              |
+| applicantId | Integer       | 申请人 ID                            |
+| className   | String        | 申请的班级名称                       |
+| description | String        | 申请的班级描述                       |
+| status      | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
+| createTime  | LocalDateTime | 申请时间                             |
 
 **注意**:
 
@@ -581,9 +588,10 @@ removedAttachmentIds: [1, 2]
 ```
 
 **字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | String | 是 | 班级 ID，必须是数字字符串 |
+
+| 字段    | 类型   | 必填 | 说明                      |
+| ------- | ------ | ---- | ------------------------- |
+| classId | String | 是   | 班级 ID，必须是数字字符串 |
 
 **成功响应 (200)**:
 
@@ -764,16 +772,17 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 班级 ID |
-| className | String | 班级名称 |
-| ownerId | Integer | 班级所有者 ID |
-| ownerName | String | 班级所有者姓名 |
-| userRole | String | 用户在该班级的角色(创建者/班级助理/学生) |
-| memberCount | Long | 成员总数 |
-| teacherCount | Long | 教师数量 |
-| studentCount | Long | 学生数量 |
+
+| 字段         | 类型    | 说明                                     |
+| ------------ | ------- | ---------------------------------------- |
+| id           | Integer | 班级 ID                                  |
+| className    | String  | 班级名称                                 |
+| ownerId      | Integer | 班级所有者 ID                            |
+| ownerName    | String  | 班级所有者姓名                           |
+| userRole     | String  | 用户在该班级的角色(创建者/班级助理/学生) |
+| memberCount  | Long    | 成员总数                                 |
+| teacherCount | Long    | 教师数量                                 |
+| studentCount | Long    | 学生数量                                 |
 
 **角色说明**:
 
@@ -803,10 +812,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/mylist`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
+
+| 参数     | 类型    | 必填 | 说明                      |
+| -------- | ------- | ---- | ------------------------- |
+| pageNum  | Integer | 否   | 页码，默认1               |
+| pageSize | Integer | 否   | 每页大小，默认20，最大300 |
 
 **请求示例**:
 
@@ -851,25 +861,27 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
+
+| 字段    | 类型  | 说明         |
+| ------- | ----- | ------------ |
 | records | Array | 班级列表数据 |
-| total | Long | 总记录数 |
-| size | Long | 每页大小 |
-| current | Long | 当前页码 |
-| pages | Long | 总页数 |
+| total   | Long  | 总记录数     |
+| size    | Long  | 每页大小     |
+| current | Long  | 当前页码     |
+| pages   | Long  | 总页数       |
 
 **records内部字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 班级 ID |
-| className | String | 班级名称 |
-| ownerId | Integer | 班级所有者 ID |
-| ownerName | String | 班级所有者姓名 |
-| userRole | String | 用户在该班级的角色(创建者/班级助理/学生) |
-| memberCount | Long | 成员总数 |
-| teacherCount | Long | 教师数量 |
-| studentCount | Long | 学生数量 |
+
+| 字段         | 类型    | 说明                                     |
+| ------------ | ------- | ---------------------------------------- |
+| id           | Integer | 班级 ID                                  |
+| className    | String  | 班级名称                                 |
+| ownerId      | Integer | 班级所有者 ID                            |
+| ownerName    | String  | 班级所有者姓名                           |
+| userRole     | String  | 用户在该班级的角色(创建者/班级助理/学生) |
+| memberCount  | Long    | 成员总数                                 |
+| teacherCount | Long    | 教师数量                                 |
+| studentCount | Long    | 学生数量                                 |
 
 ````
 
@@ -890,11 +902,12 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/members`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
-| pageNum | Integer | 否 | 页码，默认1，必须大于等于1 |
-| pageSize | Integer | 否 | 每页大小，默认20，必须在1-300之间 |
+
+| 参数     | 类型    | 必填 | 说明                              |
+| -------- | ------- | ---- | --------------------------------- |
+| classId  | Integer | 是   | 班级 ID                           |
+| pageNum  | Integer | 否   | 页码，默认1，必须大于等于1        |
+| pageSize | Integer | 否   | 每页大小，默认20，必须在1-300之间 |
 
 **请求示例**:
 
@@ -935,23 +948,25 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
+
+| 字段    | 类型  | 说明         |
+| ------- | ----- | ------------ |
 | records | Array | 成员列表数据 |
-| total | Long | 总记录数 |
-| size | Long | 每页大小 |
-| current | Long | 当前页码 |
-| pages | Long | 总页数 |
+| total   | Long  | 总记录数     |
+| size    | Long  | 每页大小     |
+| current | Long  | 当前页码     |
+| pages   | Long  | 总页数       |
 
 **records内部字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 成员 ID |
-| userId | Integer | 用户 ID |
-| userName | String | 用户姓名 |
-| userNo | String | 学号/工号 |
-| role | String | 角色(创建者/班级助理/学生) |
-| joinTime | LocalDateTime | 加入时间 |
+
+| 字段     | 类型          | 说明                       |
+| -------- | ------------- | -------------------------- |
+| id       | Integer       | 成员 ID                    |
+| userId   | Integer       | 用户 ID                    |
+| userName | String        | 用户姓名                   |
+| userNo   | String        | 学号/工号                  |
+| role     | String        | 角色(创建者/班级助理/学生) |
+| joinTime | LocalDateTime | 加入时间                   |
 
 **角色说明**:
 
@@ -1004,11 +1019,12 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| isMember | Boolean | 是否是班级成员 |
+
+| 字段     | 类型    | 说明                                                                    |
+| -------- | ------- | ----------------------------------------------------------------------- |
+| isMember | Boolean | 是否是班级成员                                                          |
 | roleCode | Integer | 角色代码（用于前端权限判断）：1-创建者，2-班级助理，3-学生，null-非成员 |
-| roleName | String | 角色名称（用于展示）：创建者/班级助理/学生，非成员时为 null |
+| roleName | String  | 角色名称（用于展示）：创建者/班级助理/学生，非成员时为 null             |
 
 **角色代码说明**:
 
@@ -1054,11 +1070,12 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/applications/create/list`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| status | Integer | 否 | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
-| pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
+
+| 参数     | 类型    | 必填 | 说明                                     |
+| -------- | ------- | ---- | ---------------------------------------- |
+| status   | Integer | 否   | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
+| pageNum  | Integer | 否   | 页码，默认1                              |
+| pageSize | Integer | 否   | 每页大小，默认20，最大300                |
 
 **请求示例**:
 
@@ -1074,18 +1091,18 @@ removedAttachmentIds: [1, 2]
   "message": "查询创建申请列表成功",
   "data": {
     "records": [
-    {
-      "id": 1,
-      "applicantId": 1001,
-      "className": "计算机科学2024级1班",
-      "description": "计算机科学与技术专业2024级1班",
-      "status": 0,
-      "reviewerId": null,
-      "reviewTime": null,
-      "reviewComment": null,
-      "createdClassId": null,
-      "createTime": "2026-04-09T10:00:00"
-    }
+      {
+        "id": 1,
+        "applicantId": 1001,
+        "className": "计算机科学2024级1班",
+        "description": "计算机科学与技术专业2024级1班",
+        "status": 0,
+        "reviewerId": null,
+        "reviewTime": null,
+        "reviewComment": null,
+        "createdClassId": null,
+        "createTime": "2026-04-09T10:00:00"
+      }
     ],
     "total": 1,
     "size": 20,
@@ -1096,27 +1113,29 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
+
+| 字段    | 类型  | 说明         |
+| ------- | ----- | ------------ |
 | records | Array | 申请列表数据 |
-| total | Long | 总记录数 |
-| size | Long | 每页大小 |
-| current | Long | 当前页码 |
-| pages | Long | 总页数 |
+| total   | Long  | 总记录数     |
+| size    | Long  | 每页大小     |
+| current | Long  | 当前页码     |
+| pages   | Long  | 总页数       |
 
 **records内部字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 申请 ID |
-| applicantId | Integer | 申请人 ID |
-| className | String | 申请的班级名称 |
-| description | String | 申请的班级描述 |
-| status | Integer | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId | Integer | 审核人 ID |
-| reviewTime | LocalDateTime | 审核时间 |
-| reviewComment | String | 审核意见 |
-| createdClassId | Integer | 审核通过后创建的班级 ID |
-| createTime | LocalDateTime | 申请时间 |
+
+| 字段           | 类型          | 说明                                 |
+| -------------- | ------------- | ------------------------------------ |
+| id             | Integer       | 申请 ID                              |
+| applicantId    | Integer       | 申请人 ID                            |
+| className      | String        | 申请的班级名称                       |
+| description    | String        | 申请的班级描述                       |
+| status         | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
+| reviewerId     | Integer       | 审核人 ID                            |
+| reviewTime     | LocalDateTime | 审核时间                             |
+| reviewComment  | String        | 审核意见                             |
+| createdClassId | Integer       | 审核通过后创建的班级 ID              |
+| createTime     | LocalDateTime | 申请时间                             |
 
 **注意**:
 
@@ -1145,11 +1164,12 @@ removedAttachmentIds: [1, 2]
 ```
 
 **字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| memberId | String | 是 | 申请 ID，必须是数字字符串 |
-| approved | Boolean | 是 | 是否通过(true-通过，false-拒绝) |
-| comment | String | 否 | 审核意见，最长 500 字符 |
+
+| 字段     | 类型    | 必填 | 说明                            |
+| -------- | ------- | ---- | ------------------------------- |
+| memberId | String  | 是   | 申请 ID，必须是数字字符串       |
+| approved | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
+| comment  | String  | 否   | 审核意见，最长 500 字符         |
 
 **成功响应 (200)**:
 
@@ -1189,12 +1209,13 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/applications/join/list`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 否 | 班级 ID 筛选 |
-| status | Integer | 否 | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
-| pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
+
+| 参数     | 类型    | 必填 | 说明                                     |
+| -------- | ------- | ---- | ---------------------------------------- |
+| classId  | Integer | 否   | 班级 ID 筛选                             |
+| status   | Integer | 否   | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
+| pageNum  | Integer | 否   | 页码，默认1                              |
+| pageSize | Integer | 否   | 每页大小，默认20，最大300                |
 
 **请求示例**:
 
@@ -1210,16 +1231,16 @@ removedAttachmentIds: [1, 2]
   "message": "查询加入申请列表成功",
   "data": {
     "records": [
-    {
-      "id": 2,
-      "classId": 1,
-      "applicantId": 1002,
-      "status": 0,
-      "reviewerId": null,
-      "reviewTime": null,
-      "reviewComment": null,
-      "createTime": "2026-04-09T10:00:00"
-    }
+      {
+        "id": 2,
+        "classId": 1,
+        "applicantId": 1002,
+        "status": 0,
+        "reviewerId": null,
+        "reviewTime": null,
+        "reviewComment": null,
+        "createTime": "2026-04-09T10:00:00"
+      }
     ],
     "total": 1,
     "size": 20,
@@ -1230,25 +1251,27 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
+
+| 字段    | 类型  | 说明         |
+| ------- | ----- | ------------ |
 | records | Array | 申请列表数据 |
-| total | Long | 总记录数 |
-| size | Long | 每页大小 |
-| current | Long | 当前页码 |
-| pages | Long | 总页数 |
+| total   | Long  | 总记录数     |
+| size    | Long  | 每页大小     |
+| current | Long  | 当前页码     |
+| pages   | Long  | 总页数       |
 
 **records内部字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 申请 ID |
-| classId | Integer | 申请加入的班级 ID |
-| applicantId | Integer | 申请人 ID |
-| status | Integer | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId | Integer | 审核人 ID |
-| reviewTime | LocalDateTime | 审核时间 |
-| reviewComment | String | 审核意见 |
-| createTime | LocalDateTime | 申请时间 |
+
+| 字段          | 类型          | 说明                                 |
+| ------------- | ------------- | ------------------------------------ |
+| id            | Integer       | 申请 ID                              |
+| classId       | Integer       | 申请加入的班级 ID                    |
+| applicantId   | Integer       | 申请人 ID                            |
+| status        | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
+| reviewerId    | Integer       | 审核人 ID                            |
+| reviewTime    | LocalDateTime | 审核时间                             |
+| reviewComment | String        | 审核意见                             |
+| createTime    | LocalDateTime | 申请时间                             |
 
 **注意**:
 
@@ -1279,11 +1302,12 @@ removedAttachmentIds: [1, 2]
 ```
 
 **字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| memberId | String | 是 | 申请 ID，必须是数字字符串 |
-| approved | Boolean | 是 | 是否通过(true-通过，false-拒绝) |
-| comment | String | 否 | 审核意见，最长 500 字符 |
+
+| 字段     | 类型    | 必填 | 说明                            |
+| -------- | ------- | ---- | ------------------------------- |
+| memberId | String  | 是   | 申请 ID，必须是数字字符串       |
+| approved | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
+| comment  | String  | 否   | 审核意见，最长 500 字符         |
 
 **成功响应 (200)**:
 
@@ -1324,10 +1348,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `PUT /api/class/set-assistant-teacher`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
-| studentUserId | Integer | 是 | 学生用户 ID |
+
+| 参数          | 类型    | 必填 | 说明        |
+| ------------- | ------- | ---- | ----------- |
+| classId       | Integer | 是   | 班级 ID     |
+| studentUserId | Integer | 是   | 学生用户 ID |
 
 **请求示例**: `PUT /api/class/set-assistant-teacher?classId=1&studentUserId=1002`
 
@@ -1364,10 +1389,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `DELETE /api/class/remove-student`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
-| studentUserId | Integer | 是 | 学生用户 ID |
+
+| 参数          | 类型    | 必填 | 说明        |
+| ------------- | ------- | ---- | ----------- |
+| classId       | Integer | 是   | 班级 ID     |
+| studentUserId | Integer | 是   | 学生用户 ID |
 
 **请求示例**: `DELETE /api/class/remove-student?classId=1&studentUserId=1002`
 

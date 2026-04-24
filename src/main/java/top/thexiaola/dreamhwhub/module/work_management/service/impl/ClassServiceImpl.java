@@ -14,6 +14,7 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
+import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.time.LocalDateTime;
@@ -89,6 +90,15 @@ public class ClassServiceImpl implements ClassService {
         return targetUser;
     }
 
+    /**
+     * 判断用户是否为管理员
+     * @param user 用户对象
+     * @return true-是管理员，false-不是管理员
+     */
+    private boolean isAdmin(User user) {
+        return user != null && user.getPermission() != null && user.getPermission() >= 100;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClassMember addTeacherToClass(Integer classId, String userAccount) {
@@ -101,7 +111,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否有权限添加老师（需要是老师或管理员）
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isTeacher) {
@@ -150,7 +160,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否是老师（包括创建者和班级助理）
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
@@ -192,7 +202,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否是老师（包括创建者和班级助理）或管理员
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
@@ -242,7 +252,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否是创建者或管理员
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isCreator = classInfo.getOwnerId().equals(currentUser.getId());
         
         if (!isAdmin && !isCreator) {
@@ -304,7 +314,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否是班级内的学生
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isClassStudent = isStudent(classId, currentUser.getId());
         
         if (!isAdmin && !isClassStudent) {
@@ -361,7 +371,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查审核人是否是老师或管理员
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(application.getClassId(), currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
@@ -414,7 +424,7 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是班级内的老师或管理员
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
@@ -760,6 +770,24 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize) {
+        User currentUser = getCurrentUserOrThrow();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} querying class members, class ID: {}, page={}, size={}", userInfo, classId, pageNum, pageSize);
+
+        // 验证班级是否存在
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        // 权限校验：管理员不受限制，普通用户只能查询自己创建或加入的班级
+        boolean isAdmin = isAdmin(currentUser);
+        boolean isClassMember = isClassMember(classId, currentUser.getId());
+        
+        if (!isAdmin && !isClassMember) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "你无权查看该班级的成员列表", null);
+        }
+
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId);
         
@@ -774,7 +802,6 @@ public class ClassServiceImpl implements ClassService {
                     String userNo = user != null ? user.getUserNo() : "未知";
                     
                     // 确定角色
-                    ClassInfo classInfo = classInfoMapper.selectById(classId);
                     String role = getUserRole(classInfo, member);
 
                     return new ClassMemberResponse(
@@ -791,6 +818,7 @@ public class ClassServiceImpl implements ClassService {
         // 构建分页结果
         Page<ClassMemberResponse> page = new Page<>(pageNum, pageSize, pagedResult.getTotal());
         page.setRecords(responses);
+        log.info("User {} queried {} members from class {}", userInfo, pagedResult.getTotal(), classId);
         return page;
     }
 
@@ -881,7 +909,7 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是管理员（permission >= 100）
-        if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
+        if (!isAdmin(currentUser)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看创建申请列表", null);
         }
 
@@ -905,7 +933,7 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是管理员（permission >= 100）
-        if (currentUser.getPermission() == null || currentUser.getPermission() < 100) {
+        if (!isAdmin(currentUser)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以审核创建申请", null);
         }
 
@@ -1006,7 +1034,7 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查权限：管理员或班级老师
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         
         if (!isAdmin && classId != null) {
             // 如果不是管理员，必须是该班级的老师
@@ -1049,7 +1077,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查权限：管理员或班级老师
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(application.getClassId(), currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
@@ -1092,7 +1120,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否有权限邀请（必须是老师或管理员）
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
@@ -1251,7 +1279,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否是老师或管理员
-        boolean isAdmin = currentUser.getPermission() != null && currentUser.getPermission() >= 100;
+        boolean isAdmin = isAdmin(currentUser);
         boolean isTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isTeacher) {
