@@ -46,15 +46,9 @@ public class InvitationResponse {
     private Integer inviteeUserId;
 
     /**
-     * 邀请状态：0-待处理，1-已同意，2-已拒绝，3-已过期
+     * 邀请状态：0-待处理，1-已同意，2-已拒绝
      */
     private Integer status;
-
-    /**
-     * 过期时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
-    private LocalDateTime expireTime;
 
     /**
      * 响应时间

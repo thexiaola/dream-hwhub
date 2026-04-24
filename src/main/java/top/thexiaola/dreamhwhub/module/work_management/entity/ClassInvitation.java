@@ -25,10 +25,7 @@ public class ClassInvitation {
     private Integer inviteeUserId;  // 被邀请人 ID
 
     @TableField("status")
-    private Integer status;  // 0-待处理，1-已同意，2-已拒绝，3-已过期
-
-    @TableField("expire_time")
-    private LocalDateTime expireTime;  // 过期时间
+    private Integer status;  // 0-待处理，1-已同意，2-已拒绝
 
     @TableField("response_time")
     private LocalDateTime responseTime;  // 响应时间

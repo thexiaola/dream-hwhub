@@ -1605,7 +1605,6 @@ removedAttachmentIds: [1, 2]
 - **参数命名**：使用`applicationId`而非`memberId`，准确表示“邀请申请ID”
 - 审核通过后，系统会创建一条邀请记录发送给被邀请人
 - **被邀请人需要调用“同意邀请”接口（2.21）才能加入班级**
-- 邀请有效期为7天，过期后需重新发起邀请
 
 ---
 
@@ -1705,7 +1704,7 @@ removedAttachmentIds: [1, 2]
 **注意**:
 
 - 所有邀请均需要被邀请人最终确认，保障用户知情权
-- 邀请有效期为7天，过期后需重新发起
+- 如果重复邀请同一用户，会自动删除旧的待处理邀请，保留最新的邀请
 - 被邀请人可以查看邀请详情（班级名称、邀请人等）后再决定
 
 ---
@@ -1734,7 +1733,6 @@ removedAttachmentIds: [1, 2]
     "inviterId": 1001,
     "inviteeUserId": 1002,
     "status": 0,
-    "expireTime": "2026-04-16T10:00:00",
     "responseTime": null,
     "responseComment": null,
     "createTime": "2026-04-09T10:00:00"
@@ -1749,8 +1747,7 @@ removedAttachmentIds: [1, 2]
 | classId | Integer | 班级 ID |
 | inviterId | Integer | 邀请人 ID(教师) |
 | inviteeUserId | Integer | 被邀请人 ID |
-| status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝,3-已过期) |
-| expireTime | LocalDateTime | 过期时间(7天后) |
+| status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
 | responseTime | LocalDateTime | 响应时间 |
 | responseComment | String | 用户回复说明 |
 | createTime | LocalDateTime | 邀请时间 |
@@ -1758,8 +1755,7 @@ removedAttachmentIds: [1, 2]
 **注意**:
 
 - 只有老师或管理员可以发送邀请
-- 邀请有效期为7天
-- 防止重复邀请同一用户
+- **重复邀请会自动替换**：如果对该用户已有待处理邀请，会先删除旧邀请再创建新邀请
 - 用户需要主动同意才能加入班级
 
 **失败响应**:
@@ -1788,7 +1784,7 @@ removedAttachmentIds: [1, 2]
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| status | Integer | 否 | 状态筛选（0-待处理，1-已同意，2-已拒绝，3-已过期） |
+| status | Integer | 否 | 状态筛选（0-待处理，1-已同意，2-已拒绝） |
 
 **请求示例**:
 
@@ -1810,7 +1806,6 @@ removedAttachmentIds: [1, 2]
       "inviterName": "张老师",
       "inviteeUserId": 1002,
       "status": 0,
-      "expireTime": "2026-04-16T10:00:00",
       "responseTime": null,
       "responseComment": null,
       "createTime": "2026-04-09T10:00:00"
@@ -1828,8 +1823,7 @@ removedAttachmentIds: [1, 2]
 | inviterId | Integer | 邀请人 ID |
 | inviterName | String | 邀请人姓名 |
 | inviteeUserId | Integer | 被邀请人 ID |
-| status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝,3-已过期) |
-| expireTime | LocalDateTime | 过期时间 |
+| status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
 | responseTime | LocalDateTime | 响应时间 |
 | responseComment | String | 用户回复说明 |
 | createTime | LocalDateTime | 邀请时间 |
@@ -1893,23 +1887,21 @@ removedAttachmentIds: [1, 2]
 - 只能响应发给自己的邀请
 - 同意则自动以`学生`身份加入班级
 - 拒绝则标记为已拒绝
-- 已过期的邀请无法响应
 
 **失败响应**:
 
 ```json
 {
   "code": 400,
-  "message": "邀请已过期",
+  "message": "该邀请已处理",
   "data": null
 }
 ```
 
 **可能的错误信息**:
 
-- "只能响应发给自己的邀请"
-- "该邀请已处理"
-- "邀请已过期"
+- “只能响应发给自己的邀请”
+- “该邀请已处理”
 
 ---
 
@@ -2019,16 +2011,16 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "code": 400,
-  "message": "邀请码无效或已过期",
+  "message": "邀请码失效",
   "data": null
 }
 ```
 
 **可能的错误信息**:
 
-- "用户未登录"
-- "邀请码不能为空"
-- "邀请码无效或已过期"
+- “用户未登录”
+- “邀请码不能为空”
+- “邀请码失效”
 - "您已经是该班级成员"
 - "您已有待审核的加入申请"
 

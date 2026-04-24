@@ -398,14 +398,23 @@ public class ClassServiceImpl implements ClassService {
                 memberQuery.eq("class_id", application.getClassId())
                           .eq("user_id", targetUser.getId());
                 if (classMemberMapper.selectCount(memberQuery) == 0) {
-                    // 创建邀请记录，等待被邀请人确认
+                    // 删除已有的待处理邀请记录（如果存在）
+                    QueryWrapper<ClassInvitation> oldInvitationQuery = new QueryWrapper<>();
+                    oldInvitationQuery.eq("class_id", application.getClassId())
+                            .eq("invitee_user_id", targetUser.getId())
+                            .eq("status", 0);  // 待处理
+                    int deletedCount = classInvitationMapper.delete(oldInvitationQuery);
+                    if (deletedCount > 0) {
+                        log.info("Deleted {} old pending invitation(s) for user {} to class {}", 
+                                deletedCount, targetUser.getId(), application.getClassId());
+                    }
+                    
+                    // 创建新的邀请记录，等待被邀请人确认
                     ClassInvitation invitation = new ClassInvitation();
                     invitation.setClassId(application.getClassId());
                     invitation.setInviterId(application.getInviterId());
                     invitation.setInviteeUserId(targetUser.getId());
                     invitation.setStatus(0); // 待确认
-                    invitation.setExpireTime(LocalDateTime.now().plusDays(7)); // 7天有效期
-                    invitation.setCreateTime(LocalDateTime.now());
                     
                     classInvitationMapper.insert(invitation);
 
@@ -1137,22 +1146,23 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该用户已经在班级中", null);
         }
 
-        // 检查是否已经有待处理的邀请
-        QueryWrapper<ClassInvitation> invitationQuery = new QueryWrapper<>();
-        invitationQuery.eq("class_id", classId)
+        // 删除已有的待处理邀请记录（如果存在）
+        QueryWrapper<ClassInvitation> oldInvitationQuery = new QueryWrapper<>();
+        oldInvitationQuery.eq("class_id", classId)
                 .eq("invitee_user_id", targetUser.getId())
                 .eq("status", 0);  // 待处理
-        if (classInvitationMapper.selectCount(invitationQuery) > 0) {
-            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "已发送过邀请，请等待用户响应", null);
+        int deletedCount = classInvitationMapper.delete(oldInvitationQuery);
+        if (deletedCount > 0) {
+            log.info("Deleted {} old pending invitation(s) for user {} to class {}", 
+                    deletedCount, targetUser.getId(), classId);
         }
 
-        // 创建邀请记录（7天有效期）
+        // 创建新的邀请记录
         ClassInvitation invitation = new ClassInvitation();
         invitation.setClassId(classId);
         invitation.setInviterId(currentUser.getId());
         invitation.setInviteeUserId(targetUser.getId());
         invitation.setStatus(0);  // 待处理
-        invitation.setExpireTime(LocalDateTime.now().plusDays(7));
 
         classInvitationMapper.insert(invitation);
 
@@ -1190,7 +1200,6 @@ public class ClassServiceImpl implements ClassService {
             response.setInviterId(invitation.getInviterId());
             response.setInviteeUserId(invitation.getInviteeUserId());
             response.setStatus(invitation.getStatus());
-            response.setExpireTime(invitation.getExpireTime());
             response.setResponseTime(invitation.getResponseTime());
             response.setResponseComment(invitation.getResponseComment());
             response.setCreateTime(invitation.getCreateTime());
@@ -1229,13 +1238,6 @@ public class ClassServiceImpl implements ClassService {
         // 检查邀请状态
         if (!Integer.valueOf(0).equals(invitation.getStatus())) {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该邀请已处理", null);
-        }
-
-        // 检查是否过期
-        if (invitation.getExpireTime() != null && LocalDateTime.now().isAfter(invitation.getExpireTime())) {
-            invitation.setStatus(3);  // 已过期
-            classInvitationMapper.updateById(invitation);
-            throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "邀请已过期", null);
         }
 
         // 更新邀请状态
@@ -1312,7 +1314,7 @@ public class ClassServiceImpl implements ClassService {
         ClassInfo classInfo = classInfoMapper.selectOne(classQuery);
         
         if (classInfo == null) {
-            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "邀请码无效或已过期", null);
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "邀请码失效", null);
         }
 
         // 检查是否已经是成员
