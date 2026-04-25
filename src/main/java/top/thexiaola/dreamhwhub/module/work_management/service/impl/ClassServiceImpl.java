@@ -192,7 +192,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void removeStudentFromClass(Integer classId, Integer studentUserId) {
+    public void kickStudentFromClass(Integer classId, Integer studentUserId) {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
@@ -206,19 +206,19 @@ public class ClassServiceImpl implements ClassService {
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或管理员可以移除学生", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或管理员可以踢出学生", null);
         }
 
-        // 不能移除自己
+        // 不能踢出自己
         if (studentUserId.equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能移除自己，请使用退出班级功能", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能踢出自己，请使用退出班级功能", null);
         }
 
-        // 不能移除其他老师（包括创建者和班级助理）
+        // 不能踢出其他老师（包括创建者和班级助理）
         QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
         teacherQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("is_teacher", true);
         if (classMemberMapper.selectCount(teacherQuery) > 0) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能移除老师", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能踢出老师", null);
         }
 
         // 检查目标用户是否是学生
@@ -230,13 +230,13 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "该用户不是班级学生或不在该班级中", null);
         }
 
-        // 级联删除该学生在该班级的所有作业提交和附件
+        // 软删除该学生在该班级的所有作业提交和附件
         cleanupStudentSubmissions(classId, studentUserId);
 
-        // 删除学生成员记录
+        // 硬删除学生成员记录（从班级中移除）
         classMemberMapper.deleteById(studentMember.getId());
 
-        log.info("User {} removed student {} from class {}", 
+        log.info("User {} kicked student {} from class {}", 
                 currentUser.getId(), studentUserId, classId);
     }
 
@@ -396,7 +396,8 @@ public class ClassServiceImpl implements ClassService {
                 // 检查是否已经是成员（双重检查）
                 QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
                 memberQuery.eq("class_id", application.getClassId())
-                          .eq("user_id", targetUser.getId());
+                          .eq("user_id", targetUser.getId())
+                          ;
                 if (classMemberMapper.selectCount(memberQuery) == 0) {
                     // 删除已有的待处理邀请记录（如果存在）
                     QueryWrapper<ClassInvitation> oldInvitationQuery = new QueryWrapper<>();
@@ -472,10 +473,11 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CREATOR_CANNOT_LEAVE, "创建者不能退出班级", null);
         }
 
-        // 级联删除该学生在该班级的所有作业提交和附件
+        // 级联软删除该学生在该班级的所有作业提交和附件
         cleanupStudentSubmissions(classId, currentUser.getId());
 
-        classMemberMapper.delete(queryWrapper);
+        // 硬删除学生成员记录（从班级中移除）
+        classMemberMapper.deleteById(member.getId());
 
         log.info("User {} left class {}", currentUser.getId(), classId);
         return classInfo.getClassName();
@@ -1051,7 +1053,39 @@ public class ClassServiceImpl implements ClassService {
                 throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员或班级老师可以查看加入申请", null);
             }
         } else if (!isAdmin) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看所有加入申请", null);
+            // 非管理员且classId为空：查询自己担任老师的所有班级的申请
+            QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
+            teacherQuery.eq("user_id", currentUser.getId())
+                       .eq("is_teacher", true)
+                       .select("class_id");
+            List<ClassMember> teacherMembers = classMemberMapper.selectList(teacherQuery);
+            
+            if (teacherMembers.isEmpty()) {
+                // 没有担任老师的班级，返回空分页结果
+                Page<ClassJoinApplication> emptyPage = new Page<>(pageNum, pageSize, 0);
+                emptyPage.setRecords(java.util.Collections.emptyList());
+                return emptyPage;
+            }
+            
+            // 构建classId列表
+            List<Integer> classIds = teacherMembers.stream()
+                    .map(ClassMember::getClassId)
+                    .toList();
+            
+            // 查询这些班级的申请
+            QueryWrapper<ClassJoinApplication> queryWrapper = new QueryWrapper<>();
+            queryWrapper.in("class_id", classIds);
+            
+            if (status != null) {
+                queryWrapper.eq("status", status);
+            }
+            
+            // 按创建时间倒序排列
+            queryWrapper.orderByDesc("create_time");
+            
+            // 使用MyBatisPlus分页
+            Page<ClassJoinApplication> appPage = new Page<>(pageNum, pageSize);
+            return classJoinApplicationMapper.selectPage(appPage, queryWrapper);
         }
 
         QueryWrapper<ClassJoinApplication> queryWrapper = new QueryWrapper<>();
@@ -1436,7 +1470,7 @@ public class ClassServiceImpl implements ClassService {
                    .eq("is_deleted", false);
             List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
             
-            // 软删除附件记录
+            // 软删除附件记录（不物理删除文件）
             for (WorkSubmissionAttachment attachment : attachments) {
                 attachment.setIsDeleted(true);
                 workSubmissionAttachmentMapper.updateById(attachment);
@@ -1449,7 +1483,7 @@ public class ClassServiceImpl implements ClassService {
             submission.setIsDeleted(true);
             workSubmissionMapper.updateById(submission);
         }
-        log.info("Soft deleted {} submission records for user {} in class {}", 
+        log.info("Soft deleted {} submission records for user {} in class {} (files preserved)", 
                 submissions.size(), userId, classId);
     }
 

@@ -29,7 +29,7 @@ public interface ClassService {
     /**
      * 将学生踢出班级（老师/班级助理专用）
      */
-    void removeStudentFromClass(Integer classId, Integer studentUserId);
+    void kickStudentFromClass(Integer classId, Integer studentUserId);
 
     /**
      * 取消班级助理权限（降级为学生，仅创建者可用）

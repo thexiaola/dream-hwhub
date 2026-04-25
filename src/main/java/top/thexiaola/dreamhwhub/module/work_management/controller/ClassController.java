@@ -237,15 +237,15 @@ public class ClassController {
     /**
      * 将学生踢出班级（老师/班级助理专用）
      */
-    @DeleteMapping("/remove-student")
-    public ApiResponse<Void> removeStudent(@RequestParam Integer classId,
+    @DeleteMapping("/kick-student")
+    public ApiResponse<Void> kickStudent(@RequestParam Integer classId,
                                             @RequestParam Integer studentUserId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} removing student {} from class {}", 
+        log.info("User {} kicking student {} from class {}", 
                 userInfo, studentUserId, classId);
-        classService.removeStudentFromClass(classId, studentUserId);
-        log.info("User {} removed student {} from class {} successfully", 
+        classService.kickStudentFromClass(classId, studentUserId);
+        log.info("User {} kicked student {} from class {} successfully", 
                 userInfo, studentUserId, classId);
         return ApiResponse.success(null);
     }

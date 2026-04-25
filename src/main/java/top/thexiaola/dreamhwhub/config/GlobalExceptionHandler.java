@@ -47,8 +47,8 @@ public class GlobalExceptionHandler {
             // 未登录或认证失败返回 401
             httpStatus = HttpStatus.UNAUTHORIZED;
             returnCode = 401;
-        } else if (code == 404 || code == 8501) {
-            // 资源不存在返回 404
+        } else if (code == 404 || code == 8501 || code == 7001 || code == 7004) {
+            // 资源不存在返回 404（班级、作业、提交记录）
             httpStatus = HttpStatus.NOT_FOUND;
             returnCode = 404;
         } else {

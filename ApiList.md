@@ -328,9 +328,9 @@ removedAttachmentIds: [1, 2]
 
 **请求参数**:
 
-| 参数   | 类型    | 必填 | 说明    |
-| ------ | ------- | ---- | ------- |
-| workId | Integer | 是   | 作业 ID |
+| 参数     | 类型      | 必填 | 说明    |
+|--------|---------|----|-------|
+| workId | Integer | 是  | 作业 ID |
 
 **请求示例**: `GET /api/works/detail?workId=1`
 
@@ -357,12 +357,12 @@ removedAttachmentIds: [1, 2]
 
 **响应字段说明**:
 
-| 字段        | 类型          | 说明        |
-| ----------- | ------------- | ----------- |
-| id          | Integer       | 作业 ID     |
+| 字段          | 类型            | 说明      |
+|-------------|---------------|---------|
+| id          | Integer       | 作业 ID   |
 | title       | String        | 作业标题    |
 | description | String        | 作业描述    |
-| publisherId | Integer       | 发布人 ID   |
+| publisherId | Integer       | 发布人 ID  |
 | classId     | Integer       | 所属班级 ID |
 | deadline    | LocalDateTime | 截止时间    |
 | totalScore  | Integer       | 作业总分    |
@@ -732,7 +732,7 @@ removedAttachmentIds: [1, 2]
   2. 硬删除所有作业提交记录（WorkSubmission）
   3. 硬删除所有作业附件记录（WorkAttachment）
   4. 硬删除所有作业信息记录（WorkInfo）
-  5. 删除所有班级成员记录（ClassMember）
+  5. 硬删除所有班级成员记录（ClassMember）
   6. 删除所有班级邀请记录（ClassInvitation）
   7. 删除所有班级加入申请记录（ClassJoinApplication）
   8. 删除所有班级邀请申请记录（ClassInviteApplication）
@@ -1033,6 +1033,26 @@ removedAttachmentIds: [1, 2]
 - `3`: 学生（普通班级成员）
 - `null`: 非班级成员
 
+**管理员特殊权限规则**:
+
+管理员（permission >= 100）具有特殊的跨班级权限：
+
+- **管理员在班级中时**：
+  - 可以被踢出班级
+  - 可以被任命为班级助理
+  - 可以创建作业
+  - 可以提交作业（以学生身份）
+  - 拥有老师的所有权限
+
+- **管理员不在班级中时**：
+  - **受限操作**：不能提交作业（必须先加入班级）
+  - **可用权限**：
+    - 查看班级信息
+    - 审核加入申请和邀请申请
+    - 管理班级成员（踢出、任命等）
+    - 创建新班级
+    - 拥有老师的管理权限
+
 **使用建议**:
 
 - **前端权限判断**: 使用 `roleCode` 进行条件判断，例如 `if (roleCode === 1) { /* 显示创建者专属功能 */ }`
@@ -1278,7 +1298,8 @@ removedAttachmentIds: [1, 2]
 - **管理员**: `classId` 为空时返回所有班级的申请，提供 `classId` 时只返回指定班级的申请
 - **老师/班级助理**: `classId` 为空时返回自己担任老师的所有班级的申请，提供 `classId` 时只返回该班级的申请（需验证是该班老师）
 - **学生**: 无权限访问此接口
-- 按创建时间倒序排列
+- 如果没有担任老师的班级，返回空列表（total=0）
+- 按创建时间 `createTime` 倒序排列
 
 ---
 
@@ -1386,7 +1407,7 @@ removedAttachmentIds: [1, 2]
 
 ### 2.14 将学生踢出班级（老师/班级助理专用）
 
-**接口地址**: `DELETE /api/class/remove-student`
+**接口地址**: `DELETE /api/class/kick-student`
 
 **请求参数**:
 
@@ -1395,7 +1416,7 @@ removedAttachmentIds: [1, 2]
 | classId       | Integer | 是   | 班级 ID     |
 | studentUserId | Integer | 是   | 学生用户 ID |
 
-**请求示例**: `DELETE /api/class/remove-student?classId=1&studentUserId=1002`
+**请求示例**: `DELETE /api/class/kick-student?classId=1&studentUserId=1002`
 
 **成功响应 (200)**:
 
@@ -1425,11 +1446,12 @@ removedAttachmentIds: [1, 2]
 
 **注意**:
 
-- **级联清理机制**：踢出学生时会自动清理该学生在该班级的所有作业提交数据
-  - 删除学生提交的所有附件文件
-  - 删除提交附件记录
-  - 删除所有提交记录
-- **防止资源浪费**：自动释放服务器存储空间
+- **硬删除成员记录**：踢出学生时会从班级中移除该学生的成员记录
+- **级联软清理机制**：踢出学生时会自动软删除该学生在该班级的所有作业提交数据
+  - 软删除学生提交的所有附件记录（is_deleted = true）
+  - 软删除所有提交记录（is_deleted = true）
+  - **保留附件文件**：不物理删除文件，保留完整的作业历史
+- **数据可恢复**：作业提交数据和文件都保留，便于审计和恢复
 
 ---
 
@@ -1438,10 +1460,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `PUT /api/class/demote-assistant-teacher`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
-| teacherUserId | Integer | 是 | 班级助理用户 ID |
+
+| 参数          | 类型    | 必填 | 说明            |
+| ------------- | ------- | ---- | --------------- |
+| classId       | Integer | 是   | 班级 ID         |
+| teacherUserId | Integer | 是   | 班级助理用户 ID |
 
 **请求示例**: `PUT /api/class/demote-assistant-teacher?classId=1&teacherUserId=1002`
 
@@ -1477,10 +1500,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `POST /api/class/student/invite`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
-| userAccount | String | 是 | 被邀请用户的账号 |
+
+| 参数        | 类型    | 必填 | 说明             |
+| ----------- | ------- | ---- | ---------------- |
+| classId     | Integer | 是   | 班级 ID          |
+| userAccount | String  | 是   | 被邀请用户的账号 |
 
 **请求示例**: `POST /api/class/student/invite?classId=1&userAccount=2024002`
 
@@ -1505,17 +1529,18 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 邀请申请 ID |
-| classId | Integer | 班级 ID |
-| inviterId | Integer | 邀请人 ID(学生) |
-| inviteeAccount | String | 被邀请人账号 |
-| status | Integer | 审核状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId | Integer | 审核人 ID |
-| reviewTime | LocalDateTime | 审核时间 |
-| reviewComment | String | 审核意见 |
-| createTime | LocalDateTime | 邀请时间 |
+
+| 字段           | 类型          | 说明                                 |
+| -------------- | ------------- | ------------------------------------ |
+| id             | Integer       | 邀请申请 ID                          |
+| classId        | Integer       | 班级 ID                              |
+| inviterId      | Integer       | 邀请人 ID(学生)                      |
+| inviteeAccount | String        | 被邀请人账号                         |
+| status         | Integer       | 审核状态(0-待审核,1-已通过,2-已拒绝) |
+| reviewerId     | Integer       | 审核人 ID                            |
+| reviewTime     | LocalDateTime | 审核时间                             |
+| reviewComment  | String        | 审核意见                             |
+| createTime     | LocalDateTime | 邀请时间                             |
 
 **失败响应**:
 
