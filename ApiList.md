@@ -328,9 +328,9 @@ removedAttachmentIds: [1, 2]
 
 **请求参数**:
 
-| 参数     | 类型      | 必填 | 说明    |
-|--------|---------|----|-------|
-| workId | Integer | 是  | 作业 ID |
+| 参数   | 类型    | 必填 | 说明    |
+| ------ | ------- | ---- | ------- |
+| workId | Integer | 是   | 作业 ID |
 
 **请求示例**: `GET /api/works/detail?workId=1`
 
@@ -357,12 +357,12 @@ removedAttachmentIds: [1, 2]
 
 **响应字段说明**:
 
-| 字段          | 类型            | 说明      |
-|-------------|---------------|---------|
-| id          | Integer       | 作业 ID   |
+| 字段        | 类型          | 说明        |
+| ----------- | ------------- | ----------- |
+| id          | Integer       | 作业 ID     |
 | title       | String        | 作业标题    |
 | description | String        | 作业描述    |
-| publisherId | Integer       | 发布人 ID  |
+| publisherId | Integer       | 发布人 ID   |
 | classId     | Integer       | 所属班级 ID |
 | deadline    | LocalDateTime | 截止时间    |
 | totalScore  | Integer       | 作业总分    |
@@ -1518,7 +1518,8 @@ removedAttachmentIds: [1, 2]
     "id": 1,
     "classId": 1,
     "inviterId": 1002,
-    "inviteeAccount": "2024002",
+    "inviteeId": 1003,
+    "inviteeName": "李四",
     "status": 0,
     "reviewerId": null,
     "reviewTime": null,
@@ -1530,17 +1531,18 @@ removedAttachmentIds: [1, 2]
 
 **响应字段说明**:
 
-| 字段           | 类型          | 说明                                 |
-| -------------- | ------------- | ------------------------------------ |
-| id             | Integer       | 邀请申请 ID                          |
-| classId        | Integer       | 班级 ID                              |
-| inviterId      | Integer       | 邀请人 ID(学生)                      |
-| inviteeAccount | String        | 被邀请人账号                         |
-| status         | Integer       | 审核状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId     | Integer       | 审核人 ID                            |
-| reviewTime     | LocalDateTime | 审核时间                             |
-| reviewComment  | String        | 审核意见                             |
-| createTime     | LocalDateTime | 邀请时间                             |
+| 字段          | 类型          | 说明                                 |
+| ------------- | ------------- | ------------------------------------ |
+| id            | Integer       | 邀请申请 ID                          |
+| classId       | Integer       | 班级 ID                              |
+| inviterId     | Integer       | 邀请人 ID(学生)                      |
+| inviteeId     | Integer       | 被邀请人 ID                          |
+| inviteeName   | String        | 被邀请人用户名                       |
+| status        | Integer       | 审核状态(0-待审核,1-已通过,2-已拒绝) |
+| reviewerId    | Integer       | 审核人 ID                            |
+| reviewTime    | LocalDateTime | 审核时间                             |
+| reviewComment | String        | 审核意见                             |
+| createTime    | LocalDateTime | 邀请时间                             |
 
 **失败响应**:
 
@@ -1655,7 +1657,8 @@ removedAttachmentIds: [1, 2]
       "id": 1,
       "classId": 1,
       "inviterId": 1002,
-      "inviteeAccount": "2024002",
+      "inviteeId": 1003,
+      "inviteeName": "李四",
       "status": 0,
       "reviewerId": null,
       "reviewTime": null,
@@ -1668,11 +1671,12 @@ removedAttachmentIds: [1, 2]
 
 **响应字段说明**:
 | 字段 | 类型 | 说明 |
-|------|------|------|
+| ------ | ------ | ------ |
 | id | Integer | 邀请申请 ID |
 | classId | Integer | 班级 ID |
 | inviterId | Integer | 邀请人 ID(学生) |
-| inviteeAccount | String | 被邀请人账号 |
+| inviteeId | Integer | 被邀请人 ID |
+| inviteeName | String | 被邀请人用户名 |
 | status | Integer | 审核状态(0-待审核,1-已通过,2-已拒绝) |
 | reviewerId | Integer | 审核人 ID |
 | reviewTime | LocalDateTime | 审核时间 |

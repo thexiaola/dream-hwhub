@@ -39,7 +39,7 @@ public interface ClassService {
     /**
      * 学生邀请用户加入班级（需要审核）
      */
-    ClassInviteApplication studentInviteUser(Integer classId, String userAccount);
+    InviteApplicationResponse studentInviteUser(Integer classId, String userAccount);
 
     /**
      * 审核邀请申请（老师/管理员专用）
@@ -49,7 +49,7 @@ public interface ClassService {
     /**
      * 获取待审核的邀请申请列表（班级老师专用）
      */
-    List<ClassInviteApplication> getPendingInviteApplications(Integer classId);
+    List<InviteApplicationResponse> getPendingInviteApplications(Integer classId);
 
     /**
      * 退出班级

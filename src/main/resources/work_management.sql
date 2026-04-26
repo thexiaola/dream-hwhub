@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `class_invite_application` (
     `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '邀请申请ID',
     `class_id` INT NOT NULL COMMENT '班级ID',
     `inviter_id` INT NOT NULL COMMENT '邀请人ID（学生）',
-    `invitee_account` VARCHAR(50) NOT NULL COMMENT '被邀请人账号',
+    `invitee_id` INT NOT NULL COMMENT '被邀请人ID',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '审核状态：0-待审核，1-已通过，2-已拒绝',
     `reviewer_id` INT DEFAULT NULL COMMENT '审核人ID（老师/管理员）',
     `review_time` DATETIME DEFAULT NULL COMMENT '审核时间',
@@ -47,9 +47,11 @@ CREATE TABLE IF NOT EXISTS `class_invite_application` (
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '邀请时间',
     INDEX idx_class_id (`class_id`),
     INDEX idx_inviter_id (`inviter_id`),
+    INDEX idx_invitee_id (`invitee_id`),
     INDEX idx_status (`status`),
     CONSTRAINT fk_invite_app_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
     CONSTRAINT fk_invite_app_inviter FOREIGN KEY (`inviter_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_invite_app_invitee FOREIGN KEY (`invitee_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
     CONSTRAINT fk_invite_app_reviewer FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级邀请申请表';
 

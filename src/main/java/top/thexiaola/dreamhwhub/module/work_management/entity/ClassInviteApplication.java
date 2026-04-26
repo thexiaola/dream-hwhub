@@ -21,8 +21,8 @@ public class ClassInviteApplication {
     @TableField("inviter_id")
     private Integer inviterId;  // 邀请人 ID（学生）
 
-    @TableField("invitee_account")
-    private String inviteeAccount;  // 被邀请人账号
+    @TableField("invitee_id")
+    private Integer inviteeId;  // 被邀请人 ID
 
     @TableField("status")
     private Integer status;  // 0-待审核，1-已通过，2-已拒绝

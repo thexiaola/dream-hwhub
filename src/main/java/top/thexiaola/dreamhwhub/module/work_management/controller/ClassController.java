@@ -10,7 +10,6 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.*;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassCreateApplication;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInvitation;
-import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInviteApplication;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
@@ -270,15 +269,15 @@ public class ClassController {
      * 学生邀请用户加入班级（需要审核）
      */
     @PostMapping("/student/invite")
-    public ApiResponse<ClassInviteApplication> studentInviteUser(@RequestParam Integer classId,
+    public ApiResponse<InviteApplicationResponse> studentInviteUser(@RequestParam Integer classId,
                                                                   @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("Student {} inviting user {} to class {} (needs approval)", 
                 userInfo, userAccount, classId);
-        ClassInviteApplication application = classService.studentInviteUser(classId, userAccount);
-        log.info("Student {} submitted invite application, id: {}", userInfo, application.getId());
-        return ApiResponse.success(application);
+        InviteApplicationResponse response = classService.studentInviteUser(classId, userAccount);
+        log.info("Student {} submitted invite application, id: {}", userInfo, response.getId());
+        return ApiResponse.success(response);
     }
 
     /**
@@ -300,11 +299,11 @@ public class ClassController {
      * 获取待审核的邀请申请列表（班级老师专用）
      */
     @GetMapping("/invite/applications/pending")
-    public ApiResponse<List<ClassInviteApplication>> getPendingInviteApplications(@RequestParam Integer classId) {
+    public ApiResponse<List<InviteApplicationResponse>> getPendingInviteApplications(@RequestParam Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} querying pending invite applications for class {}", userInfo, classId);
-        List<ClassInviteApplication> applications = classService.getPendingInviteApplications(classId);
+        List<InviteApplicationResponse> applications = classService.getPendingInviteApplications(classId);
         log.info("User {} queried {} pending invite applications", userInfo, applications.size());
         return ApiResponse.success(applications);
     }

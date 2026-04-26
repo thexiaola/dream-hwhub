@@ -304,7 +304,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassInviteApplication studentInviteUser(Integer classId, String userAccount) {
+    public InviteApplicationResponse studentInviteUser(Integer classId, String userAccount) {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
@@ -335,7 +335,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassInviteApplication> appQuery = new QueryWrapper<>();
         appQuery.eq("class_id", classId)
                 .eq("inviter_id", currentUser.getId())
-                .eq("invitee_account", userAccount)
+                .eq("invitee_id", targetUser.getId())
                 .eq("status", 0);
         if (classInviteApplicationMapper.selectCount(appQuery) > 0) {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "已有待审核的邀请申请", null);
@@ -345,15 +345,17 @@ public class ClassServiceImpl implements ClassService {
         ClassInviteApplication application = new ClassInviteApplication();
         application.setClassId(classId);
         application.setInviterId(currentUser.getId());
-        application.setInviteeAccount(userAccount);
+        application.setInviteeId(targetUser.getId());
         application.setStatus(0);  // 待审核
         application.setCreateTime(LocalDateTime.now());
 
         classInviteApplicationMapper.insert(application);
 
         log.info("Student {} submitted invite application: classId={}, invitee={}", 
-                currentUser.getId(), classId, userAccount);
-        return application;
+                currentUser.getId(), classId, targetUser.getId());
+        
+        // 转换为 VO 并返回
+        return convertToInviteApplicationResponse(application);
     }
 
     @Override
@@ -387,10 +389,8 @@ public class ClassServiceImpl implements ClassService {
 
         // 如果审核通过，创建邀请记录等待被邀请人确认
         if (approved) {
-            // 根据账号查询目标用户
-            QueryWrapper<User> userQuery = new QueryWrapper<>();
-            userQuery.eq("user_no", application.getInviteeAccount());
-            User targetUser = userMapper.selectOne(userQuery);
+            // 根据 invitee_id 查询目标用户
+            User targetUser = userMapper.selectById(application.getInviteeId());
             
             if (targetUser != null) {
                 // 检查是否已经是成员（双重检查）
@@ -430,7 +430,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public List<ClassInviteApplication> getPendingInviteApplications(Integer classId) {
+    public List<InviteApplicationResponse> getPendingInviteApplications(Integer classId) {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是班级内的老师或管理员
@@ -445,7 +445,12 @@ public class ClassServiceImpl implements ClassService {
         queryWrapper.eq("class_id", classId)
                    .eq("status", 0)  // 待审核
                    .orderByDesc("create_time");
-        return classInviteApplicationMapper.selectList(queryWrapper);
+        List<ClassInviteApplication> applications = classInviteApplicationMapper.selectList(queryWrapper);
+        
+        // 转换为 VO 列表
+        return applications.stream()
+                .map(this::convertToInviteApplicationResponse)
+                .toList();
     }
 
     @Override
@@ -1529,5 +1534,31 @@ public class ClassServiceImpl implements ClassService {
         // 4. 硬删除所有提交记录
         int submissionCount = workSubmissionMapper.delete(submissionQuery);
         log.info("Hard deleted {} submission records in class {}", submissionCount, classId);
+    }
+
+    /**
+     * 将 ClassInviteApplication 实体转换为 InviteApplicationResponse VO
+     */
+    private InviteApplicationResponse convertToInviteApplicationResponse(ClassInviteApplication application) {
+        InviteApplicationResponse response = new InviteApplicationResponse();
+        response.setId(application.getId());
+        response.setClassId(application.getClassId());
+        response.setInviterId(application.getInviterId());
+        response.setInviteeId(application.getInviteeId());
+        response.setStatus(application.getStatus());
+        response.setReviewerId(application.getReviewerId());
+        response.setReviewTime(application.getReviewTime());
+        response.setReviewComment(application.getReviewComment());
+        response.setCreateTime(application.getCreateTime());
+
+        // 查询被邀请人用户名
+        if (application.getInviteeId() != null) {
+            User invitee = userMapper.selectById(application.getInviteeId());
+            if (invitee != null) {
+                response.setInviteeUsername(invitee.getUsername());
+            }
+        }
+
+        return response;
     }
 }
