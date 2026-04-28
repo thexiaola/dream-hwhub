@@ -44,7 +44,7 @@ public interface ClassService {
     /**
      * 被邀请用户响应邀请（同意/拒绝）
      */
-    void respondUserInvitation(Integer invitationId, Boolean accepted, String comment);
+    void respondUserInvitation(Integer invitationId, Boolean accepted);
 
     /**
      * 教师或助理审核邀请申请
@@ -195,7 +195,7 @@ public interface ClassService {
     /**
      * 用户响应邀请（同意/拒绝）
      */
-    void respondInvitation(Integer invitationId, Boolean accepted, String comment);
+    void respondInvitation(Integer invitationId, Boolean accepted);
 
     /**
      * 生成或刷新班级邀请码

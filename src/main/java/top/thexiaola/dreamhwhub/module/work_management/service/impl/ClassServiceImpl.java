@@ -334,17 +334,31 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该用户已经在班级中", null);
         }
 
-        // 检查是否有待确认的邀请
-        QueryWrapper<ClassUserInvitation> invitationQuery = new QueryWrapper<>();
-        invitationQuery.eq("class_id", classId)
+        // 检查是否有待确认的邀请（status=0）
+        QueryWrapper<ClassUserInvitation> pendingInvitationQuery = new QueryWrapper<>();
+        pendingInvitationQuery.eq("class_id", classId)
                 .eq("inviter_id", currentUser.getId())
                 .eq("invitee_id", targetUser.getId())
                 .eq("status", 0);  // 待确认
-        if (classUserInvitationMapper.selectCount(invitationQuery) > 0) {
-            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "已有待确认的邀请", null);
+        List<ClassUserInvitation> pendingInvitations = classUserInvitationMapper.selectList(pendingInvitationQuery);
+        
+        if (!pendingInvitations.isEmpty()) {
+            // 删除所有待确认的用户邀请记录
+            for (ClassUserInvitation invitation : pendingInvitations) {
+                // 先删除关联的教师审核记录（如果存在）
+                QueryWrapper<ClassTeacherApproval> approvalQuery = new QueryWrapper<>();
+                approvalQuery.eq("invitation_id", invitation.getId());
+                classTeacherApprovalMapper.delete(approvalQuery);
+                
+                // 再删除用户邀请记录
+                classUserInvitationMapper.deleteById(invitation.getId());
+                
+                log.info("Deleted old pending invitation id={} and related approvals for user {} to class {}", 
+                        invitation.getId(), targetUser.getId(), classId);
+            }
         }
 
-        // 创建用户邀请记录（等待被邀请人确认）
+        // 创建新的用户邀请记录（等待被邀请人确认）
         ClassUserInvitation invitation = new ClassUserInvitation();
         invitation.setClassId(classId);
         invitation.setInviterId(currentUser.getId());
@@ -354,13 +368,13 @@ public class ClassServiceImpl implements ClassService {
 
         classUserInvitationMapper.insert(invitation);
 
-        log.info("Student {} sent invitation to user {} for class {} (waiting for user confirmation)", 
+        log.info("Student {} sent new invitation to user {} for class {} (waiting for user confirmation)", 
                 currentUser.getId(), targetUser.getId(), classId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void respondUserInvitation(Integer invitationId, Boolean accepted, String comment) {
+    public void respondUserInvitation(Integer invitationId, Boolean accepted) {
         User currentUser = getCurrentUserOrThrow();
 
         ClassUserInvitation invitation = classUserInvitationMapper.selectById(invitationId);
@@ -381,7 +395,6 @@ public class ClassServiceImpl implements ClassService {
         // 更新邀请状态
         invitation.setStatus(accepted ? 1 : 2);  // 1-已同意，2-已拒绝
         invitation.setResponseTime(LocalDateTime.now());
-        invitation.setResponseComment(comment);
         classUserInvitationMapper.updateById(invitation);
 
         // 如果同意，创建教师审核记录
@@ -1267,7 +1280,6 @@ public class ClassServiceImpl implements ClassService {
             response.setInviteeUserId(invitation.getInviteeUserId());
             response.setStatus(invitation.getStatus());
             response.setResponseTime(invitation.getResponseTime());
-            response.setResponseComment(invitation.getResponseComment());
             response.setCreateTime(invitation.getCreateTime());
 
             // 获取班级名称
@@ -1288,7 +1300,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void respondInvitation(Integer invitationId, Boolean accepted, String comment) {
+    public void respondInvitation(Integer invitationId, Boolean accepted) {
         User currentUser = getCurrentUserOrThrow();
 
         ClassInvitation invitation = classInvitationMapper.selectById(invitationId);
@@ -1309,7 +1321,6 @@ public class ClassServiceImpl implements ClassService {
         // 更新邀请状态
         invitation.setStatus(accepted ? 1 : 2);  // 1-已同意，2-已拒绝
         invitation.setResponseTime(LocalDateTime.now());
-        invitation.setResponseComment(comment);
         classInvitationMapper.updateById(invitation);
 
         // 如果同意，添加为班级成员（学生）

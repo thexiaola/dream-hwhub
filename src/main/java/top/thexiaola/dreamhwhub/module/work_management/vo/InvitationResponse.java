@@ -57,11 +57,6 @@ public class InvitationResponse {
     private LocalDateTime responseTime;
 
     /**
-     * 用户回复说明
-     */
-    private String responseComment;
-
-    /**
      * 邀请时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")

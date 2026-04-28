@@ -42,7 +42,6 @@ CREATE TABLE IF NOT EXISTS `class_user_invitation` (
     `invitee_id` INT NOT NULL COMMENT '被邀请人ID',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '用户确认状态：0-待确认，1-已同意，2-已拒绝',
     `response_time` DATETIME DEFAULT NULL COMMENT '用户响应时间',
-    `response_comment` VARCHAR(500) DEFAULT NULL COMMENT '用户回复说明',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '邀请时间',
     INDEX idx_class_id (`class_id`),
     INDEX idx_inviter_id (`inviter_id`),

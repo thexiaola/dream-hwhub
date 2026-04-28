@@ -1541,6 +1541,7 @@ removedAttachmentIds: [1, 2]
 - 被邀请用户同意后，系统会创建教师审核记录
 - 教师或助理审核通过后，被邀请用户才正式加入班级
 - 整个流程：**学生发起 → 用户确认 → 教师审核 → 加入班级**
+- **重复邀请处理**：如果对同一用户已有待确认的邀请，系统会自动删除旧邀请（包括关联的教师审核记录），然后创建新邀请
 
 ---
 
@@ -1558,17 +1559,16 @@ removedAttachmentIds: [1, 2]
 ```json
 {
   "invitationId": "1",
-  "accepted": true,
-  "comment": "很高兴加入这个班级"
+  "accepted": true
 }
 ```
 
 **字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| invitationId | String | 是 | 邀请 ID，必须是数字字符串 |
-| accepted | Boolean | 是 | 是否同意(true-同意，false-拒绝) |
-| comment | String | 否 | 回复说明，最长 500 字符 |
+
+| 字段         | 类型    | 必填 | 说明                            |
+| ------------ | ------- | ---- | ------------------------------- |
+| invitationId | String  | 是   | 邀请 ID，必须是数字字符串       |
+| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) |
 
 **成功响应 (200)**:
 
@@ -1753,6 +1753,7 @@ removedAttachmentIds: [1, 2]
 5. **同意后自动以学生身份加入班级**（无需二次审核）
 
 **特点**:
+
 - 单向确认机制：只需被邀请人同意
 - 流程简单快速
 - 适合教师主动邀请已知人员
@@ -1774,6 +1775,7 @@ removedAttachmentIds: [1, 2]
 7. **审核通过后，被邀请人自动以学生身份加入班级**
 
 **特点**:
+
 - **双向确认机制**：需要被邀请人和教师双方确认
 - 流程更加严格，保障各方知情权
 - 适合学生邀请同学，避免未经授权的加入
@@ -1782,15 +1784,15 @@ removedAttachmentIds: [1, 2]
 
 ### 两种机制的对比
 
-| 特性 | 教师邀请 | 学生邀请 |
-|------|---------|----------|
-| **发起者** | 教师/管理员 | 班级学生 |
-| **使用的表** | `class_invitation` | `class_user_invitation` + `class_teacher_approval` |
-| **确认次数** | 1次（被邀请人） | 2次（被邀请人 + 教师） |
-| **审核环节** | 无 | 有（教师或助理审核） |
-| **适用场景** | 教师主动邀请 | 学生邀请同学 |
-| **流程复杂度** | 简单 | 复杂 |
-| **安全性** | 中等 | 高 |
+| 特性           | 教师邀请           | 学生邀请                                           |
+| -------------- | ------------------ | -------------------------------------------------- |
+| **发起者**     | 教师/管理员        | 班级学生                                           |
+| **使用的表**   | `class_invitation` | `class_user_invitation` + `class_teacher_approval` |
+| **确认次数**   | 1次（被邀请人）    | 2次（被邀请人 + 教师）                             |
+| **审核环节**   | 无                 | 有（教师或助理审核）                               |
+| **适用场景**   | 教师主动邀请       | 学生邀请同学                                       |
+| **流程复杂度** | 简单               | 复杂                                               |
+| **安全性**     | 中等               | 高                                                 |
 
 **注意**:
 
@@ -1825,7 +1827,6 @@ removedAttachmentIds: [1, 2]
     "inviteeUserId": 1002,
     "status": 0,
     "responseTime": null,
-    "responseComment": null,
     "createTime": "2026-04-09T10:00:00"
   }
 }
@@ -1840,7 +1841,6 @@ removedAttachmentIds: [1, 2]
 | inviteeUserId | Integer | 被邀请人 ID |
 | status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
 | responseTime | LocalDateTime | 响应时间 |
-| responseComment | String | 用户回复说明 |
 | createTime | LocalDateTime | 邀请时间 |
 
 **注意**:
@@ -1899,7 +1899,6 @@ removedAttachmentIds: [1, 2]
       "inviteeUserId": 1002,
       "status": 0,
       "responseTime": null,
-      "responseComment": null,
       "createTime": "2026-04-09T10:00:00"
     }
   ]
@@ -1917,7 +1916,6 @@ removedAttachmentIds: [1, 2]
 | inviteeUserId | Integer | 被邀请人 ID |
 | status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
 | responseTime | LocalDateTime | 响应时间 |
-| responseComment | String | 用户回复说明 |
 | createTime | LocalDateTime | 邀请时间 |
 
 **注意**:
@@ -1942,27 +1940,13 @@ removedAttachmentIds: [1, 2]
 
 **接口地址**: `PUT /api/class/respond-invitation`
 
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（Session）
-
-**请求体**:
-
-```json
-{
-  "invitationId": "1",
-  "accepted": true,
-  "comment": "很高兴加入这个班级"
-}
-```
-
-**字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| invitationId | String | 是 | 邀请 ID，必须是数字字符串 |
+| invitationId | Integer | 是 | 邀请 ID |
 | accepted | Boolean | 是 | 是否同意(true-同意，false-拒绝) |
-| comment | String | 否 | 回复说明，最长 500 字符 |
+
+**请求示例**: `PUT /api/class/respond-invitation?invitationId=1&accepted=true`
 
 **成功响应 (200)**:
 

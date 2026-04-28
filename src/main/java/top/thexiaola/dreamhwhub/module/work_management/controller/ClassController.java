@@ -7,7 +7,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
-import top.thexiaola.dreamhwhub.module.work_management.dto.*;
+import top.thexiaola.dreamhwhub.module.work_management.dto.ApproveJoinClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.JoinClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassCreateApplication;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInvitation;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication;
@@ -284,14 +287,14 @@ public class ClassController {
      * 被邀请用户响应邀请（同意/拒绝）
      */
     @PutMapping("/respond-user-invitation")
-    public ApiResponse<Void> respondUserInvitation(@Valid @RequestBody RespondInvitationRequest request) {
+    public ApiResponse<Void> respondUserInvitation(@RequestParam Integer invitationId,
+                                                    @RequestParam Boolean accepted) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} responding to user invitation, id: {}, accepted: {}",
-                userInfo, request.getInvitationId(), request.getAccepted());
-        int invitationId = Integer.parseInt(request.getInvitationId());
-        classService.respondUserInvitation(invitationId, request.getAccepted(), request.getComment());
-        String result = request.getAccepted() ? "accepted" : "rejected";
+                userInfo, invitationId, accepted);
+        classService.respondUserInvitation(invitationId, accepted);
+        String result = accepted ? "accepted" : "rejected";
         log.info("User {} user invitation {}", userInfo, result);
         return ApiResponse.success(null);
     }
@@ -361,14 +364,14 @@ public class ClassController {
      * 响应邀请（同意/拒绝）
      */
     @PutMapping("/respond-invitation")
-    public ApiResponse<Void> respondInvitation(@Valid @RequestBody RespondInvitationRequest request) {
+    public ApiResponse<Void> respondInvitation(@RequestParam Integer invitationId,
+                                                @RequestParam Boolean accepted) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} responding to invitation, id: {}, accepted: {}",
-                userInfo, request.getInvitationId(), request.getAccepted());
-        int invitationId = Integer.parseInt(request.getInvitationId());
-        classService.respondInvitation(invitationId, request.getAccepted(), request.getComment());
-        String result = request.getAccepted() ? "accepted" : "rejected";
+                userInfo, invitationId, accepted);
+        classService.respondInvitation(invitationId, accepted);
+        String result = accepted ? "accepted" : "rejected";
         log.info("User {} invitation {}", userInfo, result);
         return ApiResponse.success(null);
     }

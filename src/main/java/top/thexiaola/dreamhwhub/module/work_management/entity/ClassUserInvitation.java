@@ -30,9 +30,6 @@ public class ClassUserInvitation {
     @TableField("response_time")
     private LocalDateTime responseTime;  // 用户响应时间
 
-    @TableField("response_comment")
-    private String responseComment;  // 用户回复说明
-
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;  // 邀请时间
 }
