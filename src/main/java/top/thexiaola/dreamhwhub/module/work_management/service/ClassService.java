@@ -37,19 +37,24 @@ public interface ClassService {
     void demoteAssistantTeacher(Integer classId, Integer teacherUserId);
 
     /**
-     * 学生邀请用户加入班级（需要审核）
+     * 学生邀请用户加入班级（需要用户确认和教师审核）
      */
-    InviteApplicationResponse studentInviteUser(Integer classId, String userAccount);
+    void studentInviteUser(Integer classId, String userAccount);
 
     /**
-     * 审核邀请申请（老师/管理员专用）
+     * 被邀请用户响应邀请（同意/拒绝）
      */
-    void approveInviteApplication(Integer applicationId, Boolean approved, String comment);
+    void respondUserInvitation(Integer invitationId, Boolean accepted, String comment);
 
     /**
-     * 获取待审核的邀请申请列表（班级老师专用）
+     * 教师或助理审核邀请申请
      */
-    List<InviteApplicationResponse> getPendingInviteApplications(Integer classId);
+    void approveTeacherApproval(Integer approvalId, Boolean approved, String comment);
+
+    /**
+     * 获取待教师审核的邀请列表（班级老师/助理专用）
+     */
+    List<TeacherApprovalResponse> getPendingTeacherApprovals(Integer classId);
 
     /**
      * 退出班级

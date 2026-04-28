@@ -34,46 +34,47 @@ CREATE TABLE IF NOT EXISTS `class_member` (
     CONSTRAINT fk_member_invite FOREIGN KEY (`invite_by`) REFERENCES `user`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级成员表';
 
--- 班级邀请申请表（仅学生邀请时使用）
-CREATE TABLE IF NOT EXISTS `class_invite_application` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '邀请申请ID',
+-- 用户邀请申请表（用户发起邀请，等待被邀请用户确认）
+CREATE TABLE IF NOT EXISTS `class_user_invitation` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '邀请ID',
     `class_id` INT NOT NULL COMMENT '班级ID',
-    `inviter_id` INT NOT NULL COMMENT '邀请人ID（学生）',
+    `inviter_id` INT NOT NULL COMMENT '邀请人ID',
     `invitee_id` INT NOT NULL COMMENT '被邀请人ID',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '审核状态：0-待审核，1-已通过，2-已拒绝',
-    `reviewer_id` INT DEFAULT NULL COMMENT '审核人ID（老师/管理员）',
-    `review_time` DATETIME DEFAULT NULL COMMENT '审核时间',
-    `review_comment` VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '用户确认状态：0-待确认，1-已同意，2-已拒绝',
+    `response_time` DATETIME DEFAULT NULL COMMENT '用户响应时间',
+    `response_comment` VARCHAR(500) DEFAULT NULL COMMENT '用户回复说明',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '邀请时间',
     INDEX idx_class_id (`class_id`),
     INDEX idx_inviter_id (`inviter_id`),
     INDEX idx_invitee_id (`invitee_id`),
     INDEX idx_status (`status`),
-    CONSTRAINT fk_invite_app_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_invite_app_inviter FOREIGN KEY (`inviter_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_invite_app_invitee FOREIGN KEY (`invitee_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_invite_app_reviewer FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级邀请申请表';
+    UNIQUE KEY uk_class_inviter_invitee (`class_id`, `inviter_id`, `invitee_id`),
+    CONSTRAINT fk_user_invitation_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_user_invitation_inviter FOREIGN KEY (`inviter_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_user_invitation_invitee FOREIGN KEY (`invitee_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户邀请申请表';
 
--- 教师邀请用户表（教师发起的邀请，需用户同意）
-CREATE TABLE IF NOT EXISTS `class_invitation` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '邀请ID',
+-- 教师审核邀请表（用户同意后，等待教师或助理审核）
+CREATE TABLE IF NOT EXISTS `class_teacher_approval` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '审核ID',
     `class_id` INT NOT NULL COMMENT '班级ID',
-    `inviter_id` INT NOT NULL COMMENT '邀请人ID（教师）',
-    `invitee_user_id` INT NOT NULL COMMENT '被邀请人ID',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '邀请状态：0-待处理，1-已同意，2-已拒绝',
-    `response_time` DATETIME DEFAULT NULL COMMENT '响应时间',
-    `response_comment` VARCHAR(500) DEFAULT NULL COMMENT '用户回复说明',
-    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '邀请时间',
+    `invitation_id` INT NOT NULL COMMENT '关联的用户邀请ID',
+    `invitee_id` INT NOT NULL COMMENT '被邀请人ID',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '教师审核状态：0-待审核，1-已通过，2-已拒绝',
+    `reviewer_id` INT DEFAULT NULL COMMENT '审核人ID（老师/助理）',
+    `review_time` DATETIME DEFAULT NULL COMMENT '审核时间',
+    `review_comment` VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     INDEX idx_class_id (`class_id`),
-    INDEX idx_inviter_id (`inviter_id`),
-    INDEX idx_invitee_user_id (`invitee_user_id`),
+    INDEX idx_invitation_id (`invitation_id`),
+    INDEX idx_invitee_id (`invitee_id`),
     INDEX idx_status (`status`),
-    UNIQUE KEY uk_class_invitee (`class_id`, `invitee_user_id`, `status`),
-    CONSTRAINT fk_invitation_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_invitation_inviter FOREIGN KEY (`inviter_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_invitation_invitee FOREIGN KEY (`invitee_user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='教师邀请用户表';
+    UNIQUE KEY uk_invitation (`invitation_id`),
+    CONSTRAINT fk_teacher_approval_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_teacher_approval_invitation FOREIGN KEY (`invitation_id`) REFERENCES `class_user_invitation`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_teacher_approval_invitee FOREIGN KEY (`invitee_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    CONSTRAINT fk_teacher_approval_reviewer FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='教师审核邀请表';
 
 -- 班级创建申请表（管理员审核）
 CREATE TABLE IF NOT EXISTS `class_create_application` (

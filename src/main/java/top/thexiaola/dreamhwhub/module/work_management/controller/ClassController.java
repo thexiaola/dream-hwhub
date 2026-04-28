@@ -266,46 +266,62 @@ public class ClassController {
     }
 
     /**
-     * 学生邀请用户加入班级（需要审核）
+     * 学生邀请用户加入班级（需要用户确认和教师审核）
      */
     @PostMapping("/student/invite")
-    public ApiResponse<InviteApplicationResponse> studentInviteUser(@RequestParam Integer classId,
+    public ApiResponse<Void> studentInviteUser(@RequestParam Integer classId,
                                                                   @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("Student {} inviting user {} to class {} (needs approval)", 
+        log.info("Student {} inviting user {} to class {} (needs user confirmation and teacher approval)", 
                 userInfo, userAccount, classId);
-        InviteApplicationResponse response = classService.studentInviteUser(classId, userAccount);
-        log.info("Student {} submitted invite application, id: {}", userInfo, response.getId());
-        return ApiResponse.success(response);
+        classService.studentInviteUser(classId, userAccount);
+        log.info("Student {} invitation sent successfully, waiting for user confirmation", userInfo);
+        return ApiResponse.success(null, "邀请已发送，待用户确认");
     }
 
     /**
-     * 审核邀请申请（老师/管理员专用）
+     * 被邀请用户响应邀请（同意/拒绝）
      */
-    @PutMapping("/invite/approve")
-    public ApiResponse<Void> approveInviteApplication(@Valid @RequestBody ApproveJoinClassRequest request) {
+    @PutMapping("/respond-user-invitation")
+    public ApiResponse<Void> respondUserInvitation(@Valid @RequestBody RespondInvitationRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} approving invite application, id: {}, approved: {}",
-                userInfo, request.getApplicationId(), request.getApproved());
-        classService.approveInviteApplication(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
-        String result = request.getApproved() ? "approved" : "rejected";
-        log.info("User {} invite application {}", userInfo, result);
+        log.info("User {} responding to user invitation, id: {}, accepted: {}",
+                userInfo, request.getInvitationId(), request.getAccepted());
+        int invitationId = Integer.parseInt(request.getInvitationId());
+        classService.respondUserInvitation(invitationId, request.getAccepted(), request.getComment());
+        String result = request.getAccepted() ? "accepted" : "rejected";
+        log.info("User {} user invitation {}", userInfo, result);
         return ApiResponse.success(null);
     }
 
     /**
-     * 获取待审核的邀请申请列表（班级老师专用）
+     * 教师或助理审核邀请申请
      */
-    @GetMapping("/invite/applications/pending")
-    public ApiResponse<List<InviteApplicationResponse>> getPendingInviteApplications(@RequestParam Integer classId) {
+    @PutMapping("/approve-teacher-approval")
+    public ApiResponse<Void> approveTeacherApproval(@Valid @RequestBody ApproveJoinClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying pending invite applications for class {}", userInfo, classId);
-        List<InviteApplicationResponse> applications = classService.getPendingInviteApplications(classId);
-        log.info("User {} queried {} pending invite applications", userInfo, applications.size());
-        return ApiResponse.success(applications);
+        log.info("User {} approving teacher approval, id: {}, approved: {}",
+                userInfo, request.getApplicationId(), request.getApproved());
+        classService.approveTeacherApproval(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
+        String result = request.getApproved() ? "approved" : "rejected";
+        log.info("User {} teacher approval {}", userInfo, result);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 获取待教师审核的邀请列表（班级老师/助理专用）
+     */
+    @GetMapping("/teacher-approvals/pending")
+    public ApiResponse<List<TeacherApprovalResponse>> getPendingTeacherApprovals(@RequestParam Integer classId) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} querying pending teacher approvals for class {}", userInfo, classId);
+        List<TeacherApprovalResponse> approvals = classService.getPendingTeacherApprovals(classId);
+        log.info("User {} queried {} pending teacher approvals", userInfo, approvals.size());
+        return ApiResponse.success(approvals);
     }
 
     /**

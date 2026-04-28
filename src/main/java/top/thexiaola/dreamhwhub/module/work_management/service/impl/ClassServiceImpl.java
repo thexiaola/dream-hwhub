@@ -33,8 +33,9 @@ public class ClassServiceImpl implements ClassService {
     private final UserMapper userMapper;
     private final ClassCreateApplicationMapper classCreateApplicationMapper;
     private final ClassJoinApplicationMapper classJoinApplicationMapper;
-    private final ClassInviteApplicationMapper classInviteApplicationMapper;
-    private final ClassInvitationMapper classInvitationMapper;
+    private final ClassUserInvitationMapper classUserInvitationMapper;
+    private final ClassTeacherApprovalMapper classTeacherApprovalMapper;
+    private final ClassInvitationMapper classInvitationMapper;  // 保留用于教师邀请功能
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final WorkMapper workMapper;
@@ -43,7 +44,8 @@ public class ClassServiceImpl implements ClassService {
     public ClassServiceImpl(ClassInfoMapper classInfoMapper, ClassMemberMapper classMemberMapper, 
                            UserMapper userMapper, ClassCreateApplicationMapper classCreateApplicationMapper,
                            ClassJoinApplicationMapper classJoinApplicationMapper,
-                           ClassInviteApplicationMapper classInviteApplicationMapper,
+                           ClassUserInvitationMapper classUserInvitationMapper,
+                           ClassTeacherApprovalMapper classTeacherApprovalMapper,
                            ClassInvitationMapper classInvitationMapper,
                            WorkSubmissionMapper workSubmissionMapper,
                            WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper,
@@ -54,7 +56,8 @@ public class ClassServiceImpl implements ClassService {
         this.userMapper = userMapper;
         this.classCreateApplicationMapper = classCreateApplicationMapper;
         this.classJoinApplicationMapper = classJoinApplicationMapper;
-        this.classInviteApplicationMapper = classInviteApplicationMapper;
+        this.classUserInvitationMapper = classUserInvitationMapper;
+        this.classTeacherApprovalMapper = classTeacherApprovalMapper;
         this.classInvitationMapper = classInvitationMapper;
         this.workSubmissionMapper = workSubmissionMapper;
         this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
@@ -304,7 +307,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public InviteApplicationResponse studentInviteUser(Integer classId, String userAccount) {
+    public void studentInviteUser(Integer classId, String userAccount) {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
@@ -331,125 +334,155 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该用户已经在班级中", null);
         }
 
-        // 检查是否有待审核的邀请申请
-        QueryWrapper<ClassInviteApplication> appQuery = new QueryWrapper<>();
-        appQuery.eq("class_id", classId)
+        // 检查是否有待确认的邀请
+        QueryWrapper<ClassUserInvitation> invitationQuery = new QueryWrapper<>();
+        invitationQuery.eq("class_id", classId)
                 .eq("inviter_id", currentUser.getId())
                 .eq("invitee_id", targetUser.getId())
-                .eq("status", 0);
-        if (classInviteApplicationMapper.selectCount(appQuery) > 0) {
-            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "已有待审核的邀请申请", null);
+                .eq("status", 0);  // 待确认
+        if (classUserInvitationMapper.selectCount(invitationQuery) > 0) {
+            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "已有待确认的邀请", null);
         }
 
-        // 创建邀请申请记录
-        ClassInviteApplication application = new ClassInviteApplication();
-        application.setClassId(classId);
-        application.setInviterId(currentUser.getId());
-        application.setInviteeId(targetUser.getId());
-        application.setStatus(0);  // 待审核
-        application.setCreateTime(LocalDateTime.now());
+        // 创建用户邀请记录（等待被邀请人确认）
+        ClassUserInvitation invitation = new ClassUserInvitation();
+        invitation.setClassId(classId);
+        invitation.setInviterId(currentUser.getId());
+        invitation.setInviteeId(targetUser.getId());
+        invitation.setStatus(0);  // 待用户确认
+        invitation.setCreateTime(LocalDateTime.now());
 
-        classInviteApplicationMapper.insert(application);
+        classUserInvitationMapper.insert(invitation);
 
-        log.info("Student {} submitted invite application: classId={}, invitee={}", 
-                currentUser.getId(), classId, targetUser.getId());
-        
-        // 转换为 VO 并返回
-        return convertToInviteApplicationResponse(application);
+        log.info("Student {} sent invitation to user {} for class {} (waiting for user confirmation)", 
+                currentUser.getId(), targetUser.getId(), classId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void approveInviteApplication(Integer applicationId, Boolean approved, String comment) {
+    public void respondUserInvitation(Integer invitationId, Boolean accepted, String comment) {
         User currentUser = getCurrentUserOrThrow();
 
-        ClassInviteApplication application = classInviteApplicationMapper.selectById(applicationId);
-        if (application == null) {
-            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "邀请申请不存在", null);
+        ClassUserInvitation invitation = classUserInvitationMapper.selectById(invitationId);
+        if (invitation == null) {
+            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "邀请不存在", null);
         }
 
-        if (!Integer.valueOf(0).equals(application.getStatus())) {
-            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该申请已处理", null);
+        // 只能响应发给自己的邀请
+        if (!invitation.getInviteeId().equals(currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能响应发给自己的邀请", null);
         }
 
-        // 检查审核人是否是老师或管理员
-        boolean isAdmin = isAdmin(currentUser);
-        boolean isClassTeacher = isTeacher(application.getClassId(), currentUser.getId());
-        
-        if (!isAdmin && !isClassTeacher) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或管理员可以审核邀请申请", null);
+        // 检查邀请状态
+        if (!Integer.valueOf(0).equals(invitation.getStatus())) {
+            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该邀请已处理", null);
         }
 
-        // 更新申请状态
-        application.setStatus(approved ? 1 : 2);
-        application.setReviewerId(currentUser.getId());
-        application.setReviewTime(LocalDateTime.now());
-        application.setReviewComment(comment);
-        classInviteApplicationMapper.updateById(application);
+        // 更新邀请状态
+        invitation.setStatus(accepted ? 1 : 2);  // 1-已同意，2-已拒绝
+        invitation.setResponseTime(LocalDateTime.now());
+        invitation.setResponseComment(comment);
+        classUserInvitationMapper.updateById(invitation);
 
-        // 如果审核通过，创建邀请记录等待被邀请人确认
-        if (approved) {
-            // 根据 invitee_id 查询目标用户
-            User targetUser = userMapper.selectById(application.getInviteeId());
+        // 如果同意，创建教师审核记录
+        if (accepted) {
+            ClassTeacherApproval approval = new ClassTeacherApproval();
+            approval.setClassId(invitation.getClassId());
+            approval.setInvitationId(invitation.getId());
+            approval.setInviteeId(invitation.getInviteeId());
+            approval.setStatus(0);  // 待教师审核
+            approval.setCreateTime(LocalDateTime.now());
             
-            if (targetUser != null) {
-                // 检查是否已经是成员（双重检查）
-                QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
-                memberQuery.eq("class_id", application.getClassId())
-                          .eq("user_id", targetUser.getId())
-                          ;
-                if (classMemberMapper.selectCount(memberQuery) == 0) {
-                    // 删除已有的待处理邀请记录（如果存在）
-                    QueryWrapper<ClassInvitation> oldInvitationQuery = new QueryWrapper<>();
-                    oldInvitationQuery.eq("class_id", application.getClassId())
-                            .eq("invitee_user_id", targetUser.getId())
-                            .eq("status", 0);  // 待处理
-                    int deletedCount = classInvitationMapper.delete(oldInvitationQuery);
-                    if (deletedCount > 0) {
-                        log.info("Deleted {} old pending invitation(s) for user {} to class {}", 
-                                deletedCount, targetUser.getId(), application.getClassId());
-                    }
-                    
-                    // 创建新的邀请记录，等待被邀请人确认
-                    ClassInvitation invitation = new ClassInvitation();
-                    invitation.setClassId(application.getClassId());
-                    invitation.setInviterId(application.getInviterId());
-                    invitation.setInviteeUserId(targetUser.getId());
-                    invitation.setStatus(0); // 待确认
-                    
-                    classInvitationMapper.insert(invitation);
-
-                    log.info("Invite application approved, invitation created for user {} to join class {}", 
-                            targetUser.getId(), application.getClassId());
-                }
-            }
+            classTeacherApprovalMapper.insert(approval);
+            
+            log.info("User {} accepted invitation from user {} for class {}, teacher approval created", 
+                    currentUser.getId(), invitation.getInviterId(), invitation.getClassId());
+        } else {
+            log.info("User {} rejected invitation from user {} for class {}", 
+                    currentUser.getId(), invitation.getInviterId(), invitation.getClassId());
         }
-
-        log.info("User {} approved invite application: id={}, classId={}, approved={}", 
-                currentUser.getId(), applicationId, application.getClassId(), approved);
     }
 
     @Override
-    public List<InviteApplicationResponse> getPendingInviteApplications(Integer classId) {
+    @Transactional(rollbackFor = Exception.class)
+    public void approveTeacherApproval(Integer approvalId, Boolean approved, String comment) {
         User currentUser = getCurrentUserOrThrow();
 
-        // 检查是否是班级内的老师或管理员
+        ClassTeacherApproval approval = classTeacherApprovalMapper.selectById(approvalId);
+        if (approval == null) {
+            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "审核记录不存在", null);
+        }
+
+        if (!Integer.valueOf(0).equals(approval.getStatus())) {
+            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该申请已处理", null);
+        }
+
+        // 检查审核人是否是老师或助理
+        boolean isAdmin = isAdmin(currentUser);
+        boolean isClassTeacher = isTeacher(approval.getClassId(), currentUser.getId());
+        
+        if (!isAdmin && !isClassTeacher) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或助理可以审核邀请申请", null);
+        }
+
+        // 更新审核状态
+        approval.setStatus(approved ? 1 : 2);  // 1-已通过，2-已拒绝
+        approval.setReviewerId(currentUser.getId());
+        approval.setReviewTime(LocalDateTime.now());
+        approval.setReviewComment(comment);
+        classTeacherApprovalMapper.updateById(approval);
+
+        // 如果审核通过，添加为班级成员（学生）
+        if (approved) {
+            // 检查是否已经是成员（双重检查）
+            QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+            memberQuery.eq("class_id", approval.getClassId())
+                      .eq("user_id", approval.getInviteeId());
+            if (classMemberMapper.selectCount(memberQuery) == 0) {
+                ClassMember member = new ClassMember();
+                member.setClassId(approval.getClassId());
+                member.setUserId(approval.getInviteeId());
+                member.setIsTeacher(false);  // 固定为学生
+                member.setJoinTime(LocalDateTime.now());
+                
+                // 获取邀请记录中的邀请人 ID
+                ClassUserInvitation invitation = classUserInvitationMapper.selectById(approval.getInvitationId());
+                if (invitation != null) {
+                    member.setInviteBy(invitation.getInviterId());
+                }
+                
+                classMemberMapper.insert(member);
+                
+                log.info("Teacher approval passed, user {} joined class {} as STUDENT", 
+                        approval.getInviteeId(), approval.getClassId());
+            }
+        }
+
+        log.info("User {} approved teacher approval: id={}, classId={}, approved={}", 
+                currentUser.getId(), approvalId, approval.getClassId(), approved);
+    }
+
+    @Override
+    public List<TeacherApprovalResponse> getPendingTeacherApprovals(Integer classId) {
+        User currentUser = getCurrentUserOrThrow();
+
+        // 检查是否是班级内的老师或助理
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
         
         if (!isAdmin && !isClassTeacher) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或管理员可以查看邀请申请", null);
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或助理可以查看待审核邀请", null);
         }
 
-        QueryWrapper<ClassInviteApplication> queryWrapper = new QueryWrapper<>();
+        QueryWrapper<ClassTeacherApproval> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId)
                    .eq("status", 0)  // 待审核
                    .orderByDesc("create_time");
-        List<ClassInviteApplication> applications = classInviteApplicationMapper.selectList(queryWrapper);
+        List<ClassTeacherApproval> approvals = classTeacherApprovalMapper.selectList(queryWrapper);
         
         // 转换为 VO 列表
-        return applications.stream()
-                .map(this::convertToInviteApplicationResponse)
+        return approvals.stream()
+                .map(this::convertToTeacherApprovalResponse)
                 .toList();
     }
 
@@ -531,25 +564,19 @@ public class ClassServiceImpl implements ClassService {
         int memberCount = classMemberMapper.delete(memberQuery);
         log.info("Deleted {} class member records in class {}", memberCount, classId);
 
-        // 4. 删除班级邀请记录
-        QueryWrapper<ClassInvitation> invitationQuery = new QueryWrapper<>();
-        invitationQuery.eq("class_id", classId);
-        int invitationCount = classInvitationMapper.delete(invitationQuery);
-        log.info("Deleted {} class invitation records in class {}", invitationCount, classId);
+        // 4. 删除班级用户邀请记录
+        QueryWrapper<ClassUserInvitation> userInvitationQuery = new QueryWrapper<>();
+        userInvitationQuery.eq("class_id", classId);
+        int userInvitationCount = classUserInvitationMapper.delete(userInvitationQuery);
+        log.info("Deleted {} user invitation records in class {}", userInvitationCount, classId);
 
-        // 5. 删除班级加入申请记录
-        QueryWrapper<ClassJoinApplication> joinAppQuery = new QueryWrapper<>();
-        joinAppQuery.eq("class_id", classId);
-        int joinAppCount = classJoinApplicationMapper.delete(joinAppQuery);
-        log.info("Deleted {} join application records in class {}", joinAppCount, classId);
+        // 5. 删除教师审核邀请记录
+        QueryWrapper<ClassTeacherApproval> teacherApprovalQuery = new QueryWrapper<>();
+        teacherApprovalQuery.eq("class_id", classId);
+        int teacherApprovalCount = classTeacherApprovalMapper.delete(teacherApprovalQuery);
+        log.info("Deleted {} teacher approval records in class {}", teacherApprovalCount, classId);
 
-        // 6. 删除班级邀请申请记录
-        QueryWrapper<ClassInviteApplication> inviteAppQuery = new QueryWrapper<>();
-        inviteAppQuery.eq("class_id", classId);
-        int inviteAppCount = classInviteApplicationMapper.delete(inviteAppQuery);
-        log.info("Deleted {} invite application records in class {}", inviteAppCount, classId);
-
-        // 7. 最后删除班级信息
+        // 6. 最后删除班级信息
         classInfoMapper.deleteById(classId);
 
         log.info("User {} dissolved class {} completely with all related data", currentUser.getId(), classId);
@@ -1537,25 +1564,41 @@ public class ClassServiceImpl implements ClassService {
     }
 
     /**
-     * 将 ClassInviteApplication 实体转换为 InviteApplicationResponse VO
+     * 将 ClassTeacherApproval 实体转换为 TeacherApprovalResponse VO
      */
-    private InviteApplicationResponse convertToInviteApplicationResponse(ClassInviteApplication application) {
-        InviteApplicationResponse response = new InviteApplicationResponse();
-        response.setId(application.getId());
-        response.setClassId(application.getClassId());
-        response.setInviterId(application.getInviterId());
-        response.setInviteeId(application.getInviteeId());
-        response.setStatus(application.getStatus());
-        response.setReviewerId(application.getReviewerId());
-        response.setReviewTime(application.getReviewTime());
-        response.setReviewComment(application.getReviewComment());
-        response.setCreateTime(application.getCreateTime());
+    private TeacherApprovalResponse convertToTeacherApprovalResponse(ClassTeacherApproval approval) {
+        TeacherApprovalResponse response = new TeacherApprovalResponse();
+        response.setId(approval.getId());
+        response.setClassId(approval.getClassId());
+        response.setInvitationId(approval.getInvitationId());
+        response.setInviteeId(approval.getInviteeId());
+        response.setStatus(approval.getStatus());
+        response.setReviewerId(approval.getReviewerId());
+        response.setReviewTime(approval.getReviewTime());
+        response.setReviewComment(approval.getReviewComment());
+        response.setCreateTime(approval.getCreateTime());
+
+        // 查询班级名称
+        if (approval.getClassId() != null) {
+            ClassInfo classInfo = classInfoMapper.selectById(approval.getClassId());
+            if (classInfo != null) {
+                response.setClassName(classInfo.getClassName());
+            }
+        }
 
         // 查询被邀请人用户名
-        if (application.getInviteeId() != null) {
-            User invitee = userMapper.selectById(application.getInviteeId());
+        if (approval.getInviteeId() != null) {
+            User invitee = userMapper.selectById(approval.getInviteeId());
             if (invitee != null) {
                 response.setInviteeUsername(invitee.getUsername());
+            }
+        }
+
+        // 查询审核人用户名
+        if (approval.getReviewerId() != null) {
+            User reviewer = userMapper.selectById(approval.getReviewerId());
+            if (reviewer != null) {
+                response.setReviewerUsername(reviewer.getUsername());
             }
         }
 
