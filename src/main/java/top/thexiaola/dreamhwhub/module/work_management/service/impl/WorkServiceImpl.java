@@ -73,7 +73,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         // 检查权限（只有班级老师可以发布作业）
-        if (!classService.isTeacher(Integer.parseInt(request.getClassId()), currentUser.getId())) {
+        if (!classService.isTeacher(request.getClassId(), currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以发布作业", null);
         }
 
@@ -81,7 +81,7 @@ public class WorkServiceImpl implements WorkService {
         WorkInfo workInfo = new WorkInfo();
         workInfo.setTitle(request.getTitle());
         workInfo.setDescription(request.getDescription());
-        workInfo.setClassId(Integer.parseInt(request.getClassId()));
+        workInfo.setClassId(request.getClassId());
         workInfo.setDeadline(request.getDeadline());
         workInfo.setTotalScore(request.getTotalScore());
         workInfo.setAllowLateSubmit(request.getAllowLateSubmit() != null ? request.getAllowLateSubmit() : true);
@@ -109,7 +109,7 @@ public class WorkServiceImpl implements WorkService {
         }
 
         // 查询作业
-        WorkInfo workInfo = workMapper.selectById(Integer.parseInt(request.getId()));
+        WorkInfo workInfo = workMapper.selectById(request.getId());
         if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }

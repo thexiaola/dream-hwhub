@@ -56,8 +56,7 @@ public class ClassController {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to join class by ID: {}", userInfo, request.getClassId());
-        int classId = Integer.parseInt(request.getClassId());
-        JoinClassApplicationResponse response = classService.submitJoinClassRequest(classId);
+        JoinClassApplicationResponse response = classService.submitJoinClassRequest(request.getClassId());
         log.info("User {} submitted join class application, role: STUDENT", userInfo);
         return ApiResponse.success(response, "加入班级的申请已提交，待审核");
     }
@@ -180,7 +179,7 @@ public class ClassController {
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} approving create class application, id: {}, approved: {}",
                 userInfo, request.getApplicationId(), request.getApproved());
-        classService.approveCreateApplication(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
+        classService.approveCreateApplication(request.getApplicationId(), request.getApproved(), request.getComment());
         String result = request.getApproved() ? "approved" : "rejected";
         log.info("User {} create class application {}", userInfo, result);
         return ApiResponse.success(null);
@@ -215,7 +214,7 @@ public class ClassController {
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} approving join class application, id: {}, approved: {}",
                 userInfo, request.getApplicationId(), request.getApproved());
-        classService.approveJoinApplication(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
+        classService.approveJoinApplication(request.getApplicationId(), request.getApproved(), request.getComment());
         String result = request.getApproved() ? "approved" : "rejected";
         log.info("User {} join class application {}", userInfo, result);
         return ApiResponse.success(null);
@@ -308,7 +307,7 @@ public class ClassController {
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} approving teacher approval, id: {}, approved: {}",
                 userInfo, request.getApplicationId(), request.getApproved());
-        classService.approveTeacherApproval(Integer.parseInt(request.getApplicationId()), request.getApproved(), request.getComment());
+        classService.approveTeacherApproval(request.getApplicationId(), request.getApproved(), request.getComment());
         String result = request.getApproved() ? "approved" : "rejected";
         log.info("User {} teacher approval {}", userInfo, result);
         return ApiResponse.success(null);

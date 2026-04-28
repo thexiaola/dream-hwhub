@@ -79,7 +79,7 @@
 | description | String | 是 | 作业描述，不能包含制表符等特殊字符 |
 | deadline | String | 是 | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
 | totalScore | Integer | 是 | 作业总分，默认 100 |
-| classId | String | 是 | 所属班级 ID，必须是数字字符串 |
+| classId | Integer | 是 | 所属班级 ID |
 | publishTime | String | 是 | 发布时间，格式：yyyy-MM-dd'T'HH:mm:ss |
 | allowLateSubmit | Boolean | 否 | 是否允许逾期提交，默认 true |
 | attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
@@ -153,7 +153,6 @@ attachments: [file1.pdf, file2.doc]
 - "截止时间不能为空"
 - "作业总分不能为空"
 - "所属班级 ID 不能为空"
-- "班级 ID 必须是数字"
 - "发布时间不能为空"
 - "只有班级老师可以发布作业"
 - "文件上传失败：xxx"
@@ -176,17 +175,18 @@ attachments: [file1.pdf, file2.doc]
 - 需要登录认证（Session）
 
 **请求参数** (multipart/form-data):
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| id | String | 是 | 作业 ID，必须是数字字符串 |
-| title | String | 是 | 作业标题，最长 128 字符 |
-| description | String | 是 | 作业描述，最长 1024 字符 |
-| deadline | String | 是 | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
-| totalScore | Integer | 是 | 作业总分（无学生提交时可修改） |
-| allowLateSubmit | Boolean | 否 | 是否允许逾期提交 |
-| publishTime | String | 否 | 发布时间（仅未发布的作业可修改） |
-| attachments | File[] | 否 | 新增的附件文件列表 |
-| removedAttachmentIds | Integer[] | 否 | 要删除的附件ID列表 |
+
+| 参数                 | 类型      | 必填 | 说明                                  |
+| -------------------- | --------- | ---- | ------------------------------------- |
+| id                   | Integer   | 是   | 作业 ID                               |
+| title                | String    | 是   | 作业标题，最长 128 字符               |
+| description          | String    | 是   | 作业描述，最长 1024 字符              |
+| deadline             | String    | 是   | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
+| totalScore           | Integer   | 是   | 作业总分（无学生提交时可修改）        |
+| allowLateSubmit      | Boolean   | 否   | 是否允许逾期提交                      |
+| publishTime          | String    | 否   | 发布时间（仅未发布的作业可修改）      |
+| attachments          | File[]    | 否   | 新增的附件文件列表                    |
+| removedAttachmentIds | Integer[] | 否   | 要删除的附件ID列表                    |
 
 **请求示例**:
 
@@ -259,7 +259,6 @@ removedAttachmentIds: [1, 2]
 **可能的错误信息**:
 
 - "作业 ID 不能为空"
-- "作业 ID 必须是数字"
 - "作业标题不能为空"
 - "作业描述不能为空"
 - "截止时间不能为空"
@@ -583,15 +582,15 @@ removedAttachmentIds: [1, 2]
 
 ```json
 {
-  "classId": "1"
+  "classId": 1
 }
 ```
 
 **字段说明**:
 
-| 字段    | 类型   | 必填 | 说明                      |
-| ------- | ------ | ---- | ------------------------- |
-| classId | String | 是   | 班级 ID，必须是数字字符串 |
+| 字段    | 类型    | 必填 | 说明    |
+| ------- | ------- | ---- | ------- |
+| classId | Integer | 是   | 班级 ID |
 
 **成功响应 (200)**:
 
@@ -636,7 +635,6 @@ removedAttachmentIds: [1, 2]
 **可能的错误信息**:
 
 - "班级 ID 不能为空"
-- "班级 ID 必须是数字"
 - "班级不存在"
 - "您已经是该班级成员"
 - "已有待审核的加入申请"
@@ -694,9 +692,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `DELETE /api/class/dissolve`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
+
+| 参数    | 类型    | 必填 | 说明    |
+| ------- | ------- | ---- | ------- |
+| classId | Integer | 是   | 班级 ID |
 
 **请求示例**: `DELETE /api/class/dissolve?classId=1`
 
@@ -746,9 +745,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/detail`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
+
+| 参数    | 类型    | 必填 | 说明    |
+| ------- | ------- | ---- | ------- |
+| classId | Integer | 是   | 班级 ID |
 
 **请求示例**: `GET /api/class/detail?classId=1`
 
@@ -998,9 +998,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/checkmember`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
+
+| 参数    | 类型    | 必填 | 说明    |
+| ------- | ------- | ---- | ------- |
+| classId | Integer | 是   | 班级 ID |
 
 **请求示例**: `GET /api/class/checkmember?classId=1`
 
@@ -1177,7 +1178,7 @@ removedAttachmentIds: [1, 2]
 
 ```json
 {
-  "memberId": "1",
+  "applicationId": 1,
   "approved": true,
   "comment": "同意创建"
 }
@@ -1185,11 +1186,11 @@ removedAttachmentIds: [1, 2]
 
 **字段说明**:
 
-| 字段     | 类型    | 必填 | 说明                            |
-| -------- | ------- | ---- | ------------------------------- |
-| memberId | String  | 是   | 申请 ID，必须是数字字符串       |
-| approved | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
-| comment  | String  | 否   | 审核意见，最长 500 字符         |
+| 字段          | 类型    | 必填 | 说明                            |
+| ------------- | ------- | ---- | ------------------------------- |
+| applicationId | Integer | 是   | 申请 ID                         |
+| approved      | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
+| comment       | String  | 否   | 审核意见，最长 500 字符         |
 
 **成功响应 (200)**:
 
@@ -1316,7 +1317,7 @@ removedAttachmentIds: [1, 2]
 
 ```json
 {
-  "memberId": "2",
+  "applicationId": 2,
   "approved": true,
   "comment": "同意加入"
 }
@@ -1324,11 +1325,11 @@ removedAttachmentIds: [1, 2]
 
 **字段说明**:
 
-| 字段     | 类型    | 必填 | 说明                            |
-| -------- | ------- | ---- | ------------------------------- |
-| memberId | String  | 是   | 申请 ID，必须是数字字符串       |
-| approved | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
-| comment  | String  | 否   | 审核意见，最长 500 字符         |
+| 字段          | 类型    | 必填 | 说明                            |
+| ------------- | ------- | ---- | ------------------------------- |
+| applicationId | Integer | 是   | 申请 ID                         |
+| approved      | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
+| comment       | String  | 否   | 审核意见，最长 500 字符         |
 
 **成功响应 (200)**:
 
@@ -1549,26 +1550,14 @@ removedAttachmentIds: [1, 2]
 
 **接口地址**: `PUT /api/class/respond-user-invitation`
 
-**请求头**:
+**请求参数**:
 
-- Content-Type: application/json
-- 需要登录认证（Session）
-
-**请求体**:
-
-```json
-{
-  "invitationId": "1",
-  "accepted": true
-}
-```
-
-**字段说明**:
-
-| 字段         | 类型    | 必填 | 说明                            |
+| 参数         | 类型    | 必填 | 说明                            |
 | ------------ | ------- | ---- | ------------------------------- |
-| invitationId | String  | 是   | 邀请 ID，必须是数字字符串       |
+| invitationId | Integer | 是   | 邀请 ID                         |
 | accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) |
+
+**请求示例**: `PUT /api/class/respond-user-invitation?invitationId=1&accepted=true`
 
 **成功响应 (200)**:
 
@@ -1616,18 +1605,19 @@ removedAttachmentIds: [1, 2]
 
 ```json
 {
-  "applicationId": "1",
+  "applicationId": 1,
   "approved": true,
   "comment": "同意加入"
 }
 ```
 
 **字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| applicationId | String | 是 | 审核 ID，必须是数字字符串 |
-| approved | Boolean | 是 | 审核结果（true-通过，false-拒绝） |
-| comment | String | 否 | 审核意见，最长 256 字符 |
+
+| 字段          | 类型    | 必填 | 说明                              |
+| ------------- | ------- | ---- | --------------------------------- |
+| applicationId | Integer | 是   | 审核 ID                           |
+| approved      | Boolean | 是   | 审核结果（true-通过，false-拒绝） |
+| comment       | String  | 否   | 审核意见，最长 256 字符           |
 
 **成功响应 (200)**:
 
@@ -1651,8 +1641,6 @@ removedAttachmentIds: [1, 2]
 
 **可能的错误信息**:
 
-- “审核 ID 不能为空”
-- “审核 ID 必须是数字”
 - “审核结果不能为空”
 - “审核意见长度不能超过 256 位”
 - “审核意见不能包含特殊字符（制表符等）”
@@ -1673,9 +1661,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/teacher-approvals/pending`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
+
+| 参数    | 类型    | 必填 | 说明    |
+| ------- | ------- | ---- | ------- |
+| classId | Integer | 是   | 班级 ID |
 
 **请求示例**: `GET /api/class/teacher-approvals/pending?classId=1`
 
@@ -1705,20 +1694,21 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-| ------ | ------ | ------ |
-| id | Integer | 审核 ID |
-| classId | Integer | 班级 ID |
-| className | String | 班级名称 |
-| invitationId | Integer | 关联的用户邀请 ID |
-| inviteeId | Integer | 被邀请人 ID |
-| inviteeUsername | String | 被邀请人用户名 |
-| status | Integer | 教师审核状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId | Integer | 审核人 ID |
-| reviewerUsername | String | 审核人用户名 |
-| reviewTime | LocalDateTime | 审核时间 |
-| reviewComment | String | 审核意见 |
-| createTime | LocalDateTime | 创建时间 |
+
+| 字段             | 类型          | 说明                                     |
+| ---------------- | ------------- | ---------------------------------------- |
+| id               | Integer       | 审核 ID                                  |
+| classId          | Integer       | 班级 ID                                  |
+| className        | String        | 班级名称                                 |
+| invitationId     | Integer       | 关联的用户邀请 ID                        |
+| inviteeId        | Integer       | 被邀请人 ID                              |
+| inviteeUsername  | String        | 被邀请人用户名                           |
+| status           | Integer       | 教师审核状态(0-待审核,1-已通过,2-已拒绝) |
+| reviewerId       | Integer       | 审核人 ID                                |
+| reviewerUsername | String        | 审核人用户名                             |
+| reviewTime       | LocalDateTime | 审核时间                                 |
+| reviewComment    | String        | 审核意见                                 |
+| createTime       | LocalDateTime | 创建时间                                 |
 
 **失败响应**:
 
@@ -1807,10 +1797,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `POST /api/class/invite-with-approval`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
-| userAccount | String | 是 | 被邀请用户的账号 |
+
+| 参数        | 类型    | 必填 | 说明             |
+| ----------- | ------- | ---- | ---------------- |
+| classId     | Integer | 是   | 班级 ID          |
+| userAccount | String  | 是   | 被邀请用户的账号 |
 
 **请求示例**: `POST /api/class/invite-with-approval?classId=1&userAccount=2024001`
 
@@ -1833,15 +1824,16 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 邀请 ID |
-| classId | Integer | 班级 ID |
-| inviterId | Integer | 邀请人 ID(教师) |
-| inviteeUserId | Integer | 被邀请人 ID |
-| status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
-| responseTime | LocalDateTime | 响应时间 |
-| createTime | LocalDateTime | 邀请时间 |
+
+| 字段          | 类型          | 说明                                 |
+| ------------- | ------------- | ------------------------------------ |
+| id            | Integer       | 邀请 ID                              |
+| classId       | Integer       | 班级 ID                              |
+| inviterId     | Integer       | 邀请人 ID(教师)                      |
+| inviteeUserId | Integer       | 被邀请人 ID                          |
+| status        | Integer       | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
+| responseTime  | LocalDateTime | 响应时间                             |
+| createTime    | LocalDateTime | 邀请时间                             |
 
 **注意**:
 
@@ -1941,10 +1933,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `PUT /api/class/respond-invitation`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| invitationId | Integer | 是 | 邀请 ID |
-| accepted | Boolean | 是 | 是否同意(true-同意，false-拒绝) |
+
+| 参数         | 类型    | 必填 | 说明                            |
+| ------------ | ------- | ---- | ------------------------------- |
+| invitationId | Integer | 是   | 邀请 ID                         |
+| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) |
 
 **请求示例**: `PUT /api/class/respond-invitation?invitationId=1&accepted=true`
 
@@ -2807,7 +2800,7 @@ attachments: [file1.pdf, file2.docx]
 
 ```json
 {
-  "submissionId": "1",
+  "submissionId": 1,
   "score": 90.5,
   "comment": "完成得很好，继续保持！"
 }
@@ -2815,8 +2808,8 @@ attachments: [file1.pdf, file2.docx]
 
 **字段说明**:
 | 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| submissionId | String | 是 | 提交 ID，必须是数字字符串 |
+| ------------ | ---------- | ---- | ------------------------------------------ |
+| submissionId | Integer | 是 | 提交 ID |
 | score | BigDecimal | 是 | 分数，范围 0-100 |
 | comment | String | 是 | 批改人评语，不能包含制表符等特殊字符 |
 
@@ -2874,7 +2867,6 @@ attachments: [file1.pdf, file2.docx]
 **可能的错误信息**:
 
 - "提交 ID 不能为空"
-- "提交 ID 必须是数字"
 - "分数不能为空"
 - "分数不能小于 0"
 - "分数超过作业总分"（动态校验：不能超过作业的totalScore，而非固定100分）
@@ -2941,4 +2933,4 @@ attachments: [file1.pdf, file2.docx]
    - 更新作业：`PUT /api/works/update`
    - 提交作业：`POST /api/submissions/submit`
 4. 日期时间参数需使用 ISO 8601 格式
-5. 所有数值型 ID 在请求参数中以字符串形式传递
+5. **所有数值型 ID 在请求参数中直接使用 Integer 类型**（不再使用字符串）

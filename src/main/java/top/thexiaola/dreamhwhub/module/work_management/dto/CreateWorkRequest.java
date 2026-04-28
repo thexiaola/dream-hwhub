@@ -51,11 +51,10 @@ public class CreateWorkRequest {
     private Boolean allowLateSubmit = true;
 
     /**
-     * 所属班级 ID（数字格式）
+     * 所属班级 ID
      */
     @NotNull(message = "所属班级 ID 不能为空")
-    @Pattern(regexp = "^[0-9]+$", message = "班级 ID 必须是数字")
-    private String classId;
+    private Integer classId;
 
     /**
      * 发布时间（必填，立即发布则传当前时间）

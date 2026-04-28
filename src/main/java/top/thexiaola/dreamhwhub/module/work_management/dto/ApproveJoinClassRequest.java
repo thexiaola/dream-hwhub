@@ -11,8 +11,7 @@ import lombok.Data;
 @Data
 public class ApproveJoinClassRequest {
     @NotNull(message = "申请 ID 不能为空")
-    @Pattern(regexp = "^[0-9]+$", message = "申请 ID 必须是数字")
-    private String applicationId;
+    private Integer applicationId;
 
     @NotNull(message = "审核结果不能为空")
     private Boolean approved;  // true=通过，false=拒绝

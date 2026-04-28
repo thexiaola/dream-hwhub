@@ -1,7 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -11,9 +10,8 @@ import lombok.Data;
 public class JoinClassRequest {
 
     /**
-     * 班级 ID（数字格式）
+     * 班级 ID
      */
-    @NotBlank(message = "班级 ID 不能为空")
-    @Pattern(regexp = "^[0-9]+$", message = "班级 ID 必须是数字")
-    private String classId;
+    @NotNull(message = "班级 ID 不能为空")
+    private Integer classId;
 }

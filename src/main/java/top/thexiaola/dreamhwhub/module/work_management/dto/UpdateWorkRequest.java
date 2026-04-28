@@ -18,11 +18,10 @@ import java.util.List;
 public class UpdateWorkRequest {
 
     /**
-     * 作业 ID（数字格式）
+     * 作业 ID
      */
     @NotNull(message = "作业 ID 不能为空")
-    @Pattern(regexp = "^[0-9]+$", message = "作业 ID 必须是数字")
-    private String id;
+    private Integer id;
 
     /**
      * 作业标题（允许字母、汉字和常用特殊字符，不允许换行符、制表符等不常见字符）

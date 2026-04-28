@@ -12,9 +12,9 @@ import java.util.List;
 public class SubmitWorkRequest {
 
     /**
-     * 作业 ID（数字格式）
+     * 作业 ID
      */
-    private String workId;
+    private Integer workId;
 
     /**
      * 提交内容/文本描述

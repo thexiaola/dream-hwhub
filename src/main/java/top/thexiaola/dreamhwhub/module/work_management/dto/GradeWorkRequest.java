@@ -15,11 +15,10 @@ import java.math.BigDecimal;
 public class GradeWorkRequest {
 
     /**
-     * 提交 ID（数字格式）
+     * 提交 ID
      */
     @NotNull(message = "提交 ID 不能为空")
-    @Pattern(regexp = "^[0-9]+$", message = "提交 ID 必须是数字")
-    private String submissionId;
+    private Integer submissionId;
 
     /**
      * 分数
