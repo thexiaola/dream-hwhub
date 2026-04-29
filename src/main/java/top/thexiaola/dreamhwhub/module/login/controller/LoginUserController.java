@@ -17,6 +17,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 
 /**
  * 用户登录控制器
@@ -27,6 +28,7 @@ import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 @RequiredArgsConstructor
 public class LoginUserController {
     private final LoginUserService loginUserService;
+    private final UserMapper userResponseMapper;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request, @Valid @RequestBody LoginRequest loginRequest) {
@@ -34,7 +36,7 @@ public class LoginUserController {
         
         try {
             User user = loginUserService.login(loginRequest, request);
-            UserResponse userResponse = UserResponse.fromEntity(user);
+            UserResponse userResponse = userResponseMapper.toUserResponse(user);
 
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) login successful, session created", userInfo);

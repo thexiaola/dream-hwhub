@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,9 +38,10 @@ import java.util.stream.Collectors;
 /**
  * 作业服务实现类
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class WorkServiceImpl implements WorkService {
-    private static final Logger log = LoggerFactory.getLogger(WorkServiceImpl.class);
 
     // 文件存储根目录
     private static final String UPLOAD_DIR = "uploads/works/";
@@ -51,17 +52,6 @@ public class WorkServiceImpl implements WorkService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
-
-    public WorkServiceImpl(WorkMapper workMapper, WorkAttachmentMapper workAttachmentMapper, 
-                          WorkSubmissionMapper workSubmissionMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper,
-                          ClassService classService, UserMapper userMapper) {
-        this.workMapper = workMapper;
-        this.workAttachmentMapper = workAttachmentMapper;
-        this.workSubmissionMapper = workSubmissionMapper;
-        this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
-        this.classService = classService;
-        this.userMapper = userMapper;
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
@@ -24,9 +24,10 @@ import java.util.Objects;
 /**
  * 班级管理服务实现类
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ClassServiceImpl implements ClassService {
-    private static final Logger log = LoggerFactory.getLogger(ClassServiceImpl.class);
 
     private final ClassInfoMapper classInfoMapper;
     private final ClassMemberMapper classMemberMapper;
@@ -40,30 +41,6 @@ public class ClassServiceImpl implements ClassService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
-
-    public ClassServiceImpl(ClassInfoMapper classInfoMapper, ClassMemberMapper classMemberMapper, 
-                           UserMapper userMapper, ClassCreateApplicationMapper classCreateApplicationMapper,
-                           ClassJoinApplicationMapper classJoinApplicationMapper,
-                           ClassUserInvitationMapper classUserInvitationMapper,
-                           ClassTeacherApprovalMapper classTeacherApprovalMapper,
-                           ClassInvitationMapper classInvitationMapper,
-                           WorkSubmissionMapper workSubmissionMapper,
-                           WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper,
-                           WorkMapper workMapper,
-                           WorkAttachmentMapper workAttachmentMapper) {
-        this.classInfoMapper = classInfoMapper;
-        this.classMemberMapper = classMemberMapper;
-        this.userMapper = userMapper;
-        this.classCreateApplicationMapper = classCreateApplicationMapper;
-        this.classJoinApplicationMapper = classJoinApplicationMapper;
-        this.classUserInvitationMapper = classUserInvitationMapper;
-        this.classTeacherApprovalMapper = classTeacherApprovalMapper;
-        this.classInvitationMapper = classInvitationMapper;
-        this.workSubmissionMapper = workSubmissionMapper;
-        this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
-        this.workMapper = workMapper;
-        this.workAttachmentMapper = workAttachmentMapper;
-    }
 
     /**
      * 获取当前登录用户，如果未登录则抛出异常

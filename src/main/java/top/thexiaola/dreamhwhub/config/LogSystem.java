@@ -2,8 +2,7 @@ package top.thexiaola.dreamhwhub.config;
 
 import ch.qos.logback.core.rolling.RollingPolicyBase;
 import ch.qos.logback.core.rolling.RolloverFailure;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -17,10 +16,9 @@ import java.util.regex.Pattern;
  * 日志系统
  * 格式: log_{日期}_{启动次数}_{文件序号}.log
  */
+@Slf4j
 @Component
 public class LogSystem extends RollingPolicyBase {
-
-    private static final Logger log = LoggerFactory.getLogger(LogSystem.class);
 
     // 滚动策略相关常量
     private static final String DATE_FORMAT = "yyyyMMdd";

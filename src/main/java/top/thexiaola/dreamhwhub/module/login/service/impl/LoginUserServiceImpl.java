@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
@@ -20,19 +20,13 @@ import java.time.LocalDateTime;
 /**
  * 用户登录服务实现类
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class LoginUserServiceImpl implements LoginUserService {
-
-    private static final Logger log = LoggerFactory.getLogger(LoginUserServiceImpl.class);
     
     private final UserMapper userMapper;
-
     private final AESEncryptionUtil aesEncryptionUtil;
-
-    public LoginUserServiceImpl(AESEncryptionUtil aesEncryptionUtil, UserMapper userMapper) {
-        this.aesEncryptionUtil = aesEncryptionUtil;
-        this.userMapper = userMapper;
-    }
 
     @Override
     public User login(LoginRequest loginRequest, HttpServletRequest request) {

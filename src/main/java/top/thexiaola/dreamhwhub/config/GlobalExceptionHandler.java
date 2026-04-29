@@ -1,7 +1,6 @@
 package top.thexiaola.dreamhwhub.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -21,10 +20,9 @@ import java.util.Objects;
  * 全局异常处理器
  * 统一处理控制器层抛出的异常，并返回标准化响应
  */
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * 处理业务逻辑异常 (BusinessException)

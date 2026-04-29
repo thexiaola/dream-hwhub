@@ -11,6 +11,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.*;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 
@@ -20,13 +21,14 @@ import top.thexiaola.dreamhwhub.support.session.UserUtils;
 @RequiredArgsConstructor
 public class ModifyUserController {
     private final ModifyUserService modifyUserService;
+    private final UserMapper userResponseMapper;
 
     @PutMapping("/info")
     public ResponseEntity<ApiResponse<UserResponse>> modifyUserInfo(@Valid @RequestBody ModifyUserInfoRequest modifyUserInfoRequest) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = modifyUserService.modifyUserInfo(modifyUserInfoRequest);
-            UserResponse userResponse = UserResponse.fromEntity(user);
+            UserResponse userResponse = userResponseMapper.toUserResponse(user);
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) modify user info successful", userInfo);
             return ResponseEntity.ok(ApiResponse.success(userResponse, "信息修改成功"));
@@ -40,7 +42,7 @@ public class ModifyUserController {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = modifyUserService.modifyUserEmail(modifyEmailRequest);
-            UserResponse userResponse = UserResponse.fromEntity(user);
+            UserResponse userResponse = userResponseMapper.toUserResponse(user);
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) modify email successful", userInfo);
             return ResponseEntity.ok(ApiResponse.success(userResponse, "邮箱修改成功"));

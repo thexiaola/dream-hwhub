@@ -9,7 +9,6 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
  * 用户实体类
@@ -69,11 +68,4 @@ public class User implements Serializable {
     // 最后登录时间
     @TableField("last_login_time")
     private LocalDateTime lastLoginTime;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof User user)) return false;
-        return Objects.equals(id, user.id);
-    }
 }

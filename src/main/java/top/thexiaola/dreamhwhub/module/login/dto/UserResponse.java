@@ -3,7 +3,6 @@ package top.thexiaola.dreamhwhub.module.login.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
-import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 import java.time.LocalDateTime;
 
@@ -45,28 +44,4 @@ public class UserResponse {
     // 最后登录时间
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime lastLoginTime;
-
-    /**
-     * 从User实体创建响应对象
-     * @param user 用户实体
-     * @return 用户响应对象
-     */
-    public static UserResponse fromEntity(User user) {
-        if (user == null) {
-            return null;
-        }
-        UserResponse response = new UserResponse();
-        response.setId(user.getId());
-        response.setUserNo(user.getUserNo());
-        response.setUsername(user.getUsername());
-        response.setIdName(user.getIdName());
-        response.setEmail(user.getEmail());
-        response.setPhone(user.getPhone());
-        response.setPermission(user.getPermission());
-        response.setIsBanned(user.getIsBanned());
-        response.setRegisterTime(user.getRegisterTime());
-        response.setLastLoginTime(user.getLastLoginTime());
-        return response;
-    }
-
 }

@@ -17,6 +17,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.support.session.SessionManager;
 
 
@@ -29,6 +30,7 @@ import top.thexiaola.dreamhwhub.support.session.SessionManager;
 @RequiredArgsConstructor
 public class RegisterController {
     private final RegisterUserService registerUserService;
+    private final UserMapper userResponseMapper;
 
     /**
      * 用户注册
@@ -37,7 +39,7 @@ public class RegisterController {
     public ResponseEntity<ApiResponse<UserResponse>> register(HttpServletRequest request, @Valid @RequestBody RegisterRequest registerRequest) {
         try {
             User user = registerUserService.register(registerRequest);
-            UserResponse userResponse = UserResponse.fromEntity(user);
+            UserResponse userResponse = userResponseMapper.toUserResponse(user);
         
             String ip = LogUtil.getCurrentClientIp();
             String userInfo = LogUtil.getUserInfoString(ip, user);

@@ -50,6 +50,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
+    private final WorkSubmissionMapper submissionResponseMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -386,20 +387,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
      */
     private WorkSubmissionResponse convertToResponse(WorkSubmission submission) {
         WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
-        WorkSubmissionResponse response = new WorkSubmissionResponse();
-        response.setId(submission.getId());
-        response.setWorkId(submission.getWorkId());
-        response.setWorkTitle(workInfo != null ? workInfo.getTitle() : null);
-        response.setSubmitterId(submission.getSubmitterId());
-        response.setSubmissionContent(submission.getSubmissionContent());
-        response.setScore(submission.getScore());
-        response.setComment(submission.getComment());
-        response.setGradeTime(submission.getGradeTime());
-        response.setGraderId(submission.getGraderId());
-        response.setStatus(submission.getStatus());
-        response.setIsLate(submission.getIsLate());  // 映射逾期标记
-        response.setCreateTime(submission.getCreateTime());
-        response.setUpdateTime(submission.getUpdateTime());
+        WorkSubmissionResponse response = submissionResponseMapper.toResponse(submission, workInfo);
         
         // 加载附件列表
         List<WorkSubmissionResponse.AttachmentInfo> attachments = getSubmissionAttachments(submission.getId());

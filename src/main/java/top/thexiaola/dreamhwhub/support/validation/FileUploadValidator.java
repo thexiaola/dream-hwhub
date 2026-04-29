@@ -1,8 +1,7 @@
 package top.thexiaola.dreamhwhub.support.validation;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 
@@ -15,9 +14,8 @@ import java.util.Set;
  * 文件上传安全验证工具类
  * 提供文件类型、大小、病毒扫描等安全检查功能
  */
+@Slf4j
 public class FileUploadValidator {
-    
-    private static final Logger log = LoggerFactory.getLogger(FileUploadValidator.class);
     
     /**
      * 允许的文件扩展名白名单

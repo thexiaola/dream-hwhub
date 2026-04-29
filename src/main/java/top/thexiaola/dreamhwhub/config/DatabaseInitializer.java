@@ -1,8 +1,8 @@
 package top.thexiaola.dreamhwhub.config;
 
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -18,16 +18,12 @@ import java.util.stream.Collectors;
  * 数据库初始化器
  * 服务启动时自动检查并创建必要的数据库表
  */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class DatabaseInitializer {
 
-    private static final Logger log = LoggerFactory.getLogger(DatabaseInitializer.class);
-
     private final JdbcTemplate jdbcTemplate;
-
-    public DatabaseInitializer(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
 
     // 应用启动后执行数据库初始化和字段校验
     @PostConstruct
