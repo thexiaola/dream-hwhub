@@ -51,11 +51,6 @@ public class WorkSubmissionResponse {
     private String comment;
 
     /**
-     * 提交时间
-     */
-    private LocalDateTime submitTime;
-
-    /**
      * 批改时间
      */
     private LocalDateTime gradeTime;

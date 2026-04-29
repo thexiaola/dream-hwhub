@@ -38,17 +38,14 @@ public class WorkSubmissionController {
      */
     @PostMapping(value = "/submit", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkSubmission>> submitWork(
-            @RequestParam("workId") String workId,
+            @RequestParam("workId") Integer workId,
             @RequestParam(value = "submissionContent", required = false) String submissionContent,
             @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             // 参数验证
-            if (workId == null || workId.trim().isEmpty()) {
+            if (workId == null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 不能为空"));
-            }
-            if (!workId.matches("^[0-9]+$")) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 必须是数字"));
             }
             
             User user = UserUtils.getCurrentUser();

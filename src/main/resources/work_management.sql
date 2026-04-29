@@ -154,7 +154,6 @@ CREATE TABLE IF NOT EXISTS `work_submission` (
     `submission_content` TEXT COMMENT '提交内容/文本描述',
     `score` DECIMAL(5,2) DEFAULT NULL COMMENT '提交分数',
     `comment` TEXT COMMENT '批改人评语',
-    `submit_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
     `grade_time` DATETIME DEFAULT NULL COMMENT '批改时间',
     `grader_id` INT DEFAULT NULL COMMENT '批改人ID',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-未提交，1-已提交，2-已批改',

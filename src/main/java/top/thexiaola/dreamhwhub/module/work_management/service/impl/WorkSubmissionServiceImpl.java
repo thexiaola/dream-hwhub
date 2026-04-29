@@ -110,7 +110,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1);
         submission.setIsLate(isLate);  // 标记是否逾期
-        submission.setSubmitTime(LocalDateTime.now());
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
 
@@ -222,7 +221,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             queryWrapper.eq("work_id", workId);
         }
         
-        queryWrapper.orderByDesc("submit_time");
+        queryWrapper.orderByDesc("create_time");
         
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(queryWrapper);
         return submissions.stream()
@@ -253,7 +252,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
         submissionQuery.eq("work_id", workId)
                       .eq("is_deleted", false)
-                      .orderByDesc("submit_time");
+                      .orderByDesc("create_time");
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
         return submissions.stream()
@@ -335,7 +334,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("work_id", workId)
                    .eq("is_deleted", false)
-                   .orderByDesc("submit_time");
+                   .orderByDesc("create_time");
         
         // 使用MyBatisPlus分页
         Page<WorkSubmission> submissionPage = new Page<>(pageNum, pageSize);
@@ -402,7 +401,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         response.setSubmissionContent(submission.getSubmissionContent());
         response.setScore(submission.getScore());
         response.setComment(submission.getComment());
-        response.setSubmitTime(submission.getSubmitTime());
         response.setGradeTime(submission.getGradeTime());
         response.setGraderId(submission.getGraderId());
         response.setStatus(submission.getStatus());

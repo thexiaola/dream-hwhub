@@ -64,12 +64,6 @@ public class WorkSubmission implements Serializable {
     private String comment;
 
     /**
-     * 提交时间
-     */
-    @TableField("submit_time")
-    private LocalDateTime submitTime;
-
-    /**
      * 批改时间
      */
     @TableField("grade_time")

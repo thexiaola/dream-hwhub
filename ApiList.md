@@ -2161,7 +2161,7 @@ removedAttachmentIds: [1, 2]
 **请求参数** (multipart/form-data):
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| workId | String | 是 | 作业 ID，必须是数字字符串 |
+| workId | Integer | 是 | 作业 ID |
 | submissionContent | String | 否 | 提交内容/文本描述 |
 | attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
 
@@ -2190,10 +2190,10 @@ attachments: [file1.pdf, file2.docx]
     "submissionContent": "这是我的作业内容",
     "score": null,
     "comment": null,
-    "submitTime": "2026-04-09T10:00:00",
     "gradeTime": null,
     "graderId": null,
     "status": 1,
+    "isLate": false,
     "createTime": "2026-04-09T10:00:00",
     "updateTime": "2026-04-09T10:00:00"
   }
@@ -2201,22 +2201,22 @@ attachments: [file1.pdf, file2.docx]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 提交 ID |
-| workId | Integer | 作业 ID |
-| classId | Integer | 所属班级 ID |
-| submitterId | Integer | 提交人 ID |
-| submissionContent | String | 提交内容/文本描述 |
-| score | BigDecimal | 提交分数(未批改时为null) |
-| comment | String | 批改人评语(未批改时为null) |
-| submitTime | LocalDateTime | 提交时间 |
-| gradeTime | LocalDateTime | 批改时间(未批改时为null) |
-| graderId | Integer | 批改人 ID(未批改时为null) |
-| status | Integer | 提交状态(1-已提交,2-已批改) |
-| isLate | Boolean | 是否逾期提交(true-逾期,false-按时) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
+
+| 字段              | 类型          | 说明                               |
+| ----------------- | ------------- | ---------------------------------- |
+| id                | Integer       | 提交 ID                            |
+| workId            | Integer       | 作业 ID                            |
+| classId           | Integer       | 所属班级 ID                        |
+| submitterId       | Integer       | 提交人 ID                          |
+| submissionContent | String        | 提交内容/文本描述                  |
+| score             | BigDecimal    | 提交分数(未批改时为null)           |
+| comment           | String        | 批改人评语(未批改时为null)         |
+| gradeTime         | LocalDateTime | 批改时间(未批改时为null)           |
+| graderId          | Integer       | 批改人 ID(未批改时为null)          |
+| status            | Integer       | 提交状态(1-已提交,2-已批改)        |
+| isLate            | Boolean       | 是否逾期提交(true-逾期,false-按时) |
+| createTime        | LocalDateTime | 创建时间                           |
+| updateTime        | LocalDateTime | 更新时间                           |
 
 **失败响应**:
 
@@ -2231,7 +2231,6 @@ attachments: [file1.pdf, file2.docx]
 **可能的错误信息**:
 
 - "作业 ID 不能为空"
-- "作业 ID 必须是数字"
 - "作业不存在"
 - "只有班级学生可以提交作业"
 - "作业未发布或已结束"
@@ -2276,7 +2275,6 @@ attachments: [file1.pdf, file2.docx]
     "submissionContent": "更新后的作业内容",
     "score": null,
     "comment": null,
-    "submitTime": "2026-04-09T10:00:00",
     "gradeTime": null,
     "graderId": null,
     "status": 1,
@@ -2296,7 +2294,6 @@ attachments: [file1.pdf, file2.docx]
 | submissionContent | String | 提交内容/文本描述 |
 | score | BigDecimal | 提交分数 |
 | comment | String | 批改人评语 |
-| submitTime | LocalDateTime | 提交时间 |
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
@@ -2398,7 +2395,6 @@ attachments: [file1.pdf, file2.docx]
     "submissionContent": "作业内容",
     "score": 90.5,
     "comment": "完成得很好",
-    "submitTime": "2026-04-09T10:00:00",
     "gradeTime": "2026-04-10T10:00:00",
     "graderId": 1001,
     "status": 2,
@@ -2418,7 +2414,6 @@ attachments: [file1.pdf, file2.docx]
 | submissionContent | String | 提交内容/文本描述 |
 | score | BigDecimal | 提交分数 |
 | comment | String | 批改人评语 |
-| submitTime | LocalDateTime | 提交时间 |
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
@@ -2460,7 +2455,7 @@ attachments: [file1.pdf, file2.docx]
 
 - 查询当前登录用户（学生）的作业提交记录
 - 支持按作业 ID 筛选特定作业的提交
-- 返回结果按提交时间倒序排列
+- 返回结果按创建时间倒序排列
 - 包含完整的提交信息和附件列表
 
 **成功响应 (200)**:
@@ -2478,7 +2473,6 @@ attachments: [file1.pdf, file2.docx]
       "submissionContent": "作业内容",
       "score": 90.5,
       "comment": "完成得很好",
-      "submitTime": "2026-04-09T10:00:00",
       "gradeTime": "2026-04-10T10:00:00",
       "graderId": 1001,
       "status": 2,
@@ -2509,7 +2503,6 @@ attachments: [file1.pdf, file2.docx]
 | submissionContent | String | 提交内容/文本描述 |
 | score | BigDecimal | 提交分数 |
 | comment | String | 批改人评语 |
-| submitTime | LocalDateTime | 提交时间 |
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
@@ -2564,7 +2557,6 @@ attachments: [file1.pdf, file2.docx]
         "submissionContent": "作业内容",
         "score": 90.5,
         "comment": "完成得很好",
-        "submitTime": "2026-04-09T10:00:00",
         "gradeTime": "2026-04-10T10:00:00",
         "graderId": 1001,
         "status": 2,
@@ -2580,7 +2572,6 @@ attachments: [file1.pdf, file2.docx]
         "submissionContent": "另一个学生的作业",
         "score": null,
         "comment": null,
-        "submitTime": "2026-04-09T11:00:00",
         "gradeTime": null,
         "graderId": null,
         "status": 1,
@@ -2616,7 +2607,6 @@ attachments: [file1.pdf, file2.docx]
 | submissionContent | String | 提交内容/文本描述 |
 | score | BigDecimal | 提交分数(未批改时为null) |
 | comment | String | 批改人评语(未批改时为null) |
-| submitTime | LocalDateTime | 提交时间 |
 | gradeTime | LocalDateTime | 批改时间(未批改时为null) |
 | graderId | Integer | 批改人 ID(未批改时为null) |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
@@ -2666,7 +2656,6 @@ attachments: [file1.pdf, file2.docx]
       "submissionContent": "作业内容",
       "score": 90.5,
       "comment": "完成得很好",
-      "submitTime": "2026-04-09T10:00:00",
       "gradeTime": "2026-04-10T10:00:00",
       "graderId": 1001,
       "status": 2,
@@ -2688,7 +2677,6 @@ attachments: [file1.pdf, file2.docx]
 | submissionContent | String | 提交内容/文本描述 |
 | score | BigDecimal | 提交分数(未批改时为null) |
 | comment | String | 批改人评语(未批改时为null) |
-| submitTime | LocalDateTime | 提交时间 |
 | gradeTime | LocalDateTime | 批改时间(未批改时为null) |
 | graderId | Integer | 批改人 ID(未批改时为null) |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
@@ -2699,7 +2687,7 @@ attachments: [file1.pdf, file2.docx]
 **注意**:
 
 - 此接口返回已提交学生的完整提交记录
-- 按提交时间倒序排列
+- 按创建时间倒序排列
 - 只有班级老师可以调用此接口
 
 **失败响应**:
@@ -2827,7 +2815,6 @@ attachments: [file1.pdf, file2.docx]
     "submissionContent": "作业内容",
     "score": 90.5,
     "comment": "完成得很好，继续保持！",
-    "submitTime": "2026-04-09T10:00:00",
     "gradeTime": "2026-04-10T10:00:00",
     "graderId": 1001,
     "status": 2,
@@ -2847,7 +2834,6 @@ attachments: [file1.pdf, file2.docx]
 | submissionContent | String | 提交内容/文本描述 |
 | score | BigDecimal | 提交分数 |
 | comment | String | 批改人评语 |
-| submitTime | LocalDateTime | 提交时间 |
 | gradeTime | LocalDateTime | 批改时间 |
 | graderId | Integer | 批改人 ID |
 | status | Integer | 提交状态(1-已提交,2-已批改) |
