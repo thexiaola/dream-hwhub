@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.support.encryption;
 
+import cn.hutool.core.util.StrUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ public class AESEncryptionUtil {
     public String encrypt(String plainText) {
         try {
             // 验证输入
-            if (plainText == null || plainText.isEmpty()) {
+            if (StrUtil.isBlank(plainText)) {
                 // 输入验证失败
                 throw new IllegalArgumentException("Password cannot be null or empty");
             }
@@ -72,7 +73,7 @@ public class AESEncryptionUtil {
     public String decrypt(String base64EncryptedData) {
         try {
             // 验证输入
-            if (base64EncryptedData == null || base64EncryptedData.isEmpty()) {
+            if (StrUtil.isBlank(base64EncryptedData)) {
                 // 输入验证失败
                 throw new IllegalArgumentException("Encrypted data cannot be null or empty");
             }
@@ -114,7 +115,7 @@ public class AESEncryptionUtil {
      */
     private SecretKeySpec initSecretKey() {
         try {
-            if (encryptionKey == null || encryptionKey.isEmpty()) {
+            if (StrUtil.isBlank(encryptionKey)) {
                 // 密钥配置缺失
                 throw new IllegalStateException("Encryption key is missing");
             }

@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.support.validation;
 
+import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
@@ -126,7 +127,7 @@ public class FileUploadValidator {
                     "文件必须包含有效的扩展名", null);
         }
 
-        return fileName.substring(lastDotIndex + 1).toLowerCase();
+        return StrUtil.subSuf(fileName, lastDotIndex + 1).toLowerCase();
     }
 
     /**
@@ -195,7 +196,7 @@ public class FileUploadValidator {
                 String fileName = path.getFileName().toString();
                 int lastDotIndex = fileName.lastIndexOf('.');
                 if (lastDotIndex > 0) {
-                    String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
+                    String extension = StrUtil.subSuf(fileName, lastDotIndex + 1).toLowerCase();
                     return getMimeTypeFromExtension(extension);
                 }
                 return "application/octet-stream";

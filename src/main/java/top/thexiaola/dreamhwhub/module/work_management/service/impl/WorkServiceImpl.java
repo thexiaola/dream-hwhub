@@ -1,5 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -274,7 +276,7 @@ public class WorkServiceImpl implements WorkService {
      * 通过用户号获取用户 ID
      */
     private Integer getUserIdByUserNo(String userNo) {
-        if (userNo == null || userNo.isEmpty()) {
+        if (StrUtil.isBlank(userNo)) {
             return null;
         }
         
@@ -311,7 +313,7 @@ public class WorkServiceImpl implements WorkService {
      * 保存作业附件（直接上传的文件）
      */
     private void saveWorkAttachmentsDirectly(Integer workId, List<MultipartFile> files) {
-        if (files == null || files.isEmpty()) {
+        if (CollUtil.isEmpty(files)) {
             return;
         }
         
@@ -398,7 +400,7 @@ public class WorkServiceImpl implements WorkService {
      */
     private void handleAttachmentUpdates(Integer workId, List<Integer> removedAttachmentIds, List<MultipartFile> newAttachments) {
         // 1. 删除指定的附件
-        if (removedAttachmentIds != null && !removedAttachmentIds.isEmpty()) {
+        if (CollUtil.isNotEmpty(removedAttachmentIds)) {
             for (Integer attachmentId : removedAttachmentIds) {
                 WorkAttachment attachment = workAttachmentMapper.selectById(attachmentId);
                 if (attachment != null && attachment.getWorkId().equals(workId)) {
@@ -420,7 +422,7 @@ public class WorkServiceImpl implements WorkService {
         }
         
         // 2. 添加新附件
-        if (newAttachments != null && !newAttachments.isEmpty()) {
+        if (CollUtil.isNotEmpty(newAttachments)) {
             saveWorkAttachmentsDirectly(workId, newAttachments);
         }
     }

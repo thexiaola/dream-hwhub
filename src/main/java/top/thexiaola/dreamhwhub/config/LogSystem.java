@@ -2,12 +2,12 @@ package top.thexiaola.dreamhwhub.config;
 
 import ch.qos.logback.core.rolling.RollingPolicyBase;
 import ch.qos.logback.core.rolling.RolloverFailure;
+import cn.hutool.core.date.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,7 +32,7 @@ public class LogSystem extends RollingPolicyBase {
 
     @Override
     public void start() {
-        currentDate = new SimpleDateFormat(DATE_FORMAT).format(new Date());
+        currentDate = DateUtil.format(new Date(), DATE_FORMAT);
         startupCount = calculateStartupCount();
         super.start();
         log.info("Unified logging system initialization completed");
@@ -74,7 +74,7 @@ public class LogSystem extends RollingPolicyBase {
      * 检查并处理日期变化
      */
     private void checkAndHandleDateChange() {
-        String today = new SimpleDateFormat(DATE_FORMAT).format(new Date());
+        String today = DateUtil.format(new Date(), DATE_FORMAT);
         if (!today.equals(currentDate)) {
             log.info("Detected date change: {} -> {}, automatically switching log file", currentDate, today);
             currentDate = today;
@@ -89,7 +89,7 @@ public class LogSystem extends RollingPolicyBase {
      */
     private String formatLogMessage(String message, String level) {
         return String.format("%s [%s] %s - %s",
-                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()),
+                DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
                 Thread.currentThread().getName(),
                 level.toUpperCase(),
                 message);
@@ -103,7 +103,7 @@ public class LogSystem extends RollingPolicyBase {
         try (FileWriter writer = new FileWriter(fallbackFileName, true)) {
             String fallbackMessage = String.format(
                     "%s [FALLBACK] %s - Original error: %s, Message: %s%s",
-                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()),
+                    DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
                     level.toUpperCase(),
                     originalException.getMessage(),
                     message,
@@ -141,7 +141,7 @@ public class LogSystem extends RollingPolicyBase {
     public void rollover() throws RolloverFailure {
         ensureLogsDirectoryExists();
 
-        String today = new SimpleDateFormat(DATE_FORMAT).format(new Date());
+        String today = DateUtil.format(new Date(), DATE_FORMAT);
         if (!today.equals(currentDate)) {
             log.info("Date change {} -> {}, resetting log file index", currentDate, today);
             currentDate = today;

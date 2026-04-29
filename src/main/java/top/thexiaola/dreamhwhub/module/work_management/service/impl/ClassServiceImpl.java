@@ -1,5 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -1358,13 +1360,13 @@ public class ClassServiceImpl implements ClassService {
     public ClassJoinApplication joinClassByInviteCode(String inviteCode) {
         User currentUser = getCurrentUserOrThrow();
 
-        if (inviteCode == null || inviteCode.trim().isEmpty()) {
+        if (StrUtil.isBlank(inviteCode)) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_MISSING, "邀请码不能为空", null);
         }
 
         // 根据邀请码查找班级
         QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
-        classQuery.eq("invite_code", inviteCode.trim());
+        classQuery.eq("invite_code", StrUtil.trim(inviteCode));
         ClassInfo classInfo = classInfoMapper.selectOne(classQuery);
         
         if (classInfo == null) {
@@ -1456,13 +1458,7 @@ public class ClassServiceImpl implements ClassService {
      * 生成指定长度的随机码
      */
     private String generateRandomCode(int length) {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder code = new StringBuilder();
-        java.util.Random random = new java.util.Random();
-        for (int i = 0; i < length; i++) {
-            code.append(chars.charAt(random.nextInt(chars.length())));
-        }
-        return code.toString();
+        return RandomUtil.randomString("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", length);
     }
 
     /**

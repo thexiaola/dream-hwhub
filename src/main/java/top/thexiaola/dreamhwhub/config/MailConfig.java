@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.config;
 
+import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -58,17 +59,17 @@ public class MailConfig {
     @Bean
     @Primary
     public JavaMailSender javaMailSender() {
-        if (mailHost == null || mailHost.isEmpty()) {
+        if (StrUtil.isBlank(mailHost)) {
             log.error("spring.mail.host not configured in mail-config.properties");
             return null;
         }
         
-        if (mailUsername == null || mailUsername.isEmpty()) {
+        if (StrUtil.isBlank(mailUsername)) {
             log.error("spring.mail.username not configured in mail-config.properties");
             return null;
         }
         
-        if (mailPassword == null || mailPassword.isEmpty()) {
+        if (StrUtil.isBlank(mailPassword)) {
             log.error("spring.mail.password not configured in mail-config.properties");
             return null;
         }

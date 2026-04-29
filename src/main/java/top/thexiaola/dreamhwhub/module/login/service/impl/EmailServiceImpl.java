@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -113,8 +113,7 @@ public class EmailServiceImpl implements EmailService {
         }
         
         // 生成 6 位随机数字验证码
-        Random random = new Random();
-        String code = String.format("%06d", random.nextInt(999999));
+        String code = RandomUtil.randomNumbers(6);
             
         // 删除该邮箱的所有旧验证码
         removeOldVerificationCodesByEmail(email);

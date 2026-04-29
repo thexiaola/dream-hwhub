@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +24,9 @@ import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
+import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionResponseMapper;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
-import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionResponseMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -111,7 +112,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         workSubmissionMapper.insert(submission);
         
         // 保存附件（直接上传的文件）
-        if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
+        if (CollUtil.isNotEmpty(request.getAttachments())) {
             saveSubmissionAttachmentsDirectly(submission.getId(), request.getAttachments());
         }
         
@@ -401,7 +402,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
      * 保存提交附件（直接上传的文件）
      */
     private void saveSubmissionAttachmentsDirectly(Integer submissionId, List<MultipartFile> files) {
-        if (files == null || files.isEmpty()) {
+        if (CollUtil.isEmpty(files)) {
             return;
         }
         

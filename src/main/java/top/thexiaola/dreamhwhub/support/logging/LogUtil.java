@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.support.logging;
 
+import cn.hutool.core.util.StrUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -88,11 +89,8 @@ public class LogUtil {
                 "username: " + formatValue(user.getUsername()) + ", " +
                 "email: " + formatValue(user.getEmail()) + ", " +
                 "permission: " + user.getPermission();
-        if (result.endsWith(", ")) {
-            result = result.substring(0, result.length() - 2);
-        }
 
-        return result;
+        return StrUtil.removeSuffix(result, ", ");
     }
 
     /**
@@ -161,9 +159,6 @@ public class LogUtil {
      * @return 格式化后的字符串
      */
     private static String formatValue(String value) {
-        if (value == null || "null".equals(value)) {
-            return "null";
-        }
-        return value;
+        return StrUtil.nullToDefault(value, "null");
     }
 }

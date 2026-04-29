@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.config;
 
+import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -123,7 +124,7 @@ public class DatabaseInitializer {
                 try {
                     String[] statements = alterSql.toString().split(";");
                     for (String stmt : statements) {
-                        if (!stmt.trim().isEmpty()) {
+                        if (StrUtil.isNotBlank(stmt)) {
                             jdbcTemplate.execute(stmt.trim());
                         }
                     }
@@ -186,7 +187,7 @@ public class DatabaseInitializer {
                 try {
                     String[] statements = alterSql.toString().split(";");
                     for (String stmt : statements) {
-                        if (!stmt.trim().isEmpty()) {
+                        if (StrUtil.isNotBlank(stmt)) {
                             jdbcTemplate.execute(stmt.trim());
                         }
                     }
@@ -214,7 +215,7 @@ public class DatabaseInitializer {
 
                 // 提取 CREATE TABLE 语句
                 String createTableSql = extractCreateTableSql(sqlScript, tableName);
-                if (createTableSql == null || createTableSql.isEmpty()) {
+                if (StrUtil.isBlank(createTableSql)) {
                     log.warn("CREATE TABLE statement for '{}' not found in {}", tableName, resourceName);
                     return List.of();
                 }
@@ -257,12 +258,13 @@ public class DatabaseInitializer {
             String trimmedPart = part.trim();
 
             // 跳过 PRIMARY KEY、UNIQUE INDEX、CONSTRAINT、FOREIGN KEY 等非字段定义
-            if (trimmedPart.toUpperCase().startsWith("PRIMARY KEY") ||
-                trimmedPart.toUpperCase().startsWith("UNIQUE") ||
-                trimmedPart.toUpperCase().startsWith("INDEX") ||
-                trimmedPart.toUpperCase().startsWith("KEY") ||
-                trimmedPart.toUpperCase().startsWith("CONSTRAINT") ||
-                trimmedPart.toUpperCase().startsWith("FOREIGN KEY")) {
+            String upperPart = trimmedPart.toUpperCase();
+            if (upperPart.startsWith("PRIMARY KEY") ||
+                upperPart.startsWith("UNIQUE") ||
+                upperPart.startsWith("INDEX") ||
+                upperPart.startsWith("KEY") ||
+                upperPart.startsWith("CONSTRAINT") ||
+                upperPart.startsWith("FOREIGN KEY")) {
                 continue;
             }
 
@@ -364,7 +366,7 @@ public class DatabaseInitializer {
                 String[] statements = sqlScript.split(";");
                 for (String statement : statements) {
                     String trimmedStatement = statement.trim();
-                    if (!trimmedStatement.isEmpty()) {
+                    if (StrUtil.isNotBlank(trimmedStatement)) {
                         try {
                             jdbcTemplate.execute(trimmedStatement);
                         } catch (Exception e) {
