@@ -25,6 +25,7 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
+import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionResponseMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +51,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
-    private final WorkSubmissionMapper submissionResponseMapper;
+    private final WorkSubmissionResponseMapper submissionResponseMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)

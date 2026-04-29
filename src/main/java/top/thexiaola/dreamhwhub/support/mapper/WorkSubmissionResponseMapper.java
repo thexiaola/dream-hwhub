@@ -7,10 +7,10 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 
 /**
- * 作业提交对象映射器
+ * 作业提交响应对象映射器
  */
 @Mapper(componentModel = "spring")
-public interface WorkSubmissionMapper {
+public interface WorkSubmissionResponseMapper {
     
     /**
      * WorkSubmission 实体转换为 WorkSubmissionResponse VO
