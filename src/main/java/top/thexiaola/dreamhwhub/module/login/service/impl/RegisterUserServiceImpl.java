@@ -36,22 +36,11 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         String username = registerRequest.getUsername();
         String email = registerRequest.getEmail();
         
-        if (isUserNoExists(userNo)) {
-            log.info(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));
-            throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
-        }
+        checkUserNoExists(userNo);
+        checkUsernameExists(username);
+        checkEmailExists(email);
 
-        if (isUsernameExists(username)) {
-            log.info(LogUtil.getFailureLog(operation, "username already exists: " + username, null));
-            throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
-        }
-
-        if (isEmailExists(email)) {
-            log.info(LogUtil.getFailureLog(operation, "email already exists: " + email, null));
-            throw new BusinessException(BusinessErrorCode.EMAIL_EXISTS, "邮箱已存在", null);
-        }
-
-        if (!verifyEmailCode(registerRequest.getEmail(), registerRequest.getEmailCode(), registerRequest.getUserNo(), registerRequest.getUsername())) {
+        if (!verifyEmailCode(registerRequest.getEmail(), registerRequest.getEmailCode(), userNo, username)) {
             log.info(LogUtil.getFailureLog(operation, "invalid or expired email verification code", null));
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "验证码无效或已过期", null);
         }
@@ -81,20 +70,9 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     public void sendEmailCode(String email, String userNo, String username) {
         String operation = "Send registration verification code";
         
-        if (isUserNoExists(userNo)) {
-            log.warn(LogUtil.getFailureLog(operation, "user_no already exists: " + userNo, null));
-            throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
-        }
-            
-        if (isUsernameExists(username)) {
-            log.warn(LogUtil.getFailureLog(operation, "username already exists: " + username, null));
-            throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
-        }
-            
-        if (isEmailExists(email)) {
-            log.warn(LogUtil.getFailureLog(operation, "email already exists: " + email, null));
-            throw new BusinessException(BusinessErrorCode.EMAIL_EXISTS, "邮箱已存在", null);
-        }
+        checkUserNoExists(userNo);
+        checkUsernameExists(username);
+        checkEmailExists(email);
             
         try {
             emailService.sendVerificationCode(email, userNo, username);
@@ -102,6 +80,24 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "failed to send verification code: " + e.getMessage(), null), e);
             throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败：" + e.getMessage());
+        }
+    }
+
+    private void checkUserNoExists(String userNo) {
+        if (isUserNoExists(userNo)) {
+            throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
+        }
+    }
+
+    private void checkUsernameExists(String username) {
+        if (isUsernameExists(username)) {
+            throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
+        }
+    }
+
+    private void checkEmailExists(String email) {
+        if (isEmailExists(email)) {
+            throw new BusinessException(BusinessErrorCode.EMAIL_EXISTS, "邮箱已存在", null);
         }
     }
 

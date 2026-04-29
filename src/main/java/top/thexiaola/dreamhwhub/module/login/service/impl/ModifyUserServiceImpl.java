@@ -2,6 +2,8 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
@@ -20,17 +22,13 @@ import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import static top.thexiaola.dreamhwhub.module.login.service.impl.LoginUserServiceImpl.getUser;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ModifyUserServiceImpl implements ModifyUserService {
     private final UserMapper userMapper;
     private final EmailService emailService;
     private final AESEncryptionUtil aesEncryptionUtil;
-
-    public ModifyUserServiceImpl(UserMapper userMapper, EmailService emailService, AESEncryptionUtil aesEncryptionUtil) {
-        this.userMapper = userMapper;
-        this.emailService = emailService;
-        this.aesEncryptionUtil = aesEncryptionUtil;
-    }
 
     @Override
     public User modifyUserInfo(ModifyUserInfoRequest modifyUserInfoRequest) {
