@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,9 +37,10 @@ import java.util.stream.Collectors;
 /**
  * 作业提交服务实现类
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class WorkSubmissionServiceImpl implements WorkSubmissionService {
-    private static final Logger log = LoggerFactory.getLogger(WorkSubmissionServiceImpl.class);
 
     // 文件存储根目录
     private static final String UPLOAD_DIR = "uploads/submissions/";
@@ -49,14 +50,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
-
-    public WorkSubmissionServiceImpl(WorkSubmissionMapper workSubmissionMapper, WorkMapper workMapper, WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper, ClassService classService, UserMapper userMapper) {
-        this.workSubmissionMapper = workSubmissionMapper;
-        this.workMapper = workMapper;
-        this.workSubmissionAttachmentMapper = workSubmissionAttachmentMapper;
-        this.classService = classService;
-        this.userMapper = userMapper;
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -221,7 +214,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             queryWrapper.eq("work_id", workId);
         }
         
-        queryWrapper.orderByDesc("create_time");
+        queryWrapper.orderByDesc("update_time");
         
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(queryWrapper);
         return submissions.stream()
@@ -252,7 +245,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
         submissionQuery.eq("work_id", workId)
                       .eq("is_deleted", false)
-                      .orderByDesc("create_time");
+                      .orderByDesc("update_time");
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
         return submissions.stream()
@@ -334,7 +327,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("work_id", workId)
                    .eq("is_deleted", false)
-                   .orderByDesc("create_time");
+                   .orderByDesc("update_time");
         
         // 使用MyBatisPlus分页
         Page<WorkSubmission> submissionPage = new Page<>(pageNum, pageSize);

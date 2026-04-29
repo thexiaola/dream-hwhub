@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
@@ -23,15 +23,12 @@ import java.util.List;
 /**
  * 作业提交控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/submissions")
+@RequiredArgsConstructor
 public class WorkSubmissionController {
-    private static final Logger log = LoggerFactory.getLogger(WorkSubmissionController.class);
     private final WorkSubmissionService workSubmissionService;
-
-    public WorkSubmissionController(WorkSubmissionService workSubmissionService) {
-        this.workSubmissionService = workSubmissionService;
-    }
 
     /**
      * 提交作业
