@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.login.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,15 +21,12 @@ import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 /**
  * 用户登录控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class LoginUserController {
-    private static final Logger log = LoggerFactory.getLogger(LoginUserController.class);
     private final LoginUserService loginUserService;
-    
-    public LoginUserController(LoginUserService loginUserService) {
-        this.loginUserService = loginUserService;
-    }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request, @Valid @RequestBody LoginRequest loginRequest) {

@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
@@ -24,15 +24,12 @@ import java.util.List;
 /**
  * 班级管理控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/class")
+@RequiredArgsConstructor
 public class ClassController {
-    private static final Logger log = LoggerFactory.getLogger(ClassController.class);
     private final ClassService classService;
-    
-    public ClassController(ClassService classService) {
-        this.classService = classService;
-    }
 
     /**
      * 提交创建班级申请

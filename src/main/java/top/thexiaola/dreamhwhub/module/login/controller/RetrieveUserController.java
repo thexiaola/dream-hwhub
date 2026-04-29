@@ -1,8 +1,8 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
@@ -13,15 +13,12 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users/retrieve")
+@RequiredArgsConstructor
 public class RetrieveUserController {
-    private static final Logger log = LoggerFactory.getLogger(RetrieveUserController.class);
     private final ModifyUserService modifyUserService;
-
-    public RetrieveUserController(ModifyUserService modifyUserService) {
-        this.modifyUserService = modifyUserService;
-    }
 
     /**
      * 发送找回密码验证码

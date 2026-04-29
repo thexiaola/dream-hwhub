@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.login.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,17 +23,12 @@ import top.thexiaola.dreamhwhub.support.session.SessionManager;
 /**
  * 用户注册控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class RegisterController {
-
-    private static final Logger log = LoggerFactory.getLogger(RegisterController.class);
-    
     private final RegisterUserService registerUserService;
-
-    public RegisterController(RegisterUserService registerUserService) {
-        this.registerUserService = registerUserService;
-    }
 
     /**
      * 用户注册

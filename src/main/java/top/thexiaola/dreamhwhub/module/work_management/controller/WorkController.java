@@ -1,8 +1,8 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -21,15 +21,12 @@ import top.thexiaola.dreamhwhub.support.session.UserUtils;
 /**
  * 作业管理控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/works")
+@RequiredArgsConstructor
 public class WorkController {
-    private static final Logger log = LoggerFactory.getLogger(WorkController.class);
     private final WorkService workService;
-
-    public WorkController(WorkService workService) {
-        this.workService = workService;
-    }
 
     /**
      * 创建作业

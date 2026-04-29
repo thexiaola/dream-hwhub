@@ -1,8 +1,8 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
@@ -14,15 +14,12 @@ import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users/modify")
+@RequiredArgsConstructor
 public class ModifyUserController {
-    private static final Logger log = LoggerFactory.getLogger(ModifyUserController.class);
     private final ModifyUserService modifyUserService;
-
-    public ModifyUserController(ModifyUserService modifyUserService) {
-        this.modifyUserService = modifyUserService;
-    }
 
     @PutMapping("/info")
     public ResponseEntity<ApiResponse<UserResponse>> modifyUserInfo(@Valid @RequestBody ModifyUserInfoRequest modifyUserInfoRequest) {

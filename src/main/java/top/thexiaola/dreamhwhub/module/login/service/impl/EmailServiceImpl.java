@@ -2,8 +2,8 @@ package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -23,10 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 邮件服务实现类
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
-
-    private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
     
     private final JavaMailSender mailSender;
     
@@ -49,15 +49,6 @@ public class EmailServiceImpl implements EmailService {
     
     @Value("${spring.mail.properties.mail.from.nickname:系统管理员}")
     private String senderNickname;
-
-    public EmailServiceImpl(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-        if (mailSender != null) {
-            log.info("EmailServiceImpl initialized successfully with JavaMailSender: {}", mailSender.getClass().getSimpleName());
-        } else {
-            log.error("CRITICAL: JavaMailSender is NULL in EmailServiceImpl constructor! Bean creation order issue?");
-        }
-    }
 
     /**
      * ISO-8859-1 编码转换 UTF-8 编码
