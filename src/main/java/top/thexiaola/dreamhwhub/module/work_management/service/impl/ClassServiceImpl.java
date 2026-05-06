@@ -1563,26 +1563,31 @@ public class ClassServiceImpl implements ClassService {
             return;
         }
 
-        // 2. 软删除每个提交的附件记录
-        for (WorkSubmission submission : submissions) {
-            QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
-            attQuery.eq("submission_id", submission.getId())
-                   .eq("is_deleted", false);
-            List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
-            
-            // 软删除附件记录（不物理删除文件）
+        List<Integer> submissionIds = submissions.stream()
+                .map(WorkSubmission::getId)
+                .toList();
+
+        // 2. 批量软删除附件记录
+        QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
+        attQuery.in("submission_id", submissionIds)
+               .eq("is_deleted", false);
+        List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
+        
+        if (!attachments.isEmpty()) {
             for (WorkSubmissionAttachment attachment : attachments) {
                 attachment.setIsDeleted(true);
-                workSubmissionAttachmentMapper.updateById(attachment);
-                log.info("Soft deleted student submission attachment record: id={}", attachment.getId());
             }
+            workSubmissionAttachmentMapper.update(null, attQuery);
+            log.info("Soft deleted {} student submission attachment records", attachments.size());
         }
         
-        // 3. 软删除所有提交记录
-        for (WorkSubmission submission : submissions) {
-            submission.setIsDeleted(true);
-            workSubmissionMapper.updateById(submission);
-        }
+        // 3. 批量软删除提交记录
+        QueryWrapper<WorkSubmission> updateQuery = new QueryWrapper<>();
+        updateQuery.in("id", submissionIds);
+        WorkSubmission updateEntity = new WorkSubmission();
+        updateEntity.setIsDeleted(true);
+        workSubmissionMapper.update(updateEntity, updateQuery);
+        
         log.info("Soft deleted {} submission records for user {} in class {} (files preserved)", 
                 submissions.size(), userId, classId);
     }

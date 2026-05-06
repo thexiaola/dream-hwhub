@@ -138,7 +138,8 @@ public class WorkServiceImpl implements WorkService {
         // 如果已有学生提交，不允许修改总分
         if (!request.getTotalScore().equals(workInfo.getTotalScore())) {
             QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
-            submissionQuery.eq("work_id", workInfo.getId());
+            submissionQuery.eq("work_id", workInfo.getId())
+                          .eq("is_deleted", false);
             long submissionCount = workSubmissionMapper.selectCount(submissionQuery);
             if (submissionCount > 0) {
                 throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, 

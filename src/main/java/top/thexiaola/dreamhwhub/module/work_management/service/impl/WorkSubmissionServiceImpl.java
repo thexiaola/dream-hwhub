@@ -88,9 +88,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         queryWrapper.eq("work_id", request.getWorkId())
                 .eq("submitter_id", currentUser.getId())
                 .eq("is_deleted", false);
-        WorkSubmission existingSubmission = workSubmissionMapper.selectOne(queryWrapper);
+        long count = workSubmissionMapper.selectCount(queryWrapper);
         
-        if (existingSubmission != null) {
+        if (count > 0) {
             throw new BusinessException(BusinessErrorCode.WORK_ALREADY_SUBMITTED, "您已经提交过该作业", null);
         }
 
@@ -113,7 +113,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
 
-        workSubmissionMapper.insert(submission);
+        try {
+            workSubmissionMapper.insert(submission);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 捕获唯一约束冲突，说明已有其他请求提交了
+            log.warn("Duplicate submission attempt for work {} by user {}", request.getWorkId(), currentUser.getId());
+            throw new BusinessException(BusinessErrorCode.WORK_ALREADY_SUBMITTED, "您已经提交过该作业", null);
+        }
         
         // 保存附件（直接上传的文件）
         List<WorkSubmissionSubmitResponse.AttachmentInfo> attachmentInfos = null;

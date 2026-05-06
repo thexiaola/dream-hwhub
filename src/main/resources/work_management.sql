@@ -13,8 +13,7 @@ CREATE TABLE IF NOT EXISTS `class_info` (
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_class_name (`class_name`),
     INDEX idx_owner_id (`owner_id`),
-    INDEX idx_invite_code (`invite_code`),
-    CONSTRAINT fk_class_owner FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+    INDEX idx_invite_code (`invite_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级信息表';
 
 -- 班级成员表
@@ -28,10 +27,8 @@ CREATE TABLE IF NOT EXISTS `class_member` (
     INDEX idx_class_id (`class_id`),
     INDEX idx_user_id (`user_id`),
     INDEX idx_role (`role`),
-    UNIQUE KEY uk_class_user (`class_id`, `user_id`),
-    CONSTRAINT fk_member_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_member_user FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_member_invite FOREIGN KEY (`invite_by`) REFERENCES `user`(`id`) ON DELETE SET NULL
+    INDEX idx_class_role (`class_id`, `role`),
+    UNIQUE KEY uk_class_user (`class_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级成员表';
 
 -- 用户邀请申请表（用户发起邀请，等待被邀请用户确认）
@@ -47,10 +44,7 @@ CREATE TABLE IF NOT EXISTS `class_user_invitation` (
     INDEX idx_inviter_id (`inviter_id`),
     INDEX idx_invitee_id (`invitee_id`),
     INDEX idx_status (`status`),
-    UNIQUE KEY uk_class_inviter_invitee (`class_id`, `inviter_id`, `invitee_id`),
-    CONSTRAINT fk_user_invitation_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_user_invitation_inviter FOREIGN KEY (`inviter_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_user_invitation_invitee FOREIGN KEY (`invitee_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+    UNIQUE KEY uk_class_inviter_invitee (`class_id`, `inviter_id`, `invitee_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户邀请申请表';
 
 -- 教师审核邀请表（用户同意后，等待教师或助理审核）
@@ -68,11 +62,7 @@ CREATE TABLE IF NOT EXISTS `class_teacher_approval` (
     INDEX idx_invitation_id (`invitation_id`),
     INDEX idx_invitee_id (`invitee_id`),
     INDEX idx_status (`status`),
-    UNIQUE KEY uk_invitation (`invitation_id`),
-    CONSTRAINT fk_teacher_approval_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_teacher_approval_invitation FOREIGN KEY (`invitation_id`) REFERENCES `class_user_invitation`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_teacher_approval_invitee FOREIGN KEY (`invitee_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_teacher_approval_reviewer FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE SET NULL
+    UNIQUE KEY uk_invitation (`invitation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='教师审核邀请表';
 
 -- 班级创建申请表（管理员审核）
@@ -88,10 +78,7 @@ CREATE TABLE IF NOT EXISTS `class_create_application` (
     `created_class_id` INT DEFAULT NULL COMMENT '审核通过后创建的班级ID',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
     INDEX idx_applicant_id (`applicant_id`),
-    INDEX idx_status (`status`),
-    CONSTRAINT fk_create_app_applicant FOREIGN KEY (`applicant_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_create_app_reviewer FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
-    CONSTRAINT fk_create_app_class FOREIGN KEY (`created_class_id`) REFERENCES `class_info`(`id`) ON DELETE SET NULL
+    INDEX idx_status (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级创建申请表';
 
 -- 班级加入申请表（老师和管理员审核）
@@ -107,10 +94,7 @@ CREATE TABLE IF NOT EXISTS `class_join_application` (
     INDEX idx_class_id (`class_id`),
     INDEX idx_applicant_id (`applicant_id`),
     INDEX idx_status (`status`),
-    UNIQUE KEY uk_class_applicant (`class_id`, `applicant_id`),
-    CONSTRAINT fk_join_app_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_join_app_applicant FOREIGN KEY (`applicant_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_join_app_reviewer FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE SET NULL
+    UNIQUE KEY uk_class_applicant (`class_id`, `applicant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级加入申请表';
 
 -- 作业表
@@ -128,8 +112,7 @@ CREATE TABLE IF NOT EXISTS `work_info` (
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_publisher_id (`publisher_id`),
     INDEX idx_class_id (`class_id`),
-    CONSTRAINT fk_work_publisher FOREIGN KEY (`publisher_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_work_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE
+    INDEX idx_class_publish_deadline (`class_id`, `publish_time`, `deadline`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业表';
 
 -- 作业附件表
@@ -141,8 +124,7 @@ CREATE TABLE IF NOT EXISTS `work_attachment` (
     `file_size` BIGINT NOT NULL COMMENT '文件大小（字节）',
     `file_type` VARCHAR(100) DEFAULT NULL COMMENT '文件类型',
     `upload_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
-    INDEX idx_work_id (`work_id`),
-    CONSTRAINT fk_work_attachment FOREIGN KEY (`work_id`) REFERENCES `work_info`(`id`) ON DELETE CASCADE
+    INDEX idx_work_id (`work_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业附件表';
 
 -- 作业提交表
@@ -166,10 +148,8 @@ CREATE TABLE IF NOT EXISTS `work_submission` (
     INDEX idx_submitter_id (`submitter_id`),
     INDEX idx_grader_id (`grader_id`),
     INDEX idx_status (`status`),
-    CONSTRAINT fk_submission_work FOREIGN KEY (`work_id`) REFERENCES `work_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_submission_class FOREIGN KEY (`class_id`) REFERENCES `class_info`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_submission_submitter FOREIGN KEY (`submitter_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-    CONSTRAINT fk_submission_grader FOREIGN KEY (`grader_id`) REFERENCES `user`(`id`) ON DELETE SET NULL
+    INDEX idx_work_submitter_deleted (`work_id`, `submitter_id`, `is_deleted`),
+    UNIQUE KEY uk_work_submitter (`work_id`, `submitter_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业提交表';
 
 -- 作业提交附件表
@@ -182,6 +162,5 @@ CREATE TABLE IF NOT EXISTS `work_submission_attachment` (
      `file_type` VARCHAR(100) DEFAULT NULL COMMENT '文件类型',
      `upload_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
      `is_deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除：0-否，1-是（软删除）',
-     INDEX idx_submission_id (`submission_id`),
-     CONSTRAINT fk_submission_attachment FOREIGN KEY (`submission_id`) REFERENCES `work_submission`(`id`) ON DELETE CASCADE
+     INDEX idx_submission_id (`submission_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业提交附件表';
