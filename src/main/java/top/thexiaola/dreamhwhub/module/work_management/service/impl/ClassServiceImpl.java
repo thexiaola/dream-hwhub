@@ -1344,8 +1344,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以生成邀请码", null);
         }
 
-        // 生成6位随机邀请码
-        String inviteCode = generateRandomCode(6);
+        // 生成25位随机邀请码（大小写字母+数字）
+        String inviteCode = generateRandomCode(25);
         
         // 更新班级邀请码
         classInfo.setInviteCode(inviteCode);
@@ -1455,10 +1455,10 @@ public class ClassServiceImpl implements ClassService {
     }
 
     /**
-     * 生成指定长度的随机码
+     * 生成指定长度的随机码（大小写字母+数字）
      */
     private String generateRandomCode(int length) {
-        return RandomUtil.randomString("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", length);
+        return RandomUtil.randomString("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", length);
     }
 
     /**

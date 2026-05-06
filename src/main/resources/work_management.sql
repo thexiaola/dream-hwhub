@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `class_info` (
     `class_name` VARCHAR(100) NOT NULL COMMENT '班级名称',
     `description` VARCHAR(500) DEFAULT NULL COMMENT '班级描述',
     `owner_id` INT NOT NULL COMMENT '班级所有者ID',
-    `invite_code` VARCHAR(20) DEFAULT NULL COMMENT '班级邀请码（6位随机码）',
+    `invite_code` CHAR(25) DEFAULT NULL COMMENT '班级邀请码（25位随机码）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_class_name (`class_name`),

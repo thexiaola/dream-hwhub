@@ -33,4 +33,9 @@ public class GradeWorkRequest {
     @NotBlank(message = "评语不能为空")
     @Pattern(regexp = "^[^\\t\\f\\v]+$", message = "评语不能包含特殊字符（制表符等）")
     private String comment;
+
+    /**
+     * 是否打回（true-打回让学生修改，false-正常批改）
+     */
+    private Boolean isReturned = false;
 }

@@ -24,7 +24,9 @@ import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionResponseMapper;
+import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionSubmitResponseMapper;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
 
@@ -53,10 +55,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final ClassService classService;
     private final UserMapper userMapper;
     private final WorkSubmissionResponseMapper submissionResponseMapper;
+    private final WorkSubmissionSubmitResponseMapper submissionSubmitResponseMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkSubmission submitWork(SubmitWorkRequest request) {
+    public WorkSubmissionSubmitResponse submitWork(SubmitWorkRequest request) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -112,16 +115,32 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         workSubmissionMapper.insert(submission);
         
         // 保存附件（直接上传的文件）
+        List<WorkSubmissionSubmitResponse.AttachmentInfo> attachmentInfos = null;
         if (CollUtil.isNotEmpty(request.getAttachments())) {
-            saveSubmissionAttachmentsDirectly(submission.getId(), request.getAttachments());
+            List<WorkSubmissionResponse.AttachmentInfo> responseAttachments = saveSubmissionAttachmentsDirectly(submission.getId(), request.getAttachments());
+            // 转换为提交响应的附件类型
+            attachmentInfos = responseAttachments.stream()
+                    .map(att -> new WorkSubmissionSubmitResponse.AttachmentInfo(
+                            att.getId(),
+                            att.getFileName(),
+                            att.getFilePath(),
+                            att.getFileSize(),
+                            att.getFileType(),
+                            att.getUploadTime()
+                    ))
+                    .collect(Collectors.toList());
         }
         
-        return submission;
+        // 转换为响应VO（不包含批改信息）
+        WorkSubmissionSubmitResponse response = submissionSubmitResponseMapper.toSubmitResponse(submission);
+        response.setAttachments(attachmentInfos);
+        
+        return response;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkSubmission updateSubmission(Integer submissionId, String submissionContent) {
+    public WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -139,23 +158,28 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能修改自己的提交", null);
         }
 
-        // 如果已经被批改，不能修改
+        // 如果已经被批改且未被老师打回，不能修改
         if (submission.getStatus() == 2) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_ALREADY_GRADED, "作业已被批改，不能修改", null);
         }
 
-        // 检查是否已过截止时间，学生不能在截止后更新作业
-        WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
-        if (workInfo != null && workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
-            throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，无法修改", null);
+        // 检查是否已过截止时间，学生不能在截止后更新作业（除非被老师打回）
+        if (submission.getStatus() != 3) {
+            WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
+            if (workInfo != null && workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
+                throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，无法修改", null);
+            }
         }
 
         // 更新提交内容
         submission.setSubmissionContent(submissionContent);
+        submission.setStatus(1); // 重置为已提交状态
         submission.setUpdateTime(LocalDateTime.now());
 
         workSubmissionMapper.updateById(submission);
-        return submission;
+        
+        // 转换为响应VO（不包含批改信息）
+        return submissionSubmitResponseMapper.toSubmitResponse(submission);
     }
 
     @Override
@@ -375,7 +399,14 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         // 批改作业（支持重新批改）
         submission.setScore(request.getScore());
         submission.setComment(request.getComment());
-        submission.setStatus(2); // 已批改
+        
+        // 根据是否打回设置状态
+        if (Boolean.TRUE.equals(request.getIsReturned())) {
+            submission.setStatus(3); // 已打回，学生可以修改
+        } else {
+            submission.setStatus(2); // 已批改
+        }
+        
         submission.setGradeTime(LocalDateTime.now());
         submission.setGraderId(currentUser.getId());
         submission.setUpdateTime(LocalDateTime.now());
@@ -400,10 +431,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     
     /**
      * 保存提交附件（直接上传的文件）
+     * @return 附件信息列表
      */
-    private void saveSubmissionAttachmentsDirectly(Integer submissionId, List<MultipartFile> files) {
+    private List<WorkSubmissionResponse.AttachmentInfo> saveSubmissionAttachmentsDirectly(Integer submissionId, List<MultipartFile> files) {
+        List<WorkSubmissionResponse.AttachmentInfo> attachmentInfos = new java.util.ArrayList<>();
+        
         if (CollUtil.isEmpty(files)) {
-            return;
+            return attachmentInfos;
         }
         
         for (MultipartFile file : files) {
@@ -447,6 +481,17 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 attachment.setUploadTime(LocalDateTime.now());
                 workSubmissionAttachmentMapper.insert(attachment);
                 
+                // 8. 构建附件信息
+                WorkSubmissionResponse.AttachmentInfo info = new WorkSubmissionResponse.AttachmentInfo(
+                        attachment.getId(),
+                        attachment.getFileName(),
+                        attachment.getFilePath(),
+                        attachment.getFileSize(),
+                        attachment.getFileType(),
+                        attachment.getUploadTime()
+                );
+                attachmentInfos.add(info);
+                
                 log.info("Saved submission attachment directly: {}, size: {}, type: {}", 
                         originalFilename, fileSize, fileType);
                         
@@ -458,6 +503,8 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                         "文件上传失败：" + e.getMessage(), null);
             }
         }
+        
+        return attachmentInfos;
     }
     
 

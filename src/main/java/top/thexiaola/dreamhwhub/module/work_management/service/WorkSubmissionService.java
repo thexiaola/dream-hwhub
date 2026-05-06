@@ -6,6 +6,7 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 
 import java.util.List;
 
@@ -18,18 +19,18 @@ public interface WorkSubmissionService {
      * 提交作业
      *
      * @param request 提交作业请求
-     * @return 提交的作业
+     * @return 提交的作业（不包含批改信息）
      */
-    WorkSubmission submitWork(SubmitWorkRequest request);
+    WorkSubmissionSubmitResponse submitWork(SubmitWorkRequest request);
 
     /**
      * 更新提交的作业
      *
      * @param submissionId 提交 ID
      * @param submissionContent 提交内容
-     * @return 更新后的提交
+     * @return 更新后的提交（不包含批改信息）
      */
-    WorkSubmission updateSubmission(Integer submissionId, String submissionContent);
+    WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent);
 
     /**
      * 删除提交的作业

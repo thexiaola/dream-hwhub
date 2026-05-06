@@ -1866,9 +1866,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `GET /api/class/my-invitations`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| status | Integer | 否 | 状态筛选（0-待处理，1-已同意，2-已拒绝） |
+
+| 参数   | 类型    | 必填 | 说明                                     |
+| ------ | ------- | ---- | ---------------------------------------- |
+| status | Integer | 否   | 状态筛选（0-待处理，1-已同意，2-已拒绝） |
 
 **请求示例**:
 
@@ -1898,17 +1899,18 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 邀请 ID |
-| classId | Integer | 班级 ID |
-| className | String | 班级名称 |
-| inviterId | Integer | 邀请人 ID |
-| inviterName | String | 邀请人姓名 |
-| inviteeUserId | Integer | 被邀请人 ID |
-| status | Integer | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
-| responseTime | LocalDateTime | 响应时间 |
-| createTime | LocalDateTime | 邀请时间 |
+
+| 字段          | 类型          | 说明                                 |
+| ------------- | ------------- | ------------------------------------ |
+| id            | Integer       | 邀请 ID                              |
+| classId       | Integer       | 班级 ID                              |
+| className     | String        | 班级名称                             |
+| inviterId     | Integer       | 邀请人 ID                            |
+| inviterName   | String        | 邀请人姓名                           |
+| inviteeUserId | Integer       | 被邀请人 ID                          |
+| status        | Integer       | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
+| responseTime  | LocalDateTime | 响应时间                             |
+| createTime    | LocalDateTime | 邀请时间                             |
 
 **注意**:
 
@@ -1979,9 +1981,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `POST /api/class/generate-invite-code`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
+
+| 参数    | 类型    | 必填 | 说明    |
+| ------- | ------- | ---- | ------- |
+| classId | Integer | 是   | 班级 ID |
 
 **请求示例**: `POST /api/class/generate-invite-code?classId=1`
 
@@ -1991,14 +1994,15 @@ removedAttachmentIds: [1, 2]
 {
   "code": 200,
   "message": "邀请码生成成功",
-  "data": "A3F9K2"
+  "data": "A3f9K2mN7pQ1xR5tY8wZ4bC6d"
 }
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| data | String | 6位随机邀请码（大写字母+数字） |
+
+| 字段 | 类型   | 说明                              |
+| ---- | ------ | --------------------------------- |
+| data | String | 25位随机邀请码（大小写字母+数字） |
 
 **注意**:
 
@@ -2030,11 +2034,12 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `POST /api/class/join-by-code`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| inviteCode | String | 是 | 6位邀请码 |
 
-**请求示例**: `POST /api/class/join-by-code?inviteCode=A3F9K2`
+| 参数       | 类型   | 必填 | 说明       |
+| ---------- | ------ | ---- | ---------- |
+| inviteCode | String | 是   | 25位邀请码 |
+
+**请求示例**: `POST /api/class/join-by-code?inviteCode=A3f9K2mN7pQ1xR5tY8wZ4bC6d`
 
 **成功响应 (200)**:
 
@@ -2056,16 +2061,17 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 申请 ID（虚拟记录） |
-| classId | Integer | 班级 ID |
-| applicantId | Integer | 申请人 ID |
-| status | Integer | 审核状态(1-已通过) |
-| reviewerId | Integer | 审核人 ID（自动审核） |
-| reviewTime | LocalDateTime | 审核时间 |
-| reviewComment | String | 审核意见 |
-| createTime | LocalDateTime | 申请时间 |
+
+| 字段          | 类型          | 说明                  |
+| ------------- | ------------- | --------------------- |
+| id            | Integer       | 申请 ID（虚拟记录）   |
+| classId       | Integer       | 班级 ID               |
+| applicantId   | Integer       | 申请人 ID             |
+| status        | Integer       | 审核状态(1-已通过)    |
+| reviewerId    | Integer       | 审核人 ID（自动审核） |
+| reviewTime    | LocalDateTime | 审核时间              |
+| reviewComment | String        | 审核意见              |
+| createTime    | LocalDateTime | 申请时间              |
 
 **注意**:
 
@@ -2100,10 +2106,11 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `PUT /api/class/transfer-ownership`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
-| newOwnerId | Integer | 是 | 新所有者 ID |
+
+| 参数       | 类型    | 必填 | 说明        |
+| ---------- | ------- | ---- | ----------- |
+| classId    | Integer | 是   | 班级 ID     |
+| newOwnerId | Integer | 是   | 新所有者 ID |
 
 **请求示例**: `PUT /api/class/transfer-ownership?classId=1&newOwnerId=1003`
 
@@ -2159,11 +2166,12 @@ removedAttachmentIds: [1, 2]
 - 需要登录认证（Session）
 
 **请求参数** (multipart/form-data):
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| workId | Integer | 是 | 作业 ID |
-| submissionContent | String | 否 | 提交内容/文本描述 |
-| attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
+
+| 参数              | 类型    | 必填 | 说明                           |
+| ----------------- | ------- | ---- | ------------------------------ |
+| workId            | Integer | 是   | 作业 ID                        |
+| submissionContent | String  | 否   | 提交内容/文本描述              |
+| attachments       | File[]  | 否   | 附件文件列表（支持多文件上传） |
 
 **请求示例**:
 
@@ -2188,14 +2196,20 @@ attachments: [file1.pdf, file2.docx]
     "classId": 1,
     "submitterId": 1002,
     "submissionContent": "这是我的作业内容",
-    "score": null,
-    "comment": null,
-    "gradeTime": null,
-    "graderId": null,
     "status": 1,
     "isLate": false,
     "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-09T10:00:00"
+    "updateTime": "2026-04-09T10:00:00",
+    "attachments": [
+      {
+        "id": 1,
+        "fileName": "homework.pdf",
+        "filePath": "/path/to/file",
+        "fileSize": 102400,
+        "fileType": "application/pdf",
+        "uploadTime": "2026-04-09T10:00:00"
+      }
+    ]
   }
 }
 ```
@@ -2209,14 +2223,13 @@ attachments: [file1.pdf, file2.docx]
 | classId           | Integer       | 所属班级 ID                        |
 | submitterId       | Integer       | 提交人 ID                          |
 | submissionContent | String        | 提交内容/文本描述                  |
-| score             | BigDecimal    | 提交分数(未批改时为null)           |
-| comment           | String        | 批改人评语(未批改时为null)         |
-| gradeTime         | LocalDateTime | 批改时间(未批改时为null)           |
-| graderId          | Integer       | 批改人 ID(未批改时为null)          |
 | status            | Integer       | 提交状态(1-已提交,2-已批改)        |
 | isLate            | Boolean       | 是否逾期提交(true-逾期,false-按时) |
 | createTime        | LocalDateTime | 创建时间                           |
 | updateTime        | LocalDateTime | 更新时间                           |
+| attachments       | Array         | 附件列表（如果有上传）             |
+
+**注意**: 提交作业的响应不包含批改相关字段（score、comment、gradeTime、graderId），这些字段仅在查询时返回。
 
 **失败响应**:
 
@@ -2254,10 +2267,11 @@ attachments: [file1.pdf, file2.docx]
 **接口地址**: `PUT /api/submissions/update`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| submissionId | Integer | 是 | 提交 ID |
-| submissionContent | String | 是 | 更新后的提交内容 |
+
+| 参数              | 类型    | 必填 | 说明             |
+| ----------------- | ------- | ---- | ---------------- |
+| submissionId      | Integer | 是   | 提交 ID          |
+| submissionContent | String  | 是   | 更新后的提交内容 |
 
 **请求示例**: `PUT /api/submissions/update?submissionId=1&submissionContent=更新后的作业内容`
 
@@ -2285,20 +2299,20 @@ attachments: [file1.pdf, file2.docx]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 提交 ID |
-| workId | Integer | 作业 ID |
-| classId | Integer | 所属班级 ID |
-| submitterId | Integer | 提交人 ID |
-| submissionContent | String | 提交内容/文本描述 |
-| score | BigDecimal | 提交分数 |
-| comment | String | 批改人评语 |
-| gradeTime | LocalDateTime | 批改时间 |
-| graderId | Integer | 批改人 ID |
-| status | Integer | 提交状态(1-已提交,2-已批改) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
+
+| 字段              | 类型          | 说明                                 |
+| ----------------- | ------------- | ------------------------------------ |
+| id                | Integer       | 提交 ID                              |
+| workId            | Integer       | 作业 ID                              |
+| classId           | Integer       | 所属班级 ID                          |
+| submitterId       | Integer       | 提交人 ID                            |
+| submissionContent | String        | 提交内容/文本描述                    |
+| status            | Integer       | 提交状态(1-已提交,2-已批改,3-已打回) |
+| isLate            | Boolean       | 是否逾期提交                         |
+| createTime        | LocalDateTime | 创建时间                             |
+| updateTime        | LocalDateTime | 更新时间                             |
+
+**注意**: 更新作业的响应不包含批改相关字段（score、comment、gradeTime、graderId）。
 
 **失败响应**:
 
@@ -2312,16 +2326,17 @@ attachments: [file1.pdf, file2.docx]
 
 **可能的错误信息**:
 
-- "提交记录不存在"
-- "您无权修改此提交"
-- "作业已被批改，无法修改"
-- "作业已截止，无法修改"
+- “提交记录不存在”
+- “您无权修改此提交”
+- “作业已被批改，不能修改”
+- “作业已截止，无法修改”
 
 **注意**:
 
 - 学生只能在作业截止时间之前更新自己的提交
-- 已过截止时间的作业不允许更新，即使尚未批改
-- 如果作业已被老师批改，也不允许学生修改
+- **老师打回的作业可以修改**：如果老师批改时选择“打回”，学生可以再次修改（不受截止时间限制）
+- 被打回的作业修改后，状态重置为“已提交”
+- 正常批改的作业（未打回）不允许学生修改
 
 ---
 
@@ -2790,7 +2805,8 @@ attachments: [file1.pdf, file2.docx]
 {
   "submissionId": 1,
   "score": 90.5,
-  "comment": "完成得很好，继续保持！"
+  "comment": "完成得很好，继续保持！",
+  "isReturned": false
 }
 ```
 
@@ -2798,8 +2814,9 @@ attachments: [file1.pdf, file2.docx]
 | 字段 | 类型 | 必填 | 说明 |
 | ------------ | ---------- | ---- | ------------------------------------------ |
 | submissionId | Integer | 是 | 提交 ID |
-| score | BigDecimal | 是 | 分数，范围 0-100 |
+| score | BigDecimal | 是 | 分数，范围 0-作业总分 |
 | comment | String | 是 | 批改人评语，不能包含制表符等特殊字符 |
+| isReturned | Boolean | 否 | 是否打回（true-打回让学生修改，false-正常批改），默认false |
 
 **成功响应 (200)**:
 
@@ -2825,20 +2842,26 @@ attachments: [file1.pdf, file2.docx]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 提交 ID |
-| workId | Integer | 作业 ID |
-| classId | Integer | 所属班级 ID |
-| submitterId | Integer | 提交人 ID |
-| submissionContent | String | 提交内容/文本描述 |
-| score | BigDecimal | 提交分数 |
-| comment | String | 批改人评语 |
-| gradeTime | LocalDateTime | 批改时间 |
-| graderId | Integer | 批改人 ID |
-| status | Integer | 提交状态(1-已提交,2-已批改) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
+
+| 字段              | 类型          | 说明                                 |
+| ----------------- | ------------- | ------------------------------------ |
+| id                | Integer       | 提交 ID                              |
+| workId            | Integer       | 作业 ID                              |
+| classId           | Integer       | 所属班级 ID                          |
+| submitterId       | Integer       | 提交人 ID                            |
+| submissionContent | String        | 提交内容/文本描述                    |
+| score             | BigDecimal    | 提交分数                             |
+| comment           | String        | 批改人评语                           |
+| gradeTime         | LocalDateTime | 批改时间                             |
+| graderId          | Integer       | 批改人 ID                            |
+| status            | Integer       | 提交状态(1-已提交,2-已批改,3-已打回) |
+| createTime        | LocalDateTime | 创建时间                             |
+| updateTime        | LocalDateTime | 更新时间                             |
+
+**注意**:
+
+- 当`isReturned=true`时，status为3（已打回），学生可以再次修改作业
+- 当`isReturned=false`时，status为2（已批改），学生不能修改
 
 **失败响应**:
 
@@ -2863,7 +2886,11 @@ attachments: [file1.pdf, file2.docx]
 
 **注意**:
 
-- 系统支持重新批改已批改的作业，教师可以多次修改分数和评语
+- **支持重新批改**：教师可以多次批改同一份作业，修改分数和评语
+- **支持状态转换**：
+  - 已批改 → 已批改：修改分数和评语，保持status=2
+  - 已批改 → 已打回：设置`isReturned=true`，将status改为3，学生可以再次修改
+  - 已打回 → 已批改：设置`isReturned=false`，将status改为2，恢复正常批改状态
 - **分数动态校验**：上限为作业的`totalScore`字段值，不再硬编码限制为100分
 - 例如：作业总分为150分时，学生可获得0-150分的评分
 
@@ -2887,8 +2914,9 @@ attachments: [file1.pdf, file2.docx]
 
 #### 提交状态 (WorkSubmission.status)
 
-- `1`: 已提交（学生已提交，待批改）
-- `2`: 已批改（教师已完成评分）
+- `1`: 已提交（学生已提交，待批改，学生可以修改）
+- `2`: 已批改（教师已完成评分，学生不能修改）
+- `3`: 已打回（教师打回让学生修改，学生可以再次修改）
 
 **注意**:
 

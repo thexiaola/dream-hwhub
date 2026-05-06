@@ -15,6 +15,7 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
@@ -34,7 +35,7 @@ public class WorkSubmissionController {
      * 提交作业
      */
     @PostMapping(value = "/submit", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<WorkSubmission>> submitWork(
+    public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> submitWork(
             @RequestParam("workId") Integer workId,
             @RequestParam(value = "submissionContent", required = false) String submissionContent,
             @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments) {
@@ -54,9 +55,9 @@ public class WorkSubmissionController {
             request.setSubmissionContent(submissionContent);
             request.setAttachments(attachments);
             
-            WorkSubmission submission = workSubmissionService.submitWork(request);
-            log.info("User ({}) submitted work, id: {}", userInfo, submission.getId());
-            return ResponseEntity.ok(ApiResponse.success(submission));
+            WorkSubmissionSubmitResponse response = workSubmissionService.submitWork(request);
+            log.info("User ({}) submitted work, id: {}", userInfo, response.getId());
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (BusinessException e) {
             log.warn("User submit work failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
@@ -67,7 +68,7 @@ public class WorkSubmissionController {
      * 更新提交的作业
      */
     @PutMapping("/update")
-    public ResponseEntity<ApiResponse<WorkSubmission>> updateSubmission(
+    public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> updateSubmission(
             @RequestParam Integer submissionId,
             @RequestParam String submissionContent) {
         String ip = LogUtil.getCurrentClientIp();
@@ -75,9 +76,9 @@ public class WorkSubmissionController {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             
-            WorkSubmission submission = workSubmissionService.updateSubmission(submissionId, submissionContent);
-            log.info("User ({}) updated submission, id: {}", userInfo, submission.getId());
-            return ResponseEntity.ok(ApiResponse.success(submission));
+            WorkSubmissionSubmitResponse response = workSubmissionService.updateSubmission(submissionId, submissionContent);
+            log.info("User ({}) updated submission, id: {}", userInfo, response.getId());
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (BusinessException e) {
             log.warn("User update submission failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
