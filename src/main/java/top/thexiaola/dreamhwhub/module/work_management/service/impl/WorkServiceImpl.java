@@ -81,6 +81,11 @@ public class WorkServiceImpl implements WorkService {
             publishTime = request.getPublishTime();
         }
 
+        // 校验截止时间：不能设置为过去的时间
+        if (request.getDeadline() != null && request.getDeadline().isBefore(LocalDateTime.now())) {
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "截止时间不能是过去的时间", null);
+        }
+
         // 创建作业
         WorkInfo workInfo = new WorkInfo();
         workInfo.setTitle(request.getTitle());
@@ -141,10 +146,33 @@ public class WorkServiceImpl implements WorkService {
             }
         }
 
+        // 校验截止时间修改
+        if (request.getDeadline() != null) {
+            LocalDateTime newDeadline = request.getDeadline();
+            LocalDateTime oldDeadline = workInfo.getDeadline();
+            
+            // 如果新截止时间是过去的时间
+            if (newDeadline.isBefore(now)) {
+                // 情况1：与之前的截止时间相同——忽略截止时间的修改，继续处理其他字段
+                if (oldDeadline != null && newDeadline.isEqual(oldDeadline)) {
+                    // 不修改 deadline 字段，保持原值
+                    log.info("User {} attempted to set deadline to past time, but it's the same as current deadline, ignoring deadline update", currentUser.getId());
+                } else {
+                    // 情况2：与之前的截止时间不同——报错
+                    throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "截止时间不能修改为过去的时间", null);
+                }
+            } else {
+                // 新截止时间是未来时间，允许修改
+                workInfo.setDeadline(newDeadline);
+            }
+        } else {
+            // 如果请求中 deadline 为 null，表示要清除截止时间（设置为永久有效）
+            workInfo.setDeadline(null);
+        }
+
         // 更新作业
         workInfo.setTitle(request.getTitle());
         workInfo.setDescription(request.getDescription());
-        workInfo.setDeadline(request.getDeadline());
         workInfo.setTotalScore(request.getTotalScore());
         if (request.getAllowLateSubmit() != null) {
             workInfo.setAllowLateSubmit(request.getAllowLateSubmit());
