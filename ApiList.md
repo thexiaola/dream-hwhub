@@ -636,19 +636,24 @@ removedAttachmentIds: [1, 2]
     "classId": 1,
     "applicantId": 1002,
     "status": 0,
-    "createTime": "2026-04-09T10:00:00"
+    "createTime": "2026-04-09T10:00:00",
+    "className": "计算机科学2024级1班",
+    "applicantName": "zhangsan"
   }
 }
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 申请 ID |
-| classId | Integer | 申请的班级 ID |
-| applicantId | Integer | 申请人 ID |
-| status | Integer | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| createTime | LocalDateTime | 申请时间 |
+
+| 字段              | 类型          | 说明                                 |
+| ----------------- | ------------- | ------------------------------------ |
+| id                | Integer       | 申请 ID                              |
+| classId           | Integer       | 申请的班级 ID                        |
+| applicantId       | Integer       | 申请人 ID                            |
+| status            | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
+| createTime        | LocalDateTime | 申请时间                             |
+| **className**     | **String**    | **申请的班级名称**                   |
+| **applicantName** | **String**    | **申请人用户名**                     |
 
 **注意**:
 
@@ -679,9 +684,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `POST /api/class/leave`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| classId | Integer | 是 | 班级 ID |
+
+| 参数    | 类型    | 必填 | 说明    |
+| ------- | ------- | ---- | ------- |
+| classId | Integer | 是   | 班级 ID |
 
 **请求示例**: `POST /api/class/leave?classId=1`
 
@@ -795,7 +801,7 @@ removedAttachmentIds: [1, 2]
     "id": 1,
     "className": "计算机科学2024级1班",
     "ownerId": 1001,
-    "ownerName": "张三",
+    "ownerName": "zhangsan",
     "userRole": "创建者",
     "memberCount": 50,
     "teacherCount": 2,
@@ -811,7 +817,7 @@ removedAttachmentIds: [1, 2]
 | id           | Integer | 班级 ID                                  |
 | className    | String  | 班级名称                                 |
 | ownerId      | Integer | 班级所有者 ID                            |
-| ownerName    | String  | 班级所有者姓名                           |
+| ownerName    | String  | 班级所有者用户名                         |
 | userRole     | String  | 用户在该班级的角色(创建者/班级助理/学生) |
 | memberCount  | Long    | 成员总数                                 |
 | teacherCount | Long    | 教师数量                                 |
@@ -868,7 +874,7 @@ removedAttachmentIds: [1, 2]
         "id": 1,
         "className": "计算机科学2024级1班",
         "ownerId": 1001,
-        "ownerName": "张三",
+        "ownerName": "zhangsan",
         "userRole": "学生",
         "memberCount": 50,
         "teacherCount": 2,
@@ -878,7 +884,7 @@ removedAttachmentIds: [1, 2]
         "id": 2,
         "className": "软件工程2024级1班",
         "ownerId": 1003,
-        "ownerName": "李四",
+        "ownerName": "lisi",
         "userRole": "班级助理",
         "memberCount": 45,
         "teacherCount": 1,
@@ -910,7 +916,7 @@ removedAttachmentIds: [1, 2]
 | id           | Integer | 班级 ID                                  |
 | className    | String  | 班级名称                                 |
 | ownerId      | Integer | 班级所有者 ID                            |
-| ownerName    | String  | 班级所有者姓名                           |
+| ownerName    | String  | 班级所有者用户名                         |
 | userRole     | String  | 用户在该班级的角色(创建者/班级助理/学生) |
 | memberCount  | Long    | 成员总数                                 |
 | teacherCount | Long    | 教师数量                                 |

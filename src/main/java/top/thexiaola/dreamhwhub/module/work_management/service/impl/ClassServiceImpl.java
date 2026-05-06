@@ -1136,13 +1136,16 @@ public class ClassServiceImpl implements ClassService {
                 currentUser.getId(), classId);
         
         // 构建响应对象
-        return new JoinClassApplicationResponse(
-                application.getId(),
-                application.getClassId(),
-                application.getApplicantId(),
-                application.getStatus(),
-                application.getCreateTime()
-        );
+        JoinClassApplicationResponse response = new JoinClassApplicationResponse();
+        response.setId(application.getId());
+        response.setClassId(application.getClassId());
+        response.setApplicantId(application.getApplicantId());
+        response.setStatus(application.getStatus());
+        response.setCreateTime(application.getCreateTime());
+        response.setClassName(classInfo.getClassName());
+        response.setApplicantName(currentUser.getUsername());
+        
+        return response;
     }
 
     @Override

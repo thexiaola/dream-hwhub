@@ -28,7 +28,7 @@ public class ClassDetailResponse {
     private Integer ownerId;
 
     /**
-     * 班级所有者姓名
+     * 班级所有者用户名
      */
     private String ownerName;
 

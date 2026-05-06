@@ -40,4 +40,14 @@ public class JoinClassApplicationResponse {
      */
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
+
+    /**
+     * 申请的班级名称
+     */
+    private String className;
+
+    /**
+     * 申请人用户名
+     */
+    private String applicantName;
 }
