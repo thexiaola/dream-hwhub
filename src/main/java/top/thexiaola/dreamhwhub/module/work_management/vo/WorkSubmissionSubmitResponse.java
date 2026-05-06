@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 作业提交响应VO（仅包含提交基本信息，不包含批改信息）
@@ -65,7 +66,7 @@ public class WorkSubmissionSubmitResponse {
     /**
      * 附件列表
      */
-    private java.util.List<AttachmentInfo> attachments;
+    private List<AttachmentInfo> attachments;
 
     @Data
     @NoArgsConstructor

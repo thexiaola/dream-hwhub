@@ -34,7 +34,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -302,7 +304,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         // 1. 获取班级所有学生（不分页）
         List<ClassMemberResponse> allMembers = classService.getAllClassMembers(workInfo.getClassId());
         
-        java.util.Set<Integer> allStudentIds = allMembers.stream()
+        Set<Integer> allStudentIds = allMembers.stream()
             .filter(m -> "STUDENT".equals(m.getRole()))
             .map(ClassMemberResponse::getUserId)
             .collect(Collectors.toSet());
@@ -317,7 +319,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                       .eq("is_deleted", false)
                       .select("submitter_id");
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
-        java.util.Set<Integer> submittedStudentIds = submissions.stream()
+        Set<Integer> submittedStudentIds = submissions.stream()
             .map(WorkSubmission::getSubmitterId)
             .collect(java.util.stream.Collectors.toSet());
 
@@ -433,7 +435,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
      * @return 附件信息列表
      */
     private List<WorkSubmissionResponse.AttachmentInfo> saveSubmissionAttachmentsDirectly(Integer userId, Integer submissionId, List<MultipartFile> files) {
-        List<WorkSubmissionResponse.AttachmentInfo> attachmentInfos = new java.util.ArrayList<>();
+        List<WorkSubmissionResponse.AttachmentInfo> attachmentInfos = new ArrayList<>();
         
         if (CollUtil.isEmpty(files)) {
             return attachmentInfos;

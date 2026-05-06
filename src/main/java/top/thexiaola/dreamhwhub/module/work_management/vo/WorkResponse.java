@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 作业响应VO
@@ -87,7 +88,7 @@ public class WorkResponse {
     /**
      * 附件列表
      */
-    private java.util.List<AttachmentInfo> attachments;
+    private List<AttachmentInfo> attachments;
 
     @Data
     @NoArgsConstructor

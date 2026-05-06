@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 作业提交响应VO
@@ -83,7 +84,7 @@ public class WorkSubmissionResponse {
     /**
      * 附件列表
      */
-    private java.util.List<AttachmentInfo> attachments;
+    private List<AttachmentInfo> attachments;
 
     @Data
     @NoArgsConstructor

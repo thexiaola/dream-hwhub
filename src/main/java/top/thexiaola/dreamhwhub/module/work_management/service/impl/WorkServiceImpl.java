@@ -15,10 +15,7 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkAttachment;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmissionAttachment;
+import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
@@ -33,6 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -328,18 +327,18 @@ public class WorkServiceImpl implements WorkService {
             List<User> users = userMapper.selectBatchIds(publisherIds);
             userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
         } else {
-            userMap = new java.util.HashMap<>();
+            userMap = new HashMap<>();
         }
         
         // 批量查询班级信息
-        final Map<Integer, top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> classMap;
+        final Map<Integer, ClassInfo> classMap;
         if (!classIds.isEmpty()) {
-            List<top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> classes = 
+            List<ClassInfo> classes =
                 classService.getClassByIds(classIds);
             classMap = classes.stream().collect(Collectors.toMap(
-                top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo::getId, c -> c));
+                ClassInfo::getId, c -> c));
         } else {
-            classMap = new java.util.HashMap<>();
+            classMap = new HashMap<>();
         }
         
         // 批量查询附件
@@ -362,7 +361,7 @@ public class WorkServiceImpl implements WorkService {
                         ), Collectors.toList())
                     ));
         } else {
-            attachmentMap = new java.util.HashMap<>();
+            attachmentMap = new HashMap<>();
         }
         
         // 转换为响应对象（数据库已完成所有过滤，无需再过滤）
@@ -381,7 +380,7 @@ public class WorkServiceImpl implements WorkService {
                     response.setClassId(work.getClassId());
                     
                     // 从缓存中获取班级名称
-                    top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo classInfo = classMap.get(work.getClassId());
+                    ClassInfo classInfo = classMap.get(work.getClassId());
                     response.setClassName(classInfo != null ? classInfo.getClassName() : null);
                     
                     response.setDeadline(work.getDeadline());
@@ -393,7 +392,7 @@ public class WorkServiceImpl implements WorkService {
                     response.setUpdateTime(work.getUpdateTime());
                     
                     // 从缓存中获取附件列表
-                    response.setAttachments(attachmentMap.getOrDefault(work.getId(), new java.util.ArrayList<>()));
+                    response.setAttachments(attachmentMap.getOrDefault(work.getId(), new ArrayList<>()));
                     
                     return response;
                 })

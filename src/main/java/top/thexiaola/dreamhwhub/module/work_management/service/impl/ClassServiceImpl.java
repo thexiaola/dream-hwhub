@@ -20,8 +20,8 @@ import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 班级管理服务实现类
@@ -594,9 +594,9 @@ public class ClassServiceImpl implements ClassService {
     }
     
     @Override
-    public java.util.List<Integer> getTeacherClassIds(Integer userId) {
+    public List<Integer> getTeacherClassIds(Integer userId) {
         if (userId == null) {
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
         
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
@@ -607,7 +607,7 @@ public class ClassServiceImpl implements ClassService {
         List<ClassMember> members = classMemberMapper.selectList(queryWrapper);
         return members.stream()
                 .map(ClassMember::getClassId)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -678,9 +678,9 @@ public class ClassServiceImpl implements ClassService {
     }
     
     @Override
-    public java.util.List<top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> getClassByIds(java.util.List<Integer> classIds) {
+    public List<ClassInfo> getClassByIds(List<Integer> classIds) {
         if (classIds == null || classIds.isEmpty()) {
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
         return classInfoMapper.selectBatchIds(classIds);
     }
@@ -740,19 +740,53 @@ public class ClassServiceImpl implements ClassService {
         Page<ClassMember> memberPage = new Page<>(pageNum, pageSize);
         Page<ClassMember> pagedMembers = classMemberMapper.selectPage(memberPage, memberQuery);
 
-        // 第二步：转换为响应对象
+        if (pagedMembers.getRecords().isEmpty()) {
+            return new Page<>(pageNum, pageSize, 0);
+        }
+
+        // 第二步：批量查询优化 - 收集所有需要的ID
+        List<Integer> classIds = pagedMembers.getRecords().stream()
+                .map(ClassMember::getClassId)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+
+        // 批量查询班级信息
+        final Map<Integer, ClassInfo> classMap;
+        if (!classIds.isEmpty()) {
+            List<ClassInfo> classes = classInfoMapper.selectBatchIds(classIds);
+            classMap = classes.stream().collect(Collectors.toMap(ClassInfo::getId, c -> c));
+        } else {
+            classMap = new HashMap<>();
+        }
+        
+        // 从已查询的班级信息中收集所有者ID
+        List<Integer> ownerIds = classMap.values().stream()
+                .map(ClassInfo::getOwnerId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        // 批量查询用户信息
+        final Map<Integer, User> userMap;
+        if (!ownerIds.isEmpty()) {
+            List<User> users = userMapper.selectBatchIds(ownerIds);
+            userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
+        } else {
+            userMap = new HashMap<>();
+        }
+
+        // 第三步：转换为响应对象
         List<ClassDetailResponse> responses = pagedMembers.getRecords().stream()
                 .map(member -> {
-                    ClassInfo classInfo = classInfoMapper.selectById(member.getClassId());
+                    ClassInfo classInfo = classMap.get(member.getClassId());
                     if (classInfo == null) {
                         return null;
                     }
 
-                    // 查询创建者信息
-                    User owner = userMapper.selectById(classInfo.getOwnerId());
+                    // 从缓存中获取创建者信息
+                    User owner = userMap.get(classInfo.getOwnerId());
                     String ownerName = owner != null ? owner.getUsername() : "未知";
 
-                    // 查询成员统计
+                    // 查询成员统计（这些需要单独查询，因为涉及聚合）
                     QueryWrapper<ClassMember> countQuery = new QueryWrapper<>();
                     countQuery.eq("class_id", classInfo.getId());
                     long memberCount = classMemberMapper.selectCount(countQuery);
@@ -779,7 +813,7 @@ public class ClassServiceImpl implements ClassService {
                             studentCount
                     );
                 })
-                .filter(Objects::nonNull)
+                .filter(java.util.Objects::nonNull)
                 .toList();
 
         // 构建分页结果
@@ -855,9 +889,31 @@ public class ClassServiceImpl implements ClassService {
         Page<ClassMember> memberPage = new Page<>(pageNum, pageSize);
         Page<ClassMember> pagedResult = classMemberMapper.selectPage(memberPage, queryWrapper);
 
+        if (pagedResult.getRecords().isEmpty()) {
+            Page<ClassMemberResponse> page = new Page<>(pageNum, pageSize, 0);
+            page.setRecords(Collections.emptyList());
+            return page;
+        }
+
+        // 批量查询优化 - 收集所有用户ID
+        List<Integer> userIds = pagedResult.getRecords().stream()
+                .map(ClassMember::getUserId)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+
+        // 批量查询用户信息
+        final Map<Integer, User> userMap;
+        if (!userIds.isEmpty()) {
+            List<User> users = userMapper.selectBatchIds(userIds);
+            userMap = users.stream().collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
+        } else {
+            userMap = new HashMap<>();
+        }
+
         List<ClassMemberResponse> responses = pagedResult.getRecords().stream()
                 .map(member -> {
-                    User user = userMapper.selectById(member.getUserId());
+                    // 从缓存中获取用户信息
+                    User user = userMap.get(member.getUserId());
                     String userName = user != null ? user.getUsername() : "未知";
                     String userNo = user != null ? user.getUserNo() : "未知";
                     
@@ -1112,7 +1168,7 @@ public class ClassServiceImpl implements ClassService {
             if (teacherMembers.isEmpty()) {
                 // 没有担任老师的班级，返回空分页结果
                 Page<ClassJoinApplication> emptyPage = new Page<>(pageNum, pageSize, 0);
-                emptyPage.setRecords(java.util.Collections.emptyList());
+                emptyPage.setRecords(Collections.emptyList());
                 return emptyPage;
             }
             

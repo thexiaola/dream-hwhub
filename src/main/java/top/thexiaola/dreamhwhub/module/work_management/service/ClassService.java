@@ -83,7 +83,7 @@ public interface ClassService {
      * @param userId 用户 ID
      * @return 班级ID列表
      */
-    java.util.List<Integer> getTeacherClassIds(Integer userId);
+    List<Integer> getTeacherClassIds(Integer userId);
 
     /**
      * 检查用户在指定班级是否是学生
@@ -130,7 +130,7 @@ public interface ClassService {
      * @param classIds 班级ID列表
      * @return 班级信息列表
      */
-    java.util.List<top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> getClassByIds(java.util.List<Integer> classIds);
+    List<ClassInfo> getClassByIds(List<Integer> classIds);
 
     /**
      * 获取班级详情（包含统计信息）
