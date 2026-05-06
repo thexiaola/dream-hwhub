@@ -34,7 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -69,6 +69,19 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以发布作业", null);
         }
 
+        // 处理发布时间
+        LocalDateTime publishTime;
+        if (request.getPublishTime() == null) {
+            // 如果不填时间，当作即时发布
+            publishTime = LocalDateTime.now();
+        } else {
+            // 如果填了以前的时间，拒绝发布
+            if (request.getPublishTime().isBefore(LocalDateTime.now())) {
+                throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "发布时间不能是过去的时间", null);
+            }
+            publishTime = request.getPublishTime();
+        }
+
         // 创建作业
         WorkInfo workInfo = new WorkInfo();
         workInfo.setTitle(request.getTitle());
@@ -77,7 +90,7 @@ public class WorkServiceImpl implements WorkService {
         workInfo.setDeadline(request.getDeadline());
         workInfo.setTotalScore(request.getTotalScore());
         workInfo.setAllowLateSubmit(request.getAllowLateSubmit() != null ? request.getAllowLateSubmit() : true);
-        workInfo.setPublishTime(request.getPublishTime());
+        workInfo.setPublishTime(publishTime);
         workInfo.setCreateTime(LocalDateTime.now());
         workInfo.setUpdateTime(LocalDateTime.now());
 
@@ -85,7 +98,7 @@ public class WorkServiceImpl implements WorkService {
         
         // 保存附件（直接上传的文件）
         if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
-            saveWorkAttachmentsDirectly(workInfo.getId(), request.getAttachments());
+            saveWorkAttachmentsDirectly(currentUser.getId(), workInfo.getId(), request.getAttachments());
         }
         
         return workInfo;
@@ -107,16 +120,6 @@ public class WorkServiceImpl implements WorkService {
         }
 
         // 检查权限（只有班级老师可以修改作业）
-        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以修改作业", null);
-        }
-
-        // 只能修改自己发布的作业
-        if (!workInfo.getPublisherId().equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能修改自己发布的作业", null);
-        }
-
-        // 再次检查是否是班级老师
         if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以修改作业", null);
         }
@@ -180,11 +183,6 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以删除作业", null);
         }
 
-        // 只能删除自己发布的作业
-        if (!workInfo.getPublisherId().equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能删除自己发布的作业", null);
-        }
-
         // 计算当前状态
         Integer currentStatus = calculateWorkStatus(workInfo);
         
@@ -216,40 +214,176 @@ public class WorkServiceImpl implements WorkService {
     @Override
     public Page<WorkResponse> getWorkList(String publisherUserNo, Integer status, Integer pageNum, Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 构建查询条件
         QueryWrapper<WorkInfo> queryWrapper = new QueryWrapper<>();
         
-        if (publisherUserNo != null && !publisherUserNo.isEmpty()) {
-            Integer publisherId = getUserIdByUserNo(publisherUserNo);
-            if (publisherId != null) {
-                queryWrapper.eq("publisher_id", publisherId);
-            } else {
-                // 如果用户不存在，返回空分页
+        // 按状态筛选
+        if (status != null && status == 0) {
+            // 未发布：只有班级老师可以看到自己管理的班级的未发布作业
+            if (currentUser == null) {
                 return new Page<>(pageNum, pageSize, 0);
+            }
+            
+            List<Integer> teacherClassIds = classService.getTeacherClassIds(currentUser.getId());
+            if (teacherClassIds.isEmpty()) {
+                return new Page<>(pageNum, pageSize, 0);
+            }
+            
+            queryWrapper.gt("publish_time", now)
+                       .in("class_id", teacherClassIds);
+        } else if (status != null && status == 1) {
+            // 已发布：发布时间 <= 当前时间 AND (截止时间为空 OR 截止时间 > 当前时间)
+            queryWrapper.le("publish_time", now)
+                       .and(wrapper -> wrapper.isNull("deadline").or().gt("deadline", now));
+        } else if (status != null && status == 2) {
+            // 已结束：截止时间不为空 AND 截止时间 <= 当前时间
+            queryWrapper.isNotNull("deadline")
+                       .le("deadline", now);
+        } else {
+            // status=null: 返回所有可见作业（已发布 + 已结束 + 用户有权限的未发布）
+            if (currentUser != null) {
+                List<Integer> teacherClassIds = classService.getTeacherClassIds(currentUser.getId());
+                
+                if (!teacherClassIds.isEmpty()) {
+                    // 用户是某些班级的老师：可以看到这些班级的未发布作业 + 所有已发布和已结束作业
+                    queryWrapper.and(wrapper -> wrapper
+                        // 未发布作业（仅限老师管理的班级）
+                        .gt("publish_time", now)
+                        .in("class_id", teacherClassIds)
+                        .or()
+                        // 已发布作业
+                        .le("publish_time", now)
+                        .and(w -> w.isNull("deadline").or().gt("deadline", now))
+                        .or()
+                        // 已结束作业
+                        .isNotNull("deadline")
+                        .le("deadline", now)
+                    );
+                } else {
+                    // 用户不是任何班级的老师：只能看到已发布和已结束作业
+                    queryWrapper.and(wrapper -> wrapper
+                        // 已发布作业
+                        .le("publish_time", now)
+                        .and(w -> w.isNull("deadline").or().gt("deadline", now))
+                        .or()
+                        // 已结束作业
+                        .isNotNull("deadline")
+                        .le("deadline", now)
+                    );
+                }
+            } else {
+                // 未登录用户：只能看到已发布和已结束作业
+                queryWrapper.and(wrapper -> wrapper
+                    // 已发布作业
+                    .le("publish_time", now)
+                    .and(w -> w.isNull("deadline").or().gt("deadline", now))
+                    .or()
+                    // 已结束作业
+                    .isNotNull("deadline")
+                    .le("deadline", now)
+                );
             }
         }
         
+        // 按发布人筛选
+        if (publisherUserNo != null && !publisherUserNo.isEmpty()) {
+            Integer publisherId = getUserIdByUserNo(publisherUserNo);
+            if (publisherId == null) {
+                return new Page<>(pageNum, pageSize, 0);
+            }
+            queryWrapper.eq("publisher_id", publisherId);
+        }
+        
+        // 按创建时间倒序
         queryWrapper.orderByDesc("create_time");
         
-        // 使用MyBatisPlus分页
+        // 执行分页查询
         Page<WorkInfo> workPage = new Page<>(pageNum, pageSize);
         Page<WorkInfo> pagedResult = workMapper.selectPage(workPage, queryWrapper);
-        LocalDateTime now = LocalDateTime.now();
         
+        if (pagedResult.getRecords().isEmpty()) {
+            return new Page<>(pageNum, pageSize, 0);
+        }
+        
+        // 批量查询优化：收集所有需要的ID
+        List<Integer> publisherIds = pagedResult.getRecords().stream()
+                .map(WorkInfo::getPublisherId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        List<Integer> classIds = pagedResult.getRecords().stream()
+                .map(WorkInfo::getClassId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        List<Integer> workIds = pagedResult.getRecords().stream()
+                .map(WorkInfo::getId)
+                .collect(Collectors.toList());
+        
+        // 批量查询用户信息
+        final Map<Integer, User> userMap;
+        if (!publisherIds.isEmpty()) {
+            List<User> users = userMapper.selectBatchIds(publisherIds);
+            userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
+        } else {
+            userMap = new java.util.HashMap<>();
+        }
+        
+        // 批量查询班级信息
+        final Map<Integer, top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> classMap;
+        if (!classIds.isEmpty()) {
+            List<top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> classes = 
+                classService.getClassByIds(classIds);
+            classMap = classes.stream().collect(Collectors.toMap(
+                top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo::getId, c -> c));
+        } else {
+            classMap = new java.util.HashMap<>();
+        }
+        
+        // 批量查询附件
+        final Map<Integer, List<WorkResponse.AttachmentInfo>> attachmentMap;
+        if (!workIds.isEmpty()) {
+            QueryWrapper<WorkAttachment> attQuery = new QueryWrapper<>();
+            attQuery.in("work_id", workIds);
+            List<WorkAttachment> allAttachments = workAttachmentMapper.selectList(attQuery);
+            
+            attachmentMap = allAttachments.stream()
+                    .collect(Collectors.groupingBy(
+                        WorkAttachment::getWorkId,
+                        Collectors.mapping(att -> new WorkResponse.AttachmentInfo(
+                            att.getId(),
+                            att.getFileName(),
+                            att.getFilePath(),
+                            att.getFileSize(),
+                            att.getFileType(),
+                            att.getUploadTime()
+                        ), Collectors.toList())
+                    ));
+        } else {
+            attachmentMap = new java.util.HashMap<>();
+        }
+        
+        // 转换为响应对象（数据库已完成所有过滤，无需再过滤）
         List<WorkResponse> responses = pagedResult.getRecords().stream()
-                .filter(work -> {
-                    // 过滤未发布作业：学生看不到
-                    Integer workStatus = calculateWorkStatus(work);
-                    if (workStatus == 0) { // 0-未发布
-                        return currentUser != null && classService.isTeacher(work.getClassId(), currentUser.getId());
-                    }
-                    return true;
-                })
                 .map(work -> {
                     WorkResponse response = new WorkResponse();
                     response.setId(work.getId());
                     response.setTitle(work.getTitle());
                     response.setDescription(work.getDescription());
                     response.setPublisherId(work.getPublisherId());
+                    
+                    // 从缓存中获取发布人用户名
+                    User publisher = userMap.get(work.getPublisherId());
+                    response.setPublisherName(publisher != null ? publisher.getUsername() : null);
+                    
+                    response.setClassId(work.getClassId());
+                    
+                    // 从缓存中获取班级名称
+                    top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo classInfo = classMap.get(work.getClassId());
+                    response.setClassName(classInfo != null ? classInfo.getClassName() : null);
+                    
                     response.setDeadline(work.getDeadline());
                     response.setTotalScore(work.getTotalScore());
                     response.setPublishTime(work.getPublishTime());
@@ -258,9 +392,8 @@ public class WorkServiceImpl implements WorkService {
                     response.setCreateTime(work.getCreateTime());
                     response.setUpdateTime(work.getUpdateTime());
                     
-                    // 加载附件列表
-                    List<WorkResponse.AttachmentInfo> attachments = getWorkAttachments(work.getId());
-                    response.setAttachments(attachments);
+                    // 从缓存中获取附件列表
+                    response.setAttachments(attachmentMap.getOrDefault(work.getId(), new java.util.ArrayList<>()));
                     
                     return response;
                 })
@@ -312,7 +445,7 @@ public class WorkServiceImpl implements WorkService {
     /**
      * 保存作业附件（直接上传的文件）
      */
-    private void saveWorkAttachmentsDirectly(Integer workId, List<MultipartFile> files) {
+    private void saveWorkAttachmentsDirectly(Integer userId, Integer workId, List<MultipartFile> files) {
         if (CollUtil.isEmpty(files)) {
             return;
         }
@@ -329,9 +462,10 @@ public class WorkServiceImpl implements WorkService {
                     throw new BusinessException(BusinessErrorCode.INVALID_FILE_PATH, "非法的文件名", null);
                 }
                 
-                // 2. 生成安全的文件名
+                // 2. 生成安全的文件名（业务ID-用户ID-时间戳）
                 String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                String safeFileName = UUID.randomUUID() + extension;
+                String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+                String safeFileName = workId + "_" + userId + "_" + timestamp + extension;
                 
                 // 3. 确保上传目录存在
                 Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
@@ -423,7 +557,10 @@ public class WorkServiceImpl implements WorkService {
         
         // 2. 添加新附件
         if (CollUtil.isNotEmpty(newAttachments)) {
-            saveWorkAttachmentsDirectly(workId, newAttachments);
+            User currentUser = UserUtils.getCurrentUser();
+            if (currentUser != null) {
+                saveWorkAttachmentsDirectly(currentUser.getId(), workId, newAttachments);
+            }
         }
     }
     

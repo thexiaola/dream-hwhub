@@ -73,16 +73,17 @@
 - 需要登录认证（Session）
 
 **请求参数** (multipart/form-data):
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| title | String | 是 | 作业标题，最长 128 字符，不能包含换行符、制表符等特殊字符 |
-| description | String | 是 | 作业描述，不能包含制表符等特殊字符 |
-| deadline | String | 是 | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
-| totalScore | Integer | 是 | 作业总分，默认 100 |
-| classId | Integer | 是 | 所属班级 ID |
-| publishTime | String | 是 | 发布时间，格式：yyyy-MM-dd'T'HH:mm:ss |
-| allowLateSubmit | Boolean | 否 | 是否允许逾期提交，默认 true |
-| attachments | File[] | 否 | 附件文件列表（支持多文件上传） |
+
+| 参数            | 类型    | 必填 | 说明                                                      |
+| --------------- | ------- | ---- | --------------------------------------------------------- |
+| title           | String  | 是   | 作业标题，最长 128 字符，不能包含换行符、制表符等特殊字符 |
+| description     | String  | 是   | 作业描述，不能包含制表符等特殊字符                        |
+| deadline        | String  | 是   | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss                     |
+| totalScore      | Integer | 是   | 作业总分，默认 100                                        |
+| classId         | Integer | 是   | 所属班级 ID                                               |
+| publishTime     | String  | 否   | 发布时间，格式：yyyy-MM-dd'T'HH:mm:ss（不填则即时发布）   |
+| allowLateSubmit | Boolean | 否   | 是否允许逾期提交，默认 true                               |
+| attachments     | File[]  | 否   | 附件文件列表（支持多文件上传）                            |
 
 **请求示例**:
 
@@ -111,9 +112,12 @@ attachments: [file1.pdf, file2.doc]
     "title": "作业标题",
     "description": "作业描述",
     "publisherId": 1001,
+    "publisherName": "张三",
     "classId": 1,
+    "className": "计算机科学2024级1班",
     "deadline": "2026-04-15T23:59:59",
     "totalScore": 100,
+    "allowLateSubmit": true,
     "publishTime": "2026-04-09T10:00:00",
     "createTime": "2026-04-09T10:00:00",
     "updateTime": "2026-04-09T10:00:00"
@@ -122,18 +126,22 @@ attachments: [file1.pdf, file2.doc]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 作业 ID |
-| title | String | 作业标题 |
-| description | String | 作业描述 |
-| publisherId | Integer | 发布人 ID |
-| classId | Integer | 所属班级 ID |
-| deadline | LocalDateTime | 截止时间 |
-| totalScore | Integer | 作业总分 |
-| publishTime | LocalDateTime | 发布时间 |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
+
+| 字段            | 类型          | 说明             |
+| --------------- | ------------- | ---------------- |
+| id              | Integer       | 作业 ID          |
+| title           | String        | 作业标题         |
+| description     | String        | 作业描述         |
+| publisherId     | Integer       | 发布人 ID        |
+| publisherName   | String        | 发布人用户名     |
+| classId         | Integer       | 所属班级 ID      |
+| className       | String        | 班级名称         |
+| deadline        | LocalDateTime | 截止时间         |
+| totalScore      | Integer       | 作业总分         |
+| allowLateSubmit | Boolean       | 是否允许逾期提交 |
+| publishTime     | LocalDateTime | 发布时间         |
+| createTime      | LocalDateTime | 创建时间         |
+| updateTime      | LocalDateTime | 更新时间         |
 
 **失败响应**:
 
@@ -147,18 +155,21 @@ attachments: [file1.pdf, file2.doc]
 
 **可能的错误信息**:
 
-- "作业标题不能为空"
-- "作业标题长度不能超过 128 位"
-- "作业描述不能为空"
-- "截止时间不能为空"
-- "作业总分不能为空"
-- "所属班级 ID 不能为空"
-- "发布时间不能为空"
-- "只有班级老师可以发布作业"
-- "文件上传失败：xxx"
+- “作业标题不能为空”
+- “作业标题长度不能超过 128 位”
+- “作业描述不能为空”
+- “截止时间不能为空”
+- “作业总分不能为空”
+- “所属班级 ID 不能为空”
+- “发布时间不能是过去的时间”
+- “只有班级老师可以发布作业”
+- “文件上传失败：xxx”
 
 **注意**:
 
+- **即时发布**：如果不填写`publishTime`，系统会自动使用当前时间作为发布时间，作业立即对学生可见
+- **未来时间发布**：可以设置未来的发布时间，实现作业的预发布功能
+- **禁止过去时间**：不允许设置过去的时间作为发布时间，会返回400错误
 - **直接上传附件**：通过 `attachments` 参数直接上传文件，无需预先调用文件上传接口
 - **文件安全检查**：系统会对上传的文件进行病毒扫描、文件类型白名单验证等安全检查
 - **文件存储位置**：`uploads/works/` 目录
@@ -205,6 +216,7 @@ removedAttachmentIds: [1, 2]
 
 **注意**:
 
+- **班级老师权限**：班级创建者和班级助理都可以修改该班级的任何作业（无论谁发布的）
 - 已发布作业(status=1)不允许修改publishTime，只能修改其他字段
 - **当没有学生提交作业时，允许修改totalScore**；有提交记录后禁止修改，保护数据一致性
 - **支持附件增量更新**：可以通过`removedAttachmentIds`删除指定附件，通过`attachments`添加新附件
@@ -222,9 +234,12 @@ removedAttachmentIds: [1, 2]
     "title": "更新后的作业标题",
     "description": "更新后的作业描述",
     "publisherId": 1001,
+    "publisherName": "张三",
     "classId": 1,
+    "className": "计算机科学2024级1班",
     "deadline": "2026-04-20T23:59:59",
     "totalScore": 100,
+    "allowLateSubmit": true,
     "publishTime": "2026-04-09T10:00:00",
     "createTime": "2026-04-09T10:00:00",
     "updateTime": "2026-04-09T11:00:00"
@@ -233,18 +248,22 @@ removedAttachmentIds: [1, 2]
 ```
 
 **响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 作业 ID |
-| title | String | 作业标题 |
-| description | String | 作业描述 |
-| publisherId | Integer | 发布人 ID |
-| classId | Integer | 所属班级 ID |
-| deadline | LocalDateTime | 截止时间 |
-| totalScore | Integer | 作业总分 |
-| publishTime | LocalDateTime | 发布时间 |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
+
+| 字段            | 类型          | 说明             |
+| --------------- | ------------- | ---------------- |
+| id              | Integer       | 作业 ID          |
+| title           | String        | 作业标题         |
+| description     | String        | 作业描述         |
+| publisherId     | Integer       | 发布人 ID        |
+| publisherName   | String        | 发布人用户名     |
+| classId         | Integer       | 所属班级 ID      |
+| className       | String        | 班级名称         |
+| deadline        | LocalDateTime | 截止时间         |
+| totalScore      | Integer       | 作业总分         |
+| allowLateSubmit | Boolean       | 是否允许逾期提交 |
+| publishTime     | LocalDateTime | 发布时间         |
+| createTime      | LocalDateTime | 创建时间         |
+| updateTime      | LocalDateTime | 更新时间         |
 
 **失败响应**:
 
@@ -267,7 +286,6 @@ removedAttachmentIds: [1, 2]
 - "已有学生提交作业，无法修改总分"
 - "作业不存在"
 - "只有班级老师可以修改作业"
-- "只能修改自己发布的作业"
 - "文件上传失败：xxx"
 
 ---
@@ -277,9 +295,10 @@ removedAttachmentIds: [1, 2]
 **接口地址**: `DELETE /api/works/delete`
 
 **请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| workId | Integer | 是 | 作业 ID |
+
+| 参数   | 类型    | 必填 | 说明    |
+| ------ | ------- | ---- | ------- |
+| workId | Integer | 是   | 作业 ID |
 
 **请求示例**: `DELETE /api/works/delete?workId=1`
 
@@ -311,7 +330,7 @@ removedAttachmentIds: [1, 2]
 **注意**:
 
 - **允许删除任何状态的作业**（包括已发布、已结束）
-- 只能删除自己发布的作业
+- **班级老师权限**：班级创建者和班级助理都可以删除该班级的任何作业（无论谁发布的）
 - **级联清理机制**：删除作业时会自动清理所有关联数据
   - 删除学生提交的所有附件文件
   - 删除提交附件记录
@@ -344,9 +363,12 @@ removedAttachmentIds: [1, 2]
     "title": "作业标题",
     "description": "作业描述",
     "publisherId": 1001,
+    "publisherName": "张三",
     "classId": 1,
+    "className": "计算机科学2024级1班",
     "deadline": "2026-04-15T23:59:59",
     "totalScore": 100,
+    "allowLateSubmit": true,
     "publishTime": "2026-04-09T10:00:00",
     "createTime": "2026-04-09T10:00:00",
     "updateTime": "2026-04-09T10:00:00"
@@ -356,18 +378,21 @@ removedAttachmentIds: [1, 2]
 
 **响应字段说明**:
 
-| 字段        | 类型          | 说明        |
-| ----------- | ------------- | ----------- |
-| id          | Integer       | 作业 ID     |
-| title       | String        | 作业标题    |
-| description | String        | 作业描述    |
-| publisherId | Integer       | 发布人 ID   |
-| classId     | Integer       | 所属班级 ID |
-| deadline    | LocalDateTime | 截止时间    |
-| totalScore  | Integer       | 作业总分    |
-| publishTime | LocalDateTime | 发布时间    |
-| createTime  | LocalDateTime | 创建时间    |
-| updateTime  | LocalDateTime | 更新时间    |
+| 字段            | 类型          | 说明             |
+| --------------- | ------------- | ---------------- |
+| id              | Integer       | 作业 ID          |
+| title           | String        | 作业标题         |
+| description     | String        | 作业描述         |
+| publisherId     | Integer       | 发布人 ID        |
+| publisherName   | String        | 发布人用户名     |
+| classId         | Integer       | 所属班级 ID      |
+| className       | String        | 班级名称         |
+| deadline        | LocalDateTime | 截止时间         |
+| totalScore      | Integer       | 作业总分         |
+| allowLateSubmit | Boolean       | 是否允许逾期提交 |
+| publishTime     | LocalDateTime | 发布时间         |
+| createTime      | LocalDateTime | 创建时间         |
+| updateTime      | LocalDateTime | 更新时间         |
 
 **失败响应**:
 
@@ -417,8 +442,12 @@ removedAttachmentIds: [1, 2]
         "title": "作业标题",
         "description": "作业描述",
         "publisherId": 1001,
+        "publisherName": "张三",
+        "classId": 1,
+        "className": "计算机科学2024级1班",
         "deadline": "2026-04-15T23:59:59",
         "totalScore": 100,
+        "allowLateSubmit": true,
         "publishTime": "2026-04-09T10:00:00",
         "status": 1,
         "createTime": "2026-04-09T10:00:00",
@@ -461,8 +490,12 @@ removedAttachmentIds: [1, 2]
 | title                    | String        | 作业标题                             |
 | description              | String        | 作业描述                             |
 | publisherId              | Integer       | 发布人 ID                            |
+| publisherName            | String        | 发布人用户名                         |
+| classId                  | Integer       | 所属班级 ID                          |
+| className                | String        | 班级名称                             |
 | deadline                 | LocalDateTime | 截止时间                             |
 | totalScore               | Integer       | 作业总分                             |
+| allowLateSubmit          | Boolean       | 是否允许逾期提交                     |
 | publishTime              | LocalDateTime | 发布时间                             |
 | status                   | Integer       | 作业状态(0-未发布,1-已发布,2-已结束) |
 | createTime               | LocalDateTime | 创建时间                             |
@@ -2216,18 +2249,18 @@ attachments: [file1.pdf, file2.docx]
 
 **响应字段说明**:
 
-| 字段              | 类型          | 说明                               |
-| ----------------- | ------------- | ---------------------------------- |
-| id                | Integer       | 提交 ID                            |
-| workId            | Integer       | 作业 ID                            |
-| classId           | Integer       | 所属班级 ID                        |
-| submitterId       | Integer       | 提交人 ID                          |
-| submissionContent | String        | 提交内容/文本描述                  |
-| status            | Integer       | 提交状态(1-已提交,2-已批改)        |
-| isLate            | Boolean       | 是否逾期提交(true-逾期,false-按时) |
-| createTime        | LocalDateTime | 创建时间                           |
-| updateTime        | LocalDateTime | 更新时间                           |
-| attachments       | Array         | 附件列表（如果有上传）             |
+| 字段              | 类型          | 说明                                 |
+| ----------------- | ------------- | ------------------------------------ |
+| id                | Integer       | 提交 ID                              |
+| workId            | Integer       | 作业 ID                              |
+| classId           | Integer       | 所属班级 ID                          |
+| submitterId       | Integer       | 提交人 ID                            |
+| submissionContent | String        | 提交内容/文本描述                    |
+| status            | Integer       | 提交状态(1-已提交,2-已批改,3-已打回) |
+| isLate            | Boolean       | 是否逾期提交(true-逾期,false-按时)   |
+| createTime        | LocalDateTime | 创建时间                             |
+| updateTime        | LocalDateTime | 更新时间                             |
+| attachments       | Array         | 附件列表（如果有上传）               |
 
 **注意**: 提交作业的响应不包含批改相关字段（score、comment、gradeTime、graderId），这些字段仅在查询时返回。
 
@@ -2287,11 +2320,8 @@ attachments: [file1.pdf, file2.docx]
     "classId": 1,
     "submitterId": 1002,
     "submissionContent": "更新后的作业内容",
-    "score": null,
-    "comment": null,
-    "gradeTime": null,
-    "graderId": null,
     "status": 1,
+    "isLate": false,
     "createTime": "2026-04-09T10:00:00",
     "updateTime": "2026-04-09T11:00:00"
   }

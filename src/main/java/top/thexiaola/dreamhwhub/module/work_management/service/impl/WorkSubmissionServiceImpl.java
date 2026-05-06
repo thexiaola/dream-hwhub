@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -117,7 +116,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         // 保存附件（直接上传的文件）
         List<WorkSubmissionSubmitResponse.AttachmentInfo> attachmentInfos = null;
         if (CollUtil.isNotEmpty(request.getAttachments())) {
-            List<WorkSubmissionResponse.AttachmentInfo> responseAttachments = saveSubmissionAttachmentsDirectly(submission.getId(), request.getAttachments());
+            List<WorkSubmissionResponse.AttachmentInfo> responseAttachments = saveSubmissionAttachmentsDirectly(currentUser.getId(), submission.getId(), request.getAttachments());
             // 转换为提交响应的附件类型
             attachmentInfos = responseAttachments.stream()
                     .map(att -> new WorkSubmissionSubmitResponse.AttachmentInfo(
@@ -433,7 +432,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
      * 保存提交附件（直接上传的文件）
      * @return 附件信息列表
      */
-    private List<WorkSubmissionResponse.AttachmentInfo> saveSubmissionAttachmentsDirectly(Integer submissionId, List<MultipartFile> files) {
+    private List<WorkSubmissionResponse.AttachmentInfo> saveSubmissionAttachmentsDirectly(Integer userId, Integer submissionId, List<MultipartFile> files) {
         List<WorkSubmissionResponse.AttachmentInfo> attachmentInfos = new java.util.ArrayList<>();
         
         if (CollUtil.isEmpty(files)) {
@@ -452,9 +451,10 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                     throw new BusinessException(BusinessErrorCode.INVALID_FILE_PATH, "非法的文件名", null);
                 }
                 
-                // 2. 生成安全的文件名
+                // 2. 生成安全的文件名（业务ID-用户ID-时间戳）
                 String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                String safeFileName = UUID.randomUUID() + extension;
+                String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+                String safeFileName = submissionId + "_" + userId + "_" + timestamp + extension;
                 
                 // 3. 确保上传目录存在
                 Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();

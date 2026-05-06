@@ -76,6 +76,14 @@ public interface ClassService {
      * 检查用户在指定班级是否是老师
      */
     boolean isTeacher(Integer classId, Integer userId);
+    
+    /**
+     * 获取用户是老师的所有班级ID列表
+     *
+     * @param userId 用户 ID
+     * @return 班级ID列表
+     */
+    java.util.List<Integer> getTeacherClassIds(Integer userId);
 
     /**
      * 检查用户在指定班级是否是学生
@@ -115,6 +123,14 @@ public interface ClassService {
      * 获取班级信息
      */
     ClassInfo getClassById(Integer classId);
+    
+    /**
+     * 批量获取班级信息
+     *
+     * @param classIds 班级ID列表
+     * @return 班级信息列表
+     */
+    java.util.List<top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> getClassByIds(java.util.List<Integer> classIds);
 
     /**
      * 获取班级详情（包含统计信息）

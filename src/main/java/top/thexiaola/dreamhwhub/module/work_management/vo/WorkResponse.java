@@ -35,6 +35,21 @@ public class WorkResponse {
     private Integer publisherId;
 
     /**
+     * 发布人用户名
+     */
+    private String publisherName;
+
+    /**
+     * 所属班级 ID
+     */
+    private Integer classId;
+
+    /**
+     * 班级名称
+     */
+    private String className;
+
+    /**
      * 截止时间
      */
     private LocalDateTime deadline;

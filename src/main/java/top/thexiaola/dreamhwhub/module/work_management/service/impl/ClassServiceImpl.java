@@ -592,6 +592,23 @@ public class ClassServiceImpl implements ClassService {
         queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("is_teacher", true);
         return classMemberMapper.selectCount(queryWrapper) > 0;
     }
+    
+    @Override
+    public java.util.List<Integer> getTeacherClassIds(Integer userId) {
+        if (userId == null) {
+            return java.util.Collections.emptyList();
+        }
+        
+        QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId)
+                   .eq("is_teacher", true)
+                   .select("class_id");
+        
+        List<ClassMember> members = classMemberMapper.selectList(queryWrapper);
+        return members.stream()
+                .map(ClassMember::getClassId)
+                .collect(java.util.stream.Collectors.toList());
+    }
 
     @Override
     public boolean isStudent(Integer classId, Integer userId) {
@@ -658,6 +675,14 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public ClassInfo getClassById(Integer classId) {
         return classInfoMapper.selectById(classId);
+    }
+    
+    @Override
+    public java.util.List<top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo> getClassByIds(java.util.List<Integer> classIds) {
+        if (classIds == null || classIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return classInfoMapper.selectBatchIds(classIds);
     }
 
     @Override
