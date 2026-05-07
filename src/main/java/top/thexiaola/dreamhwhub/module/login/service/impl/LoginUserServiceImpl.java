@@ -11,14 +11,14 @@ import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
-import top.thexiaola.dreamhwhub.support.encryption.AESEncryptionUtil;
+import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
-import top.thexiaola.dreamhwhub.support.session.SessionManager;
+import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 
 import java.time.LocalDateTime;
 
 /**
- * 用户登录服务实现类
+ * 用户登录服务实现类 - 使用JWT Token认证
  */
 @Slf4j
 @Service
@@ -26,7 +26,8 @@ import java.time.LocalDateTime;
 public class LoginUserServiceImpl implements LoginUserService {
     
     private final UserMapper userMapper;
-    private final AESEncryptionUtil aesEncryptionUtil;
+    private final PasswordUtil passwordUtil;
+    private final JwtUtil jwtUtil;
 
     @Override
     public User login(LoginRequest loginRequest, HttpServletRequest request) {
@@ -45,17 +46,17 @@ public class LoginUserServiceImpl implements LoginUserService {
             throw new BusinessException(BusinessErrorCode.USER_BANNED, "用户已被封禁：" + banReason, null);
         }
         
-        if (aesEncryptionUtil.verifyPassword(loginRequest.getPassword(), user.getPassword())) {
+        // 使用BCrypt验证密码
+        if (passwordUtil.matches(loginRequest.getPassword(), user.getPassword())) {
             log.info(LogUtil.getSuccessLog(operation + " - password verified", user));
             
             // 更新最后登录时间
             user.setLastLoginTime(LocalDateTime.now());
             userMapper.updateById(user);
             
-            // 创建 Session
-            SessionManager.addSession(user.getId(), request.getSession());
-            request.getSession().setAttribute("user", user);
-            request.getSession().setAttribute("username", user.getUsername());
+            // 清除敏感信息(不返回密码哈希)
+            String passwordHash = user.getPassword();
+            user.setPassword(null);
             
             return user;
         } else {
@@ -95,16 +96,9 @@ public class LoginUserServiceImpl implements LoginUserService {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
         
-        try {
-            // 销毁 HTTP Session
-            request.getSession().invalidate();
-            // 清除 SessionManager 中的记录
-            SessionManager.invalidateSession(userId);
-            log.info(LogUtil.getSuccessLog(operation, null));
-        } catch (Exception e) {
-            log.error(LogUtil.getFailureLog(operation, "failed to invalidate session: " + e.getMessage(), null), e);
-            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "登出失败", null);
-        }
+        // JWT是无状态的，客户端只需删除Token即可
+        // 服务端无需额外操作，Token会在过期后自动失效
+        log.info(LogUtil.getSuccessLog(operation, null));
     }
     
     @Override

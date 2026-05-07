@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 用户信息响应 DTO
  */
 @Data
-@JsonPropertyOrder({"id", "userNo", "username", "idName", "email", "phone", "permission", "isBanned", "registerTime", "lastLoginTime"})
+@JsonPropertyOrder({"id", "userNo", "username", "idName", "email", "phone", "permission", "isBanned", "registerTime", "lastLoginTime", "token"})
 public class UserResponse {
 
     // 用户编号
@@ -44,4 +44,7 @@ public class UserResponse {
     // 最后登录时间
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime lastLoginTime;
+
+    // JWT Token(登录时返回)
+    private String token;
 }

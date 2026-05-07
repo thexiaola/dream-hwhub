@@ -16,6 +16,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
+import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 
@@ -29,6 +30,7 @@ import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 public class LoginUserController {
     private final LoginUserService loginUserService;
     private final UserMapper userResponseMapper;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request, @Valid @RequestBody LoginRequest loginRequest) {
@@ -37,9 +39,13 @@ public class LoginUserController {
         try {
             User user = loginUserService.login(loginRequest, request);
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
+            
+            // 生成JWT Token并设置到响应中
+            String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+            userResponse.setToken(token);
 
             String userInfo = LogUtil.getUserInfoString(ip, user);
-            log.info("User ({}) login successful, session created", userInfo);
+            log.info("User ({}) login successful, JWT token generated", userInfo);
             
             return ResponseEntity.ok(ApiResponse.success(userResponse, "登录成功"));
         } catch (BusinessException e) {

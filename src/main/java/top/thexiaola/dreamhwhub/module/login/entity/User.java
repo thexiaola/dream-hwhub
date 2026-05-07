@@ -45,7 +45,7 @@ public class User implements Serializable {
     @TableField("phone")
     private String phone;
 
-    //密码
+    //密码(BCrypt哈希值)
     @TableField("password")
     private String password;
 

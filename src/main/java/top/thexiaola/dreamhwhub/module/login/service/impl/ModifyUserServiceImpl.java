@@ -1,7 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,9 +14,7 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
-import top.thexiaola.dreamhwhub.support.encryption.AESEncryptionUtil;
-import top.thexiaola.dreamhwhub.support.logging.LogUtil;
-import top.thexiaola.dreamhwhub.support.session.SessionManager;
+import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import static top.thexiaola.dreamhwhub.module.login.service.impl.LoginUserServiceImpl.getUser;
@@ -28,7 +25,7 @@ import static top.thexiaola.dreamhwhub.module.login.service.impl.LoginUserServic
 public class ModifyUserServiceImpl implements ModifyUserService {
     private final UserMapper userMapper;
     private final EmailService emailService;
-    private final AESEncryptionUtil aesEncryptionUtil;
+    private final PasswordUtil passwordUtil;
 
     @Override
     public User modifyUserInfo(ModifyUserInfoRequest modifyUserInfoRequest) {
@@ -68,19 +65,8 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         user.setIdName(newIdName);
         user.setPhone(newPhone);
 
-        // 更新数据库
-        User updatedUser = userMapper.selectById(user.getId());
-        if (updatedUser != null) {
-            // 同步更新 Session 中的用户信息
-            HttpServletRequest request = LogUtil.getRequest();
-            if (request != null) {
-                request.getSession().setAttribute("user", updatedUser);
-                SessionManager.updateUserSession(user.getId(), updatedUser);
-            }
-        }
-
-        // 返回成功
-        return updatedUser;
+        // 更新数据库，返回成功
+        return userMapper.selectById(user.getId());
     }
     
     @Override
@@ -120,13 +106,6 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         // 更新邮箱
         user.setEmail(newEmail);
         userMapper.updateById(user);
-        
-        // 同步更新 Session 中的用户信息
-        HttpServletRequest request = LogUtil.getRequest();
-        if (request != null) {
-            request.getSession().setAttribute("user", user);
-            SessionManager.updateUserSession(user.getId(), user);
-        }
 
         return user;
     }
@@ -171,8 +150,8 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         String oldPassword = modifyPasswordRequest.getOldPassword();
         String newPassword = modifyPasswordRequest.getNewPassword();
 
-        // 验证原密码是否正确
-        if (!aesEncryptionUtil.verifyPassword(oldPassword, user.getPassword())) {
+        // 验证原密码是否正确(使用BCrypt)
+        if (!passwordUtil.matches(oldPassword, user.getPassword())) {
             throw new BusinessException(BusinessErrorCode.INVALID_OLD_PASSWORD, "原密码错误", null);
         }
 
@@ -181,15 +160,14 @@ public class ModifyUserServiceImpl implements ModifyUserService {
             throw new BusinessException(BusinessErrorCode.NEW_PASSWORD_SAME_AS_OLD, "新密码不能与原密码相同", null);
         }
 
-        // 加密新密码
-        String encryptedNewPassword = aesEncryptionUtil.encrypt(newPassword);
+        // 使用BCrypt加密新密码
+        String encryptedNewPassword = passwordUtil.encode(newPassword);
 
         // 更新密码
         user.setPassword(encryptedNewPassword);
         userMapper.updateById(user);
 
-        // 使该用户的所有 Session 失效
-        SessionManager.invalidateSession(user.getId());
+        // JWT是无状态的，客户端删除Token即可
     }
     
     @Override
@@ -231,15 +209,14 @@ public class ModifyUserServiceImpl implements ModifyUserService {
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "验证码错误", null);
         }
         
-        // 加密新密码
-        String encryptedNewPassword = aesEncryptionUtil.encrypt(newPassword);
+        // 使用BCrypt加密新密码
+        String encryptedNewPassword = passwordUtil.encode(newPassword);
         
         // 更新密码
         user.setPassword(encryptedNewPassword);
         userMapper.updateById(user);
         
-        // 使该用户的所有 Session 失效（强制重新登录）
-        SessionManager.invalidateSession(user.getId());
+        // JWT是无状态的，客户端删除Token即可
         
         return user;
     }

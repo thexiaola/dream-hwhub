@@ -11,13 +11,13 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
-import top.thexiaola.dreamhwhub.support.encryption.AESEncryptionUtil;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 
 import java.time.LocalDateTime;
 
 /**
- * 用户注册服务实现类
+ * 用户注册服务实现类 - 使用BCrypt加密密码
  */
 @Slf4j
 @Service
@@ -26,7 +26,7 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     
     private final UserMapper userMapper;
     private final EmailService emailService;
-    private final AESEncryptionUtil aesEncryptionUtil;
+    private final PasswordUtil passwordUtil;
 
     @Override
     public User register(RegisterRequest registerRequest) {
@@ -49,7 +49,8 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         user.setUserNo(userNo);
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword(aesEncryptionUtil.encrypt(registerRequest.getPassword()));
+        // 使用BCrypt加密密码
+        user.setPassword(passwordUtil.encode(registerRequest.getPassword()));
         user.setPermission((short) 1);
         user.setIsBanned(false);
         LocalDateTime timeNow = LocalDateTime.now();

@@ -1,6 +1,5 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +17,6 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
-import top.thexiaola.dreamhwhub.support.session.SessionManager;
 
 
 /**
@@ -36,17 +34,14 @@ public class RegisterController {
      * 用户注册
      */
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserResponse>> register(HttpServletRequest request, @Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterRequest registerRequest) {
         try {
             User user = registerUserService.register(registerRequest);
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
         
             String ip = LogUtil.getCurrentClientIp();
             String userInfo = LogUtil.getUserInfoString(ip, user);
-            log.info("User ({}) registration successful, auto-login initiated", userInfo);
-            SessionManager.addSession(user.getId(), request.getSession());
-            request.getSession().setAttribute("user", user);
-            request.getSession().setAttribute("username", user.getUsername());
+            log.info("User ({}) registration successful", userInfo);
             
             return ResponseEntity.ok(ApiResponse.success(userResponse, "注册成功"));
         } catch (BusinessException e) {
