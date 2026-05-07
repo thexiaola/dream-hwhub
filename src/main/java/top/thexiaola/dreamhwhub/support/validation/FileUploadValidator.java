@@ -44,9 +44,9 @@ public class FileUploadValidator {
     );
     
     /**
-     * 最大文件大小：50MB
+     * 默认最大文件大小：50MB（仅作为参考，实际限制由业务层控制）
      */
-    private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;
+    private static final long DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024;
     
     /**
      * 禁止的 MIME 类型黑名单
@@ -169,12 +169,23 @@ public class FileUploadValidator {
     }
 
     /**
-     * 验证文件大小
+     * 验证文件大小（使用默认限制50MB）
      *
      * @param fileSize 文件大小（字节）
      * @throws BusinessException 如果文件超过大小限制
      */
     public static void validateFileSize(Long fileSize) {
+        validateFileSize(fileSize, DEFAULT_MAX_FILE_SIZE);
+    }
+    
+    /**
+     * 验证文件大小（使用自定义限制）
+     *
+     * @param fileSize 文件大小（字节）
+     * @param maxSize 最大允许大小（字节）
+     * @throws BusinessException 如果文件超过大小限制
+     */
+    public static void validateFileSize(Long fileSize, long maxSize) {
         if (fileSize == null) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
                     "文件大小不能为空", null);
@@ -185,11 +196,11 @@ public class FileUploadValidator {
                     "文件大小必须大于 0", null);
         }
         
-        if (fileSize > MAX_FILE_SIZE) {
+        if (fileSize > maxSize) {
             log.warn("Blocked oversized file: {} bytes, max allowed: {} bytes", 
-                    fileSize, MAX_FILE_SIZE);
+                    fileSize, maxSize);
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
-                    String.format("文件大小超过限制 (%.2f MB)", MAX_FILE_SIZE / 1024.0 / 1024.0), null);
+                    String.format("文件大小超过限制 (%.2f MB)", maxSize / 1024.0 / 1024.0), null);
         }
     }
     
@@ -269,13 +280,25 @@ public class FileUploadValidator {
     }
     
     /**
-     * 执行完整的文件安全检查
+     * 执行完整的文件安全检查（使用默认50MB限制）
      *
      * @param filePath 文件路径
      * @param fileSize 文件大小
      * @throws BusinessException 如果任何检查失败
      */
     public static void performFullSecurityCheck(String filePath, Long fileSize) {
+        performFullSecurityCheck(filePath, fileSize, DEFAULT_MAX_FILE_SIZE);
+    }
+    
+    /**
+     * 执行完整的文件安全检查（使用自定义大小限制）
+     *
+     * @param filePath 文件路径
+     * @param fileSize 文件大小
+     * @param maxSize 最大允许大小（字节）
+     * @throws BusinessException 如果任何检查失败
+     */
+    public static void performFullSecurityCheck(String filePath, Long fileSize, long maxSize) {
         // 1. 验证文件路径
         validateFilePath(filePath);
         
@@ -283,8 +306,8 @@ public class FileUploadValidator {
         String fileName = Paths.get(filePath).getFileName().toString();
         validateFileExtension(fileName);
         
-        // 3. 验证文件大小
-        validateFileSize(fileSize);
+        // 3. 验证文件大小（使用自定义限制）
+        validateFileSize(fileSize, maxSize);
         
         // 4. 验证文件存在
         validateFileExists(filePath);
@@ -425,12 +448,12 @@ public class FileUploadValidator {
     }
     
     /**
-     * 获取最大文件大小限制
+     * 获取默认的最大文件大小限制
      *
      * @return 最大文件大小（字节）
      */
-    public static long getMaxFileSize() {
-        return MAX_FILE_SIZE;
+    public static long getDefaultMaxFileSize() {
+        return DEFAULT_MAX_FILE_SIZE;
     }
     
     /**

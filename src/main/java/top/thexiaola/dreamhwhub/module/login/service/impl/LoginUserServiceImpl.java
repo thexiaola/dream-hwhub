@@ -11,7 +11,6 @@ import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
-import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 
@@ -27,7 +26,6 @@ public class LoginUserServiceImpl implements LoginUserService {
     
     private final UserMapper userMapper;
     private final PasswordUtil passwordUtil;
-    private final JwtUtil jwtUtil;
 
     @Override
     public User login(LoginRequest loginRequest, HttpServletRequest request) {
@@ -55,7 +53,6 @@ public class LoginUserServiceImpl implements LoginUserService {
             userMapper.updateById(user);
             
             // 清除敏感信息(不返回密码哈希)
-            String passwordHash = user.getPassword();
             user.setPassword(null);
             
             return user;
