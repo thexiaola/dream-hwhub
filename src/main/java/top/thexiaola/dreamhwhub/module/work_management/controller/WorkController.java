@@ -36,6 +36,9 @@ public class WorkController {
     public ResponseEntity<ApiResponse<WorkInfo>> createWork(@Validated CreateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            // 执行自定义校验（XSS防护、时间逻辑校验）
+            request.validate();
+            
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             
@@ -58,6 +61,9 @@ public class WorkController {
     public ResponseEntity<ApiResponse<WorkInfo>> updateWork(@Validated UpdateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            // 执行自定义校验（XSS防护）
+            request.validate();
+            
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             

@@ -1,12 +1,10 @@
 package top.thexiaola.dreamhwhub.module.work_management.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
+import top.thexiaola.dreamhwhub.support.validation.XssValidator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -50,6 +48,8 @@ public class UpdateWorkRequest {
      * 作业总分
      */
     @NotNull(message = "作业总分不能为空")
+    @Min(value = 1, message = "作业总分必须大于0")
+    @Max(value = 1000, message = "作业总分不能超过1000")
     private Integer totalScore;
 
     /**
@@ -72,4 +72,13 @@ public class UpdateWorkRequest {
      * 要删除的附件ID列表
      */
     private List<Integer> removedAttachmentIds;
+
+    /**
+     * 自定义校验：XSS防护和时间逻辑校验
+     */
+    public void validate() {
+        // XSS防护
+        XssValidator.validateNoXss(title, "作业标题");
+        XssValidator.validateNoXss(description, "作业描述");
+    }
 }

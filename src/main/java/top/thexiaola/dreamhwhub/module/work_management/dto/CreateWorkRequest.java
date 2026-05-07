@@ -1,12 +1,10 @@
 package top.thexiaola.dreamhwhub.module.work_management.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
+import top.thexiaola.dreamhwhub.support.validation.XssValidator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +27,7 @@ public class CreateWorkRequest {
      * 作业描述（允许字母、汉字和常用特殊字符，不允许换行符、制表符等不常见字符）
      */
     @NotBlank(message = "作业描述不能为空")
+    @Size(max = 1024, message = "作业描述长度不能超过 1024 位")
     @Pattern(regexp = "^[^\\t\\f\\v]+$", message = "作业描述不能包含特殊字符（制表符等）")
     private String description;
 
@@ -43,6 +42,8 @@ public class CreateWorkRequest {
      * 作业总分
      */
     @NotNull(message = "作业总分不能为空")
+    @Min(value = 1, message = "作业总分必须大于0")
+    @Max(value = 1000, message = "作业总分不能超过1000")
     private Integer totalScore = 100;
 
     /**
@@ -67,4 +68,24 @@ public class CreateWorkRequest {
      * 附件文件列表（直接上传的文件）
      */
     private List<MultipartFile> attachments;
+
+    /**
+     * 自定义校验：XSS防护和时间逻辑校验
+     */
+    public void validate() {
+        // XSS防护
+        XssValidator.validateNoXss(title, "作业标题");
+        XssValidator.validateNoXss(description, "作业描述");
+        
+        // 时间逻辑校验
+        if (deadline != null && publishTime != null) {
+            if (deadline.isBefore(publishTime)) {
+                throw new top.thexiaola.dreamhwhub.exception.BusinessException(
+                    top.thexiaola.dreamhwhub.enums.BusinessErrorCode.PARAMETER_ERROR,
+                    "截止时间不能早于发布时间",
+                    null
+                );
+            }
+        }
+    }
 }
