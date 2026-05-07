@@ -148,7 +148,10 @@ CREATE TABLE IF NOT EXISTS `work_submission` (
     INDEX idx_submitter_id (`submitter_id`),
     INDEX idx_grader_id (`grader_id`),
     INDEX idx_status (`status`),
+    INDEX idx_is_deleted (`is_deleted`),
     INDEX idx_work_submitter_deleted (`work_id`, `submitter_id`, `is_deleted`),
+    INDEX idx_work_deleted (`work_id`, `is_deleted`),
+    INDEX idx_class_deleted (`class_id`, `is_deleted`),
     UNIQUE KEY uk_work_submitter (`work_id`, `submitter_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业提交表';
 
@@ -162,5 +165,6 @@ CREATE TABLE IF NOT EXISTS `work_submission_attachment` (
      `file_type` VARCHAR(100) DEFAULT NULL COMMENT '文件类型',
      `upload_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
      `is_deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除：0-否，1-是（软删除）',
-     INDEX idx_submission_id (`submission_id`)
+     INDEX idx_submission_id (`submission_id`),
+     INDEX idx_is_deleted (`is_deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业提交附件表';

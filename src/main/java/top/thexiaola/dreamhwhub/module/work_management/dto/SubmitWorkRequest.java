@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.dto;
 
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +20,7 @@ public class SubmitWorkRequest {
     /**
      * 提交内容/文本描述
      */
+    @Size(max = 2048, message = "提交内容长度不能超过 2048 位")
     private String submissionContent;
 
     /**

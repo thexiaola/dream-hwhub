@@ -95,6 +95,12 @@ public class DatabaseInitializer {
      * 从 user_schema.sql 动态解析并同步 user 表字段
      */
     private void validateAndSyncUserTableFromSchema() {
+        // 白名单验证表名
+        if (isInvalidTableName("user")) {
+            log.error("Invalid table name: user");
+            return;
+        }
+        
         try {
             // 从 user_schema.sql 解析期望的字段定义
             List<ColumnDefinition> expectedColumns = parseSchemaSql("user_schema.sql", "user");
@@ -111,6 +117,12 @@ public class DatabaseInitializer {
 
             // 检查缺少的字段
             for (ColumnDefinition expected : expectedColumns) {
+                // 白名单验证列名
+                if (isInvalidColumnName(expected.columnName)) {
+                    log.warn("Invalid column name skipped: {}", expected.columnName);
+                    continue;
+                }
+                
                 if (!actualColumns.contains(expected.columnName)) {
                     log.warn("Missing column '{}' in user table, will add it", expected.columnName);
                     needAlter = true;
@@ -158,6 +170,12 @@ public class DatabaseInitializer {
      * 从 work_management.sql 解析并同步指定表的字段
      */
     private void validateAndSyncWorkTable(String tableName) {
+        // 白名单验证表名，防止SQL注入
+        if (isInvalidTableName(tableName)) {
+            log.error("Invalid table name: {}", tableName);
+            return;
+        }
+        
         try {
             // 从 work_management.sql 解析期望的字段定义
             List<ColumnDefinition> expectedColumns = parseSchemaSql("work_management.sql", tableName);
@@ -174,6 +192,12 @@ public class DatabaseInitializer {
 
             // 检查缺少的字段
             for (ColumnDefinition expected : expectedColumns) {
+                // 白名单验证列名
+                if (isInvalidColumnName(expected.columnName)) {
+                    log.warn("Invalid column name skipped: {}", expected.columnName);
+                    continue;
+                }
+                
                 if (!actualColumns.contains(expected.columnName)) {
                     log.warn("Missing column '{}' in {} table, will add it", expected.columnName, tableName);
                     needAlter = true;
@@ -328,8 +352,38 @@ public class DatabaseInitializer {
      * 根据解析出的字段定义生成 ADD COLUMN SQL
      */
     private String generateAddColumnSql(String tableName, ColumnDefinition columnDef) {
-        return String.format("ALTER TABLE %s ADD COLUMN %s %s",
+        // 使用白名单验证后，直接拼接是安全的
+        return String.format("ALTER TABLE `%s` ADD COLUMN `%s` %s",
             tableName, columnDef.columnName, columnDef.fullDefinition);
+    }
+    
+    /**
+     * 验证表名是否非法（不在白名单中）
+     * @param tableName 待验证的表名
+     * @return true-表名非法，false-表名合法
+     */
+    private boolean isInvalidTableName(String tableName) {
+        return !("user".equals(tableName) || 
+               "work_info".equals(tableName) || 
+               "work_submission".equals(tableName) ||
+               "class_info".equals(tableName) ||
+               "class_member".equals(tableName) ||
+               "class_join_application".equals(tableName) ||
+               "work_attachment".equals(tableName) ||
+               "work_submission_attachment".equals(tableName));
+    }
+    
+    /**
+     * 验证列名是否非法（包含非法字符）
+     * @param columnName 待验证的列名
+     * @return true-列名非法，false-列名合法
+     */
+    private boolean isInvalidColumnName(String columnName) {
+        if (columnName == null || columnName.isEmpty()) {
+            return true;
+        }
+        // 只允许字母、数字、下划线、连字符，且不能以数字开头
+        return !columnName.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$");
     }
 
     /**

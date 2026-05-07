@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
@@ -36,6 +37,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -57,9 +59,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final UserMapper userMapper;
     private final WorkSubmissionResponseMapper submissionResponseMapper;
     private final WorkSubmissionSubmitResponseMapper submissionSubmitResponseMapper;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public WorkSubmissionSubmitResponse submitWork(SubmitWorkRequest request) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
@@ -102,6 +104,105 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，不允许逾期提交", null);
         }
 
+        // 先保存附件文件到磁盘（在事务外执行，避免长时间占用数据库连接）
+        List<MultipartFile> attachments = request.getAttachments();
+        final Integer submissionId;
+        final List<WorkSubmissionAttachment> savedAttachments;
+        
+        if (CollUtil.isNotEmpty(attachments)) {
+            // 预先生成submissionId用于文件命名
+            submissionId = generateSubmissionId();
+            try {
+                savedAttachments = saveSubmissionAttachmentsToDisk(currentUser.getId(), submissionId, attachments);
+            } catch (Exception e) {
+                log.error("Failed to save submission attachments", e);
+                throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, 
+                        "文件上传失败：" + e.getMessage(), null);
+            }
+        } else {
+            submissionId = null;
+            savedAttachments = new ArrayList<>();
+        }
+        
+        // 在事务中创建提交记录
+        return transactionTemplate.execute(status -> {
+            try {
+                return createSubmissionRecord(request, currentUser, workInfo, isLate, submissionId, savedAttachments);
+            } catch (Exception e) {
+                // 如果事务失败，清理已上传的文件
+                cleanupUploadedFiles(savedAttachments);
+                status.setRollbackOnly();
+                throw e;
+            }
+        });
+    }
+    
+    /**
+     * 生成临时的提交ID（用于文件命名）
+     */
+    private Integer generateSubmissionId() {
+        // 使用时间戳作为临时ID，实际ID由数据库生成
+        return Math.abs(java.util.UUID.randomUUID().hashCode());
+    }
+    
+    /**
+     * 将附件保存到磁盘（不包含数据库操作）
+     */
+    private List<WorkSubmissionAttachment> saveSubmissionAttachmentsToDisk(Integer userId, Integer tempSubmissionId, List<MultipartFile> files) throws Exception {
+        List<WorkSubmissionAttachment> attachments = new ArrayList<>();
+        
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) {
+                continue;
+            }
+            
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.contains("..")) {
+                throw new BusinessException(BusinessErrorCode.INVALID_FILE_PATH, "非法的文件名", null);
+            }
+            
+            // 生成安全的文件名
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String safeFileName = tempSubmissionId + "_" + userId + "_" + timestamp + extension;
+            
+            // 确保上传目录存在
+            Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+            Files.createDirectories(uploadPath);
+            
+            // 保存文件
+            Path filePath = uploadPath.resolve(safeFileName);
+            Files.copy(file.getInputStream(), filePath);
+            
+            // 获取文件信息
+            long fileSize = Files.size(filePath);
+            String fileType = FileUploadValidator.detectFileType(filePath.toString());
+            
+            // 执行完整的安全检查
+            FileUploadValidator.performFullSecurityCheck(filePath.toString(), fileSize);
+            
+            // 创建附件对象（尚未保存到数据库）
+            WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
+            attachment.setSubmissionId(tempSubmissionId); // 临时ID
+            attachment.setFileName(originalFilename);
+            attachment.setFilePath(filePath.toString());
+            attachment.setFileSize(fileSize);
+            attachment.setFileType(fileType);
+            attachment.setUploadTime(LocalDateTime.now());
+            
+            attachments.add(attachment);
+        }
+        
+        return attachments;
+    }
+    
+    /**
+     * 在事务中创建提交记录和附件记录（由TransactionTemplate调用）
+     */
+    private WorkSubmissionSubmitResponse createSubmissionRecord(
+            SubmitWorkRequest request, User currentUser, WorkInfo workInfo, 
+            boolean isLate, Integer tempSubmissionId, List<WorkSubmissionAttachment> savedAttachments) {
+        
         // 创建提交记录
         WorkSubmission submission = new WorkSubmission();
         submission.setWorkId(request.getWorkId());
@@ -109,24 +210,27 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setClassId(workInfo.getClassId());
         submission.setSubmissionContent(request.getSubmissionContent());
         submission.setStatus(1);
-        submission.setIsLate(isLate);  // 标记是否逾期
+        submission.setIsLate(isLate);
         submission.setCreateTime(LocalDateTime.now());
         submission.setUpdateTime(LocalDateTime.now());
 
         try {
             workSubmissionMapper.insert(submission);
         } catch (org.springframework.dao.DuplicateKeyException e) {
-            // 捕获唯一约束冲突，说明已有其他请求提交了
             log.warn("Duplicate submission attempt for work {} by user {}", request.getWorkId(), currentUser.getId());
             throw new BusinessException(BusinessErrorCode.WORK_ALREADY_SUBMITTED, "您已经提交过该作业", null);
         }
         
-        // 保存附件（直接上传的文件）
+        // 保存附件记录到数据库（更新为真实的submissionId）
         List<WorkSubmissionSubmitResponse.AttachmentInfo> attachmentInfos = null;
-        if (CollUtil.isNotEmpty(request.getAttachments())) {
-            List<WorkSubmissionResponse.AttachmentInfo> responseAttachments = saveSubmissionAttachmentsDirectly(currentUser.getId(), submission.getId(), request.getAttachments());
-            // 转换为提交响应的附件类型
-            attachmentInfos = responseAttachments.stream()
+        if (!savedAttachments.isEmpty()) {
+            for (WorkSubmissionAttachment attachment : savedAttachments) {
+                attachment.setSubmissionId(submission.getId()); // 更新为真实ID
+                workSubmissionAttachmentMapper.insert(attachment);
+            }
+            
+            // 转换为响应类型
+            attachmentInfos = savedAttachments.stream()
                     .map(att -> new WorkSubmissionSubmitResponse.AttachmentInfo(
                             att.getId(),
                             att.getFileName(),
@@ -138,11 +242,28 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                     .collect(Collectors.toList());
         }
         
-        // 转换为响应VO（不包含批改信息）
+        // 转换为响应VO
         WorkSubmissionSubmitResponse response = submissionSubmitResponseMapper.toSubmitResponse(submission);
         response.setAttachments(attachmentInfos);
         
         return response;
+    }
+    
+    /**
+     * 清理已上传的文件（事务失败时调用）
+     */
+    private void cleanupUploadedFiles(List<WorkSubmissionAttachment> attachments) {
+        for (WorkSubmissionAttachment attachment : attachments) {
+            try {
+                Path filePath = Paths.get(attachment.getFilePath());
+                if (Files.exists(filePath)) {
+                    Files.delete(filePath);
+                    log.info("Cleaned up orphaned file: {}", attachment.getFilePath());
+                }
+            } catch (Exception e) {
+                log.error("Failed to cleanup file: {}", attachment.getFilePath(), e);
+            }
+        }
     }
 
     @Override
@@ -367,8 +488,60 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         Page<WorkSubmission> submissionPage = new Page<>(pageNum, pageSize);
         Page<WorkSubmission> pagedResult = workSubmissionMapper.selectPage(submissionPage, queryWrapper);
         
+        if (pagedResult.getRecords().isEmpty()) {
+            Page<WorkSubmissionResponse> page = new Page<>(pageNum, pageSize, 0);
+            page.setRecords(java.util.Collections.emptyList());
+            return page;
+        }
+        
+        // 批量查询优化 - 收集所有提交ID
+        List<Integer> submissionIds = pagedResult.getRecords().stream()
+                .map(WorkSubmission::getId)
+                .collect(Collectors.toList());
+        
+        // 批量查询附件
+        QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
+        attQuery.in("submission_id", submissionIds);
+        List<WorkSubmissionAttachment> allAttachments = workSubmissionAttachmentMapper.selectList(attQuery);
+        
+        Map<Integer, List<WorkSubmissionResponse.AttachmentInfo>> attachmentMap = allAttachments.stream()
+                .collect(Collectors.groupingBy(
+                    WorkSubmissionAttachment::getSubmissionId,
+                    Collectors.mapping(att -> new WorkSubmissionResponse.AttachmentInfo(
+                        att.getId(),
+                        att.getFileName(),
+                        att.getFilePath(),
+                        att.getFileSize(),
+                        att.getFileType(),
+                        att.getUploadTime()
+                    ), Collectors.toList())
+                ));
+        
+        // 批量查询用户信息（提交人和批改人）
+        Set<Integer> userIds = new java.util.HashSet<>();
+        for (WorkSubmission submission : pagedResult.getRecords()) {
+            userIds.add(submission.getSubmitterId());
+            if (submission.getGraderId() != null) {
+                userIds.add(submission.getGraderId());
+            }
+        }
+        
+        Map<Integer, User> userMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            QueryWrapper<User> userQuery = new QueryWrapper<>();
+            userQuery.in("id", userIds);
+            List<User> users = userMapper.selectList(userQuery);
+            userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
+        }
+        
+        // 转换为响应对象，使用缓存的数据
+        final Map<Integer, User> finalUserMap = userMap;
         List<WorkSubmissionResponse> responses = pagedResult.getRecords().stream()
-                .map(this::convertToResponse)
+                .map(submission -> {
+                    WorkSubmissionResponse response = convertToResponseWithCache(submission, workInfo, finalUserMap);
+                    response.setAttachments(attachmentMap.getOrDefault(submission.getId(), new ArrayList<>()));
+                    return response;
+                })
                 .collect(Collectors.toList());
 
         // 构建分页结果
@@ -423,7 +596,31 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
 
     /**
-     * 转换为响应对象
+     * 转换为响应对象（带缓存的作业信息和用户信息）
+     */
+    private WorkSubmissionResponse convertToResponseWithCache(WorkSubmission submission, WorkInfo cachedWorkInfo, Map<Integer, User> userMap) {
+        WorkSubmissionResponse response = submissionResponseMapper.toResponse(submission, cachedWorkInfo);
+        
+        // 从缓存中获取批改人信息
+        if (submission.getGraderId() != null) {
+            User grader = userMap.get(submission.getGraderId());
+            if (grader != null) {
+                response.setGraderName(grader.getUsername());
+            }
+        }
+        
+        // 从缓存中获取提交人信息
+        User submitter = userMap.get(submission.getSubmitterId());
+        if (submitter != null) {
+            response.setSubmitterName(submitter.getUsername());
+            response.setSubmitterUserNo(submitter.getUserNo());
+        }
+        
+        return response;
+    }
+    
+    /**
+     * 转换为响应对象（旧方法，保留用于单个查询）
      */
     private WorkSubmissionResponse convertToResponse(WorkSubmission submission) {
         WorkInfo workInfo = workMapper.selectById(submission.getWorkId());

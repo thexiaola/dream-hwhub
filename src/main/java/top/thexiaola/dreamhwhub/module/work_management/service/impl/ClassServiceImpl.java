@@ -1551,11 +1551,26 @@ public class ClassServiceImpl implements ClassService {
      * @param userId 学生用户ID
      */
     private void cleanupStudentSubmissions(Integer classId, Integer userId) {
-        // 1. 查询该学生在该班级所有作业中的提交记录
+        // 1. 先查询该班级的所有作业ID（避免SQL注入）
+        QueryWrapper<WorkInfo> workQuery = new QueryWrapper<>();
+        workQuery.eq("class_id", classId)
+                .select("id");
+        List<WorkInfo> worksInClass = workMapper.selectList(workQuery);
+        
+        if (worksInClass.isEmpty()) {
+            log.warn("No works found in class {} for user {}", classId, userId);
+            return;
+        }
+        
+        List<Integer> workIds = worksInClass.stream()
+                .map(WorkInfo::getId)
+                .collect(java.util.stream.Collectors.toList());
+        
+        // 2. 查询该学生在这些作业中的提交记录
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
         submissionQuery.eq("submitter_id", userId)
                       .eq("is_deleted", false)
-                      .inSql("work_id", "SELECT id FROM work_info WHERE class_id = " + classId);
+                      .in("work_id", workIds);
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
         if (submissions.isEmpty()) {

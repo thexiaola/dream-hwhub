@@ -6,9 +6,13 @@ import org.jspecify.annotations.NonNull;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -57,6 +61,40 @@ public class FileUploadValidator {
             "application/javascript",
             "application/x-apple-diskimage"
     );
+    
+    /**
+     * 文件魔数映射表（用于深度检测文件真实类型）
+     * 格式：扩展名 -> 魔数前缀字节数组
+     */
+    private static final Map<String, byte[]> FILE_MAGIC_NUMBERS = new HashMap<>();
+    
+    static {
+        // PDF文件
+        FILE_MAGIC_NUMBERS.put("pdf", new byte[]{0x25, 0x50, 0x44, 0x46});
+        // JPEG图片
+        FILE_MAGIC_NUMBERS.put("jpg", new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+        FILE_MAGIC_NUMBERS.put("jpeg", new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+        // PNG图片
+        FILE_MAGIC_NUMBERS.put("png", new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47});
+        // GIF图片
+        FILE_MAGIC_NUMBERS.put("gif", new byte[]{0x47, 0x49, 0x46, 0x38});
+        // ZIP压缩文件
+        FILE_MAGIC_NUMBERS.put("zip", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        // RAR压缩文件
+        FILE_MAGIC_NUMBERS.put("rar", new byte[]{0x52, 0x61, 0x72, 0x21});
+        // 7Z压缩文件
+        FILE_MAGIC_NUMBERS.put("7z", new byte[]{0x37, 0x7A, (byte) 0xBC, (byte) 0xAF});
+        // Word文档(docx)
+        FILE_MAGIC_NUMBERS.put("docx", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        // Excel表格(xlsx)
+        FILE_MAGIC_NUMBERS.put("xlsx", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        // PowerPoint演示文稿(pptx)
+        FILE_MAGIC_NUMBERS.put("pptx", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        // MP4视频
+        FILE_MAGIC_NUMBERS.put("mp4", new byte[]{0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70});
+        // MP3音频
+        FILE_MAGIC_NUMBERS.put("mp3", new byte[]{(byte) 0xFF, (byte) 0xFB});
+    }
     
     /**
      * 安全的上传目录（非 Web 目录）
@@ -255,6 +293,9 @@ public class FileUploadValidator {
         String mimeType = detectFileType(filePath);
         validateMimeType(mimeType);
         
+        // 6. 验证文件魔数（防止扩展名欺骗）
+        validateFileMagicNumber(filePath, fileName);
+        
         log.info("File security check passed: {}, size: {}, type: {}", 
                 fileName, fileSize, mimeType);
     }
@@ -390,5 +431,76 @@ public class FileUploadValidator {
      */
     public static long getMaxFileSize() {
         return MAX_FILE_SIZE;
+    }
+    
+    /**
+     * 验证文件魔数（防止扩展名欺骗攻击）
+     * 通过读取文件头部字节来验证文件真实类型是否与扩展名匹配
+     *
+     * @param filePath 文件路径
+     * @param fileName 文件名
+     * @throws BusinessException 如果魔数验证失败
+     */
+    private static void validateFileMagicNumber(String filePath, String fileName) {
+        try {
+            // 获取文件扩展名
+            int lastDotIndex = fileName.lastIndexOf('.');
+            if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
+                return; // 无扩展名，跳过魔数验证
+            }
+            
+            String extension = StrUtil.subSuf(fileName, lastDotIndex + 1).toLowerCase();
+            
+            // 查找对应的魔数定义
+            byte[] expectedMagic = FILE_MAGIC_NUMBERS.get(extension);
+            if (expectedMagic == null) {
+                // 该扩展名没有魔数定义，跳过验证
+                return;
+            }
+            
+            // 读取文件头部字节
+            Path path = Paths.get(filePath);
+            long fileLength = Files.size(path);
+            if (fileLength < expectedMagic.length) {
+                throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
+                        "文件损坏或格式不正确", null);
+            }
+            
+            try (InputStream inputStream = Files.newInputStream(path)) {
+                byte[] actualMagic = new byte[expectedMagic.length];
+                int bytesRead = inputStream.read(actualMagic);
+                
+                if (bytesRead != expectedMagic.length) {
+                    throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
+                            "文件读取失败", null);
+                }
+                
+                // 比较魔数
+                if (!java.util.Arrays.equals(expectedMagic, actualMagic)) {
+                    log.warn("File magic number mismatch for {}: expected={}, actual={}",
+                            fileName, bytesToHex(expectedMagic), bytesToHex(actualMagic));
+                    throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
+                            "文件内容与扩展名不匹配，可能存在安全风险", null);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Failed to validate file magic number: {}", filePath, e);
+            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR,
+                    "文件验证失败", null);
+        }
+    }
+    
+    /**
+     * 将字节数组转换为十六进制字符串（用于日志记录）
+     *
+     * @param bytes 字节数组
+     * @return 十六进制字符串
+     */
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X ", b));
+        }
+        return sb.toString().trim();
     }
 }

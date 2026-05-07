@@ -17,8 +17,9 @@ import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 邮件服务实现类
@@ -30,11 +31,25 @@ public class EmailServiceImpl implements EmailService {
     
     private final JavaMailSender mailSender;
     
-    // 存储验证码及其过期时间
-    private final Map<String, VerificationCodeInfo> verificationCodes = new ConcurrentHashMap<>();
+    // 存储验证码及其过期时间（使用LRU Map限制最大容量为10000）
+    private final Map<String, VerificationCodeInfo> verificationCodes = Collections.synchronizedMap(
+            new LinkedHashMap<>(100, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, VerificationCodeInfo> eldest) {
+                    return size() > 10000; // 最大容量10000条
+                }
+            }
+    );
     
-    // 存储邮箱最后发送时间
-    private final Map<String, LocalDateTime> emailLastSendTime = new ConcurrentHashMap<>();
+    // 存储邮箱最后发送时间（同样限制容量）
+    private final Map<String, LocalDateTime> emailLastSendTime = Collections.synchronizedMap(
+            new LinkedHashMap<>(100, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, LocalDateTime> eldest) {
+                    return size() > 10000;
+                }
+            }
+    );
 
     // 发送验证码的冷却时间（秒）
     @Value("${app.verification-code.cooldown-seconds}")

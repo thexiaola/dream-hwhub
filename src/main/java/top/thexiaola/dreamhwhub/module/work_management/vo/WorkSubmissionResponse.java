@@ -62,6 +62,21 @@ public class WorkSubmissionResponse {
     private Integer graderId;
 
     /**
+     * 批改人姓名
+     */
+    private String graderName;
+
+    /**
+     * 提交人姓名
+     */
+    private String submitterName;
+
+    /**
+     * 提交人学号
+     */
+    private String submitterUserNo;
+
+    /**
      * 提交状态：1-已提交，2-已批改
      */
     private Integer status;
