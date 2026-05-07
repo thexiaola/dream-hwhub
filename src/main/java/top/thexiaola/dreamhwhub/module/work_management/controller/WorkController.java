@@ -11,6 +11,7 @@ import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.PinWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
@@ -127,6 +128,26 @@ public class WorkController {
             return ResponseEntity.ok(ApiResponse.success(works));
         } catch (BusinessException e) {
             log.warn("User query work list failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
+    }
+
+    /**
+     * 置顶/取消置顶作业
+     */
+    @PutMapping("/pin")
+    public ResponseEntity<ApiResponse<WorkInfo>> pinWork(@Validated @RequestBody PinWorkRequest request) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User currentUser = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+            
+            WorkInfo workInfo = workService.pinWork(request.getWorkId(), request.getIsPinned());
+            String action = request.getIsPinned() ? "pinned" : "unpinned";
+            log.info("User ({}) {} work, id: {}", userInfo, action, request.getWorkId());
+            return ResponseEntity.ok(ApiResponse.success(workInfo));
+        } catch (BusinessException e) {
+            log.warn("User pin work failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
     }

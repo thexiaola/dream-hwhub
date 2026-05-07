@@ -467,7 +467,7 @@ removedAttachmentIds: [1, 2]
     "records": [
       {
         "id": 1,
-        "title": "作业标题",
+        "title": "重要作业（置顶）",
         "description": "作业描述",
         "publisherId": 1001,
         "publisherName": "张三",
@@ -476,6 +476,7 @@ removedAttachmentIds: [1, 2]
         "deadline": "2026-04-15T23:59:59",
         "totalScore": 100,
         "allowLateSubmit": true,
+        "isPinned": true,
         "publishTime": "2026-04-09T10:00:00",
         "status": 1,
         "createTime": "2026-04-09T10:00:00",
@@ -490,6 +491,24 @@ removedAttachmentIds: [1, 2]
             "uploadTime": "2026-04-09T10:00:00"
           }
         ]
+      },
+      {
+        "id": 2,
+        "title": "普通作业",
+        "description": "作业描述",
+        "publisherId": 1001,
+        "publisherName": "张三",
+        "classId": 1,
+        "className": "计算机科学2024级1班",
+        "deadline": "2026-04-20T23:59:59",
+        "totalScore": 100,
+        "allowLateSubmit": true,
+        "isPinned": false,
+        "publishTime": "2026-04-08T10:00:00",
+        "status": 1,
+        "createTime": "2026-04-08T10:00:00",
+        "updateTime": "2026-04-08T10:00:00",
+        "attachments": []
       }
     ],
     "total": 15,
@@ -524,6 +543,7 @@ removedAttachmentIds: [1, 2]
 | deadline                 | LocalDateTime | 截止时间                             |
 | totalScore               | Integer       | 作业总分                             |
 | allowLateSubmit          | Boolean       | 是否允许逾期提交                     |
+| **isPinned**             | **Boolean**   | **是否置顶**                         |
 | publishTime              | LocalDateTime | 发布时间                             |
 | status                   | Integer       | 作业状态(0-未发布,1-已发布,2-已结束) |
 | createTime               | LocalDateTime | 创建时间                             |
@@ -536,6 +556,17 @@ removedAttachmentIds: [1, 2]
 | attachments[].fileType   | String        | 文件类型(MIME)                       |
 | attachments[].uploadTime | LocalDateTime | 上传时间                             |
 
+**排序规则**:
+
+1. **第一优先级**：`is_pinned` 降序（置顶的作业在前）
+2. **第二优先级**：`create_time` 降序（新创建的作业在前）
+
+**注意**:
+
+- 置顶作业会自动排在非置顶作业之前
+- 同级别（都是置顶或都不置顶）按创建时间倒序排列
+- 前端可以根据 `isPinned` 字段显示置顶标识（如 📌 图标）
+
 **失败响应**:
 
 ```json
@@ -545,6 +576,119 @@ removedAttachmentIds: [1, 2]
   "data": null
 }
 ```
+
+---
+
+### 1.6 置顶/取消置顶作业
+
+**接口地址**: `PUT /api/works/pin`
+
+**请求头**:
+
+- Content-Type: application/json
+- 需要登录认证（JWT Token + CSRF Token）
+
+**权限要求**: 只有班级老师（包括创建者和班级助理）可以调用此接口
+
+**请求体**:
+
+```json
+{
+  "workId": 1,
+  "isPinned": true
+}
+```
+
+**字段说明**:
+
+| 字段     | 类型    | 必填 | 说明                             |
+| -------- | ------- | ---- | -------------------------------- |
+| workId   | Integer | 是   | 作业 ID                          |
+| isPinned | Boolean | 是   | 是否置顶：true-置顶，false-取消置顶 |
+
+**请求示例**:
+
+```bash
+# 置顶作业
+curl -X PUT http://localhost:8080/api/works/pin \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
+  -d '{"workId": 1, "isPinned": true}'
+
+# 取消置顶
+curl -X PUT http://localhost:8080/api/works/pin \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
+  -d '{"workId": 1, "isPinned": false}'
+```
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "title": "第三次实验报告",
+    "description": "请完成数据结构实验三",
+    "publisherId": 1001,
+    "classId": 1,
+    "deadline": "2026-05-20T23:59:59",
+    "totalScore": 100,
+    "allowLateSubmit": true,
+    "isPinned": true,
+    "publishTime": "2026-05-07T10:00:00",
+    "createTime": "2026-05-07T10:00:00",
+    "updateTime": "2026-05-07T15:30:00"
+  }
+}
+```
+
+**响应字段说明**:
+
+| 字段            | 类型          | 说明             |
+| --------------- | ------------- | ---------------- |
+| id              | Integer       | 作业 ID          |
+| title           | String        | 作业标题         |
+| description     | String        | 作业描述         |
+| publisherId     | Integer       | 发布人 ID        |
+| classId         | Integer       | 所属班级 ID      |
+| deadline        | LocalDateTime | 截止时间         |
+| totalScore      | Integer       | 作业总分         |
+| allowLateSubmit | Boolean       | 是否允许逾期提交 |
+| **isPinned**    | **Boolean**   | **是否置顶**     |
+| publishTime     | LocalDateTime | 发布时间         |
+| createTime      | LocalDateTime | 创建时间         |
+| updateTime      | LocalDateTime | 更新时间         |
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "只有班级老师可以置顶作业",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- “用户未登录”
+- “作业不存在”
+- “只有班级老师可以置顶作业”
+- “更新作业置顶状态失败”
+
+**注意**:
+
+- **权限限制**：只有班级老师（创建者或班级助理）可以置顶作业
+- **实时更新**：置顶状态的修改会立即生效
+- **排序规则**：查询作业列表时，置顶作业会自动排在前面
+- **状态无关**：置顶功能与作业状态（未发布/已发布/已结束）无关
+- **事务保护**：置顶操作在事务中执行，确保数据一致性
+- **前端集成**：可以根据 `isPinned` 字段显示置顶标识（如 📌 图标）
 
 ---
 
@@ -804,6 +948,117 @@ removedAttachmentIds: [1, 2]
   8. 删除所有班级邀请申请记录（ClassInviteApplication）
   9. 最后删除班级信息（ClassInfo）
 - **不可恢复**：此操作不可逆，请谨慎使用
+
+---
+
+### 2.4.1 更新班级信息
+
+**接口地址**: `PUT /api/class/update`
+
+**请求头**:
+
+- Content-Type: application/json
+- 需要登录认证（JWT Token + CSRF Token）
+
+**权限要求**: 只有班级老师（包括创建者和班级助理）可以调用此接口
+
+**请求体**:
+
+```json
+{
+  "classId": 1,
+  "className": "计算机科学2024级1班",
+  "description": "这是班级的描述信息"
+}
+```
+
+**字段说明**:
+
+| 字段        | 类型    | 必填 | 说明                        |
+| ----------- | ------- | ---- | --------------------------- |
+| classId     | Integer | 是   | 班级 ID                     |
+| className   | String  | 是   | 班级名称，最长100字符       |
+| description | String  | 否   | 班级描述，最长500字符       |
+
+**请求示例**:
+
+```bash
+curl -X PUT http://localhost:8080/api/class/update \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
+  -d '{
+    "classId": 1,
+    "className": "软件工程2024级2班",
+    "description": "更新后的班级描述"
+  }'
+```
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "班级信息更新成功",
+  "data": {
+    "id": 1,
+    "className": "软件工程2024级2班",
+    "description": "更新后的班级描述",
+    "ownerId": 1001,
+    "inviteCode": "ABC123DEF456GHI789JKL012MN",
+    "approvalStatus": 1,
+    "adminRemark": null,
+    "createTime": "2026-04-01T10:00:00",
+    "updateTime": "2026-05-07T15:30:00"
+  }
+}
+```
+
+**响应字段说明**:
+
+| 字段           | 类型          | 说明                                    |
+| -------------- | ------------- | --------------------------------------- |
+| id             | Integer       | 班级 ID                                 |
+| className      | String        | 班级名称                                |
+| description    | String        | 班级描述                                |
+| ownerId        | Integer       | 班级创建者ID                            |
+| inviteCode     | String        | 班级邀请码（25位随机码）                |
+| approvalStatus | Integer       | 审核状态（0-待审核，1-已通过，2-已拒绝）|
+| adminRemark    | String        | 管理员审核备注                          |
+| createTime     | LocalDateTime | 创建时间                                |
+| updateTime     | LocalDateTime | 更新时间                                |
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "只有班级老师或助理可以修改班级信息",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- “班级 ID 不能为空”
+- “班级名称不能为空”
+- “班级名称长度不能超过 100 位”
+- “班级描述长度不能超过 500 位”
+- “班级不存在”
+- “只有班级老师或助理可以修改班级信息”
+- “更新班级信息失败”
+
+**注意**:
+
+- **权限控制**：只有班级老师（创建者或班级助理）可以修改班级信息
+- **字段限制**：
+  - 班级名称最多100字符
+  - 班级描述最多500字符
+- **不可修改的字段**：
+  - 班级ID、创建者ID、邀请码
+  - 审核状态、管理员备注、创建时间
+- **自动更新**：`updateTime` 字段会自动更新为当前时间
+- **事务保护**：更新操作在事务中执行，确保数据一致性
 
 ---
 
@@ -2957,6 +3212,196 @@ attachments: [file1.pdf, file2.docx]
   - 已打回 → 已批改：设置`isReturned=false`，将status改为2，恢复正常批改状态
 - **分数动态校验**：上限为作业的`totalScore`字段值，不再硬编码限制为100分
 - 例如：作业总分为150分时，学生可获得0-150分的评分
+
+---
+
+### 3.10 批量下载作业附件（教师专用）
+
+**接口地址**: `POST /api/submissions/batch-download`
+
+**请求头**:
+
+- Content-Type: application/json
+- Response-Type: application/zip
+- 需要登录认证（JWT Token + CSRF Token）
+
+**权限要求**: 只有班级老师可以调用此接口
+
+**请求体**:
+
+```json
+{
+  "workId": 1,
+  "fileNameFormat": "{username}-{userNo}_{originalFileName}",
+  "gradedOnly": null,
+  "lateOnly": null
+}
+```
+
+**字段说明**:
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| workId | Integer | 是 | 作业ID |
+| fileNameFormat | String | 否 | 文件名格式模板，默认：`{username}-{userNo}_{originalFileName}` |
+| gradedOnly | Boolean | 否 | 是否只下载已批改的作业（null-全部，true-已批改，false-未批改） |
+| lateOnly | Boolean | 否 | 是否只下载逾期提交的作业（null-全部，true-逾期，false-按时） |
+
+**文件名格式变量**:
+
+支持的变量占位符：
+
+- `{username}` - 用户名
+- `{userNo}` - 学号/工号
+- `{idName}` - 身份证姓名
+- `{workTitle}` - 作业标题
+- `{submissionId}` - 提交ID
+- `{originalFileName}` - 原始文件名
+
+**文件名格式示例**:
+
+1. **默认格式**: `{username}-{userNo}_{originalFileName}`
+   - 结果: `张三-2024001_实验报告.pdf`
+
+2. **包含作业标题**: `{username}-{userNo}_{workTitle}`
+   - 结果: `张三-2024001_第3次实验报告.pdf`
+
+3. **使用身份证姓名**: `{idName}-{userNo}_{originalFileName}`
+   - 结果: `张三丰-2024001_实验报告.pdf`
+
+4. **自定义格式**: `{userNo}_{username}_{originalFileName}`
+   - 结果: `2024001_张三_实验报告.pdf`
+
+**响应**:
+
+成功时直接返回ZIP文件流，浏览器会自动下载。
+
+**ZIP文件结构示例**:
+
+```
+第3次实验报告_作业附件.zip
+├── 张三-2024001/
+│   ├── 张三-2024001_实验报告.pdf
+│   └── 张三-2024001_代码.java
+├── 李四-2024002/
+│   └── 李四-2024002_实验报告.docx
+└── 王五-2024003/
+    ├── 王五-2024003_实验报告.pdf
+    └── 王五-2024003_截图.png
+```
+
+**请求示例**:
+
+```bash
+curl -X POST http://localhost:8080/api/submissions/batch-download \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
+  -d '{
+    "workId": 1,
+    "fileNameFormat": "{username}-{userNo}_{workTitle}",
+    "gradedOnly": false
+  }' \
+  --output 作业附件.zip
+```
+
+**JavaScript (Fetch API)**:
+
+```javascript
+fetch('/api/submissions/batch-download', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + token,
+    'X-CSRF-Token': csrfToken
+  },
+  body: JSON.stringify({
+    workId: 1,
+    fileNameFormat: '{username}-{userNo}_{workTitle}',
+    gradedOnly: null,
+    lateOnly: null
+  })
+})
+.then(response => response.blob())
+.then(blob => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '作业附件.zip';
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+})
+.catch(error => console.error('Download failed:', error));
+```
+
+**错误响应**:
+
+```json
+{
+  "code": 400,
+  "message": "作业不存在",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- “用户未登录”
+- “作业不存在”
+- “只有班级老师可以批量下载作业附件”
+- “没有找到符合条件的作业提交”
+- “该作业没有附件”
+
+**注意**:
+
+1. **权限控制**: 只有班级老师（包括创建者和班级助理）可以批量下载作业附件
+2. **文件命名**: 系统会自动清理文件名中的非法字符（如 `\ / : * ? " < > |`）
+3. **重复处理**: 如果同一学生有多个同名文件，系统会自动添加数字后缀避免冲突
+4. **筛选功能**: 可以通过 `gradedOnly` 和 `lateOnly` 参数筛选特定类型的提交
+5. **ZIP结构**: 每个学生的附件会放在以 `用户名-学号` 命名的子目录中
+6. **大文件处理**: 建议前端显示加载状态，因为打包大量文件可能需要较长时间
+
+**典型使用场景**:
+
+### 场景1: 下载所有学生的作业附件
+
+```json
+{
+  "workId": 1,
+  "fileNameFormat": "{username}-{userNo}_{originalFileName}"
+}
+```
+
+### 场景2: 只下载已批改的作业
+
+```json
+{
+  "workId": 1,
+  "fileNameFormat": "{username}-{userNo}_{workTitle}",
+  "gradedOnly": true
+}
+```
+
+### 场景3: 只下载逾期提交的作业
+
+```json
+{
+  "workId": 1,
+  "fileNameFormat": "{idName}-{userNo}_{originalFileName}",
+  "lateOnly": true
+}
+```
+
+### 场景4: 按学号排序的简洁命名
+
+```json
+{
+  "workId": 1,
+  "fileNameFormat": "{userNo}_{originalFileName}"
+}
+```
 
 ---
 

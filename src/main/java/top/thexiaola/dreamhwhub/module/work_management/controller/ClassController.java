@@ -7,11 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
-import top.thexiaola.dreamhwhub.module.work_management.dto.ApproveJoinClassRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.JoinClassRequest;
-import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.*;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassCreateApplication;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInvitation;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
@@ -82,6 +80,19 @@ public class ClassController {
         classService.dissolveClass(classId);
         log.info("User {} dissolved class successfully", userInfo);
         return ApiResponse.success(null);
+    }
+
+    /**
+     * 更新班级信息（老师或班级助理）
+     */
+    @PutMapping("/update")
+    public ApiResponse<ClassInfo> updateClassInfo(@Valid @RequestBody UpdateClassRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User {} requesting to update class info, ID: {}", userInfo, request.getClassId());
+        ClassInfo updatedClass = classService.updateClassInfo(request.getClassId(), request.getClassName(), request.getDescription());
+        log.info("User {} updated class info successfully", userInfo);
+        return ApiResponse.success(updatedClass, "班级信息更新成功");
     }
 
     /**

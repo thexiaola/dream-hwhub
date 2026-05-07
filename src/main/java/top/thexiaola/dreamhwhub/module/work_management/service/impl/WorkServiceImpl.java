@@ -324,8 +324,9 @@ public class WorkServiceImpl implements WorkService {
             queryWrapper.eq("publisher_id", publisherId);
         }
         
-        // 按创建时间倒序
-        queryWrapper.orderByDesc("create_time");
+        // 排序：置顶的作业在前，然后按创建时间倒序
+        queryWrapper.orderByDesc("is_pinned")
+                   .orderByDesc("create_time");
         
         // 执行分页查询
         Page<WorkInfo> workPage = new Page<>(pageNum, pageSize);
@@ -419,6 +420,7 @@ public class WorkServiceImpl implements WorkService {
                     response.setPublishTime(work.getPublishTime());
                     response.setStatus(calculateWorkStatus(work)); // 动态计算状态
                     response.setIsOverdue(work.getDeadline() != null && now.isAfter(work.getDeadline()));
+                    response.setIsPinned(work.getIsPinned());
                     response.setCreateTime(work.getCreateTime());
                     response.setUpdateTime(work.getUpdateTime());
                     
@@ -646,5 +648,40 @@ public class WorkServiceImpl implements WorkService {
         // 4. 最后删除作业本身
         workMapper.deleteById(workId);
         log.info("Deleted work {} and soft deleted all related data", workId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public WorkInfo pinWork(Integer workId, Boolean isPinned) {
+        // 1. 获取当前用户
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 2. 查询作业
+        WorkInfo workInfo = workMapper.selectById(workId);
+        if (workInfo == null) {
+            throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
+        }
+
+        // 3. 验证权限（只有班级老师可以置顶作业）
+        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以置顶作业", null);
+        }
+
+        // 4. 更新置顶状态
+        workInfo.setIsPinned(isPinned);
+        workInfo.setUpdateTime(LocalDateTime.now());
+        
+        int updated = workMapper.updateById(workInfo);
+        if (updated <= 0) {
+            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新作业置顶状态失败", null);
+        }
+
+        String action = isPinned ? "pinned" : "unpinned";
+        log.info("User {} {} work {} successfully", currentUser.getId(), action, workId);
+        
+        return workInfo;
     }
 }

@@ -107,12 +107,14 @@ CREATE TABLE IF NOT EXISTS `work_info` (
     `deadline` DATETIME DEFAULT NULL COMMENT '截止时间',
     `total_score` INT NOT NULL DEFAULT 100 COMMENT '作业总分',
     `allow_late_submit` BIT(1) NOT NULL DEFAULT b'1' COMMENT '是否允许逾期提交：0-否，1-是',
+    `is_pinned` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否置顶：0-否，1-是',
     `publish_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_publisher_id (`publisher_id`),
     INDEX idx_class_id (`class_id`),
-    INDEX idx_class_publish_deadline (`class_id`, `publish_time`, `deadline`)
+    INDEX idx_class_publish_deadline (`class_id`, `publish_time`, `deadline`),
+    INDEX idx_is_pinned (`is_pinned`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='作业表';
 
 -- 作业附件表

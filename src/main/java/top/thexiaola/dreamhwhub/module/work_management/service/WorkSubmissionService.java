@@ -1,7 +1,9 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
@@ -28,9 +30,13 @@ public interface WorkSubmissionService {
      *
      * @param submissionId 提交 ID
      * @param submissionContent 提交内容
+     * @param attachments 新增的附件文件列表
+     * @param removedAttachmentIds 要删除的附件ID列表
      * @return 更新后的提交（不包含批改信息）
      */
-    WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent);
+    WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent, 
+                                                   List<org.springframework.web.multipart.MultipartFile> attachments,
+                                                   List<Integer> removedAttachmentIds);
 
     /**
      * 删除提交的作业
@@ -89,4 +95,12 @@ public interface WorkSubmissionService {
      * @return 未交学生列表（仅包含学生基本信息）
      */
     List<User> getUnsubmittedStudents(Integer workId);
+
+    /**
+     * 批量下载作业附件（打包成ZIP）
+     *
+     * @param request 批量下载请求
+     * @param response HTTP响应对象
+     */
+    void batchDownloadAttachments(BatchDownloadAttachmentsRequest request, HttpServletResponse response);
 }

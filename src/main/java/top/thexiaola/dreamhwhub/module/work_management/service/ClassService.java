@@ -199,6 +199,16 @@ public interface ClassService {
     void approveJoinApplication(Integer applicationId, Boolean approved, String comment);
 
     /**
+     * 更新班级信息（老师或班级助理）
+     *
+     * @param classId 班级 ID
+     * @param className 班级名称
+     * @param description 班级描述
+     * @return 更新后的班级信息
+     */
+    ClassInfo updateClassInfo(Integer classId, String className, String description);
+
+    /**
      * 教师邀请用户加入班级（需用户同意）
      */
     ClassInvitation inviteUserToClassWithApproval(Integer classId, String userAccount);

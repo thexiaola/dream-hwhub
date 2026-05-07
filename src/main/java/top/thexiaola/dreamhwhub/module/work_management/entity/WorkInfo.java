@@ -69,6 +69,12 @@ public class WorkInfo implements Serializable {
     private Boolean allowLateSubmit = true;
 
     /**
+     * 是否置顶：true-置顶，false-不置顶
+     */
+    @TableField("is_pinned")
+    private Boolean isPinned = false;
+
+    /**
      * 发布时间
      */
     @TableField("publish_time")

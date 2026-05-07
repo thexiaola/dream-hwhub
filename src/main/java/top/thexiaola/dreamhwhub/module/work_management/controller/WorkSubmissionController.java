@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
@@ -67,16 +69,18 @@ public class WorkSubmissionController {
     /**
      * 更新提交的作业
      */
-    @PutMapping("/update")
+    @PutMapping(value = "/update", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> updateSubmission(
             @RequestParam Integer submissionId,
-            @RequestParam String submissionContent) {
+            @RequestParam(required = false) String submissionContent,
+            @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments,
+            @RequestParam(value = "removedAttachmentIds", required = false) List<Integer> removedAttachmentIds) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             
-            WorkSubmissionSubmitResponse response = workSubmissionService.updateSubmission(submissionId, submissionContent);
+            WorkSubmissionSubmitResponse response = workSubmissionService.updateSubmission(submissionId, submissionContent, attachments, removedAttachmentIds);
             log.info("User ({}) updated submission, id: {}", userInfo, response.getId());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (BusinessException e) {
@@ -220,6 +224,29 @@ public class WorkSubmissionController {
         } catch (BusinessException e) {
             log.warn("User grade work failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
+    }
+
+    /**
+     * 批量下载作业附件（教师专用，打包成ZIP）
+     */
+    @PostMapping(value = "/batch-download", produces = "application/zip")
+    public void batchDownloadAttachments(@Valid @RequestBody BatchDownloadAttachmentsRequest request,
+                                         jakarta.servlet.http.HttpServletResponse response) {
+        String ip = LogUtil.getCurrentClientIp();
+        User user = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfoString(ip, user);
+        log.info("User ({}) requesting batch download for work {}", userInfo, request.getWorkId());
+        
+        try {
+            workSubmissionService.batchDownloadAttachments(request, response);
+            log.info("User ({}) batch download completed successfully", userInfo);
+        } catch (BusinessException e) {
+            log.warn("User batch download failed: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (Exception e) {
+            log.error("User batch download error", e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 }

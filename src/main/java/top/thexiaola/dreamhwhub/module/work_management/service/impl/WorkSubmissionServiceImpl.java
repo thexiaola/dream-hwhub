@@ -3,6 +3,7 @@ package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
@@ -31,6 +33,10 @@ import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionSubmitResponseMappe
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * 作业提交服务实现类
@@ -268,7 +276,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent) {
+    public WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent,
+                                                          List<MultipartFile> attachments,
+                                                          List<Integer> removedAttachmentIds) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -299,15 +309,48 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             }
         }
 
-        // 更新提交内容
-        submission.setSubmissionContent(submissionContent);
+        // 1. 处理附件删除
+        if (CollUtil.isNotEmpty(removedAttachmentIds)) {
+            for (Integer attachmentId : removedAttachmentIds) {
+                WorkSubmissionAttachment attachment = workSubmissionAttachmentMapper.selectById(attachmentId);
+                if (attachment != null && attachment.getSubmissionId().equals(submissionId)) {
+                    // 物理删除文件
+                    try {
+                        Path filePath = Paths.get(attachment.getFilePath());
+                        if (Files.exists(filePath)) {
+                            Files.delete(filePath);
+                            log.info("Deleted submission attachment file: {}", attachment.getFilePath());
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to delete submission attachment file: {}", attachment.getFilePath(), e);
+                    }
+                    // 删除数据库记录
+                    workSubmissionAttachmentMapper.deleteById(attachmentId);
+                    log.info("Deleted submission attachment record: id={}", attachmentId);
+                }
+            }
+        }
+
+        // 2. 处理新附件上传
+        if (CollUtil.isNotEmpty(attachments)) {
+            saveSubmissionAttachmentsDirectly(currentUser.getId(), submissionId, attachments);
+        }
+
+        // 3. 更新提交内容
+        if (submissionContent != null) {
+            submission.setSubmissionContent(submissionContent);
+        }
         submission.setStatus(1); // 重置为已提交状态
         submission.setUpdateTime(LocalDateTime.now());
 
         workSubmissionMapper.updateById(submission);
         
-        // 转换为响应VO（不包含批改信息）
-        return submissionSubmitResponseMapper.toSubmitResponse(submission);
+        // 4. 构建响应（包含更新后的附件列表）
+        WorkSubmissionSubmitResponse response = submissionSubmitResponseMapper.toSubmitResponse(submission);
+        List<WorkSubmissionSubmitResponse.AttachmentInfo> attachmentInfos = getSubmissionAttachmentsForSubmitResponse(submissionId);
+        response.setAttachments(attachmentInfos);
+        
+        return response;
     }
 
     @Override
@@ -734,6 +777,26 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
     
     /**
+     * 获取提交附件列表（用于SubmitResponse）
+     */
+    private List<WorkSubmissionSubmitResponse.AttachmentInfo> getSubmissionAttachmentsForSubmitResponse(Integer submissionId) {
+        QueryWrapper<WorkSubmissionAttachment> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("submission_id", submissionId);
+        List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(queryWrapper);
+        
+        return attachments.stream()
+                .map(attachment -> new WorkSubmissionSubmitResponse.AttachmentInfo(
+                        attachment.getId(),
+                        attachment.getFileName(),
+                        attachment.getFilePath(),
+                        attachment.getFileSize(),
+                        attachment.getFileType(),
+                        attachment.getUploadTime()
+                ))
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * 检查作业是否已发布（在发布时间内）
      * @param workInfo 作业信息
      * @return true-已发布，false-未发布或已结束
@@ -743,6 +806,240 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         
         // 如果当前时间在发布时间之前，未发布
         return workInfo.getPublishTime() == null || !now.isBefore(workInfo.getPublishTime());
+    }
+
+    @Override
+    public void batchDownloadAttachments(BatchDownloadAttachmentsRequest request, HttpServletResponse response) {
+        // 1. 获取当前用户并验证权限
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        // 2. 查询作业信息
+        WorkInfo workInfo = workMapper.selectById(request.getWorkId());
+        if (workInfo == null) {
+            throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
+        }
+
+        // 3. 验证权限（只有班级老师可以批量下载）
+        if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以批量下载作业附件", null);
+        }
+
+        // 4. 构建查询条件
+        QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
+        submissionQuery.eq("work_id", request.getWorkId())
+                      .eq("is_deleted", false);
+
+        // 根据筛选条件过滤
+        if (request.getGradedOnly() != null) {
+            if (request.getGradedOnly()) {
+                submissionQuery.eq("status", 2); // 已批改
+            } else {
+                submissionQuery.ne("status", 2); // 未批改
+            }
+        }
+
+        if (request.getLateOnly() != null) {
+            submissionQuery.eq("is_late", request.getLateOnly());
+        }
+
+        submissionQuery.orderByAsc("submitter_id");
+
+        // 5. 查询所有提交记录
+        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
+        if (submissions.isEmpty()) {
+            throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "没有找到符合条件的作业提交", null);
+        }
+
+        // 6. 批量查询学生信息
+        Set<Integer> submitterIds = submissions.stream()
+                .map(WorkSubmission::getSubmitterId)
+                .collect(Collectors.toSet());
+        
+        QueryWrapper<User> userQuery = new QueryWrapper<>();
+        userQuery.in("id", submitterIds);
+        List<User> users = userMapper.selectList(userQuery);
+        Map<Integer, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        // 7. 批量查询附件
+        List<Integer> submissionIds = submissions.stream()
+                .map(WorkSubmission::getId)
+                .collect(Collectors.toList());
+        
+        QueryWrapper<WorkSubmissionAttachment> attachmentQuery = new QueryWrapper<>();
+        attachmentQuery.in("submission_id", submissionIds)
+                      .eq("is_deleted", false);
+        List<WorkSubmissionAttachment> allAttachments = workSubmissionAttachmentMapper.selectList(attachmentQuery);
+
+        if (allAttachments.isEmpty()) {
+            throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, "该作业没有附件", null);
+        }
+
+        // 8. 按提交ID分组附件
+        Map<Integer, List<WorkSubmissionAttachment>> attachmentsBySubmission = allAttachments.stream()
+                .collect(Collectors.groupingBy(WorkSubmissionAttachment::getSubmissionId));
+
+        // 9. 设置响应头
+        String zipFileName = workInfo.getTitle() + "_作业附件.zip";
+        try {
+            String encodedFileName = URLEncoder.encode(zipFileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setContentType("application/zip");
+            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+        } catch (Exception e) {
+            log.error("Failed to encode zip file name", e);
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + zipFileName + "\"");
+        }
+
+        // 10. 创建ZIP文件并写入
+        try (ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
+            int fileCount = 0;
+
+            for (WorkSubmission submission : submissions) {
+                List<WorkSubmissionAttachment> attachments = attachmentsBySubmission.get(submission.getId());
+                if (attachments == null || attachments.isEmpty()) {
+                    continue;
+                }
+
+                User student = userMap.get(submission.getSubmitterId());
+                if (student == null) {
+                    log.warn("Student not found for submission: {}", submission.getId());
+                    continue;
+                }
+
+                // 为每个学生的附件创建子目录
+                String studentDir = sanitizeFileName(student.getUsername() + "-" + student.getUserNo()) + "/";
+
+                for (WorkSubmissionAttachment attachment : attachments) {
+                    try {
+                        // 生成自定义文件名
+                        String customFileName = generateCustomFileName(
+                                request.getFileNameFormat(),
+                                student,
+                                workInfo,
+                                submission,
+                                attachment
+                        );
+
+                        String zipEntryName = studentDir + customFileName;
+
+                        // 确保文件名不重复（如果同一学生有多个同名文件）
+                        zipEntryName = ensureUniqueEntryName(zipOut, zipEntryName);
+
+                        // 添加ZIP条目
+                        ZipEntry zipEntry = new ZipEntry(zipEntryName);
+                        zipOut.putNextEntry(zipEntry);
+
+                        // 读取文件内容并写入ZIP
+                        Path filePath = Paths.get(attachment.getFilePath());
+                        if (Files.exists(filePath)) {
+                            try (InputStream inputStream = Files.newInputStream(filePath)) {
+                                byte[] buffer = new byte[8192];
+                                int bytesRead;
+                                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                                    zipOut.write(buffer, 0, bytesRead);
+                                }
+                            }
+                            fileCount++;
+                        } else {
+                            log.warn("File not found: {}", attachment.getFilePath());
+                        }
+
+                        zipOut.closeEntry();
+                    } catch (IOException e) {
+                        log.error("Failed to add file to zip: {}", attachment.getFileName(), e);
+                    }
+                }
+            }
+
+            zipOut.finish();
+            log.info("Batch download completed: {} files added to zip", fileCount);
+
+        } catch (IOException e) {
+            log.error("Failed to create zip file", e);
+            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "打包文件失败", null);
+        }
+    }
+
+    /**
+     * 生成自定义文件名
+     */
+    private String generateCustomFileName(String format, User student, WorkInfo workInfo,
+                                          WorkSubmission submission, WorkSubmissionAttachment attachment) {
+        String fileName = format;
+
+        // 替换变量
+        fileName = fileName.replace("{username}", sanitizeFileName(student.getUsername()));
+        fileName = fileName.replace("{userNo}", sanitizeFileName(student.getUserNo()));
+        fileName = fileName.replace("{idName}", sanitizeFileName(student.getIdName() != null ? student.getIdName() : ""));
+        fileName = fileName.replace("{workTitle}", sanitizeFileName(workInfo.getTitle()));
+        fileName = fileName.replace("{submissionId}", String.valueOf(submission.getId()));
+        fileName = fileName.replace("{originalFileName}", sanitizeFileName(attachment.getFileName()));
+
+        // 保留原始扩展名
+        String originalExtension = getFileExtension(attachment.getFileName());
+        if (!fileName.toLowerCase().endsWith(originalExtension.toLowerCase())) {
+            fileName += originalExtension;
+        }
+
+        return fileName;
+    }
+
+    /**
+     * 清理文件名中的非法字符
+     */
+    private String sanitizeFileName(String fileName) {
+        if (fileName == null) {
+            return "";
+        }
+        // 替换Windows和Linux文件系统不允许的字符
+        return fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
+    }
+
+    /**
+     * 获取文件扩展名
+     */
+    private String getFileExtension(String fileName) {
+        if (fileName == null || !fileName.contains(".")) {
+            return "";
+        }
+        return fileName.substring(fileName.lastIndexOf("."));
+    }
+
+    /**
+     * 确保ZIP条目名称唯一
+     */
+    private String ensureUniqueEntryName(ZipOutputStream zipOut, String entryName) {
+        // 简单策略：如果名称已存在，添加数字后缀
+        String extension = getFileExtension(entryName);
+        String nameWithoutExt = entryName.substring(0, entryName.length() - extension.length());
+        
+        int counter = 1;
+        while (true) {
+            try {
+                // 尝试创建条目，如果成功则返回
+                zipOut.putNextEntry(new ZipEntry(entryName));
+                zipOut.closeEntry();
+                return entryName;
+            } catch (IllegalArgumentException e) {
+                // 条目已存在，生成新名称
+                entryName = nameWithoutExt + "_" + counter + extension;
+                counter++;
+                if (counter > 100) {
+                    // 防止无限循环
+                    return entryName;
+                }
+            } catch (IOException e) {
+                // IO异常，生成新名称
+                entryName = nameWithoutExt + "_" + counter + extension;
+                counter++;
+                if (counter > 100) {
+                    return entryName;
+                }
+            }
+        }
     }
     
 }

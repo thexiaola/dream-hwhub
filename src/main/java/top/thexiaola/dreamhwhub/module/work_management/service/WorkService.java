@@ -52,4 +52,13 @@ public interface WorkService {
      * @return 作业分页结果
      */
     Page<WorkResponse> getWorkList(String teacherNo, Integer status, Integer pageNum, Integer pageSize);
+
+    /**
+     * 置顶/取消置顶作业
+     *
+     * @param workId 作业 ID
+     * @param isPinned 是否置顶
+     * @return 更新后的作业信息
+     */
+    WorkInfo pinWork(Integer workId, Boolean isPinned);
 }

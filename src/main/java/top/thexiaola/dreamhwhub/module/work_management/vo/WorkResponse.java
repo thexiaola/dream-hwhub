@@ -76,6 +76,11 @@ public class WorkResponse {
     private Boolean isOverdue;
 
     /**
+     * 是否置顶
+     */
+    private Boolean isPinned;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;

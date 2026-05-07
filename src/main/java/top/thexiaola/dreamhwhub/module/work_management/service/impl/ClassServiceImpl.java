@@ -575,6 +575,40 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ClassInfo updateClassInfo(Integer classId, String className, String description) {
+        // 1. 获取当前用户
+        User currentUser = getCurrentUserOrThrow();
+
+        // 2. 查询班级信息
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        // 3. 验证权限（只有老师或班级助理可以修改）
+        boolean isTeacher = isTeacher(classId, currentUser.getId());
+        if (!isTeacher) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或助理可以修改班级信息", null);
+        }
+
+        // 4. 更新班级信息
+        classInfo.setClassName(className);
+        classInfo.setDescription(description);
+        classInfo.setUpdateTime(LocalDateTime.now());
+        
+        int updated = classInfoMapper.updateById(classInfo);
+        if (updated <= 0) {
+            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新班级信息失败", null);
+        }
+
+        log.info("User {} updated class info for class {}: name={}, description={}", 
+                currentUser.getId(), classId, className, description);
+        
+        return classInfo;
+    }
+
+    @Override
     public List<ClassInfo> getUserClasses(Integer userId) {
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("user_id", userId);
