@@ -61,7 +61,7 @@ public class ClassController {
     /**
      * 退出班级
      */
-    @PostMapping("/leave")
+    @DeleteMapping("/leave")
     public ApiResponse<Void> leaveClass(@RequestParam Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);

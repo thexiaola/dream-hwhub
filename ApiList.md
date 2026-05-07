@@ -24,7 +24,34 @@
 
 ### 认证方式
 
-所有接口均需要登录认证，通过 Session 传递用户信息。
+所有接口均需要登录认证，使用 **JWT Token** 进行身份验证。
+
+**请求头要求**:
+- `Authorization`: `Bearer <jwt_token>` - JWT认证Token（所有接口必需）
+- `X-CSRF-Token`: `<csrf_token>` - CSRF防护Token（POST/PUT/DELETE/PATCH请求必需）
+
+**获取Token流程**:
+1. 调用登录接口 `/api/auth/login` 获取 JWT Token
+2. 基于 JWT Token 生成 CSRF Token（使用 HMAC-SHA256 算法）
+3. 后续请求在 Header 中携带这两个 Token
+
+**CSRF Token 生成示例**（前端）:
+```javascript
+// 使用 HMAC-SHA256 生成 CSRF Token
+function generateCsrfToken(jwtToken) {
+  return CryptoJS.HmacSHA256(jwtToken, jwtSecret).toString(CryptoJS.enc.Base64);
+}
+```
+
+**请求示例**:
+```javascript
+axios.get('/api/works/list', {
+  headers: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    'X-CSRF-Token': 'dGhpcyBpcyBhIGNzcmYgdG9rZW4...'
+  }
+});
+```
 
 ### 响应格式
 
@@ -70,7 +97,7 @@
 **请求头**:
 
 - Content-Type: multipart/form-data
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求参数** (multipart/form-data):
 
@@ -172,6 +199,7 @@ attachments: [file1.pdf, file2.doc]
 - **禁止过去时间**：不允许设置过去的时间作为发布时间，会返回400错误
 - **直接上传附件**：通过 `attachments` 参数直接上传文件，无需预先调用文件上传接口
 - **文件安全检查**：系统会对上传的文件进行病毒扫描、文件类型白名单验证等安全检查
+- **文件大小限制**：默认单个文件最大 50MB（由业务层控制，不同场景可能不同）
 - **文件存储位置**：`uploads/works/` 目录
 
 ---
@@ -183,7 +211,7 @@ attachments: [file1.pdf, file2.doc]
 **请求头**:
 
 - Content-Type: multipart/form-data
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求参数** (multipart/form-data):
 
@@ -531,7 +559,7 @@ removedAttachmentIds: [1, 2]
 **请求头**:
 
 - Content-Type: application/json
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求体**:
 
@@ -609,7 +637,7 @@ removedAttachmentIds: [1, 2]
 **请求头**:
 
 - Content-Type: application/json
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求体**:
 
@@ -1211,7 +1239,7 @@ removedAttachmentIds: [1, 2]
 **请求头**:
 
 - Content-Type: application/json
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求体**:
 
@@ -1350,7 +1378,7 @@ removedAttachmentIds: [1, 2]
 **请求头**:
 
 - Content-Type: application/json
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求体**:
 
@@ -1638,7 +1666,7 @@ removedAttachmentIds: [1, 2]
 **请求头**:
 
 - Content-Type: application/json
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求体**:
 
@@ -2202,7 +2230,7 @@ removedAttachmentIds: [1, 2]
 **请求头**:
 
 - Content-Type: multipart/form-data
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求参数** (multipart/form-data):
 
@@ -2833,7 +2861,7 @@ attachments: [file1.pdf, file2.docx]
 **请求头**:
 
 - Content-Type: application/json
-- 需要登录认证（Session）
+- 需要登录认证（JWT Token + CSRF Token）
 
 **请求体**:
 
