@@ -1,4 +1,3 @@
----
 trigger: always_on
 ---
 
@@ -10,3 +9,5 @@ trigger: always_on
 6. For single-line comment content, line comments should be prioritized over block comments.
 7. In `import` statements, wildcard usage is prohibited.
 8. Do not extract data from return messages; parameters must be passed manually. Extracting any hard-coded data is prohibited.
+9. In Java code, the use of fully qualified class names is strictly prohibited (e.g., `java.util.List`, `java.util.ArrayList`). All dependent classes must be imported using standard `import` statements, and only simple class names are allowed in the code body.
+10. After modifying the database structure, there is no need to create new database change files. Treat it as a development environment with no existing data; modify the original database file directly.
