@@ -353,7 +353,9 @@ public class WorkServiceImpl implements WorkService {
         // 批量查询用户信息
         final Map<Integer, User> userMap;
         if (!publisherIds.isEmpty()) {
-            List<User> users = userMapper.selectBatchIds(publisherIds);
+            QueryWrapper<User> userQuery = new QueryWrapper<>();
+            userQuery.in("id", publisherIds);
+            List<User> users = userMapper.selectList(userQuery);
             userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
         } else {
             userMap = new HashMap<>();

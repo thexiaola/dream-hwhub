@@ -682,7 +682,9 @@ public class ClassServiceImpl implements ClassService {
         if (classIds == null || classIds.isEmpty()) {
             return Collections.emptyList();
         }
-        return classInfoMapper.selectBatchIds(classIds);
+        QueryWrapper<ClassInfo> query = new QueryWrapper<>();
+        query.in("id", classIds);
+        return classInfoMapper.selectList(query);
     }
 
     @Override
@@ -753,7 +755,9 @@ public class ClassServiceImpl implements ClassService {
         // 批量查询班级信息
         final Map<Integer, ClassInfo> classMap;
         if (!classIds.isEmpty()) {
-            List<ClassInfo> classes = classInfoMapper.selectBatchIds(classIds);
+            QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
+            classQuery.in("id", classIds);
+            List<ClassInfo> classes = classInfoMapper.selectList(classQuery);
             classMap = classes.stream().collect(Collectors.toMap(ClassInfo::getId, c -> c));
         } else {
             classMap = new HashMap<>();
@@ -768,7 +772,9 @@ public class ClassServiceImpl implements ClassService {
         // 批量查询用户信息
         final Map<Integer, User> userMap;
         if (!ownerIds.isEmpty()) {
-            List<User> users = userMapper.selectBatchIds(ownerIds);
+            QueryWrapper<User> userQuery = new QueryWrapper<>();
+            userQuery.in("id", ownerIds);
+            List<User> users = userMapper.selectList(userQuery);
             userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
         } else {
             userMap = new HashMap<>();
@@ -904,7 +910,9 @@ public class ClassServiceImpl implements ClassService {
         // 批量查询用户信息
         final Map<Integer, User> userMap;
         if (!userIds.isEmpty()) {
-            List<User> users = userMapper.selectBatchIds(userIds);
+            QueryWrapper<User> userQuery = new QueryWrapper<>();
+            userQuery.in("id", userIds);
+            List<User> users = userMapper.selectList(userQuery);
             userMap = users.stream().collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
         } else {
             userMap = new HashMap<>();
