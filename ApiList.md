@@ -1500,7 +1500,7 @@ curl -X PATCH http://localhost:8080/api/works/1/pin \
 
 ---
 
-### 4.4.1 更新班级信息
+### 4.5 更新班级信息
 
 **接口地址**: `PUT /api/class/{classId}`
 
@@ -1611,7 +1611,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.5 获取班级详情
+### 4.6 获取班级详情
 
 **接口地址**: `GET /api/class/{classId}`
 
@@ -1678,7 +1678,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.6 获取我加入的班级列表（分页）
+### 4.7 获取我加入的班级列表（分页）
 
 **接口地址**: `GET /api/class/mine`
 
@@ -1768,7 +1768,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.7 获取班级成员列表（分页）
+### 4.8 获取班级成员列表（分页）
 
 **接口地址**: `GET /api/class/{classId}/members`
 
@@ -1864,7 +1864,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.8 检查用户是否在指定班级中
+### 4.9 检查用户是否在指定班级中
 
 **接口地址**: `GET /api/class/{classId}/membership`
 
@@ -1957,7 +1957,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.9 获取创建班级申请列表（管理员专用）
+### 4.10 获取创建班级申请列表（管理员专用）
 
 **接口地址**: `GET /api/class/applications/create/list`
 
@@ -2036,7 +2036,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.10 审核创建班级申请（管理员专用）
+### 4.11 审核创建班级申请（管理员专用）
 
 **接口地址**: `PUT /api/class/applications/create/approve`
 
@@ -2096,7 +2096,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.11 获取加入班级申请列表（老师和管理员专用）
+### 4.12 获取加入班级申请列表（老师和管理员专用）
 
 **接口地址**: `GET /api/class/applications/join/list`
 
@@ -2175,7 +2175,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.12 审核加入班级申请（老师和管理员专用）
+### 4.13 审核加入班级申请（老师和管理员专用）
 
 **接口地址**: `PUT /api/class/applications/join/approve`
 
@@ -2236,7 +2236,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.13 设置学生为班级助理（老师专用）
+### 4.14 设置学生为班级助理（老师专用）
 
 **接口地址**: `PUT /api/class/{classId}/assistants`
 
@@ -2277,7 +2277,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.14 将学生踢出班级（老师/班级助理专用）
+### 4.15 将学生踢出班级（老师/班级助理专用）
 
 **接口地址**: `DELETE /api/class/{classId}/members/{studentUserId}`
 
@@ -2327,7 +2327,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.15 取消班级助理权限（降级为学生，仅创建者可用）
+### 4.16 取消班级助理权限（降级为学生，仅创建者可用）
 
 **接口地址**: `DELETE /api/class/{classId}/assistants/{teacherUserId}`
 
@@ -2367,7 +2367,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.16 学生邀请用户加入班级（需要用户确认和教师审核）
+### 4.17 学生邀请用户加入班级（需要用户确认和教师审核）
 
 **接口地址**: `POST /api/class/{classId}/invitations`
 
@@ -2417,7 +2417,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.17 被邀请用户响应邀请（同意/拒绝）
+### 4.18 被邀请用户响应邀请（同意/拒绝）
 
 **接口地址**: `PUT /api/class/invitations/{invitationId}`
 
@@ -2463,7 +2463,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.18 教师或助理审核邀请申请
+### 4.19 教师或助理审核邀请申请
 
 **接口地址**: `PUT /api/class/invitations/{applicationId}/approval`
 
@@ -2527,7 +2527,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.19 获取待教师审核的邀请列表（班级老师/助理专用）
+### 4.20 获取待教师审核的邀请列表（班级老师/助理专用）
 
 **接口地址**: `GET /api/class/{classId}/invitations/pending`
 
@@ -2663,7 +2663,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.20 教师邀请用户加入班级（需用户同意）
+### 4.21 教师邀请用户加入班级（需用户同意）
 
 **接口地址**: `POST /api/class/{classId}/invitations/teacher`
 
@@ -2732,7 +2732,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.21 获取我收到的邀请列表
+### 4.22 获取我收到的邀请列表
 
 **接口地址**: `GET /api/class/my-invitations`
 
@@ -2801,7 +2801,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.22 响应邀请（同意/拒绝）
+### 4.23 响应邀请（同意/拒绝）
 
 **接口地址**: `PUT /api/class/invitations/{invitationId}`
 
@@ -2847,7 +2847,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.23 生成/刷新班级邀请码（教师专用）
+### 4.24 生成/刷新班级邀请码（教师专用）
 
 **接口地址**: `POST /api/class/{classId}/invite-code`
 
@@ -2900,7 +2900,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.24 通过邀请码加入班级
+### 4.25 通过邀请码加入班级
 
 **接口地址**: `POST /api/class/join-by-code`
 
@@ -2972,7 +2972,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.24 转让班级所有权（仅创建者）
+### 4.26 转让班级所有权（仅创建者）
 
 **接口地址**: `PUT /api/class/{classId}/owner`
 
