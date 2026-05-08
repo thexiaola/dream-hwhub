@@ -32,7 +32,7 @@ public class WorkController {
     /**
      * 创建作业
      */
-    @PostMapping(value = "/create", consumes = "multipart/form-data")
+    @PostMapping(value = "/", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkInfo>> createWork(@Validated CreateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
@@ -57,12 +57,15 @@ public class WorkController {
     /**
      * 更新作业
      */
-    @PutMapping(value = "/update", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<WorkInfo>> updateWork(@Validated UpdateWorkRequest request) {
+    @PutMapping(value = "/{workId}", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<WorkInfo>> updateWork(@PathVariable Integer workId, @Validated UpdateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             // 执行自定义校验（XSS防护）
             request.validate();
+            
+            // 使用路径参数覆盖请求体中的ID，确保一致性
+            request.setId(workId);
             
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
@@ -82,8 +85,8 @@ public class WorkController {
     /**
      * 删除作业
      */
-    @DeleteMapping("/delete")
-    public ResponseEntity<ApiResponse<Void>> deleteWork(@RequestParam Integer workId) {
+    @DeleteMapping("/{workId}")
+    public ResponseEntity<ApiResponse<Void>> deleteWork(@PathVariable Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
@@ -101,8 +104,8 @@ public class WorkController {
     /**
      * 查询作业详情
      */
-    @GetMapping("/detail")
-    public ResponseEntity<ApiResponse<WorkInfo>> getWorkDetail(@RequestParam Integer workId) {
+    @GetMapping("/{workId}")
+    public ResponseEntity<ApiResponse<WorkInfo>> getWorkDetail(@PathVariable Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
@@ -120,7 +123,7 @@ public class WorkController {
     /**
      * 查询作业列表
      */
-    @GetMapping("/list")
+    @GetMapping("/")
     public ResponseEntity<ApiResponse<Page<WorkResponse>>> getWorkList(
             @RequestParam(required = false) String publisherUserNo,
             @RequestParam(required = false) Integer status,
@@ -141,10 +144,13 @@ public class WorkController {
     /**
      * 置顶/取消置顶作业
      */
-    @PutMapping("/pin")
-    public ResponseEntity<ApiResponse<WorkInfo>> pinWork(@Validated @RequestBody PinWorkRequest request) {
+    @PatchMapping("/{workId}/pin")
+    public ResponseEntity<ApiResponse<WorkInfo>> pinWork(@PathVariable Integer workId, @Validated @RequestBody PinWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            // 使用路径参数覆盖请求体中的ID，确保一致性
+            request.setWorkId(workId);
+            
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             

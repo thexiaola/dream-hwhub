@@ -32,7 +32,7 @@ public class ClassController {
     /**
      * 提交创建班级申请
      */
-    @PostMapping("/create")
+    @PostMapping("/")
     public ApiResponse<CreateClassApplicationResponse> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -46,12 +46,12 @@ public class ClassController {
     /**
      * 提交加入班级申请
      */
-    @PostMapping("/join")
-    public ApiResponse<JoinClassApplicationResponse> applyJoinClass(@Valid @RequestBody JoinClassRequest request) {
+    @PostMapping("/{classId}/applications/join")
+    public ApiResponse<JoinClassApplicationResponse> applyJoinClass(@PathVariable Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} applying to join class by ID: {}", userInfo, request.getClassId());
-        JoinClassApplicationResponse response = classService.submitJoinClassRequest(request.getClassId());
+        log.info("User {} applying to join class by ID: {}", userInfo, classId);
+        JoinClassApplicationResponse response = classService.submitJoinClassRequest(classId);
         log.info("User {} submitted join class application, role: STUDENT", userInfo);
         return ApiResponse.success(response, "加入班级的申请已提交，待审核");
     }
@@ -59,38 +59,40 @@ public class ClassController {
     /**
      * 退出班级
      */
-    @DeleteMapping("/leave")
-    public ApiResponse<Void> leaveClass(@RequestParam Integer classId) {
+    @DeleteMapping("/{classId}/members/me")
+    public ApiResponse<Void> leaveClass(@PathVariable Integer classId) {
+        String ip = LogUtil.getCurrentClientIp();
         User currentUser = UserUtils.getCurrentUser();
-        String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} requesting to leave class, ID: {}", userInfo, classId);
+        String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+        log.info("User ({}) requesting to leave class, ID: {}", userInfo, classId);
         String className = classService.leaveClass(classId);
-        log.info("User {} left class successfully", userInfo);
-        return ApiResponse.success(null, "已成功退出“" + className + "”班级");
+        log.info("User ({}) left class successfully, class name: {}", userInfo, className);
+        return ApiResponse.success(null, "已成功退出\"" + className + "\"班级");
     }
 
     /**
      * 解散班级（仅创建者）
      */
-    @DeleteMapping("/dissolve")
-    public ApiResponse<Void> dissolveClass(@RequestParam Integer classId) {
+    @DeleteMapping("/{classId}")
+    public ApiResponse<Void> dissolveClass(@PathVariable Integer classId) {
+        String ip = LogUtil.getCurrentClientIp();
         User currentUser = UserUtils.getCurrentUser();
-        String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} requesting to dissolve class, ID: {}", userInfo, classId);
+        String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+        log.info("User ({}) requesting to dissolve class, ID: {}", userInfo, classId);
         classService.dissolveClass(classId);
-        log.info("User {} dissolved class successfully", userInfo);
+        log.info("User ({}) dissolved class successfully, class ID: {}", userInfo, classId);
         return ApiResponse.success(null);
     }
 
     /**
      * 更新班级信息（老师或班级助理）
      */
-    @PutMapping("/update")
-    public ApiResponse<ClassInfo> updateClassInfo(@Valid @RequestBody UpdateClassRequest request) {
+    @PutMapping("/{classId}")
+    public ApiResponse<ClassInfo> updateClassInfo(@PathVariable Integer classId, @Valid @RequestBody UpdateClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} requesting to update class info, ID: {}", userInfo, request.getClassId());
-        ClassInfo updatedClass = classService.updateClassInfo(request.getClassId(), request.getClassName(), request.getDescription());
+        ClassInfo updatedClass = classService.updateClassInfo(classId, request.getClassName(), request.getDescription());
         log.info("User {} updated class info successfully", userInfo);
         return ApiResponse.success(updatedClass, "班级信息更新成功");
     }
@@ -98,8 +100,8 @@ public class ClassController {
     /**
      * 获取班级详情
      */
-    @GetMapping("/detail")
-    public ApiResponse<ClassDetailResponse> getClassDetail(@RequestParam Integer classId) {
+    @GetMapping("/{classId}")
+    public ApiResponse<ClassDetailResponse> getClassDetail(@PathVariable Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} querying class detail, ID: {}", userInfo, classId);
@@ -111,7 +113,7 @@ public class ClassController {
     /**
      * 获取我加入的班级列表
      */
-    @GetMapping("/mylist")
+    @GetMapping("/mine")
     public ApiResponse<Page<ClassDetailResponse>> getMyClasses(@Valid @ModelAttribute PageRequest pageRequest) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -127,9 +129,9 @@ public class ClassController {
     /**
      * 获取班级成员列表（分页）
      */
-    @GetMapping("/members")
+    @GetMapping("/{classId}/members")
     public ApiResponse<Page<ClassMemberResponse>> getClassMembers(
-            @RequestParam Integer classId,
+            @PathVariable Integer classId,
             @Valid @ModelAttribute PageRequest pageRequest) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -142,8 +144,8 @@ public class ClassController {
     /**
      * 检查用户是否在指定班级中
      */
-    @GetMapping("/checkmember")
-    public ApiResponse<MemberCheckResponse> checkMember(@RequestParam Integer classId) {
+    @GetMapping("/{classId}/membership")
+    public ApiResponse<MemberCheckResponse> checkMember(@PathVariable Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} checking member status, class ID: {}", userInfo, classId);
@@ -231,8 +233,8 @@ public class ClassController {
     /**
      * 设置学生为班级助理（老师专用）
      */
-    @PutMapping("/set-assistant-teacher")
-    public ApiResponse<Void> setAssistantTeacher(@RequestParam Integer classId,
+    @PutMapping("/{classId}/assistants")
+    public ApiResponse<Void> setAssistantTeacher(@PathVariable Integer classId,
                                                   @RequestParam Integer studentUserId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -246,9 +248,9 @@ public class ClassController {
     /**
      * 将学生踢出班级（老师/班级助理专用）
      */
-    @DeleteMapping("/kick-student")
-    public ApiResponse<Void> kickStudent(@RequestParam Integer classId,
-                                            @RequestParam Integer studentUserId) {
+    @DeleteMapping("/{classId}/members/{studentUserId}")
+    public ApiResponse<Void> kickStudent(@PathVariable Integer classId,
+                                            @PathVariable Integer studentUserId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} kicking student {} from class {}", 
@@ -262,9 +264,9 @@ public class ClassController {
     /**
      * 取消班级助理权限（降级为学生，仅创建者可用）
      */
-    @PutMapping("/demote-assistant-teacher")
-    public ApiResponse<Void> demoteAssistantTeacher(@RequestParam Integer classId,
-                                                     @RequestParam Integer teacherUserId) {
+    @DeleteMapping("/{classId}/assistants/{teacherUserId}")
+    public ApiResponse<Void> demoteAssistantTeacher(@PathVariable Integer classId,
+                                                     @PathVariable Integer teacherUserId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} demoting assistant teacher {} to student in class {}", 
@@ -278,8 +280,8 @@ public class ClassController {
     /**
      * 学生邀请用户加入班级（需要用户确认和教师审核）
      */
-    @PostMapping("/student/invite")
-    public ApiResponse<Void> studentInviteUser(@RequestParam Integer classId,
+    @PostMapping("/{classId}/invitations")
+    public ApiResponse<Void> studentInviteUser(@PathVariable Integer classId,
                                                                   @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -293,8 +295,8 @@ public class ClassController {
     /**
      * 被邀请用户响应邀请（同意/拒绝）
      */
-    @PutMapping("/respond-user-invitation")
-    public ApiResponse<Void> respondUserInvitation(@RequestParam Integer invitationId,
+    @PutMapping("/invitations/{invitationId}")
+    public ApiResponse<Void> respondUserInvitation(@PathVariable Integer invitationId,
                                                     @RequestParam Boolean accepted) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -309,13 +311,13 @@ public class ClassController {
     /**
      * 教师或助理审核邀请申请
      */
-    @PutMapping("/approve-teacher-approval")
-    public ApiResponse<Void> approveTeacherApproval(@Valid @RequestBody ApproveJoinClassRequest request) {
+    @PutMapping("/invitations/{applicationId}/approval")
+    public ApiResponse<Void> approveTeacherApproval(@PathVariable Integer applicationId, @Valid @RequestBody ApproveJoinClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} approving teacher approval, id: {}, approved: {}",
-                userInfo, request.getApplicationId(), request.getApproved());
-        classService.approveTeacherApproval(request.getApplicationId(), request.getApproved(), request.getComment());
+                userInfo, applicationId, request.getApproved());
+        classService.approveTeacherApproval(applicationId, request.getApproved(), request.getComment());
         String result = request.getApproved() ? "approved" : "rejected";
         log.info("User {} teacher approval {}", userInfo, result);
         return ApiResponse.success(null);
@@ -324,8 +326,8 @@ public class ClassController {
     /**
      * 获取待教师审核的邀请列表（班级老师/助理专用）
      */
-    @GetMapping("/teacher-approvals/pending")
-    public ApiResponse<List<TeacherApprovalResponse>> getPendingTeacherApprovals(@RequestParam Integer classId) {
+    @GetMapping("/{classId}/invitations/pending")
+    public ApiResponse<List<TeacherApprovalResponse>> getPendingTeacherApprovals(@PathVariable Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} querying pending teacher approvals for class {}", userInfo, classId);
@@ -337,8 +339,8 @@ public class ClassController {
     /**
      * 教师邀请用户加入班级（需用户同意）
      */
-    @PostMapping("/invite-with-approval")
-    public ApiResponse<ClassInvitation> inviteUserWithApproval(@RequestParam Integer classId,
+    @PostMapping("/{classId}/invitations/teacher")
+    public ApiResponse<ClassInvitation> inviteUserWithApproval(@PathVariable Integer classId,
                                                                 @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -386,8 +388,8 @@ public class ClassController {
     /**
      * 生成或刷新班级邀请码
      */
-    @PostMapping("/generate-invite-code")
-    public ApiResponse<String> generateInviteCode(@RequestParam Integer classId) {
+    @PostMapping("/{classId}/invite-code")
+    public ApiResponse<String> generateInviteCode(@PathVariable Integer classId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} generating invite code for class {}", userInfo, classId);
@@ -412,8 +414,8 @@ public class ClassController {
     /**
      * 转让班级所有权
      */
-    @PutMapping("/transfer-ownership")
-    public ApiResponse<Void> transferOwnership(@RequestParam Integer classId,
+    @PutMapping("/{classId}/owner")
+    public ApiResponse<Void> transferOwnership(@PathVariable Integer classId,
                                                 @RequestParam Integer newOwnerId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);

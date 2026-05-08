@@ -14,9 +14,10 @@
 
 ## 目录
 
-- [1. 作业管理接口 (WorkController)](#1-作业管理接口-workcontroller)
-- [2. 班级管理接口 (ClassController)](#2-班级管理接口-classcontroller)
-- [3. 作业提交接口 (WorkSubmissionController)](#3-作业提交接口-worksubmissioncontroller)
+- [1. 用户认证接口 (User Authentication)](#1-用户认证接口-user-authentication)
+- [2. 作业管理接口 (WorkController)](#2-作业管理接口-workcontroller)
+- [3. 班级管理接口 (ClassController)](#3-班级管理接口-classcontroller)
+- [4. 作业提交接口 (WorkSubmissionController)](#4-作业提交接口-worksubmissioncontroller)
 
 ---
 
@@ -86,13 +87,557 @@ axios.get('/api/works/list', {
 
 ---
 
-## 1. 作业管理接口 (WorkController)
+## 1. 用户认证接口 (User Authentication)
+
+**基础路径**: `/api/users`
+
+### 1.1 用户注册
+
+**接口地址**: `POST /api/users/register`
+
+**请求头**:
+
+- Content-Type: application/json
+- **无需登录认证**（公开接口）
+
+**请求体**:
+
+```json
+{
+  "username": "张三",
+  "userNo": "2024001",
+  "email": "zhangsan@example.com",
+  "password": "Password@123",
+  "code": "123456"
+}
+```
+
+**字段说明**:
+
+| 字段     | 类型   | 必填 | 说明                         |
+| -------- | ------ | ---- | ---------------------------- |
+| username | String | 是   | 用户名，最长 64 字符         |
+| userNo   | String | 是   | 学号/工号，最长 32 字符      |
+| email    | String | 是   | 邮箱地址                     |
+| password | String | 是   | 密码，8-32位，需包含大小写字母和数字 |
+| code     | String | 是   | 邮箱验证码                   |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "注册成功",
+  "data": {
+    "id": 1001,
+    "username": "张三",
+    "userNo": "2024001",
+    "email": "zhangsan@example.com",
+    "permission": 0,
+    "createTime": "2026-05-07T10:00:00"
+  }
+}
+```
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "验证码错误或已过期",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- “用户名不能为空”
+- “学号/工号不能为空”
+- “邮箱格式不正确”
+- “密码不符合要求”
+- “验证码不能为空”
+- “验证码错误或已过期”
+- “该学号/工号已被注册”
+- “该邮箱已被注册”
+
+---
+
+### 1.2 发送注册验证码
+
+**接口地址**: `POST /api/users/getregcode`
+
+**请求头**:
+
+- Content-Type: application/json
+- **无需登录认证**（公开接口）
+
+**请求体**:
+
+```json
+{
+  "email": "zhangsan@example.com",
+  "userNo": "2024001",
+  "username": "张三"
+}
+```
+
+**字段说明**:
+
+| 字段     | 类型   | 必填 | 说明                 |
+| -------- | ------ | ---- | -------------------- |
+| email    | String | 是   | 邮箱地址             |
+| userNo   | String | 是   | 学号/工号            |
+| username | String | 是   | 用户名               |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "验证码发送成功",
+  "data": null
+}
+```
+
+**注意**:
+
+- 验证码有效期为 5 分钟
+- 同一邮箱 60 秒内只能发送一次验证码
+- 验证码为 6 位数字
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "该邮箱已被注册",
+  "data": null
+}
+```
+
+---
+
+### 1.3 用户登录
+
+**接口地址**: `POST /api/users/login`
+
+**请求头**:
+
+- Content-Type: application/json
+- **无需登录认证**（公开接口）
+
+**请求体**:
+
+```json
+{
+  "account": "2024001",
+  "password": "Password@123"
+}
+```
+
+**字段说明**:
+
+| 字段     | 类型   | 必填 | 说明                       |
+| -------- | ------ | ---- | -------------------------- |
+| account  | String | 是   | 账号（学号/工号或邮箱）    |
+| password | String | 是   | 密码                       |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "登录成功",
+  "data": {
+    "id": 1001,
+    "username": "张三",
+    "userNo": "2024001",
+    "email": "zhangsan@example.com",
+    "permission": 0,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**响应字段说明**:
+
+| 字段       | 类型   | 说明                    |
+| ---------- | ------ | ----------------------- |
+| id         | Integer | 用户 ID                 |
+| username   | String | 用户名                  |
+| userNo     | String | 学号/工号               |
+| email      | String | 邮箱                    |
+| permission | Integer | 权限等级                |
+| token      | String | JWT Token（用于后续请求）|
+
+**注意**:
+
+- 登录成功后会返回 JWT Token
+- 后续请求需要在 Header 中携带该 Token
+- Token 有效期为 24 小时
+
+**失败响应**:
+
+```json
+{
+  "code": 401,
+  "message": "账号或密码错误",
+  "data": null
+}
+```
+
+**可能的错误信息**:
+
+- “账号或密码错误”（统一提示，不区分具体原因）
+- “账号已被禁用”（403 Forbidden）
+
+---
+
+### 1.4 用户登出
+
+**接口地址**: `POST /api/users/logout`
+
+**请求头**:
+
+- Authorization: Bearer <jwt_token>
+- X-CSRF-Token: <csrf_token>
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "登出成功",
+  "data": null
+}
+```
+
+**注意**:
+
+- 需要登录认证
+- 登出后 Token 将失效
+
+---
+
+### 1.5 修改用户信息
+
+**接口地址**: `PUT /api/users/modify/info`
+
+**请求头**:
+
+- Content-Type: application/json
+- Authorization: Bearer <jwt_token>
+- X-CSRF-Token: <csrf_token>
+
+**请求体**:
+
+```json
+{
+  "username": "李四"
+}
+```
+
+**字段说明**:
+
+| 字段     | 类型   | 必填 | 说明                 |
+| -------- | ------ | ---- | -------------------- |
+| username | String | 是   | 新的用户名           |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "信息修改成功",
+  "data": {
+    "id": 1001,
+    "username": "李四",
+    "userNo": "2024001",
+    "email": "zhangsan@example.com",
+    "permission": 0
+  }
+}
+```
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "用户名长度不能超过 64 位",
+  "data": null
+}
+```
+
+---
+
+### 1.6 修改邮箱（换绑）
+
+**接口地址**: `PUT /api/users/modify/email`
+
+**请求头**:
+
+- Content-Type: application/json
+- Authorization: Bearer <jwt_token>
+- X-CSRF-Token: <csrf_token>
+
+**请求体**:
+
+```json
+{
+  "oldEmailCode": "123456",
+  "newEmail": "lisi@example.com",
+  "newEmailCode": "654321"
+}
+```
+
+**字段说明**:
+
+| 字段         | 类型   | 必填 | 说明                 |
+| ------------ | ------ | ---- | -------------------- |
+| oldEmailCode | String | 是   | 旧邮箱验证码         |
+| newEmail     | String | 是   | 新邮箱地址           |
+| newEmailCode | String | 是   | 新邮箱验证码         |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "邮箱修改成功",
+  "data": {
+    "id": 1001,
+    "username": "张三",
+    "userNo": "2024001",
+    "email": "lisi@example.com",
+    "permission": 0
+  }
+}
+```
+
+**注意**:
+
+- 需要先获取旧邮箱和新邮箱的验证码
+- 两个验证码都正确才能完成换绑
+
+---
+
+### 1.7 发送旧邮箱验证码
+
+**接口地址**: `POST /api/users/modify/getmodifycode/before`
+
+**请求头**:
+
+- Authorization: Bearer <jwt_token>
+- X-CSRF-Token: <csrf_token>
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "验证码已发送",
+  "data": null
+}
+```
+
+**注意**:
+
+- 向当前用户的旧邮箱发送验证码
+- 用于验证用户身份
+
+---
+
+### 1.8 发送新邮箱验证码
+
+**接口地址**: `POST /api/users/modify/getmodifycode/after`
+
+**请求头**:
+
+- Content-Type: application/json
+- Authorization: Bearer <jwt_token>
+- X-CSRF-Token: <csrf_token>
+
+**请求体**:
+
+```json
+{
+  "newEmail": "lisi@example.com"
+}
+```
+
+**字段说明**:
+
+| 字段     | 类型   | 必填 | 说明         |
+| -------- | ------ | ---- | ------------ |
+| newEmail | String | 是   | 新邮箱地址   |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "验证码已发送",
+  "data": null
+}
+```
+
+**注意**:
+
+- 向新邮箱发送验证码
+- 用于验证新邮箱的有效性
+
+---
+
+### 1.9 修改密码
+
+**接口地址**: `PUT /api/users/modify/password`
+
+**请求头**:
+
+- Content-Type: application/json
+- Authorization: Bearer <jwt_token>
+- X-CSRF-Token: <csrf_token>
+
+**请求体**:
+
+```json
+{
+  "oldPassword": "OldPass@123",
+  "newPassword": "NewPass@456"
+}
+```
+
+**字段说明**:
+
+| 字段        | 类型   | 必填 | 说明                         |
+| ----------- | ------ | ---- | ---------------------------- |
+| oldPassword | String | 是   | 旧密码                       |
+| newPassword | String | 是   | 新密码，8-32位，需包含大小写字母和数字 |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "密码修改成功",
+  "data": null
+}
+```
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "旧密码错误",
+  "data": null
+}
+```
+
+---
+
+### 1.10 发送找回密码验证码
+
+**接口地址**: `POST /api/users/retrieve/sendcode`
+
+**请求头**:
+
+- Content-Type: application/json
+- **无需登录认证**（公开接口）
+
+**请求体**:
+
+```json
+{
+  "account": "2024001"
+}
+```
+
+**字段说明**:
+
+| 字段    | 类型   | 必填 | 说明                       |
+| ------- | ------ | ---- | -------------------------- |
+| account | String | 是   | 账号（学号/工号或邮箱）    |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "验证码已发送",
+  "data": null
+}
+```
+
+**注意**:
+
+- 向用户注册的邮箱发送验证码
+- 用于找回密码流程
+
+---
+
+### 1.11 重置密码
+
+**接口地址**: `PUT /api/users/retrieve/resetpassword`
+
+**请求头**:
+
+- Content-Type: application/json
+- **无需登录认证**（公开接口）
+
+**请求体**:
+
+```json
+{
+  "account": "2024001",
+  "code": "123456",
+  "newPassword": "NewPass@123"
+}
+```
+
+**字段说明**:
+
+| 字段        | 类型   | 必填 | 说明                         |
+| ----------- | ------ | ---- | ---------------------------- |
+| account     | String | 是   | 账号（学号/工号或邮箱）      |
+| code        | String | 是   | 验证码                       |
+| newPassword | String | 是   | 新密码，8-32位，需包含大小写字母和数字 |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "密码重置成功",
+  "data": null
+}
+```
+
+**失败响应**:
+
+```json
+{
+  "code": 400,
+  "message": "验证码错误或已过期",
+  "data": null
+}
+```
+
+**注意**:
+
+- 验证码有效期为 5 分钟
+- 重置成功后可以使用新密码登录
+
+---
+
+## 2. 作业管理接口 (WorkController)
 
 **基础路径**: `/api/works`
 
-### 1.1 创建作业
+### 4.1 创建作业
 
-**接口地址**: `POST /api/works/create`
+**接口地址**: `POST /api/works/`
 
 **请求头**:
 
@@ -115,7 +660,7 @@ axios.get('/api/works/list', {
 **请求示例**:
 
 ```
-POST /api/works/create
+POST /api/works/
 Content-Type: multipart/form-data
 
 title: 第一次作业
@@ -207,9 +752,9 @@ attachments: [file1.pdf, file2.doc]
 
 ---
 
-### 1.2 更新作业
+### 4.2 更新作业
 
-**接口地址**: `PUT /api/works/update`
+**接口地址**: `PUT /api/works/{workId}`
 
 **请求头**:
 
@@ -233,7 +778,7 @@ attachments: [file1.pdf, file2.doc]
 **请求示例**:
 
 ```
-PUT /api/works/update
+PUT /api/works/1
 Content-Type: multipart/form-data
 
 id: 1
@@ -321,9 +866,9 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 1.3 删除作业
+### 4.3 删除作业
 
-**接口地址**: `DELETE /api/works/delete`
+**接口地址**: `DELETE /api/works/{workId}`
 
 **请求参数**:
 
@@ -331,7 +876,7 @@ removedAttachmentIds: [1, 2]
 | ------ | ------- | ---- | ------- |
 | workId | Integer | 是   | 作业 ID |
 
-**请求示例**: `DELETE /api/works/delete?workId=1`
+**请求示例**: `DELETE /api/works/1`
 
 **成功响应 (200)**:
 
@@ -371,9 +916,9 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 1.4 查询作业详情
+### 4.4 查询作业详情
 
-**接口地址**: `GET /api/works/detail`
+**接口地址**: `GET /api/works/{workId}`
 
 **请求参数**:
 
@@ -381,7 +926,7 @@ removedAttachmentIds: [1, 2]
 | ------ | ------- | ---- | ------- |
 | workId | Integer | 是   | 作业 ID |
 
-**请求示例**: `GET /api/works/detail?workId=1`
+**请求示例**: `GET /api/works/1`
 
 **成功响应 (200)**:
 
@@ -441,9 +986,9 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 1.5 查询作业列表（分页）
+### 4.5 查询作业列表（分页）
 
-**接口地址**: `GET /api/works/list`
+**接口地址**: `GET /api/works/`
 
 **请求参数**:
 
@@ -583,9 +1128,9 @@ removedAttachmentIds: [1, 2]
 
 ---
 
-### 1.6 置顶/取消置顶作业
+### 4.6 置顶/取消置顶作业
 
-**接口地址**: `PUT /api/works/pin`
+**接口地址**: `PATCH /api/works/{workId}/pin`
 
 **请求头**:
 
@@ -614,14 +1159,14 @@ removedAttachmentIds: [1, 2]
 
 ```bash
 # 置顶作业
-curl -X PUT http://localhost:8080/api/works/pin \
+curl -X PATCH http://localhost:8080/api/works/1/pin \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
   -d '{"workId": 1, "isPinned": true}'
 
 # 取消置顶
-curl -X PUT http://localhost:8080/api/works/pin \
+curl -X PATCH http://localhost:8080/api/works/1/pin \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
@@ -696,13 +1241,13 @@ curl -X PUT http://localhost:8080/api/works/pin \
 
 ---
 
-## 2. 班级管理接口 (ClassController)
+## 3. 班级管理接口 (ClassController)
 
 **基础路径**: `/api/class`
 
-### 2.1 提交创建班级申请
+### 4.1 提交创建班级申请
 
-**接口地址**: `POST /api/class/create`
+**接口地址**: `POST /api/class/`
 
 **请求头**:
 
@@ -778,9 +1323,9 @@ curl -X PUT http://localhost:8080/api/works/pin \
 
 ---
 
-### 2.2 提交加入班级申请
+### 4.2 提交加入班级申请
 
-**接口地址**: `POST /api/class/join`
+**接口地址**: `POST /api/class/{classId}/applications/join`
 
 **请求头**:
 
@@ -855,9 +1400,9 @@ curl -X PUT http://localhost:8080/api/works/pin \
 
 ---
 
-### 2.3 退出班级
+### 4.3 退出班级
 
-**接口地址**: `POST /api/class/leave`
+**接口地址**: `DELETE /api/class/{classId}/members/me`
 
 **请求参数**:
 
@@ -865,7 +1410,7 @@ curl -X PUT http://localhost:8080/api/works/pin \
 | ------- | ------- | ---- | ------- |
 | classId | Integer | 是   | 班级 ID |
 
-**请求示例**: `POST /api/class/leave?classId=1`
+**请求示例**: `DELETE /api/class/1/members/me`
 
 **成功响应 (200)**:
 
@@ -902,9 +1447,9 @@ curl -X PUT http://localhost:8080/api/works/pin \
 
 ---
 
-### 2.4 解散班级
+### 4.4 解散班级
 
-**接口地址**: `DELETE /api/class/dissolve`
+**接口地址**: `DELETE /api/class/{classId}`
 
 **请求参数**:
 
@@ -912,7 +1457,7 @@ curl -X PUT http://localhost:8080/api/works/pin \
 | ------- | ------- | ---- | ------- |
 | classId | Integer | 是   | 班级 ID |
 
-**请求示例**: `DELETE /api/class/dissolve?classId=1`
+**请求示例**: `DELETE /api/class/1`
 
 **成功响应 (200)**:
 
@@ -955,9 +1500,9 @@ curl -X PUT http://localhost:8080/api/works/pin \
 
 ---
 
-### 2.4.1 更新班级信息
+### 4.4.1 更新班级信息
 
-**接口地址**: `PUT /api/class/update`
+**接口地址**: `PUT /api/class/{classId}`
 
 **请求头**:
 
@@ -987,7 +1532,7 @@ curl -X PUT http://localhost:8080/api/works/pin \
 **请求示例**:
 
 ```bash
-curl -X PUT http://localhost:8080/api/class/update \
+curl -X PUT http://localhost:8080/api/class/1 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
@@ -1066,9 +1611,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.5 获取班级详情
+### 4.5 获取班级详情
 
-**接口地址**: `GET /api/class/detail`
+**接口地址**: `GET /api/class/{classId}`
 
 **请求参数**:
 
@@ -1076,7 +1621,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | ------- | ------- | ---- | ------- |
 | classId | Integer | 是   | 班级 ID |
 
-**请求示例**: `GET /api/class/detail?classId=1`
+**请求示例**: `GET /api/class/1`
 
 **成功响应 (200)**:
 
@@ -1133,9 +1678,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.6 获取我加入的班级列表（分页）
+### 4.6 获取我加入的班级列表（分页）
 
-**接口地址**: `GET /api/class/mylist`
+**接口地址**: `GET /api/class/mine`
 
 **请求参数**:
 
@@ -1146,8 +1691,8 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 **请求示例**:
 
-- `GET /api/class/mylist`
-- `GET /api/class/mylist?pageNum=1&pageSize=10`
+- `GET /api/class/mine`
+- `GET /api/class/mine?pageNum=1&pageSize=10`
 
 **成功响应 (200)**:
 
@@ -1223,9 +1768,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.7 获取班级成员列表（分页）
+### 4.7 获取班级成员列表（分页）
 
-**接口地址**: `GET /api/class/members`
+**接口地址**: `GET /api/class/{classId}/members`
 
 **请求参数**:
 
@@ -1237,8 +1782,8 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 **请求示例**:
 
-- `GET /api/class/members?classId=1`
-- `GET /api/class/members?classId=1&pageNum=1&pageSize=20`
+- `GET /api/class/1/members`
+- `GET /api/class/1/members?pageNum=1&pageSize=20`
 
 **成功响应 (200)**:
 
@@ -1319,9 +1864,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.8 检查用户是否在指定班级中
+### 4.8 检查用户是否在指定班级中
 
-**接口地址**: `GET /api/class/checkmember`
+**接口地址**: `GET /api/class/{classId}/membership`
 
 **请求参数**:
 
@@ -1329,7 +1874,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | ------- | ------- | ---- | ------- |
 | classId | Integer | 是   | 班级 ID |
 
-**请求示例**: `GET /api/class/checkmember?classId=1`
+**请求示例**: `GET /api/class/1/membership`
 
 **成功响应 (200)**:
 
@@ -1412,7 +1957,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.9 获取创建班级申请列表（管理员专用）
+### 4.9 获取创建班级申请列表（管理员专用）
 
 **接口地址**: `GET /api/class/applications/create/list`
 
@@ -1491,7 +2036,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.10 审核创建班级申请（管理员专用）
+### 4.10 审核创建班级申请（管理员专用）
 
 **接口地址**: `PUT /api/class/applications/create/approve`
 
@@ -1551,7 +2096,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.11 获取加入班级申请列表（老师和管理员专用）
+### 4.11 获取加入班级申请列表（老师和管理员专用）
 
 **接口地址**: `GET /api/class/applications/join/list`
 
@@ -1630,7 +2175,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.12 审核加入班级申请（老师和管理员专用）
+### 4.12 审核加入班级申请（老师和管理员专用）
 
 **接口地址**: `PUT /api/class/applications/join/approve`
 
@@ -1691,9 +2236,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.13 设置学生为班级助理（老师专用）
+### 4.13 设置学生为班级助理（老师专用）
 
-**接口地址**: `PUT /api/class/set-assistant-teacher`
+**接口地址**: `PUT /api/class/{classId}/assistants`
 
 **请求参数**:
 
@@ -1702,7 +2247,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | classId       | Integer | 是   | 班级 ID     |
 | studentUserId | Integer | 是   | 学生用户 ID |
 
-**请求示例**: `PUT /api/class/set-assistant-teacher?classId=1&studentUserId=1002`
+**请求示例**: `PUT /api/class/1/assistants?studentUserId=1002`
 
 **成功响应 (200)**:
 
@@ -1732,9 +2277,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.14 将学生踢出班级（老师/班级助理专用）
+### 4.14 将学生踢出班级（老师/班级助理专用）
 
-**接口地址**: `DELETE /api/class/kick-student`
+**接口地址**: `DELETE /api/class/{classId}/members/{studentUserId}`
 
 **请求参数**:
 
@@ -1743,7 +2288,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | classId       | Integer | 是   | 班级 ID     |
 | studentUserId | Integer | 是   | 学生用户 ID |
 
-**请求示例**: `DELETE /api/class/kick-student?classId=1&studentUserId=1002`
+**请求示例**: `DELETE /api/class/1/members/1002`
 
 **成功响应 (200)**:
 
@@ -1782,9 +2327,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.15 取消班级助理权限（降级为学生，仅创建者可用）
+### 4.15 取消班级助理权限（降级为学生，仅创建者可用）
 
-**接口地址**: `PUT /api/class/demote-assistant-teacher`
+**接口地址**: `DELETE /api/class/{classId}/assistants/{teacherUserId}`
 
 **请求参数**:
 
@@ -1793,7 +2338,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | classId       | Integer | 是   | 班级 ID         |
 | teacherUserId | Integer | 是   | 班级助理用户 ID |
 
-**请求示例**: `PUT /api/class/demote-assistant-teacher?classId=1&teacherUserId=1002`
+**请求示例**: `DELETE /api/class/1/assistants/1002`
 
 **成功响应 (200)**:
 
@@ -1822,9 +2367,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.16 学生邀请用户加入班级（需要用户确认和教师审核）
+### 4.16 学生邀请用户加入班级（需要用户确认和教师审核）
 
-**接口地址**: `POST /api/class/student/invite`
+**接口地址**: `POST /api/class/{classId}/invitations`
 
 **请求参数**:
 
@@ -1833,7 +2378,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | classId     | Integer | 是   | 班级 ID          |
 | userAccount | String  | 是   | 被邀请用户的账号 |
 
-**请求示例**: `POST /api/class/student/invite?classId=1&userAccount=2024002`
+**请求示例**: `POST /api/class/1/invitations?userAccount=2024002`
 
 **成功响应 (200)**:
 
@@ -1872,9 +2417,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.17 被邀请用户响应邀请（同意/拒绝）
+### 4.17 被邀请用户响应邀请（同意/拒绝）
 
-**接口地址**: `PUT /api/class/respond-user-invitation`
+**接口地址**: `PUT /api/class/invitations/{invitationId}`
 
 **请求参数**:
 
@@ -1883,7 +2428,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | invitationId | Integer | 是   | 邀请 ID                         |
 | accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) |
 
-**请求示例**: `PUT /api/class/respond-user-invitation?invitationId=1&accepted=true`
+**请求示例**: `PUT /api/class/invitations/1?accepted=true`
 
 **成功响应 (200)**:
 
@@ -1918,9 +2463,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.18 教师或助理审核邀请申请
+### 4.18 教师或助理审核邀请申请
 
-**接口地址**: `PUT /api/class/approve-teacher-approval`
+**接口地址**: `PUT /api/class/invitations/{applicationId}/approval`
 
 **请求头**:
 
@@ -1982,9 +2527,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.19 获取待教师审核的邀请列表（班级老师/助理专用）
+### 4.19 获取待教师审核的邀请列表（班级老师/助理专用）
 
-**接口地址**: `GET /api/class/teacher-approvals/pending`
+**接口地址**: `GET /api/class/{classId}/invitations/pending`
 
 **请求参数**:
 
@@ -1992,7 +2537,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | ------- | ------- | ---- | ------- |
 | classId | Integer | 是   | 班级 ID |
 
-**请求示例**: `GET /api/class/teacher-approvals/pending?classId=1`
+**请求示例**: `GET /api/class/1/invitations/pending`
 
 **成功响应 (200)**:
 
@@ -2118,9 +2663,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.20 教师邀请用户加入班级（需用户同意）
+### 4.20 教师邀请用户加入班级（需用户同意）
 
-**接口地址**: `POST /api/class/invite-with-approval`
+**接口地址**: `POST /api/class/{classId}/invitations/teacher`
 
 **请求参数**:
 
@@ -2129,7 +2674,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | classId     | Integer | 是   | 班级 ID          |
 | userAccount | String  | 是   | 被邀请用户的账号 |
 
-**请求示例**: `POST /api/class/invite-with-approval?classId=1&userAccount=2024001`
+**请求示例**: `POST /api/class/1/invitations/teacher?userAccount=2024001`
 
 **成功响应 (200)**:
 
@@ -2187,7 +2732,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.21 获取我收到的邀请列表
+### 4.21 获取我收到的邀请列表
 
 **接口地址**: `GET /api/class/my-invitations`
 
@@ -2256,9 +2801,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.22 响应邀请（同意/拒绝）
+### 4.22 响应邀请（同意/拒绝）
 
-**接口地址**: `PUT /api/class/respond-invitation`
+**接口地址**: `PUT /api/class/invitations/{invitationId}`
 
 **请求参数**:
 
@@ -2267,7 +2812,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | invitationId | Integer | 是   | 邀请 ID                         |
 | accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) |
 
-**请求示例**: `PUT /api/class/respond-invitation?invitationId=1&accepted=true`
+**请求示例**: `PUT /api/class/invitations/1?accepted=true`
 
 **成功响应 (200)**:
 
@@ -2302,9 +2847,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.23 生成/刷新班级邀请码（教师专用）
+### 4.23 生成/刷新班级邀请码（教师专用）
 
-**接口地址**: `POST /api/class/generate-invite-code`
+**接口地址**: `POST /api/class/{classId}/invite-code`
 
 **请求参数**:
 
@@ -2312,7 +2857,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | ------- | ------- | ---- | ------- |
 | classId | Integer | 是   | 班级 ID |
 
-**请求示例**: `POST /api/class/generate-invite-code?classId=1`
+**请求示例**: `POST /api/class/1/invite-code`
 
 **成功响应 (200)**:
 
@@ -2355,7 +2900,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.24 通过邀请码加入班级
+### 4.24 通过邀请码加入班级
 
 **接口地址**: `POST /api/class/join-by-code`
 
@@ -2427,9 +2972,9 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-### 2.24 转让班级所有权（仅创建者）
+### 4.24 转让班级所有权（仅创建者）
 
-**接口地址**: `PUT /api/class/transfer-ownership`
+**接口地址**: `PUT /api/class/{classId}/owner`
 
 **请求参数**:
 
@@ -2438,7 +2983,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 | classId    | Integer | 是   | 班级 ID     |
 | newOwnerId | Integer | 是   | 新所有者 ID |
 
-**请求示例**: `PUT /api/class/transfer-ownership?classId=1&newOwnerId=1003`
+**请求示例**: `PUT /api/class/1/owner?newOwnerId=1003`
 
 **成功响应 (200)**:
 
@@ -2478,13 +3023,13 @@ curl -X PUT http://localhost:8080/api/class/update \
 
 ---
 
-## 3. 作业提交接口 (WorkSubmissionController)
+## 4. 作业提交接口 (WorkSubmissionController)
 
 **基础路径**: `/api/submissions`
 
-### 3.1 提交作业
+### 4.1 提交作业
 
-**接口地址**: `POST /api/submissions/submit`
+**接口地址**: `POST /api/submissions/`
 
 **请求头**:
 
@@ -2502,7 +3047,7 @@ curl -X PUT http://localhost:8080/api/class/update \
 **请求示例**:
 
 ```
-POST /api/submissions/submit
+POST /api/submissions/
 Content-Type: multipart/form-data
 
 workId: 1
@@ -2588,9 +3133,9 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.2 更新提交的作业
+### 4.2 更新提交的作业
 
-**接口地址**: `PUT /api/submissions/update`
+**接口地址**: `PUT /api/submissions/{submissionId}`
 
 **请求参数**:
 
@@ -2599,7 +3144,7 @@ attachments: [file1.pdf, file2.docx]
 | submissionId      | Integer | 是   | 提交 ID          |
 | submissionContent | String  | 是   | 更新后的提交内容 |
 
-**请求示例**: `PUT /api/submissions/update?submissionId=1&submissionContent=更新后的作业内容`
+**请求示例**: `PUT /api/submissions/1?submissionContent=更新后的作业内容`
 
 **成功响应 (200)**:
 
@@ -2663,16 +3208,16 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.3 删除提交的作业
+### 4.3 删除提交的作业
 
-**接口地址**: `DELETE /api/submissions/delete`
+**接口地址**: `DELETE /api/submissions/{submissionId}`
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | submissionId | Integer | 是 | 提交 ID |
 
-**请求示例**: `DELETE /api/submissions/delete?submissionId=1`
+**请求示例**: `DELETE /api/submissions/1`
 
 **成功响应 (200)**:
 
@@ -2708,16 +3253,16 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.4 查询提交详情
+### 4.4 查询提交详情
 
-**接口地址**: `GET /api/submissions/detail`
+**接口地址**: `GET /api/submissions/{submissionId}`
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | submissionId | Integer | 是 | 提交 ID |
 
-**请求示例**: `GET /api/submissions/detail?submissionId=1`
+**请求示例**: `GET /api/submissions/1`
 
 **成功响应 (200)**:
 
@@ -2775,7 +3320,7 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.5 查询当前用户的提交列表
+### 4.5 查询当前用户的提交列表
 
 **接口地址**: `GET /api/submissions/student/list`
 
@@ -2866,7 +3411,7 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.6 查询某次作业的所有提交（教师专用，分页）
+### 4.6 查询某次作业的所有提交（教师专用，分页）
 
 **接口地址**: `GET /api/submissions/work/list`
 
@@ -2968,7 +3513,7 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.7 查询某次作业的已交名单（教师专用）
+### 4.7 查询某次作业的已交名单（教师专用）
 
 **接口地址**: `GET /api/submissions/work/submitted`
 
@@ -3045,7 +3590,7 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.8 查询某次作业的未交名单（教师专用）
+### 4.8 查询某次作业的未交名单（教师专用）
 
 **接口地址**: `GET /api/submissions/work/unsubmitted`
 
@@ -3113,7 +3658,7 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.9 批改作业（教师专用）
+### 4.9 批改作业（教师专用）
 
 **接口地址**: `PUT /api/submissions/grade`
 
@@ -3219,7 +3764,7 @@ attachments: [file1.pdf, file2.docx]
 
 ---
 
-### 3.10 批量下载作业附件（教师专用）
+### 4.10 批量下载作业附件（教师专用）
 
 **接口地址**: `POST /api/submissions/batch-download`
 

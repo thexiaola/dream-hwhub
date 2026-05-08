@@ -36,7 +36,7 @@ public class WorkSubmissionController {
     /**
      * 提交作业
      */
-    @PostMapping(value = "/submit", consumes = "multipart/form-data")
+    @PostMapping(value = "/", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> submitWork(
             @RequestParam("workId") Integer workId,
             @RequestParam(value = "submissionContent", required = false) String submissionContent,
@@ -69,9 +69,9 @@ public class WorkSubmissionController {
     /**
      * 更新提交的作业
      */
-    @PutMapping(value = "/update", consumes = "multipart/form-data")
+    @PutMapping(value = "/{submissionId}", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> updateSubmission(
-            @RequestParam Integer submissionId,
+            @PathVariable Integer submissionId,
             @RequestParam(required = false) String submissionContent,
             @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments,
             @RequestParam(value = "removedAttachmentIds", required = false) List<Integer> removedAttachmentIds) {
@@ -92,8 +92,8 @@ public class WorkSubmissionController {
     /**
      * 删除提交的作业
      */
-    @DeleteMapping("/delete")
-    public ResponseEntity<ApiResponse<Void>> deleteSubmission(@RequestParam Integer submissionId) {
+    @DeleteMapping("/{submissionId}")
+    public ResponseEntity<ApiResponse<Void>> deleteSubmission(@PathVariable Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
@@ -111,8 +111,8 @@ public class WorkSubmissionController {
     /**
      * 查询提交详情
      */
-    @GetMapping("/detail")
-    public ResponseEntity<ApiResponse<WorkSubmission>> getSubmissionDetail(@RequestParam Integer submissionId) {
+    @GetMapping("/{submissionId}")
+    public ResponseEntity<ApiResponse<WorkSubmission>> getSubmissionDetail(@PathVariable Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
