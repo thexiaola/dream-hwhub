@@ -1,11 +1,13 @@
 package top.thexiaola.dreamhwhub;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 测试基类
@@ -16,10 +18,20 @@ import org.springframework.test.web.servlet.MockMvc;
 public abstract class BaseTest {
 
     @Autowired
+    protected WebApplicationContext webApplicationContext;
+
     protected MockMvc mockMvc;
 
-    @Autowired
     protected ObjectMapper objectMapper;
+
+    /**
+     * 初始化 MockMvc 和 ObjectMapper
+     * 子类在 @BeforeEach 方法中调用此方法
+     */
+    protected void setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        objectMapper = new ObjectMapper();
+    }
 
     /**
      * 将对象转换为 JSON 字符串

@@ -1,21 +1,19 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import tools.jackson.databind.ObjectMapper;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
@@ -39,7 +37,7 @@ class ClassControllerTest {
 
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoBean
     private ClassService classService;
 
     private ObjectMapper objectMapper;
@@ -48,15 +46,6 @@ class ClassControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         objectMapper = new ObjectMapper();
-    }
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        @Primary
-        public ClassService classService() {
-            return Mockito.mock(ClassService.class);
-        }
     }
 
     private String toJson(Object obj) throws Exception {
