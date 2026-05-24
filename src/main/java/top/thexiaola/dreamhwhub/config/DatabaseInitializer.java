@@ -30,6 +30,13 @@ public class DatabaseInitializer {
     @PostConstruct
     public void initializeDatabase() {
         try {
+            // 检查是否为 H2 数据库（测试环境），如果是则跳过初始化
+            String databaseProductName = jdbcTemplate.getDataSource().getConnection().getMetaData().getDatabaseProductName();
+            if ("H2".equalsIgnoreCase(databaseProductName)) {
+                log.info("H2 database detected, skipping MySQL-specific database initialization...");
+                return;
+            }
+            
             log.info("Starting database initialization and schema validation...");
 
             // 检查 user 表是否存在
