@@ -8,11 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.EmailCodeRequest;
@@ -30,26 +30,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 用户注册控制器单元测试
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 class RegisterControllerTest {
 
     @Autowired
-    private WebApplicationContext webApplicationContext;
-
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private RegisterUserService registerUserService;
 
-    @MockitoBean
+    @Autowired
     private UserMapper userMapper;
 
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         objectMapper = new ObjectMapper();
+    }
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public RegisterUserService registerUserService() {
+            return Mockito.mock(RegisterUserService.class);
+        }
+
+        @Bean
+        public UserMapper userMapper() {
+            return Mockito.mock(UserMapper.class);
+        }
     }
 
     /**

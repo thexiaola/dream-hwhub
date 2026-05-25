@@ -6,14 +6,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
@@ -29,12 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 班级管理控制器单元测试
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ClassControllerTest {
 
     @Autowired
-    private WebApplicationContext webApplicationContext;
-
     private MockMvc mockMvc;
 
     @MockitoBean
@@ -44,7 +42,6 @@ class ClassControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         objectMapper = new ObjectMapper();
     }
 
