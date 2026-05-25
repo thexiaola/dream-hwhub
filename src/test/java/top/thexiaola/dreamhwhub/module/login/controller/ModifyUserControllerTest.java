@@ -377,7 +377,6 @@ class ModifyUserControllerTest {
 
     /**
      * 非法数据测试 - 验证码包含字母
-     * (当前验证只检查验证码长度，不检查字符类型)
      */
     @Test
     @DisplayName("非法数据测试 - 验证码包含字母")
@@ -387,25 +386,10 @@ class ModifyUserControllerTest {
         request.setBeforeCode("a12345");
         request.setAfterCode("a12345");
 
-        User mockUser = new User();
-        mockUser.setId(1);
-        mockUser.setEmail("newemail@example.com");
-
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(1);
-        userResponse.setEmail("newemail@example.com");
-
-        Mockito.when(modifyUserService.modifyUserEmail(Mockito.any(ModifyEmailRequest.class)))
-                .thenReturn(mockUser);
-        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
-                .thenReturn(userResponse);
-
-        // 当前验证只检查验证码长度，不检查字符类型
         mockMvc.perform(put("/api/users/modify/email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(status().isBadRequest());
     }
 
     /**

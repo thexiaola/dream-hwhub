@@ -2,6 +2,7 @@ package top.thexiaola.dreamhwhub.module.login.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ public class ModifyEmailRequest {
     // 原邮箱验证码（beforeCode）
     @NotBlank(message = "原邮箱验证码不能为空")
     @Size(min = 6, max = 6, message = "验证码长度为 6 位")
+    @Pattern(regexp = "^[0-9]+$", message = "验证码只能包含数字")
     private String beforeCode;
 
     // 新邮箱
@@ -25,5 +27,6 @@ public class ModifyEmailRequest {
     // 新邮箱验证码（afterCode）
     @NotBlank(message = "新邮箱验证码不能为空")
     @Size(min = 6, max = 6, message = "验证码长度为 6 位")
+    @Pattern(regexp = "^[0-9]+$", message = "验证码只能包含数字")
     private String afterCode;
 }

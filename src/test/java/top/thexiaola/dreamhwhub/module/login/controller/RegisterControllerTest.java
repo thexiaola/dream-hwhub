@@ -568,8 +568,7 @@ class RegisterControllerTest {
     }
 
     /**
-     * 非法数据测试 - 验证码包含字母（当前验证规则只限制长度，不限制字符类型）
-     * 注意：实际应用中应该添加 @Pattern 验证来限制验证码为纯数字
+     * 非法数据测试 - 验证码包含字母
      */
     @Test
     @DisplayName("非法数据测试 - 验证码包含字母")
@@ -581,29 +580,10 @@ class RegisterControllerTest {
         registerRequest.setEmailCode("a12345"); // 包含字母
         registerRequest.setPassword("password123");
 
-        User mockUser = new User();
-        mockUser.setId(1);
-        mockUser.setUserNo("123456");
-        mockUser.setUsername("张三");
-        mockUser.setEmail("zhangsan@example.com");
-
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(1);
-        userResponse.setUserNo("123456");
-        userResponse.setUsername("张三");
-        userResponse.setEmail("zhangsan@example.com");
-
-        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
-                .thenReturn(mockUser);
-        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
-                .thenReturn(userResponse);
-
-        // 当前 RegisterRequest 的验证规则只限制验证码长度，不限制字符类型
-        // 所以该请求会通过验证
         mockMvc.perform(post("/api/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(registerRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
     }
 
     // ==================== 极限数据测试 ====================

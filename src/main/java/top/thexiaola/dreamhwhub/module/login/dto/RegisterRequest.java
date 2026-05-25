@@ -33,6 +33,7 @@ public class RegisterRequest {
     // 邮箱验证码
     @NotBlank(message = "邮箱验证码不能为空")
     @Size(min = 6, max = 6, message = "验证码长度为 6 位")
+    @Pattern(regexp = "^[0-9]+$", message = "验证码只能包含数字")
     private String emailCode;
 
     // 密码

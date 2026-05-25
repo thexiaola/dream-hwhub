@@ -359,7 +359,6 @@ class RetrieveUserControllerTest {
 
     /**
      * 非法数据测试 - 验证码包含字母
-     * (当前验证只检查验证码长度，不检查字符类型)
      */
     @Test
     @DisplayName("非法数据测试 - 验证码包含字母")
@@ -369,19 +368,10 @@ class RetrieveUserControllerTest {
         request.setCode("a12345"); // 包含字母
         request.setNewPassword("newpass123");
 
-        User mockUser = new User();
-        mockUser.setId(1);
-        mockUser.setUsername("testuser");
-
-        Mockito.when(modifyUserService.retrievePassword(Mockito.any(RetrievePasswordModifyRequest.class)))
-                .thenReturn(mockUser);
-
-        // 当前验证只检查验证码长度，不检查字符类型
         mockMvc.perform(put("/api/users/retrieve/resetpassword")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(status().isBadRequest());
     }
 
     /**
