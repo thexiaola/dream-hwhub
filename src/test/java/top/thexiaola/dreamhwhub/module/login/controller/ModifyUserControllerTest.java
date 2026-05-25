@@ -1,18 +1,17 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.*;
@@ -29,17 +28,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 用户信息修改控制器单元测试
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class ModifyUserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoBean
     private ModifyUserService modifyUserService;
 
-    @Autowired
+    @MockitoBean
     private UserMapper userMapper;
 
     private ObjectMapper objectMapper;
@@ -47,19 +46,6 @@ class ModifyUserControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-    }
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public ModifyUserService modifyUserService() {
-            return Mockito.mock(ModifyUserService.class);
-        }
-
-        @Bean
-        public UserMapper userMapper() {
-            return Mockito.mock(UserMapper.class);
-        }
     }
 
     private String toJson(Object obj) throws Exception {
@@ -89,8 +75,8 @@ class ModifyUserControllerTest {
                 .thenReturn(userResponse);
 
         mockMvc.perform(put("/api/users/modify/info")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("信息修改成功"));
@@ -121,8 +107,8 @@ class ModifyUserControllerTest {
                 .thenReturn(userResponse);
 
         mockMvc.perform(put("/api/users/modify/email")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("邮箱修改成功"));
@@ -141,8 +127,8 @@ class ModifyUserControllerTest {
         Mockito.doNothing().when(modifyUserService).modifyUserPassword(Mockito.any(ModifyPasswordRequest.class));
 
         mockMvc.perform(put("/api/users/modify/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("密码修改成功"));
@@ -174,8 +160,8 @@ class ModifyUserControllerTest {
         Mockito.doNothing().when(modifyUserService).sendModifyCodeToNewEmail(Mockito.anyString());
 
         mockMvc.perform(post("/api/users/modify/getmodifycode/after")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("验证码已发送"));
@@ -195,11 +181,11 @@ class ModifyUserControllerTest {
                 .when(modifyUserService).modifyUserPassword(Mockito.any(ModifyPasswordRequest.class));
 
         mockMvc.perform(put("/api/users/modify/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("旧密码错误"));
+                .andExpect(jsonPath("$.message").value("原密码错误"));
     }
 
     /**
@@ -214,8 +200,8 @@ class ModifyUserControllerTest {
         request.setAfterCode("123456");
 
         mockMvc.perform(put("/api/users/modify/email")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
                 .andExpect(status().isBadRequest());
     }
 }

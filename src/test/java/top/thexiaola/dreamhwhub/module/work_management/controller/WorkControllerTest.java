@@ -1,19 +1,19 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 作业管理控制器单元测试
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class WorkControllerTest {
 
@@ -77,8 +77,10 @@ class WorkControllerTest {
         mockMvc.perform(multipart("/api/works/")
                         .file(file)
                         .param("title", "测试作业")
+                        .param("description", "测试作业描述")
                         .param("classId", "1")
                         .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
@@ -143,6 +145,7 @@ class WorkControllerTest {
     @DisplayName("测试置顶作业 - 成功")
     void testPinWork_Success() throws Exception {
         PinWorkRequest request = new PinWorkRequest();
+        request.setWorkId(1);
         request.setIsPinned(true);
 
         WorkInfo workInfo = new WorkInfo();
@@ -166,6 +169,7 @@ class WorkControllerTest {
     @DisplayName("测试取消置顶作业 - 成功")
     void testUnpinWork_Success() throws Exception {
         PinWorkRequest request = new PinWorkRequest();
+        request.setWorkId(1);
         request.setIsPinned(false);
 
         WorkInfo workInfo = new WorkInfo();
@@ -204,7 +208,11 @@ class WorkControllerTest {
 
         mockMvc.perform(multipart("/api/works/1")
                         .file(file)
+                        .param("id", "1")
                         .param("title", "更新后的作业")
+                        .param("description", "更新后的作业描述")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("totalScore", "100")
                         .with(request -> {
                             request.setMethod("PUT");
                             return request;

@@ -3,6 +3,7 @@ package top.thexiaola.dreamhwhub.config;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.thexiaola.dreamhwhub.config.security.AuthInterceptor;
@@ -12,6 +13,7 @@ import top.thexiaola.dreamhwhub.config.security.CsrfFilter;
  * Web配置类，注册拦截器和过滤器
  */
 @Configuration
+@Profile("!test")
 public class WebConfig implements WebMvcConfigurer {
     
     private final AuthInterceptor authInterceptor;

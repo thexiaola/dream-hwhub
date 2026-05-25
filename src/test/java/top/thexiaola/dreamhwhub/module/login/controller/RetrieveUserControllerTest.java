@@ -1,17 +1,17 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordCodeRequest;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 密码找回控制器单元测试
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class RetrieveUserControllerTest {
 
@@ -127,7 +127,7 @@ class RetrieveUserControllerTest {
     void testRetrievePassword_InvalidCode() throws Exception {
         RetrievePasswordModifyRequest request = new RetrievePasswordModifyRequest();
         request.setAccount("testuser");
-        request.setCode("wrongcode");
+        request.setCode("123456");
         request.setNewPassword("newpass123");
 
         Mockito.when(modifyUserService.retrievePassword(Mockito.any(RetrievePasswordModifyRequest.class)))
@@ -138,7 +138,7 @@ class RetrieveUserControllerTest {
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("验证码错误"));
+                .andExpect(jsonPath("$.message").value("验证码无效"));
     }
 
     /**

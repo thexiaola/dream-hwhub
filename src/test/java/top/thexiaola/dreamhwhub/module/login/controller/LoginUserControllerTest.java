@@ -1,18 +1,17 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
@@ -30,20 +29,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 用户登录控制器单元测试
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class LoginUserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoBean
     private LoginUserService loginUserService;
 
-    @Autowired
+    @MockitoBean
     private UserMapper userMapper;
 
-    @Autowired
+    @MockitoBean
     private JwtUtil jwtUtil;
 
     private ObjectMapper objectMapper;
@@ -51,24 +50,6 @@ class LoginUserControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-    }
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public LoginUserService loginUserService() {
-            return Mockito.mock(LoginUserService.class);
-        }
-
-        @Bean
-        public UserMapper userMapper() {
-            return Mockito.mock(UserMapper.class);
-        }
-
-        @Bean
-        public JwtUtil jwtUtil() {
-            return Mockito.mock(JwtUtil.class);
-        }
     }
 
     /**
@@ -139,7 +120,7 @@ class LoginUserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.code").value(3002))
                 .andExpect(jsonPath("$.message").value("账号或密码错误"));
     }
 
@@ -162,7 +143,7 @@ class LoginUserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(403));
+                .andExpect(jsonPath("$.code").value(3003));
     }
 
     /**
