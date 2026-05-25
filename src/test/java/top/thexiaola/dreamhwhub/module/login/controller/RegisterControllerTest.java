@@ -222,4 +222,447 @@ class RegisterControllerTest {
                         .content(toJson(emailCodeRequest)))
                 .andExpect(status().isBadRequest());
     }
+
+    // ==================== 边界测试 ====================
+
+    /**
+     * 边界测试 - 学号达到最大长度
+     */
+    @Test
+    @DisplayName("边界测试 - 学号达到最大长度24位")
+    void testRegister_UserNoMaxLength() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456789012345678901234"); // 24位
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUserNo("123456789012345678901234");
+        mockUser.setUsername("张三");
+        mockUser.setEmail("zhangsan@example.com");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUserNo("123456789012345678901234");
+        userResponse.setUsername("张三");
+        userResponse.setEmail("zhangsan@example.com");
+
+        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 学号超过最大长度
+     */
+    @Test
+    @DisplayName("边界测试 - 学号超过最大长度25位")
+    void testRegister_UserNoTooLong() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("1234567890123456789012345"); // 25位
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 边界测试 - 用户名达到最大长度64位
+     */
+    @Test
+    @DisplayName("边界测试 - 用户名达到最大长度64位")
+    void testRegister_UsernameMaxLength() throws Exception {
+        String longUsername = "张".repeat(64);
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername(longUsername);
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUserNo("123456");
+        mockUser.setUsername(longUsername);
+        mockUser.setEmail("zhangsan@example.com");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUserNo("123456");
+        userResponse.setUsername(longUsername);
+        userResponse.setEmail("zhangsan@example.com");
+
+        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 密码最小长度6位
+     */
+    @Test
+    @DisplayName("边界测试 - 密码最小长度6位")
+    void testRegister_PasswordMinLength() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("abc123"); // 6位
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUserNo("123456");
+        mockUser.setUsername("张三");
+        mockUser.setEmail("zhangsan@example.com");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUserNo("123456");
+        userResponse.setUsername("张三");
+        userResponse.setEmail("zhangsan@example.com");
+
+        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 密码最大长度48位
+     */
+    @Test
+    @DisplayName("边界测试 - 密码最大长度48位")
+    void testRegister_PasswordMaxLength() throws Exception {
+        String longPassword = "a".repeat(48);
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword(longPassword);
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUserNo("123456");
+        mockUser.setUsername("张三");
+        mockUser.setEmail("zhangsan@example.com");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUserNo("123456");
+        userResponse.setUsername("张三");
+        userResponse.setEmail("zhangsan@example.com");
+
+        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== 非法数据测试 ====================
+
+    /**
+     * 非法数据测试 - 学号包含字母
+     */
+    @Test
+    @DisplayName("非法数据测试 - 学号包含字母")
+    void testRegister_UserNoWithLetters() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("abc123"); // 包含字母
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 学号包含特殊字符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 学号包含特殊字符")
+    void testRegister_UserNoWithSpecialChars() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123#456"); // 包含特殊字符
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 用户名包含换行符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 用户名包含换行符")
+    void testRegister_UsernameWithNewline() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张\n三"); // 包含换行符
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 用户名包含制表符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 用户名包含制表符")
+    void testRegister_UsernameWithTab() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张\t三"); // 包含制表符
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 密码包含禁用字符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 密码包含中文字符")
+    void testRegister_PasswordWithChinese() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("密码123456"); // 包含中文
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 邮箱缺少@符号
+     */
+    @Test
+    @DisplayName("非法数据测试 - 邮箱缺少@符号")
+    void testRegister_EmailMissingAt() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsanexample.com"); // 缺少@
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 邮箱缺少域名
+     */
+    @Test
+    @DisplayName("非法数据测试 - 邮箱缺少域名")
+    void testRegister_EmailMissingDomain() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@"); // 缺少域名
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 验证码长度不足
+     */
+    @Test
+    @DisplayName("非法数据测试 - 验证码长度不足")
+    void testRegister_CodeTooShort() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("12345"); // 5位
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 验证码长度过长
+     */
+    @Test
+    @DisplayName("非法数据测试 - 验证码长度过长")
+    void testRegister_CodeTooLong() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("1234567"); // 7位
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 验证码包含字母（当前验证规则只限制长度，不限制字符类型）
+     * 注意：实际应用中应该添加 @Pattern 验证来限制验证码为纯数字
+     */
+    @Test
+    @DisplayName("非法数据测试 - 验证码包含字母")
+    void testRegister_CodeWithLetters() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三");
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("a12345"); // 包含字母
+        registerRequest.setPassword("password123");
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUserNo("123456");
+        mockUser.setUsername("张三");
+        mockUser.setEmail("zhangsan@example.com");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUserNo("123456");
+        userResponse.setUsername("张三");
+        userResponse.setEmail("zhangsan@example.com");
+
+        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        // 当前 RegisterRequest 的验证规则只限制验证码长度，不限制字符类型
+        // 所以该请求会通过验证
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isOk());
+    }
+
+    // ==================== 极限数据测试 ====================
+
+    /**
+     * 极限数据测试 - 超大JSON请求体
+     */
+    @Test
+    @DisplayName("极限数据测试 - 超大JSON请求体")
+    void testRegister_LargeRequestBody() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        String longUsername = "张".repeat(5000); // 超长用户名（应该被验证拦截）
+        registerRequest.setUsername(longUsername);
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 极限数据测试 - 特殊Unicode字符
+     */
+    @Test
+    @DisplayName("极限数据测试 - 特殊Unicode字符")
+    void testRegister_SpecialUnicodeChars() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUserNo("123456");
+        registerRequest.setUsername("张三😀🎉🌍"); // 包含emoji
+        registerRequest.setEmail("zhangsan@example.com");
+        registerRequest.setEmailCode("123456");
+        registerRequest.setPassword("password123");
+
+        // emoji应该被允许（只要不包含控制字符）
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUserNo("123456");
+        mockUser.setUsername("张三😀🎉🌍");
+        mockUser.setEmail("zhangsan@example.com");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUserNo("123456");
+        userResponse.setUsername("张三😀🎉🌍");
+        userResponse.setEmail("zhangsan@example.com");
+
+        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
 }

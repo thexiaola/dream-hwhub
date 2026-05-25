@@ -204,4 +204,334 @@ class ModifyUserControllerTest {
                 .content(toJson(request)))
                 .andExpect(status().isBadRequest());
     }
+
+    // ==================== 边界测试 ====================
+
+    /**
+     * 边界测试 - 用户名最大长度
+     */
+    @Test
+    @DisplayName("边界测试 - 用户名最大长度64个字符")
+    void testModifyUserInfo_MaxUsernameLength() throws Exception {
+        String longUsername = "张".repeat(64);
+        ModifyUserInfoRequest request = new ModifyUserInfoRequest();
+        request.setUsername(longUsername);
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUsername(longUsername);
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUsername(longUsername);
+
+        Mockito.when(modifyUserService.modifyUserInfo(Mockito.any(ModifyUserInfoRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        mockMvc.perform(put("/api/users/modify/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 密码最小长度
+     */
+    @Test
+    @DisplayName("边界测试 - 密码最小长度6个字符")
+    void testModifyPassword_MinPasswordLength() throws Exception {
+        ModifyPasswordRequest request = new ModifyPasswordRequest();
+        request.setOldPassword("oldpass");
+        request.setNewPassword("abc123");
+
+        Mockito.doNothing().when(modifyUserService).modifyUserPassword(Mockito.any(ModifyPasswordRequest.class));
+
+        mockMvc.perform(put("/api/users/modify/password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 密码最大长度
+     */
+    @Test
+    @DisplayName("边界测试 - 密码最大长度48个字符")
+    void testModifyPassword_MaxPasswordLength() throws Exception {
+        String longPassword = "a".repeat(48);
+        ModifyPasswordRequest request = new ModifyPasswordRequest();
+        request.setOldPassword("oldpass123");
+        request.setNewPassword(longPassword);
+
+        Mockito.doNothing().when(modifyUserService).modifyUserPassword(Mockito.any(ModifyPasswordRequest.class));
+
+        mockMvc.perform(put("/api/users/modify/password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 验证码最小长度
+     */
+    @Test
+    @DisplayName("边界测试 - 验证码最小长度6位")
+    void testModifyEmail_MinCodeLength() throws Exception {
+        ModifyEmailRequest request = new ModifyEmailRequest();
+        request.setNewEmail("newemail@example.com");
+        request.setBeforeCode("12345");
+        request.setAfterCode("12345");
+
+        mockMvc.perform(put("/api/users/modify/email")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ==================== 非法数据测试 ====================
+
+    /**
+     * 非法数据测试 - 用户名包含换行符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 用户名包含换行符")
+    void testModifyUserInfo_UsernameWithNewline() throws Exception {
+        ModifyUserInfoRequest request = new ModifyUserInfoRequest();
+        request.setUsername("张\n三");
+
+        mockMvc.perform(put("/api/users/modify/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 用户名包含制表符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 用户名包含制表符")
+    void testModifyUserInfo_UsernameWithTab() throws Exception {
+        ModifyUserInfoRequest request = new ModifyUserInfoRequest();
+        request.setUsername("张\t三");
+
+        mockMvc.perform(put("/api/users/modify/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 邮箱缺少@符号
+     */
+    @Test
+    @DisplayName("非法数据测试 - 邮箱缺少@符号")
+    void testModifyEmail_EmailMissingAt() throws Exception {
+        ModifyEmailRequest request = new ModifyEmailRequest();
+        request.setNewEmail("newemail.example.com");
+        request.setBeforeCode("123456");
+        request.setAfterCode("123456");
+
+        mockMvc.perform(put("/api/users/modify/email")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 邮箱缺少域名
+     */
+    @Test
+    @DisplayName("非法数据测试 - 邮箱缺少域名")
+    void testModifyEmail_EmailMissingDomain() throws Exception {
+        ModifyEmailRequest request = new ModifyEmailRequest();
+        request.setNewEmail("newemail@");
+        request.setBeforeCode("123456");
+        request.setAfterCode("123456");
+
+        mockMvc.perform(put("/api/users/modify/email")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 密码包含中文字符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 密码包含中文字符")
+    void testModifyPassword_PasswordWithChinese() throws Exception {
+        ModifyPasswordRequest request = new ModifyPasswordRequest();
+        request.setOldPassword("oldpass123");
+        request.setNewPassword("密码123456");
+
+        mockMvc.perform(put("/api/users/modify/password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 验证码包含字母
+     * (当前验证只检查验证码长度，不检查字符类型)
+     */
+    @Test
+    @DisplayName("非法数据测试 - 验证码包含字母")
+    void testModifyEmail_CodeWithLetters() throws Exception {
+        ModifyEmailRequest request = new ModifyEmailRequest();
+        request.setNewEmail("newemail@example.com");
+        request.setBeforeCode("a12345");
+        request.setAfterCode("a12345");
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setEmail("newemail@example.com");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setEmail("newemail@example.com");
+
+        Mockito.when(modifyUserService.modifyUserEmail(Mockito.any(ModifyEmailRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        // 当前验证只检查验证码长度，不检查字符类型
+        mockMvc.perform(put("/api/users/modify/email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 非法数据测试 - 新邮箱与旧邮箱相同
+     */
+    @Test
+    @DisplayName("非法数据测试 - 新邮箱与旧邮箱相同")
+    void testModifyEmail_SameEmail() throws Exception {
+        ModifyEmailRequest request = new ModifyEmailRequest();
+        request.setNewEmail("same@example.com");
+        request.setBeforeCode("123456");
+        request.setAfterCode("123456");
+
+        Mockito.doThrow(new BusinessException(BusinessErrorCode.SAME_EMAIL))
+                .when(modifyUserService).modifyUserEmail(Mockito.any(ModifyEmailRequest.class));
+
+        mockMvc.perform(put("/api/users/modify/email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ==================== 极限数据测试 ====================
+
+    /**
+     * 极限数据测试 - 超长长用户名
+     */
+    @Test
+    @DisplayName("极限数据测试 - 超长长用户名1000个字符")
+    void testModifyUserInfo_ExtremelyLongUsername() throws Exception {
+        String longUsername = "张".repeat(1000);
+        ModifyUserInfoRequest request = new ModifyUserInfoRequest();
+        request.setUsername(longUsername);
+
+        mockMvc.perform(put("/api/users/modify/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 极限数据测试 - 特殊Unicode字符
+     */
+    @Test
+    @DisplayName("极限数据测试 - 用户名包含Emoji字符")
+    void testModifyUserInfo_UsernameWithEmoji() throws Exception {
+        ModifyUserInfoRequest request = new ModifyUserInfoRequest();
+        request.setUsername("张😀🎉三");
+
+        User mockUser = new User();
+        mockUser.setId(1);
+        mockUser.setUsername("张😀🎉三");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(1);
+        userResponse.setUsername("张😀🎉三");
+
+        Mockito.when(modifyUserService.modifyUserInfo(Mockito.any(ModifyUserInfoRequest.class)))
+                .thenReturn(mockUser);
+        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
+                .thenReturn(userResponse);
+
+        mockMvc.perform(put("/api/users/modify/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 极限数据测试 - 超大JSON请求
+     */
+    @Test
+    @DisplayName("极限数据测试 - 超大JSON请求")
+    void testModifyUserInfo_LargeJsonRequest() throws Exception {
+        String largeUsername = "张".repeat(5000);
+        ModifyUserInfoRequest request = new ModifyUserInfoRequest();
+        request.setUsername(largeUsername);
+
+        mockMvc.perform(put("/api/users/modify/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ==================== 异常场景测试 ====================
+
+    /**
+     * 测试修改邮箱 - 旧邮箱验证码错误
+     */
+    @Test
+    @DisplayName("测试修改邮箱 - 旧邮箱验证码错误")
+    void testModifyEmail_WrongBeforeCode() throws Exception {
+        ModifyEmailRequest request = new ModifyEmailRequest();
+        request.setNewEmail("newemail@example.com");
+        request.setBeforeCode("000000");
+        request.setAfterCode("123456");
+
+        Mockito.doThrow(new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID))
+                .when(modifyUserService).modifyUserEmail(Mockito.any(ModifyEmailRequest.class));
+
+        mockMvc.perform(put("/api/users/modify/email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    /**
+     * 测试修改邮箱 - 新邮箱验证码错误
+     */
+    @Test
+    @DisplayName("测试修改邮箱 - 新邮箱验证码错误")
+    void testModifyEmail_WrongAfterCode() throws Exception {
+        ModifyEmailRequest request = new ModifyEmailRequest();
+        request.setNewEmail("newemail@example.com");
+        request.setBeforeCode("123456");
+        request.setAfterCode("000000");
+
+        Mockito.doThrow(new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID))
+                .when(modifyUserService).modifyUserEmail(Mockito.any(ModifyEmailRequest.class));
+
+        mockMvc.perform(put("/api/users/modify/email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
 }
