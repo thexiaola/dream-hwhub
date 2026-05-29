@@ -13,14 +13,6 @@
           <p class="register-subtitle">加入我们的作业管理系统</p>
         </div>
         <el-form :model="form" :rules="rules" ref="formRef" class="register-form">
-          <el-form-item prop="account">
-            <el-input 
-              v-model="form.account" 
-              placeholder="账号"
-              :prefix-icon="UserIcon"
-              class="input-field"
-            />
-          </el-form-item>
           <el-form-item prop="username">
             <el-input 
               v-model="form.username" 
@@ -55,11 +47,11 @@
               class="input-field"
             />
           </el-form-item>
-          <el-form-item prop="verifyCode">
+          <el-form-item prop="code">
             <el-row :gutter="12">
               <el-col :span="16">
                 <el-input 
-                  v-model="form.verifyCode" 
+                  v-model="form.code" 
                   placeholder="验证码"
                   :prefix-icon="KeyIcon"
                   class="input-field"
@@ -97,28 +89,23 @@ import { ref, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import { BookOpen, User, CreditCard, Mail, Lock, Key } from 'lucide-vue-next'
+import { BookOpen, User, CreditCard, Mail, Lock, Key } from '@lucide/vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const form = ref({
-  account: '',
   username: '',
   userNo: '',
   email: '',
   password: '',
-  verifyCode: ''
+  code: ''
 })
 
-const formRef = ref()
 const loading = ref(false)
 const countdown = ref(0)
 
 const rules = {
-  account: [
-    { required: true, message: '请输入账号', trigger: 'blur' }
-  ],
   username: [
     { required: true, message: '请输入姓名', trigger: 'blur' }
   ],
@@ -131,9 +118,10 @@ const rules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { min: 8, message: '密码长度不能少于8位', trigger: 'blur' },
+    { max: 32, message: '密码长度不能超过32位', trigger: 'blur' }
   ],
-  verifyCode: [
+  code: [
     { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
 }
@@ -149,8 +137,16 @@ const sendVerifyCode = async () => {
     ElMessage.error('请先输入邮箱')
     return
   }
+  if (!form.value.userNo) {
+    ElMessage.error('请先输入学号/工号')
+    return
+  }
+  if (!form.value.username) {
+    ElMessage.error('请先输入姓名')
+    return
+  }
   
-  const result = await userStore.sendCode(form.value.email)
+  const result = await userStore.sendCode(form.value.email, form.value.userNo, form.value.username)
   if (result.code === 200) {
     ElMessage.success('验证码已发送')
     countdown.value = 60
@@ -170,12 +166,11 @@ const handleRegister = async () => {
   
   try {
     const result = await userStore.register({
-      account: form.value.account,
       username: form.value.username,
       userNo: form.value.userNo,
       email: form.value.email,
       password: form.value.password,
-      verifyCode: form.value.verifyCode
+      code: form.value.code
     })
     
     if (result.code === 200) {

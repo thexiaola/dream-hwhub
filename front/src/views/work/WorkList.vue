@@ -92,8 +92,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import { useClassStore } from '@/stores/class'
-import { ElMessage, ElConfirm } from 'element-plus'
-import { Search, Plus, Star, Users, Clock, FileText, Edit3, Trash2 } from 'lucide-vue-next'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Plus, Star, Users, Clock, FileText, Edit3, Trash2 } from '@lucide/vue'
 
 const router = useRouter()
 const workStore = useWorkStore()
@@ -144,17 +144,21 @@ const goToEdit = (id: number) => {
 }
 
 const deleteWork = async (id: number) => {
-  await ElConfirm('确认删除此作业？', '提示', {
-    confirmButtonText: '确认',
-    cancelButtonText: '取消'
-  })
-  
-  const result = await workStore.deleteWork(id)
-  if (result.code === 200) {
-    ElMessage.success('删除成功')
-    await workStore.getWorks()
-  } else {
-    ElMessage.error(result.message)
+  try {
+    await ElMessageBox.confirm('确认删除此作业？', '提示', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消'
+    })
+    
+    const result = await workStore.deleteWork(id)
+    if (result.code === 200) {
+      ElMessage.success('删除成功')
+      await workStore.getWorks()
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch {
+    // 用户取消
   }
 }
 

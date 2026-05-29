@@ -62,7 +62,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { BookOpen, LayoutDashboard, FileText, Users, CheckCircle, User, ChevronDown, LogOut } from 'lucide-vue-next'
+import { BookOpen, LayoutDashboard, FileText, Users, CheckCircle, User, ChevronDown, LogOut } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()

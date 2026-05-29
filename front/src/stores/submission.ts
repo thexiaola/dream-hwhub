@@ -7,13 +7,13 @@ export const useSubmissionStore = defineStore('submission', () => {
   const submissions = ref<WorkSubmission[]>([])
 
   const getSubmissions = async (workId?: number, page: number = 1, size: number = 10): Promise<void> => {
-    const params: Record<string, unknown> = { page, size }
+    const params: Record<string, unknown> = { pageNum: page, pageSize: size }
     if (workId) {
       params.workId = workId
     }
-    const result = await get<{ list: WorkSubmission[] }>('/submissions', params)
+    const result = await get<{ records: WorkSubmission[] }>('/submissions/list', params)
     if (result.code === 200) {
-      submissions.value = result.data!.list
+      submissions.value = result.data!.records
     }
   }
 

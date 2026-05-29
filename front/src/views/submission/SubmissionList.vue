@@ -68,7 +68,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useSubmissionStore } from '@/stores/submission'
 import { useWorkStore } from '@/stores/work'
 import { ElMessage } from 'element-plus'
-import { FileText } from 'lucide-vue-next'
+import { FileText } from '@lucide/vue'
 
 const submissionStore = useSubmissionStore()
 const workStore = useWorkStore()

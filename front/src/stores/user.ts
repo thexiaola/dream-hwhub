@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { UserInfo, LoginRequest, RegisterRequest } from '@/types'
+import type { UserInfo, RegisterRequest } from '@/types'
 import { post, get } from '@/utils/http'
 
 export const useUserStore = defineStore('user', () => {
@@ -26,7 +26,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const register = async (data: RegisterRequest): Promise<{ code: number; message: string }> => {
-    const result = await post('/users/register', data)
+    const result = await post('/users/register', data as unknown as Record<string, unknown>)
     return { code: result.code, message: result.message }
   }
 
@@ -37,8 +37,8 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const sendCode = async (email: string): Promise<{ code: number; message: string }> => {
-    const result = await post('/users/send-code', { email })
+  const sendCode = async (email: string, userNo: string, username: string): Promise<{ code: number; message: string }> => {
+    const result = await post('/users/getregcode', { email, userNo, username })
     return { code: result.code, message: result.message }
   }
 

@@ -40,7 +40,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import { useSubmissionStore } from '@/stores/submission'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from 'lucide-vue-next'
+import { ArrowLeft } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()

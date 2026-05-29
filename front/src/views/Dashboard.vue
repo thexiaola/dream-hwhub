@@ -118,7 +118,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import { useClassStore } from '@/stores/class'
-import { FileText, Users, CheckCircle, Clock, Plus } from 'lucide-vue-next'
+import { FileText, Users, CheckCircle, Clock, Plus } from '@lucide/vue'
 
 const router = useRouter()
 const workStore = useWorkStore()

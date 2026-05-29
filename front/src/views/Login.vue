@@ -5,7 +5,7 @@
       <div class="orb orb-1"></div>
       <div class="orb orb-2"></div>
       <div class="stars">
-        <span v-for="n in 50" :key="n" class="star" :style="getStarStyle(n)"></span>
+        <span v-for="n in 50" :key="n" class="star" :style="getStarStyle()"></span>
       </div>
     </div>
     <div class="login-container">
@@ -56,7 +56,7 @@ import { ref, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import { BookOpen, User, Lock } from 'lucide-vue-next'
+import { BookOpen, User, Lock } from '@lucide/vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -66,7 +66,6 @@ const form = ref({
   password: ''
 })
 
-const formRef = ref()
 const loading = ref(false)
 
 const rules = {
@@ -81,7 +80,7 @@ const rules = {
 const UserIcon = () => h(User, { size: 18 })
 const LockIcon = () => h(Lock, { size: 18 })
 
-const getStarStyle = (n: number) => ({
+const getStarStyle = () => ({
   left: `${Math.random() * 100}%`,
   top: `${Math.random() * 100}%`,
   animationDelay: `${Math.random() * 3}s`,

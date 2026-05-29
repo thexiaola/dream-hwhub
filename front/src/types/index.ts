@@ -19,12 +19,11 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  account: string
   username: string
   userNo: string
   email: string
   password: string
-  verifyCode: string
+  code: string
 }
 
 export interface WorkInfo {

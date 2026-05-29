@@ -57,7 +57,7 @@
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import { User, Key, Mail, ChevronRight, LogOut } from 'lucide-vue-next'
+import { User, Key, Mail, ChevronRight, LogOut } from '@lucide/vue'
 
 const router = useRouter()
 const userStore = useUserStore()

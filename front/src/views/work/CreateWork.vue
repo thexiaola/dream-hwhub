@@ -70,13 +70,12 @@ const classStore = useClassStore()
 const form = ref({
   title: '',
   description: '',
-  classId: '',
+  classId: null,
   score: 100,
   deadline: '',
   isPinned: false
 })
 
-const formRef = ref()
 const loading = ref(false)
 const classOptions = ref<any[]>([])
 

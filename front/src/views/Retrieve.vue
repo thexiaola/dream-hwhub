@@ -115,7 +115,7 @@
 import { ref, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { BookOpen, User, Mail, Key, Lock } from 'lucide-vue-next'
+import { BookOpen, User, Mail, Key, Lock } from '@lucide/vue'
 import { post } from '@/utils/http'
 
 const router = useRouter()

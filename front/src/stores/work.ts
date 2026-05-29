@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { WorkInfo } from '@/types'
-import { get, post, put, del } from '@/utils/http'
+import { get, post, put, del, patch } from '@/utils/http'
 
 export const useWorkStore = defineStore('work', () => {
   const works = ref<WorkInfo[]>([])
 
   const getWorks = async (page: number = 1, size: number = 10): Promise<void> => {
-    const result = await get<{ list: WorkInfo[] }>('/works', { page, size })
+    const result = await get<{ records: WorkInfo[] }>('/works/list', { pageNum: page, pageSize: size })
     if (result.code === 200) {
-      works.value = result.data!.list
+      works.value = result.data!.records
     }
   }
 
@@ -37,7 +37,7 @@ export const useWorkStore = defineStore('work', () => {
   }
 
   const pinWork = async (id: number, isPinned: boolean): Promise<{ code: number; message: string }> => {
-    const result = await post(`/works/${id}/pin`, { isPinned })
+    const result = await patch(`/works/${id}/pin`, { workId: id, isPinned })
     return { code: result.code, message: result.message }
   }
 

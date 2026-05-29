@@ -7,14 +7,14 @@ export const useClassStore = defineStore('class', () => {
   const classes = ref<ClassInfo[]>([])
 
   const getClasses = async (page: number = 1, size: number = 10): Promise<void> => {
-    const result = await get<{ list: ClassInfo[] }>('/classes', { page, size })
+    const result = await get<{ records: ClassInfo[] }>('/class/mine', { pageNum: page, pageSize: size })
     if (result.code === 200) {
-      classes.value = result.data!.list
+      classes.value = result.data!.records
     }
   }
 
   const getClassById = async (id: number): Promise<ClassInfo | null> => {
-    const result = await get<ClassInfo>(`/classes/${id}`)
+    const result = await get<ClassInfo>(`/class/${id}`)
     if (result.code === 200) {
       return result.data!
     }
@@ -22,22 +22,22 @@ export const useClassStore = defineStore('class', () => {
   }
 
   const createClass = async (data: Record<string, unknown>): Promise<{ code: number; message: string }> => {
-    const result = await post('/classes', data)
+    const result = await post('/class', data)
     return { code: result.code, message: result.message }
   }
 
   const updateClass = async (id: number, data: Record<string, unknown>): Promise<{ code: number; message: string }> => {
-    const result = await put(`/classes/${id}`, data)
+    const result = await put(`/class/${id}`, data)
     return { code: result.code, message: result.message }
   }
 
   const deleteClass = async (id: number): Promise<{ code: number; message: string }> => {
-    const result = await del(`/classes/${id}`)
+    const result = await del(`/class/${id}`)
     return { code: result.code, message: result.message }
   }
 
   const joinClass = async (classId: number): Promise<{ code: number; message: string }> => {
-    const result = await post(`/classes/${classId}/join`)
+    const result = await post(`/class/${classId}/applications/join`, { classId })
     return { code: result.code, message: result.message }
   }
 

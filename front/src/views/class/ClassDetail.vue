@@ -59,8 +59,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useClassStore } from '@/stores/class'
-import { ElMessage, ElConfirm } from 'element-plus'
-import { ArrowLeft, User, Users } from 'lucide-vue-next'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowLeft, User, Users } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -79,17 +79,21 @@ const goBack = () => {
 }
 
 const deleteClass = async () => {
-  await ElConfirm('确认删除此班级？', '提示', {
-    confirmButtonText: '确认',
-    cancelButtonText: '取消'
-  })
-  
-  const result = await classStore.deleteClass(Number(route.params.id))
-  if (result.code === 200) {
-    ElMessage.success('删除成功')
-    router.push('/class')
-  } else {
-    ElMessage.error(result.message)
+  try {
+    await ElMessageBox.confirm('确认删除此班级？', '提示', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消'
+    })
+    
+    const result = await classStore.deleteClass(Number(route.params.id))
+    if (result.code === 200) {
+      ElMessage.success('删除成功')
+      router.push('/class')
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch {
+    // 用户取消
   }
 }
 

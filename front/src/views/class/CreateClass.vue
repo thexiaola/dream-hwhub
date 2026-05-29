@@ -46,7 +46,6 @@ const form = ref({
   description: ''
 })
 
-const formRef = ref()
 const loading = ref(false)
 
 const rules = {

@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiResponse } from '@/types'
 
 const instance: AxiosInstance = axios.create({
@@ -10,7 +10,7 @@ const instance: AxiosInstance = axios.create({
 })
 
 instance.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers = config.headers || {}
@@ -25,7 +25,7 @@ instance.interceptors.request.use(
 
 instance.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    return response.data
+    return { data: response.data } as AxiosResponse<ApiResponse>
   },
   (error) => {
     const response = error.response?.data as ApiResponse
@@ -46,6 +46,10 @@ export const post = <T = null>(url: string, data?: Record<string, unknown>): Pro
 
 export const put = <T = null>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> => {
   return instance.put(url, data)
+}
+
+export const patch = <T = null>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> => {
+  return instance.patch(url, data)
 }
 
 export const del = <T = null>(url: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {

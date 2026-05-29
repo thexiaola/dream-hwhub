@@ -58,7 +58,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useClassStore } from '@/stores/class'
 import { ElMessage } from 'element-plus'
-import { Plus, Users, User, FileText } from 'lucide-vue-next'
+import { Plus, Users, User, FileText } from '@lucide/vue'
 
 const router = useRouter()
 const classStore = useClassStore()
