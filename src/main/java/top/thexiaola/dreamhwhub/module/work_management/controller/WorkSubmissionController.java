@@ -44,8 +44,18 @@ public class WorkSubmissionController {
         String ip = LogUtil.getCurrentClientIp();
         try {
             // 参数验证
-            if (workId == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 不能为空"));
+            if (workId == null || workId <= 0) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 无效"));
+            }
+            
+            // 验证提交内容长度
+            if (submissionContent != null && submissionContent.length() > 2048) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400, "提交内容长度不能超过 2048 位"));
+            }
+            
+            // 验证提交内容不包含换行符
+            if (submissionContent != null && (submissionContent.contains("\n") || submissionContent.contains("\r"))) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400, "提交内容不能包含换行符"));
             }
             
             User user = UserUtils.getCurrentUser();
@@ -56,6 +66,8 @@ public class WorkSubmissionController {
             request.setWorkId(workId);
             request.setSubmissionContent(submissionContent);
             request.setAttachments(attachments);
+            
+            request.validate();
             
             WorkSubmissionSubmitResponse response = workSubmissionService.submitWork(request);
             log.info("User ({}) submitted work, id: {}", userInfo, response.getId());
@@ -114,17 +126,12 @@ public class WorkSubmissionController {
     @GetMapping("/{submissionId}")
     public ResponseEntity<ApiResponse<WorkSubmission>> getSubmissionDetail(@PathVariable Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
-        try {
-            User user = UserUtils.getCurrentUser();
-            String userInfo = LogUtil.getUserInfoString(ip, user);
-            
-            WorkSubmission submission = workSubmissionService.getSubmissionById(submissionId);
-            log.info("User ({}) queried submission detail, id: {}", userInfo, submissionId);
-            return ResponseEntity.ok(ApiResponse.success(submission));
-        } catch (BusinessException e) {
-            log.warn("User query submission detail failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
-        }
+        User user = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfoString(ip, user);
+        
+        WorkSubmission submission = workSubmissionService.getSubmissionById(submissionId);
+        log.info("User ({}) queried submission detail, id: {}", userInfo, submissionId);
+        return ResponseEntity.ok(ApiResponse.success(submission));
     }
 
     /**
@@ -214,17 +221,12 @@ public class WorkSubmissionController {
     @PutMapping("/grade")
     public ResponseEntity<ApiResponse<WorkSubmission>> gradeWork(@Valid @RequestBody GradeWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
-        try {
-            User user = UserUtils.getCurrentUser();
-            String userInfo = LogUtil.getUserInfoString(ip, user);
-            
-            WorkSubmission submission = workSubmissionService.gradeWork(request);
-            log.info("User ({}) graded submission, id: {}, score: {}", userInfo, submission.getId(), submission.getScore());
-            return ResponseEntity.ok(ApiResponse.success(submission));
-        } catch (BusinessException e) {
-            log.warn("User grade work failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
-        }
+        User user = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfoString(ip, user);
+        
+        WorkSubmission submission = workSubmissionService.gradeWork(request);
+        log.info("User ({}) graded submission, id: {}, score: {}", userInfo, submission.getId(), submission.getScore());
+        return ResponseEntity.ok(ApiResponse.success(submission));
     }
 
     /**

@@ -48,11 +48,14 @@ class WorkControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules();
     }
 
     private String toJson(Object obj) throws Exception {
         return objectMapper.writeValueAsString(obj);
     }
+
+    // ==================== 正常数据测试 ====================
 
     /**
      * 测试创建作业 - 成功
@@ -222,11 +225,253 @@ class WorkControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
     }
 
+    // ==================== 边界测试 ====================
+
     /**
-     * 测试查询作业详情 - 作业不存在
+     * 边界测试 - 作业标题最大长度128字符
      */
     @Test
-    @DisplayName("测试查询作业详情 - 作业不存在")
+    @DisplayName("边界测试 - 作业标题最大长度128字符")
+    void testCreateWork_MaxTitleLength() throws Exception {
+        String longTitle = "a".repeat(128);
+        
+        WorkInfo workInfo = new WorkInfo();
+        workInfo.setId(1);
+        workInfo.setTitle(longTitle);
+
+        Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
+                .thenReturn(workInfo);
+
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", longTitle)
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 作业总分最小值1
+     */
+    @Test
+    @DisplayName("边界测试 - 作业总分最小值1")
+    void testCreateWork_MinTotalScore() throws Exception {
+        WorkInfo workInfo = new WorkInfo();
+        workInfo.setId(1);
+        workInfo.setTitle("测试作业");
+
+        Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
+                .thenReturn(workInfo);
+
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("totalScore", "1")
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    /**
+     * 边界测试 - 作业总分最大值1000
+     */
+    @Test
+    @DisplayName("边界测试 - 作业总分最大值1000")
+    void testCreateWork_MaxTotalScore() throws Exception {
+        WorkInfo workInfo = new WorkInfo();
+        workInfo.setId(1);
+        workInfo.setTitle("测试作业");
+
+        Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
+                .thenReturn(workInfo);
+
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("totalScore", "1000")
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== 越界数据测试 ====================
+
+    /**
+     * 越界数据测试 - 作业标题超过最大长度
+     */
+    @Test
+    @DisplayName("越界数据测试 - 作业标题超过最大长度129字符")
+    void testCreateWork_TitleTooLong() throws Exception {
+        String longTitle = "a".repeat(129);
+
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", longTitle)
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 越界数据测试 - 作业总分超过最大值
+     */
+    @Test
+    @DisplayName("越界数据测试 - 作业总分超过最大值1001")
+    void testCreateWork_TotalScoreTooHigh() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("totalScore", "1001")
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 越界数据测试 - 作业总分小于最小值
+     */
+    @Test
+    @DisplayName("越界数据测试 - 作业总分小于最小值0")
+    void testCreateWork_TotalScoreTooLow() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("totalScore", "0")
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 越界数据测试 - 分页大小超过最大限制
+     */
+    @Test
+    @DisplayName("越界数据测试 - 分页大小超过最大限制301")
+    void testGetWorkList_PageSizeTooLarge() throws Exception {
+        mockMvc.perform(get("/api/works/")
+                        .param("pageNum", "1")
+                        .param("pageSize", "301"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ==================== 非法数据测试 ====================
+
+    /**
+     * 非法数据测试 - 作业标题为空
+     */
+    @Test
+    @DisplayName("非法数据测试 - 作业标题为空")
+    void testCreateWork_EmptyTitle() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 作业标题包含换行符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 作业标题包含换行符")
+    void testCreateWork_TitleWithNewline() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试\n作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 作业标题包含制表符
+     */
+    @Test
+    @DisplayName("非法数据测试 - 作业标题包含制表符")
+    void testCreateWork_TitleWithTab() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试\t作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 班级ID为空
+     */
+    @Test
+    @DisplayName("非法数据测试 - 班级ID为空")
+    void testCreateWork_EmptyClassId() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 班级ID为负数
+     */
+    @Test
+    @DisplayName("非法数据测试 - 班级ID为负数")
+    void testCreateWork_NegativeClassId() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "-1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 截止时间格式错误
+     */
+    @Test
+    @DisplayName("非法数据测试 - 截止时间格式错误")
+    void testCreateWork_InvalidDeadlineFormat() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", "2026/04/15")
+                        .param("publishTime", LocalDateTime.now().toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 作业不存在
+     */
+    @Test
+    @DisplayName("非法数据测试 - 查询不存在的作业")
     void testGetWorkDetail_NotFound() throws Exception {
         Mockito.when(workService.getWorkById(Mockito.anyInt()))
                 .thenThrow(new BusinessException(BusinessErrorCode.WORK_NOT_FOUND));
@@ -235,5 +480,53 @@ class WorkControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("作业不存在"));
+    }
+
+    /**
+     * 非法数据测试 - 发布时间早于当前时间
+     */
+    @Test
+    @DisplayName("非法数据测试 - 发布时间早于当前时间")
+    void testCreateWork_PublishTimeInPast() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .param("publishTime", LocalDateTime.now().minusDays(1).toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 截止时间早于发布时间
+     */
+    @Test
+    @DisplayName("非法数据测试 - 截止时间早于发布时间")
+    void testCreateWork_DeadlineBeforePublishTime() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "测试作业")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", now.minusDays(1).toString())
+                        .param("publishTime", now.plusDays(1).toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 非法数据测试 - 作业标题包含XSS攻击代码
+     */
+    @Test
+    @DisplayName("非法数据测试 - 作业标题包含XSS攻击代码")
+    void testCreateWork_TitleWithXss() throws Exception {
+        mockMvc.perform(multipart("/api/works/")
+                        .param("title", "<script>alert('xss')</script>")
+                        .param("description", "测试")
+                        .param("classId", "1")
+                        .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest());
     }
 }

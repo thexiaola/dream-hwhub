@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
+import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ApproveJoinClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
@@ -37,6 +39,7 @@ public class ClassController {
      */
     @PostMapping("/")
     public ApiResponse<CreateClassApplicationResponse> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
+        request.validate();
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to create class: {}", userInfo, request.getClassName());
@@ -51,6 +54,9 @@ public class ClassController {
      */
     @PostMapping("/{classId}/applications/join")
     public ApiResponse<JoinClassApplicationResponse> applyJoinClass(@PathVariable Integer classId) {
+        if (classId == null || classId <= 0) {
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "班级ID无效", null);
+        }
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} applying to join class by ID: {}", userInfo, classId);

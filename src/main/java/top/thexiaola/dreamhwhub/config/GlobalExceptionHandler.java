@@ -37,8 +37,8 @@ public class GlobalExceptionHandler {
         HttpStatus httpStatus;
         int returnCode;
         
-        if (code == 9001) {
-            // 权限不足返回 403
+        if (code == 9001 || code == 8504) {
+            // 权限不足或不是班级成员返回 403
             httpStatus = HttpStatus.FORBIDDEN;
             returnCode = 403;
         } else if (code == 401 || code == 3001 || code == 3002 || code == 3003 || code == 3004) {

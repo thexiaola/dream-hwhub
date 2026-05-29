@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import top.thexiaola.dreamhwhub.exception.BusinessException;
+import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
+import top.thexiaola.dreamhwhub.support.validation.XssValidator;
 
 /**
  * 创建班级请求
@@ -25,4 +28,14 @@ public class CreateClassRequest {
     @Size(max = 512, message = "班级描述长度不能超过 512 位")
     @Pattern(regexp = "^[^\\t\\f\\v]*$", message = "班级描述不能包含特殊字符（制表符等）")
     private String description;
+
+    /**
+     * 自定义校验：XSS防护
+     */
+    public void validate() {
+        XssValidator.validateNoXss(className, "班级名称");
+        if (description != null) {
+            XssValidator.validateNoXss(description, "班级描述");
+        }
+    }
 }
