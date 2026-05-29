@@ -1,101 +1,151 @@
 <template>
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="logo">
-        <component :is="componentMap['GraduationCap']" />
-        <span>作业管理系统</span>
-      </div>
-    </div>
-    
     <nav class="sidebar-nav">
-      <router-link 
-        v-for="item in menuItems" 
-        :key="item.path"
-        :to="item.path"
-        class="nav-item"
-        :class="{ active: $route.path === item.path }"
-      >
-        <component :is="componentMap[item.icon]" />
-        <span>{{ item.label }}</span>
-      </router-link>
+      <div class="nav-section">
+        <div 
+          v-for="item in menuItems" 
+          :key="item.path"
+          :class="['nav-item', { active: currentPath === item.path }]"
+          @click="navigateTo(item.path)"
+        >
+          <component :is="componentMap[item.icon]" class="nav-icon" />
+          <span class="nav-text">{{ item.label }}</span>
+        </div>
+      </div>
+      
+      <div class="nav-divider"></div>
+      
+      <div class="nav-section">
+        <div 
+          v-for="item in manageItems" 
+          :key="item.path"
+          :class="['nav-item', { active: currentPath.startsWith(item.path) }]"
+          @click="navigateTo(item.path)"
+        >
+          <component :is="componentMap[item.icon]" class="nav-icon" />
+          <span class="nav-text">{{ item.label }}</span>
+        </div>
+      </div>
     </nav>
   </aside>
 </template>
 
 <script setup>
-import { GraduationCap, LayoutDashboard, BookOpen, Users, FileUp, User } from 'lucide-vue-next'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter, onBeforeRouteUpdate } from 'vue-router'
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Users, 
+  CheckCircle, 
+  Plus,
+  List
+} from 'lucide-vue-next'
 
 const componentMap = {
-  GraduationCap,
   LayoutDashboard,
-  BookOpen,
+  FileText,
   Users,
-  FileUp,
-  User
+  CheckCircle,
+  Plus,
+  List
 }
+
+const router = useRouter()
+const currentPath = ref('/dashboard')
 
 const menuItems = [
   { path: '/dashboard', label: '首页', icon: 'LayoutDashboard' },
-  { path: '/works', label: '作业管理', icon: 'BookOpen' },
+  { path: '/works', label: '作业管理', icon: 'FileText' },
   { path: '/classes', label: '班级管理', icon: 'Users' },
-  { path: '/submissions', label: '作业提交', icon: 'FileUp' },
-  { path: '/profile', label: '个人中心', icon: 'User' }
+  { path: '/submissions', label: '作业提交', icon: 'CheckCircle' }
 ]
+
+const manageItems = [
+  { path: '/works/create', label: '创建作业', icon: 'Plus' },
+  { path: '/classes/create', label: '创建班级', icon: 'Plus' }
+]
+
+onMounted(() => {
+  currentPath.value = router.currentRoute.value.path
+})
+
+onBeforeRouteUpdate((to) => {
+  currentPath.value = to.path
+})
+
+function navigateTo(path) {
+  router.push(path)
+}
 </script>
 
 <style scoped>
 .sidebar {
-  width: 200px;
-  background: #2d3748;
-  color: #fff;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-header {
-  padding: 24px;
-  border-bottom: 1px solid #4a5568;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.logo svg {
-  margin-right: 8px;
-  font-size: 24px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 256px;
+  height: 100vh;
+  background: rgba(10, 10, 26, 0.98);
+  border-right: 1px solid rgba(102, 126, 234, 0.2);
+  padding-top: 80px;
+  z-index: 200;
 }
 
 .sidebar-nav {
-  flex: 1;
-  padding: 20px 0;
+  padding: 16px;
+}
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 12px 24px;
-  color: #a0aec0;
-  text-decoration: none;
-  transition: all 0.3s;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .nav-item:hover {
-  background: #4a5568;
-  color: #fff;
+  background: rgba(102, 126, 234, 0.1);
 }
 
 .nav-item.active {
-  background: #667eea;
-  color: #fff;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+  border-left: 3px solid #667eea;
 }
 
-.nav-item svg {
-  margin-right: 12px;
+.nav-icon {
   font-size: 18px;
+  color: #a0a0c0;
+  transition: color 0.3s ease;
+}
+
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon {
+  color: #667eea;
+}
+
+.nav-text {
+  font-size: 14px;
+  color: #a0a0c0;
+  transition: color 0.3s ease;
+}
+
+.nav-item:hover .nav-text,
+.nav-item.active .nav-text {
+  color: white;
+}
+
+.nav-divider {
+  height: 1px;
+  background: rgba(102, 126, 234, 0.2);
+  margin: 20px 0;
 }
 </style>
