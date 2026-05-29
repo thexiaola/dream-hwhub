@@ -1,305 +1,283 @@
 <template>
-  <div class="work-container">
-    <Sidebar />
-    
-    <div class="work-main">
-      <Header />
-      
-      <div class="work-content">
-        <div class="work-header-actions">
-          <el-button @click="goBack">返回列表</el-button>
-          <router-link :to="`/works/${workId}/edit`" class="el-button el-button--primary">编辑作业</router-link>
-          <router-link v-if="canSubmit" :to="`/submit/${workId}`" class="el-button el-button--success">提交作业</router-link>
-        </div>
-        
-        <el-card v-if="work" class="work-detail-card">
-          <div class="work-detail-header">
-            <h2>{{ work.title }}</h2>
-            <div class="work-badges">
-              <span v-if="work.isPinned" class="badge pinned">置顶</span>
-              <span :class="['badge', statusClass]">{{ statusText }}</span>
-            </div>
-          </div>
-          
-          <div class="work-detail-info">
-            <div class="info-row">
-              <span class="label">发布人</span>
-              <span>{{ work.publisherName }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">班级</span>
-              <span>{{ work.className }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">截止时间</span>
-              <span>{{ formatDate(work.deadline) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">发布时间</span>
-              <span>{{ formatDate(work.publishTime) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">总分</span>
-              <span>{{ work.totalScore }} 分</span>
-            </div>
-            <div class="info-row">
-              <span class="label">允许逾期提交</span>
-              <span>{{ work.allowLateSubmit ? '是' : '否' }}</span>
-            </div>
-          </div>
-          
-          <div class="work-detail-section">
-            <h3>作业描述</h3>
-            <p>{{ work.description }}</p>
-          </div>
-          
-          <div v-if="work.attachments && work.attachments.length > 0" class="work-detail-section">
-            <h3>附件</h3>
-            <ul class="attachment-list">
-              <li v-for="attachment in work.attachments" :key="attachment.id">
-                <component :is="componentMap['FileText']" />
-                <span>{{ attachment.fileName }}</span>
-                <span class="file-size">{{ formatFileSize(attachment.fileSize) }}</span>
-              </li>
-            </ul>
-          </div>
-          
-          <div class="work-detail-section">
-            <h3>提交记录</h3>
-            <el-table :data="submissions" border>
-              <el-table-column prop="userName" label="学生" />
-              <el-table-column prop="submitTime" label="提交时间" :formatter="formatDate" />
-              <el-table-column prop="score" label="成绩" />
-              <el-table-column prop="isLate" label="是否逾期" :formatter="formatIsLate" />
-              <el-table-column label="操作">
-                <template #default="scope">
-                  <router-link :to="`/submissions/${scope.row.id}`" class="action-btn">查看详情</router-link>
-                  <el-button 
-                    v-if="canGrade" 
-                    type="text" 
-                    @click="goToGrade(scope.row.id)" 
-                    class="grade-btn"
-                  >批改</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </el-card>
+  <div class="work-detail-page">
+    <div class="page-header">
+      <div class="header-left">
+        <el-button @click="goBack" class="back-btn">
+          <ArrowLeft :size="18" />
+        </el-button>
+        <h2>{{ work?.title }}</h2>
       </div>
+      <div class="header-right">
+        <el-button v-if="work?.isPinned" @click="togglePin(false)">取消置顶</el-button>
+        <el-button v-else @click="togglePin(true)">置顶作业</el-button>
+        <el-button type="primary" @click="goToSubmit">提交作业</el-button>
+      </div>
+    </div>
+    <div v-if="work" class="work-detail">
+      <el-card class="detail-card">
+        <div class="detail-section">
+          <h3>基本信息</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">班级</span>
+              <span class="value">{{ work.className }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">满分</span>
+              <span class="value">{{ work.score }}分</span>
+            </div>
+            <div class="info-item">
+              <span class="label">截止时间</span>
+              <span class="value">{{ formatDate(work.deadline) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">状态</span>
+              <span :class="['status-badge', work.status]">{{ getStatusText(work.status) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h3>作业描述</h3>
+          <p class="description">{{ work.description }}</p>
+        </div>
+      </el-card>
+      <el-card class="submit-section">
+        <template #header>
+          <h3>作业提交</h3>
+        </template>
+        <div v-if="submission" class="submission-info">
+          <div class="submission-header">
+            <span class="submitter">{{ submission.submitterName }}</span>
+            <span :class="['status-badge', submission.status]">{{ getSubmissionStatus(submission.status) }}</span>
+          </div>
+          <p class="submission-content">{{ submission.content }}</p>
+          <div class="submission-meta">
+            <span>提交时间：{{ formatDate(submission.submittedAt) }}</span>
+            <span v-if="submission.gradedAt">批改时间：{{ formatDate(submission.gradedAt) }}</span>
+            <span v-if="submission.grade !== null">成绩：{{ submission.grade }}分</span>
+          </div>
+        </div>
+        <div v-else class="no-submission">
+          <FileText :size="48" />
+          <p>暂无提交记录</p>
+        </div>
+      </el-card>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Sidebar from '../../components/Sidebar.vue'
-import Header from '../../components/Header.vue'
-import { useWorkStore } from '../../stores/work'
-import { useSubmissionStore } from '../../stores/submission'
-import { FileText } from 'lucide-vue-next'
+import { useWorkStore } from '@/stores/work'
+import { useSubmissionStore } from '@/stores/submission'
+import { ElMessage } from 'element-plus'
+import { ArrowLeft, FileText } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
 const workStore = useWorkStore()
 const submissionStore = useSubmissionStore()
 
-const componentMap = {
-  FileText
-}
+const work = ref<any>(null)
+const submission = ref<any>(null)
 
-const workId = computed(() => parseInt(route.params.id))
-const work = ref(null)
-const submissions = ref([])
-
-const statusText = computed(() => {
-  const statusMap = { 0: '未发布', 1: '已发布', 2: '已结束' }
-  return statusMap[work.value?.status] || '未知'
-})
-
-const statusClass = computed(() => {
-  const classMap = { 0: 'draft', 1: 'published', 2: 'ended' }
-  return classMap[work.value?.status] || ''
-})
-
-const canSubmit = computed(() => {
-  return work.value?.status === 1 && new Date(work.value?.deadline) > new Date()
-})
-
-const canGrade = computed(() => {
-  return work.value?.userRole === '创建者' || work.value?.userRole === '班级助理'
-})
-
-onMounted(async () => {
-  await loadWorkDetail()
-  await loadSubmissions()
-})
-
-async function loadWorkDetail() {
-  const response = await workStore.getWorkDetail(workId.value)
-  if (response.code === 200) {
-    work.value = response.data
-  }
-}
-
-async function loadSubmissions() {
-  const response = await submissionStore.getSubmissionListByWork(workId.value)
-  if (response.code === 200) {
-    submissions.value = response.data.records
-  }
-}
-
-function formatDate(dateStr) {
+const formatDate = (dateStr: string) => {
   const date = new Date(dateStr)
-  return date.toLocaleString('zh-CN')
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-function formatFileSize(bytes) {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+const getStatusText = (status: string) => {
+  const map: Record<string, string> = {
+    pending: '未截止',
+    expired: '已过期',
+    graded: '已批改'
+  }
+  return map[status] || status
 }
 
-function formatIsLate(row, column) {
-  return row.isLate ? '是' : '否'
+const getSubmissionStatus = (status: string) => {
+  return status === 'submitted' ? '已提交' : '已批改'
 }
 
-function goBack() {
-  router.push('/works')
+const goBack = () => {
+  router.push('/work')
 }
 
-function goToGrade(submissionId) {
-  router.push(`/submissions/${submissionId}`)
+const goToSubmit = () => {
+  router.push(`/submission/create?workId=${route.params.id}`)
 }
+
+const togglePin = async (isPinned: boolean) => {
+  const result = await workStore.pinWork(Number(route.params.id), isPinned)
+  if (result.code === 200) {
+    ElMessage.success(isPinned ? '置顶成功' : '取消置顶成功')
+    work.value.isPinned = isPinned
+  } else {
+    ElMessage.error(result.message)
+  }
+}
+
+const loadData = async () => {
+  const workId = Number(route.params.id)
+  work.value = await workStore.getWorkById(workId)
+  await submissionStore.getSubmissions(workId)
+  submission.value = submissionStore.submissions[0]
+}
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
-.work-container {
-  display: flex;
-  min-height: 100vh;
-  background: #f5f7fa;
+.work-detail-page {
+  padding-bottom: 24px;
 }
 
-.work-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.work-content {
-  padding: 24px;
-}
-
-.work-header-actions {
-  margin-bottom: 20px;
-}
-
-.work-detail-card {
-  padding: 24px;
-}
-
-.work-detail-header {
+.page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 24px;
 }
 
-.work-detail-header h2 {
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  padding: 8px;
+}
+
+.header-left h2 {
   font-size: 24px;
   font-weight: 600;
 }
 
-.work-badges {
+.header-right {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
-.badge {
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 12px;
+.detail-card, .submit-section {
+  margin-bottom: 20px;
 }
 
-.badge.pinned {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.badge.draft {
-  background: #e7f3ff;
-  color: #007bff;
-}
-
-.badge.published {
-  background: #d4edda;
-  color: #155724;
-}
-
-.badge.ended {
-  background: #f8f9fa;
-  color: #6c757d;
-}
-
-.work-detail-info {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+.detail-section {
   margin-bottom: 24px;
-  padding: 16px;
-  background: #f9fafb;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
 }
 
-.info-row {
-  display: flex;
-  flex-direction: column;
-}
-
-.info-row .label {
+.info-item .label {
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
-  color: #909399;
-  margin-bottom: 4px;
 }
 
-.work-detail-section {
-  margin-bottom: 24px;
+.info-item .value {
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.work-detail-section h3 {
-  font-size: 16px;
-  font-weight: 600;
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.pending {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.status-badge.expired {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.status-badge.graded, .status-badge.submitted {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.submission-info {
+  padding: 16px;
+}
+
+.submission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
 }
 
-.attachment-list {
-  list-style: none;
-  padding: 0;
+.submitter {
+  font-weight: 600;
 }
 
-.attachment-list li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.submission-content {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
   padding: 12px;
-  background: #f9fafb;
-  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
+  margin-bottom: 12px;
 }
 
-.file-size {
-  margin-left: auto;
-  color: #909399;
-  font-size: 14px;
+.submission-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.action-btn {
-  margin-right: 12px;
-  color: #667eea;
-  font-size: 14px;
+.no-submission {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.grade-btn {
-  color: #67c23a;
+.no-submission p {
+  margin-top: 16px;
 }
 </style>

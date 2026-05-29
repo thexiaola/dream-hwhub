@@ -1,130 +1,128 @@
 <template>
-  <div class="class-container">
-    <Sidebar />
-    
-    <div class="class-main">
-      <Header />
-      
-      <div class="class-content">
-        <el-card class="class-form-card">
-          <div class="form-header">
-            <h2>创建班级申请</h2>
-            <p>提交申请后需要管理员审核通过才能创建班级</p>
-          </div>
-          
-          <el-form :model="form" class="class-form">
-            <el-form-item label="班级名称" required>
-              <el-input 
-                v-model="form.className" 
-                placeholder="请输入班级名称"
-                :maxlength="64"
-              />
-            </el-form-item>
-            
-            <el-form-item label="班级描述">
-              <el-textarea 
-                v-model="form.description" 
-                placeholder="请输入班级描述（可选）"
-                :rows="4"
-                :maxlength="512"
-              />
-            </el-form-item>
-            
-            <el-form-item class="form-actions">
-              <el-button type="primary" @click="handleSubmit">提交申请</el-button>
-              <el-button @click="goBack">取消</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
+  <div class="create-class-page">
+    <div class="page-header">
+      <div class="header-left">
+        <h2>创建班级</h2>
+        <p class="subtitle">填写班级信息</p>
+      </div>
+      <div class="header-right">
+        <el-button @click="goBack">取消</el-button>
+        <el-button type="primary" @click="submitForm" :loading="loading">提交</el-button>
       </div>
     </div>
+    <el-card class="content-card">
+      <el-form :model="form" :rules="rules" ref="formRef" class="create-form">
+        <el-form-item label="班级名称" prop="className">
+          <el-input 
+            v-model="form.className" 
+            placeholder="请输入班级名称"
+            class="form-input"
+          />
+        </el-form-item>
+        <el-form-item label="班级描述" prop="description">
+          <el-textarea 
+            v-model="form.description" 
+            placeholder="请输入班级描述"
+            :rows="4"
+            class="form-input"
+          />
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
-<script setup>
-import { reactive } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Sidebar from '../../components/Sidebar.vue'
-import Header from '../../components/Header.vue'
-import { useClassStore } from '../../stores/class'
+import { useClassStore } from '@/stores/class'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const classStore = useClassStore()
 
-const form = reactive({
+const form = ref({
   className: '',
   description: ''
 })
 
-async function handleSubmit() {
-  if (!form.className) {
-    ElMessage.error('请填写班级名称')
-    return
-  }
-  
-  const response = await classStore.createClass({
-    className: form.className,
-    description: form.description || ''
-  })
-  
-  if (response.code === 200) {
-    ElMessage.success('申请已提交，待审核')
-    router.push('/classes')
-  } else {
-    ElMessage.error(response.message)
-  }
+const formRef = ref()
+const loading = ref(false)
+
+const rules = {
+  className: [
+    { required: true, message: '请输入班级名称', trigger: 'blur' }
+  ]
 }
 
-function goBack() {
-  router.push('/classes')
+const goBack = () => {
+  router.push('/class')
+}
+
+const submitForm = async () => {
+  loading.value = true
+  
+  try {
+    const result = await classStore.createClass({
+      className: form.value.className,
+      description: form.value.description
+    })
+    
+    if (result.code === 200) {
+      ElMessage.success('创建成功')
+      router.push('/class')
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch (error) {
+    ElMessage.error('创建失败')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <style scoped>
-.class-container {
+.create-class-page {
+  padding-bottom: 24px;
+}
+
+.page-header {
   display: flex;
-  min-height: 100vh;
-  background: #f5f7fa;
-}
-
-.class-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.class-content {
-  padding: 24px;
-}
-
-.class-form-card {
-  max-width: 500px;
-}
-
-.form-header {
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
 }
 
-.form-header h2 {
-  font-size: 18px;
+.header-left h2 {
+  font-size: 24px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
-.form-header p {
+.subtitle {
   font-size: 14px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.class-form {
-  padding: 0 24px;
-}
-
-.form-actions {
+.header-right {
   display: flex;
   gap: 12px;
+}
+
+.content-card {
+  max-width: 600px;
+}
+
+.create-form {
+  padding: 20px 0;
+}
+
+.form-input {
+  width: 100%;
+}
+
+.el-form-item {
+  margin-bottom: 20px;
 }
 </style>

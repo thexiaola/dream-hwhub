@@ -1,214 +1,182 @@
 <template>
-  <div class="work-container">
-    <Sidebar />
-    
-    <div class="work-main">
-      <Header />
-      
-      <div class="work-content">
-        <el-card class="work-form-card">
-          <div class="form-header">
-            <h2>创建作业</h2>
-          </div>
-          
-          <el-form :model="form" class="work-form">
-            <el-form-item label="作业标题" required>
-              <el-input 
-                v-model="form.title" 
-                placeholder="请输入作业标题"
-                :maxlength="128"
-              />
-            </el-form-item>
-            
-            <el-form-item label="作业描述">
-              <el-textarea 
-                v-model="form.description" 
-                placeholder="请输入作业描述"
-                :rows="4"
-                :maxlength="1024"
-              />
-            </el-form-item>
-            
-            <el-form-item label="所属班级" required>
-              <el-select v-model="form.classId" placeholder="请选择班级">
-                <el-option 
-                  v-for="cls in classList" 
-                  :key="cls.id" 
-                  :label="cls.className" 
-                  :value="cls.id" 
-                />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="截止时间" required>
-              <el-date-picker
-                v-model="form.deadline"
-                type="datetime"
-                placeholder="请选择截止时间"
-                :min-date="new Date()"
-              />
-            </el-form-item>
-            
-            <el-form-item label="发布时间">
-              <el-date-picker
-                v-model="form.publishTime"
-                type="datetime"
-                placeholder="请选择发布时间（不填则即时发布）"
-                :min-date="new Date()"
-              />
-            </el-form-item>
-            
-            <el-form-item label="作业总分" required>
-              <el-input 
-                v-model.number="form.totalScore" 
-                type="number" 
-                placeholder="请输入作业总分"
-                :min="1"
-                :max="1000"
-              />
-            </el-form-item>
-            
-            <el-form-item label="允许逾期提交">
-              <el-switch v-model="form.allowLateSubmit" />
-            </el-form-item>
-            
-            <el-form-item label="附件">
-              <el-upload
-                class="upload-demo"
-                action="/api/works/upload"
-                :on-success="handleUploadSuccess"
-                :on-error="handleUploadError"
-                multiple
-              >
-                <el-button size="small" type="primary">点击上传</el-button>
-              </el-upload>
-            </el-form-item>
-            
-            <el-form-item class="form-actions">
-              <el-button type="primary" @click="handleSubmit">创建作业</el-button>
-              <el-button @click="goBack">取消</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
+  <div class="create-work-page">
+    <div class="page-header">
+      <div class="header-left">
+        <h2>创建作业</h2>
+        <p class="subtitle">填写作业信息</p>
+      </div>
+      <div class="header-right">
+        <el-button @click="goBack">取消</el-button>
+        <el-button type="primary" @click="submitForm" :loading="loading">提交</el-button>
       </div>
     </div>
+    <el-card class="content-card">
+      <el-form :model="form" :rules="rules" ref="formRef" class="create-form">
+        <el-form-item label="作业标题" prop="title">
+          <el-input 
+            v-model="form.title" 
+            placeholder="请输入作业标题"
+            class="form-input"
+          />
+        </el-form-item>
+        <el-form-item label="作业描述" prop="description">
+          <el-textarea 
+            v-model="form.description" 
+            placeholder="请输入作业描述"
+            :rows="4"
+            class="form-input"
+          />
+        </el-form-item>
+        <el-form-item label="所属班级" prop="classId">
+          <el-select v-model="form.classId" placeholder="请选择班级" class="form-input">
+            <el-option v-for="cls in classOptions" :key="cls.id" :label="cls.className" :value="cls.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="满分" prop="score">
+          <el-input 
+            v-model.number="form.score" 
+            type="number" 
+            placeholder="请输入满分"
+            class="form-input"
+          />
+        </el-form-item>
+        <el-form-item label="截止时间" prop="deadline">
+          <el-date-picker 
+            v-model="form.deadline" 
+            type="datetime" 
+            placeholder="请选择截止时间"
+            class="form-input"
+          />
+        </el-form-item>
+        <el-form-item label="置顶作业">
+          <el-switch v-model="form.isPinned" />
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Sidebar from '../../components/Sidebar.vue'
-import Header from '../../components/Header.vue'
-import { useWorkStore } from '../../stores/work'
-import { useClassStore } from '../../stores/class'
+import { useWorkStore } from '@/stores/work'
+import { useClassStore } from '@/stores/class'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const workStore = useWorkStore()
 const classStore = useClassStore()
 
-const form = reactive({
+const form = ref({
   title: '',
   description: '',
   classId: '',
+  score: 100,
   deadline: '',
-  publishTime: '',
-  totalScore: 100,
-  allowLateSubmit: true
+  isPinned: false
 })
 
-const classList = ref([])
+const formRef = ref()
+const loading = ref(false)
+const classOptions = ref<any[]>([])
 
-onMounted(async () => {
-  await loadClasses()
+const rules = {
+  title: [
+    { required: true, message: '请输入作业标题', trigger: 'blur' }
+  ],
+  classId: [
+    { required: true, message: '请选择班级', trigger: 'change' }
+  ],
+  score: [
+    { required: true, message: '请输入满分', trigger: 'blur' },
+    { type: 'number', min: 1, max: 1000, message: '分数范围1-1000', trigger: 'blur' }
+  ],
+  deadline: [
+    { required: true, message: '请选择截止时间', trigger: 'change' }
+  ]
+}
+
+const goBack = () => {
+  router.push('/work')
+}
+
+const submitForm = async () => {
+  loading.value = true
+  
+  try {
+    const result = await workStore.createWork({
+      title: form.value.title,
+      description: form.value.description,
+      classId: form.value.classId,
+      score: form.value.score,
+      deadline: form.value.deadline,
+      isPinned: form.value.isPinned
+    })
+    
+    if (result.code === 200) {
+      ElMessage.success('创建成功')
+      router.push('/work')
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch (error) {
+    ElMessage.error('创建失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadData = async () => {
+  await classStore.getClasses()
+  classOptions.value = classStore.classes
+}
+
+onMounted(() => {
+  loadData()
 })
-
-async function loadClasses() {
-  const response = await classStore.getMyClasses()
-  if (response.code === 200) {
-    classList.value = response.data.records
-  }
-}
-
-async function handleSubmit() {
-  if (!form.title || !form.classId || !form.deadline || !form.totalScore) {
-    ElMessage.error('请填写必填项')
-    return
-  }
-  
-  const formData = new FormData()
-  formData.append('title', form.title)
-  formData.append('description', form.description || '')
-  formData.append('classId', form.classId)
-  formData.append('deadline', new Date(form.deadline).toISOString())
-  if (form.publishTime) {
-    formData.append('publishTime', new Date(form.publishTime).toISOString())
-  }
-  formData.append('totalScore', form.totalScore)
-  formData.append('allowLateSubmit', form.allowLateSubmit)
-  
-  const response = await workStore.createWork(formData)
-  
-  if (response.code === 200) {
-    ElMessage.success('创建成功')
-    router.push('/works')
-  } else {
-    ElMessage.error(response.message)
-  }
-}
-
-function handleUploadSuccess(response, file, fileList) {
-  ElMessage.success('文件上传成功')
-}
-
-function handleUploadError(err, file, fileList) {
-  ElMessage.error('文件上传失败')
-}
-
-function goBack() {
-  router.push('/works')
-}
 </script>
 
 <style scoped>
-.work-container {
+.create-work-page {
+  padding-bottom: 24px;
+}
+
+.page-header {
   display: flex;
-  min-height: 100vh;
-  background: #f5f7fa;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.work-main {
-  flex: 1;
+.header-left h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.header-right {
   display: flex;
-  flex-direction: column;
+  gap: 12px;
 }
 
-.work-content {
-  padding: 24px;
-}
-
-.work-form-card {
+.content-card {
   max-width: 600px;
 }
 
-.form-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
+.create-form {
+  padding: 20px 0;
 }
 
-.form-header h2 {
-  font-size: 18px;
-  font-weight: 600;
+.form-input {
+  width: 100%;
 }
 
-.work-form {
-  padding: 0 24px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
+.el-form-item {
+  margin-bottom: 20px;
 }
 </style>

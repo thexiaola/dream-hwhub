@@ -1,309 +1,90 @@
 <template>
-  <div class="profile-container">
-    <Sidebar />
-    
-    <div class="profile-main">
-      <Header />
-      
-      <div class="profile-content">
-        <el-card class="profile-card">
-          <div class="profile-header">
-            <div class="avatar-section">
-              <div class="avatar">
-                <component :is="componentMap['User']" />
-              </div>
-              <h2>{{ userStore.user?.username }}</h2>
-              <p>{{ userStore.user?.email }}</p>
-            </div>
-          </div>
-          
-          <div class="profile-tabs">
-            <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-              <el-tab-pane label="基本信息" name="info">
-                <div class="tab-content">
-                  <el-form :model="infoForm" label-width="120px">
-                    <el-form-item label="用户名">
-                      <el-input v-model="infoForm.username" />
-                    </el-form-item>
-                    <el-form-item label="学号/工号">
-                      <el-input v-model="infoForm.userNo" disabled />
-                    </el-form-item>
-                    <el-form-item label="邮箱">
-                      <el-input v-model="infoForm.email" disabled />
-                    </el-form-item>
-                    <el-form-item>
-                      <el-button type="primary" @click="saveInfo">保存修改</el-button>
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </el-tab-pane>
-              
-              <el-tab-pane label="修改密码" name="password">
-                <div class="tab-content">
-                  <el-form :model="passwordForm" label-width="120px">
-                    <el-form-item label="旧密码">
-                      <el-input v-model="passwordForm.oldPassword" type="password" />
-                    </el-form-item>
-                    <el-form-item label="新密码">
-                      <el-input v-model="passwordForm.newPassword" type="password" />
-                    </el-form-item>
-                    <el-form-item label="确认新密码">
-                      <el-input v-model="passwordForm.confirmPassword" type="password" />
-                    </el-form-item>
-                    <el-form-item>
-                      <el-button type="primary" @click="changePassword">修改密码</el-button>
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </el-tab-pane>
-              
-              <el-tab-pane label="修改邮箱" name="email">
-                <div class="tab-content">
-                  <el-form :model="emailForm" label-width="120px">
-                    <el-form-item label="当前邮箱">
-                      <el-input :value="userStore.user?.email" disabled />
-                    </el-form-item>
-                    <el-form-item label="旧邮箱验证码">
-                      <el-row :gutter="10">
-                        <el-col :span="16">
-                          <el-input v-model="emailForm.oldEmailCode" />
-                        </el-col>
-                        <el-col :span="8">
-                          <el-button 
-                            type="primary" 
-                            @click="sendOldEmailCode"
-                            :disabled="oldEmailCodeCountdown > 0"
-                          >
-                            {{ oldEmailCodeCountdown > 0 ? `${oldEmailCodeCountdown}s` : '获取验证码' }}
-                          </el-button>
-                        </el-col>
-                      </el-row>
-                    </el-form-item>
-                    <el-form-item label="新邮箱">
-                      <el-input v-model="emailForm.newEmail" />
-                    </el-form-item>
-                    <el-form-item label="新邮箱验证码">
-                      <el-row :gutter="10">
-                        <el-col :span="16">
-                          <el-input v-model="emailForm.newEmailCode" />
-                        </el-col>
-                        <el-col :span="8">
-                          <el-button 
-                            type="primary" 
-                            @click="sendNewEmailCode"
-                            :disabled="!emailForm.newEmail || newEmailCodeCountdown > 0"
-                          >
-                            {{ newEmailCodeCountdown > 0 ? `${newEmailCodeCountdown}s` : '获取验证码' }}
-                          </el-button>
-                        </el-col>
-                      </el-row>
-                    </el-form-item>
-                    <el-form-item>
-                      <el-button type="primary" @click="changeEmail">修改邮箱</el-button>
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </el-tab-pane>
-            </el-tabs>
-          </div>
-        </el-card>
-      </div>
+  <div class="profile-page">
+    <div class="page-header">
+      <h2>个人中心</h2>
     </div>
+    <el-card class="profile-card">
+      <div class="profile-header">
+        <div class="avatar">
+          <User :size="48" />
+        </div>
+        <div class="user-info">
+          <h3>{{ userStore.userInfo?.username }}</h3>
+          <p>{{ userStore.userInfo?.account }}</p>
+        </div>
+      </div>
+      <div class="info-section">
+        <h4>基本信息</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">学号/工号</span>
+            <span class="value">{{ userStore.userInfo?.userNo }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">邮箱</span>
+            <span class="value">{{ userStore.userInfo?.email }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">角色</span>
+            <span class="value">{{ userStore.userInfo?.role === 'teacher' ? '教师' : '学生' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="actions-section">
+        <h4>账号设置</h4>
+        <div class="action-list">
+          <button class="action-item" @click="goToModifyPassword">
+            <Key :size="18" />
+            <span>修改密码</span>
+            <ChevronRight :size="18" />
+          </button>
+          <button class="action-item" @click="goToModifyEmail">
+            <Mail :size="18" />
+            <span>修改邮箱</span>
+            <ChevronRight :size="18" />
+          </button>
+          <button class="action-item danger" @click="logout">
+            <LogOut :size="18" />
+            <span>退出登录</span>
+          </button>
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
-import Sidebar from '../components/Sidebar.vue'
-import Header from '../components/Header.vue'
-import { useUserStore } from '../stores/user'
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import { User } from 'lucide-vue-next'
+import { User, Key, Mail, ChevronRight, LogOut } from 'lucide-vue-next'
 
+const router = useRouter()
 const userStore = useUserStore()
 
-const componentMap = {
-  User
+const goToModifyPassword = () => {
+  ElMessage.info('功能开发中')
 }
 
-const activeTab = ref('info')
-
-const infoForm = reactive({
-  username: '',
-  userNo: '',
-  email: ''
-})
-
-const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-
-const emailForm = reactive({
-  oldEmailCode: '',
-  newEmail: '',
-  newEmailCode: ''
-})
-
-const oldEmailCodeCountdown = ref(0)
-const newEmailCodeCountdown = ref(0)
-
-onMounted(() => {
-  syncUserInfo()
-})
-
-watch(() => userStore.user, () => {
-  syncUserInfo()
-}, { deep: true })
-
-function syncUserInfo() {
-  if (userStore.user) {
-    infoForm.username = userStore.user.username
-    infoForm.userNo = userStore.user.userNo
-    infoForm.email = userStore.user.email
-  }
+const goToModifyEmail = () => {
+  ElMessage.info('功能开发中')
 }
 
-function handleTabChange() {
-}
-
-async function saveInfo() {
-  if (!infoForm.username) {
-    ElMessage.error('请输入用户名')
-    return
-  }
-  
-  try {
-    const response = await userStore.modifyUserInfo(infoForm.username)
-    if (response.code === 200) {
-      ElMessage.success('信息修改成功')
-    } else {
-      ElMessage.error(response.message)
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '修改失败')
-  }
-}
-
-async function changePassword() {
-  if (!passwordForm.oldPassword || !passwordForm.newPassword) {
-    ElMessage.error('请填写密码')
-    return
-  }
-  
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.error('两次输入的密码不一致')
-    return
-  }
-  
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,32}$/
-  if (!passwordRegex.test(passwordForm.newPassword)) {
-    ElMessage.error('密码需包含大小写字母和数字，长度8-32位')
-    return
-  }
-  
-  try {
-    const response = await userStore.modifyPassword(passwordForm.oldPassword, passwordForm.newPassword)
-    if (response.code === 200) {
-      ElMessage.success('密码修改成功')
-      passwordForm.oldPassword = ''
-      passwordForm.newPassword = ''
-      passwordForm.confirmPassword = ''
-    } else {
-      ElMessage.error(response.message)
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '修改失败')
-  }
-}
-
-async function sendOldEmailCode() {
-  try {
-    const response = await userStore.sendOldEmailCode()
-    if (response.code === 200) {
-      ElMessage.success('验证码已发送')
-      oldEmailCodeCountdown.value = 60
-      startCountdown(oldEmailCodeCountdown)
-    } else {
-      ElMessage.error(response.message)
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '发送失败')
-  }
-}
-
-async function sendNewEmailCode() {
-  if (!emailForm.newEmail) {
-    ElMessage.warning('请先输入新邮箱')
-    return
-  }
-  
-  try {
-    const response = await userStore.sendNewEmailCode(emailForm.newEmail)
-    if (response.code === 200) {
-      ElMessage.success('验证码已发送')
-      newEmailCodeCountdown.value = 60
-      startCountdown(newEmailCodeCountdown)
-    } else {
-      ElMessage.error(response.message)
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '发送失败')
-  }
-}
-
-function startCountdown(countdownRef) {
-  const timer = setInterval(() => {
-    countdownRef.value--
-    if (countdownRef.value === 0) {
-      clearInterval(timer)
-    }
-  }, 1000)
-}
-
-async function changeEmail() {
-  if (!emailForm.oldEmailCode || !emailForm.newEmail || !emailForm.newEmailCode) {
-    ElMessage.error('请填写所有信息')
-    return
-  }
-  
-  try {
-    const response = await userStore.modifyEmail({
-      oldEmailCode: emailForm.oldEmailCode,
-      newEmail: emailForm.newEmail,
-      newEmailCode: emailForm.newEmailCode
-    })
-    
-    if (response.code === 200) {
-      ElMessage.success('邮箱修改成功')
-      emailForm.oldEmailCode = ''
-      emailForm.newEmail = ''
-      emailForm.newEmailCode = ''
-    } else {
-      ElMessage.error(response.message)
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '修改失败')
-  }
+const logout = () => {
+  userStore.logout()
+  router.push('/login')
 }
 </script>
 
 <style scoped>
-.profile-container {
-  display: flex;
-  min-height: 100vh;
-  background: #f5f7fa;
+.profile-page {
+  padding-bottom: 24px;
 }
 
-.profile-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.profile-content {
-  padding: 24px;
+.page-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
 }
 
 .profile-card {
@@ -311,46 +92,101 @@ async function changeEmail() {
 }
 
 .profile-header {
-  text-align: center;
-  padding: 24px 0;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 24px;
-}
-
-.avatar-section {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
 }
 
 .avatar {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 32px;
+  color: white;
+}
+
+.user-info h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.user-info p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.info-section, .actions-section {
+  margin-bottom: 24px;
+}
+
+.info-section:last-child, .actions-section:last-child {
+  margin-bottom: 0;
+}
+
+.info-section h4, .actions-section h4 {
+  font-size: 16px;
+  font-weight: 600;
   margin-bottom: 16px;
 }
 
-.avatar-section h2 {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 8px;
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
-.avatar-section p {
-  color: #909399;
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
 }
 
-.profile-tabs {
-  padding: 0 24px;
+.info-item .label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
 }
 
-.tab-content {
-  padding: 24px 0;
+.info-item .value {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.action-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.action-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 </style>
