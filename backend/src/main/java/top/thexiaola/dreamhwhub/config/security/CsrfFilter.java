@@ -36,11 +36,12 @@ public class CsrfFilter implements Filter {
     
     // 不需要CSRF保护的路径(白名单)
     private static final Set<String> CSRF_EXEMPT_PATHS = new HashSet<>(Arrays.asList(
-            "/api/auth/login",
-            "/api/auth/register",
-            "/api/auth/send-code",
-            "/api/auth/retrieve-password/code",
-            "/api/auth/retrieve-password/modify"
+            "/api/users/login",
+            "/api/users/logout",
+            "/api/users/register",
+            "/api/users/send-code",
+            "/api/users/retrieve-password/code",
+            "/api/users/retrieve-password/modify"
     ));
     
     @Value("${app.csrf.enabled:true}")

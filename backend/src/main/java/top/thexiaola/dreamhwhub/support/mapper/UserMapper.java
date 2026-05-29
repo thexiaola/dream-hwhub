@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.support.mapper;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 
@@ -15,5 +16,6 @@ public interface UserMapper {
      * @param user 用户实体
      * @return 用户响应 DTO
      */
+    @Mapping(target = "token", ignore = true)
     UserResponse toUserResponse(User user);
 }

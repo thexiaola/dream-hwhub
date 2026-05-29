@@ -1,7 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -16,9 +15,7 @@ public class LoginRequest {
     @Size(max = 100, message = "账号长度不能超过100位")
     private String account;
 
-    // 密码
+    // 密码（登录时不进行格式验证，统一返回账号或密码错误）
     @NotBlank(message = "密码不能为空")
-    @Pattern(regexp = "^[0-9a-zA-Z!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]+$", message = "密码只能包含字母、数字和特殊字符")
-    @Size(min = 6, max = 50, message = "密码长度必须在 6-50 位之间")
     private String password;
 }

@@ -33,20 +33,21 @@ public class LoginUserController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request, @Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request,
+            @Valid @RequestBody LoginRequest loginRequest) {
         String ip = LogUtil.getCurrentClientIp();
-        
+
         try {
             User user = loginUserService.login(loginRequest, request);
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
-            
+
             // 生成JWT Token并设置到响应中
             String token = jwtUtil.generateToken(user.getId(), user.getUsername());
             userResponse.setToken(token);
 
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) login successful, JWT token generated", userInfo);
-            
+
             return ResponseEntity.ok(ApiResponse.success(userResponse, "登录成功"));
         } catch (BusinessException e) {
             // 区分不同的错误类型
@@ -54,15 +55,13 @@ public class LoginUserController {
                 String userInfo = String.format("ip: %s, account: %s", ip, loginRequest.getAccount());
                 log.warn("User ({}) login failed: account is banned, reason: {}", userInfo, e.getMessage());
                 return ResponseEntity.status(403).body(ApiResponse.error(
-                    BusinessErrorCode.USER_BANNED.getCode(),
-                    e.getMessage()
-                ));
+                        BusinessErrorCode.USER_BANNED.getCode(),
+                        e.getMessage()));
             } else {
                 // 其他错误统一返回 INVALID_CREDENTIALS
-                return ResponseEntity.status(401).body(ApiResponse.error(
-                    BusinessErrorCode.INVALID_CREDENTIALS.getCode(),
-                    BusinessErrorCode.INVALID_CREDENTIALS.getMessage()
-                ));
+                return ResponseEntity.badRequest().body(ApiResponse.error(
+                        BusinessErrorCode.INVALID_CREDENTIALS.getCode(),
+                        BusinessErrorCode.INVALID_CREDENTIALS.getMessage()));
             }
         }
     }
@@ -73,15 +72,15 @@ public class LoginUserController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
         String ip = LogUtil.getCurrentClientIp();
-        
+
         try {
             // 获取当前用户
             User currentUser = loginUserService.getCurrentUser(request);
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
+
             // 登出
             loginUserService.logout(currentUser.getId(), request);
-            
+
             log.info("User ({}) logout successful", userInfo);
             return ResponseEntity.ok(ApiResponse.success(null, "登出成功"));
         } catch (BusinessException e) {

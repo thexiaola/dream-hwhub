@@ -24,7 +24,8 @@ public class RetrieveUserController {
      * 发送找回密码验证码
      */
     @PostMapping("/sendcode")
-    public ResponseEntity<ApiResponse<Void>> sendRetrievePasswordCode(@Valid @RequestBody RetrievePasswordCodeRequest request) {
+    public ResponseEntity<ApiResponse<Void>> sendRetrievePasswordCode(
+            @Valid @RequestBody RetrievePasswordCodeRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = modifyUserService.sendRetrievePasswordCode(request.getAccount());
@@ -42,7 +43,8 @@ public class RetrieveUserController {
      * 找回密码（通过验证码修改密码）
      */
     @PutMapping("/resetpassword")
-    public ResponseEntity<ApiResponse<Void>> retrievePassword(@Valid @RequestBody RetrievePasswordModifyRequest request) {
+    public ResponseEntity<ApiResponse<Void>> retrievePassword(
+            @Valid @RequestBody RetrievePasswordModifyRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = modifyUserService.retrievePassword(request);

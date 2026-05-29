@@ -15,6 +15,34 @@ backend/logs/
 backend/src/main/resources/mail-config.properties
 backend/src/main/resources/password-key.properties
 
+### Frontend ###
+front/node_modules/
+front/dist/
+front/.DS_Store
+front/*.local
+front/.env
+front/.env.local
+front/.env.production
+front/.env.staging
+
+### Frontend Logs ###
+front/logs/
+
+### Logs ###
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+### Temporary Files ###
+*.tmp
+*.bak
+*.swp
+*~
+.cache/
+
 ### STS ###
 .apt_generated
 .classpath
@@ -45,3 +73,15 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### macOS ###
+.DS_Store
+
+### Application ###
+*.war
+*.jar
+*.ear
+
+### Build Artifacts ###
+**/target/
+**/*.class
