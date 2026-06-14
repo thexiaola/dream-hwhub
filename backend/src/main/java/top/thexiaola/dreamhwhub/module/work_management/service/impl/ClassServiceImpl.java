@@ -110,17 +110,16 @@ public class ClassServiceImpl implements ClassService {
         
         if (existingMember != null) {
             // 如果已经是成员，更新为老师
-            existingMember.setIsTeacher(true);
+            existingMember.setRole(1);
             classMemberMapper.updateById(existingMember);
             log.info("User {} updated user {} to TEACHER in class {}", currentUser.getId(), userAccount, classId);
             return existingMember;
         }
 
-        // 创建新的老师成员记录
         ClassMember member = new ClassMember();
         member.setClassId(classId);
         member.setUserId(targetUser.getId());
-        member.setIsTeacher(true);  // 设置为老师
+        member.setRole(1);  // 设置为老师
         member.setJoinTime(LocalDateTime.now());
         member.setInviteBy(currentUser.getId());
 
@@ -165,7 +164,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 更新为老师
-        studentMember.setIsTeacher(true);
+        studentMember.setRole(1);
         classMemberMapper.updateById(studentMember);
 
         log.info("User {} set student {} as assistant teacher in class {}", 
@@ -261,7 +260,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 降级为学生
-        teacherMember.setIsTeacher(false);
+        teacherMember.setRole(0);
         classMemberMapper.updateById(teacherMember);
 
         log.info("User {} demoted user {} from assistant teacher to student in class {}", 
@@ -434,7 +433,7 @@ public class ClassServiceImpl implements ClassService {
                 ClassMember member = new ClassMember();
                 member.setClassId(approval.getClassId());
                 member.setUserId(approval.getInviteeId());
-                member.setIsTeacher(false);  // 固定为学生
+                member.setRole(0);  // 固定为学生
                 member.setJoinTime(LocalDateTime.now());
                 
                 // 获取邀请记录中的邀请人 ID
@@ -622,8 +621,14 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public boolean isTeacher(Integer classId, Integer userId) {
+        // 检查是否是班级创建者
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo != null && classInfo.getOwnerId().equals(userId)) {
+            return true;
+        }
+        // 检查是否是班级老师
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("is_teacher", true);
+        queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("role", 1);
         return classMemberMapper.selectCount(queryWrapper) > 0;
     }
     
@@ -633,21 +638,31 @@ public class ClassServiceImpl implements ClassService {
             return Collections.emptyList();
         }
         
-        QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId)
-                   .eq("is_teacher", true)
-                   .select("class_id");
-        
-        List<ClassMember> members = classMemberMapper.selectList(queryWrapper);
-        return members.stream()
-                .map(ClassMember::getClassId)
+        // 查询自己是创建者的班级
+        QueryWrapper<ClassInfo> ownerQuery = new QueryWrapper<>();
+        ownerQuery.eq("owner_id", userId).select("id");
+        List<ClassInfo> ownerClasses = classInfoMapper.selectList(ownerQuery);
+        List<Integer> result = ownerClasses.stream()
+                .map(ClassInfo::getId)
                 .collect(Collectors.toList());
+        
+        // 查询自己是老师的班级
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("user_id", userId)
+                   .eq("role", 1)
+                   .select("class_id");
+        List<ClassMember> teacherClasses = classMemberMapper.selectList(memberQuery);
+        result.addAll(teacherClasses.stream()
+                .map(ClassMember::getClassId)
+                .collect(Collectors.toList()));
+        
+        return result;
     }
 
     @Override
     public boolean isStudent(Integer classId, Integer userId) {
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("is_teacher", false);
+        queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("role", 0);
         return classMemberMapper.selectCount(queryWrapper) > 0;
     }
 
@@ -873,33 +888,40 @@ public class ClassServiceImpl implements ClassService {
             return null;
         }
         
+        // 如果是班级创建者
         if (classInfo.getOwnerId().equals(member.getUserId())) {
             return "创建者";
-        } else if (member.getIsTeacher()) {
-            return "班级助理";
-        } else {
+        }
+        
+        Integer role = member.getRole();
+        if (role == null) {
             return "学生";
         }
+
+        return switch (role) {
+            case 1 -> "老师";
+            case 0 -> "学生";
+            default -> "学生";
+        };
     }
 
     /**
      * 获取用户在班级中的角色代码
      * @param classInfo 班级信息
      * @param member 班级成员信息
-     * @return 角色代码：1-创建者，2-班级助理，3-学生，null-非成员
+     * @return 角色代码：1-老师，0-学生，null-非成员
      */
     private Integer getUserRoleCode(ClassInfo classInfo, ClassMember member) {
         if (classInfo == null || member == null) {
             return null;
         }
         
+        // 如果是班级创建者，返回特殊标记
         if (classInfo.getOwnerId().equals(member.getUserId())) {
-            return 1;  // 创建者
-        } else if (member.getIsTeacher()) {
-            return 2;  // 班级助理
-        } else {
-            return 3;  // 学生
+            return 1;  // 创建者也算老师
         }
+        
+        return member.getRole();
     }
 
     @Override
@@ -1012,7 +1034,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateMemberRole(Integer classId, Integer userId, Boolean isTeacher) {
+    public void updateMemberRole(Integer classId, Integer userId, Integer role) {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查当前用户是否是老师
@@ -1028,11 +1050,12 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "用户不在该班级中", null);
         }
 
-        member.setIsTeacher(isTeacher);
+        member.setRole(role);
         classMemberMapper.updateById(member);
 
+        String roleName = role == 1 ? "老师" : "学生";
         log.info("User {} updated user {} role to {} in class {}", 
-                currentUser.getId(), userId, isTeacher ? "TEACHER" : "STUDENT", classId);
+                currentUser.getId(), userId, roleName, classId);
     }
 
     @Override
@@ -1127,7 +1150,7 @@ public class ClassServiceImpl implements ClassService {
             ClassMember member = new ClassMember();
             member.setClassId(classInfo.getId());
             member.setUserId(application.getApplicantId());
-            member.setIsTeacher(true);
+            member.setRole(1);
             member.setJoinTime(LocalDateTime.now());
             classMemberMapper.insert(member);
 
@@ -1289,7 +1312,7 @@ public class ClassServiceImpl implements ClassService {
             ClassMember member = new ClassMember();
             member.setClassId(application.getClassId());
             member.setUserId(application.getApplicantId());
-            member.setIsTeacher(false);  // 固定为学生
+            member.setRole(3);  // 固定为学生
             member.setJoinTime(LocalDateTime.now());
             classMemberMapper.insert(member);
 
@@ -1437,7 +1460,7 @@ public class ClassServiceImpl implements ClassService {
                 ClassMember member = new ClassMember();
                 member.setClassId(invitation.getClassId());
                 member.setUserId(currentUser.getId());
-                member.setIsTeacher(false);  // 固定为学生
+                member.setRole(0);  // 固定为学生
                 member.setJoinTime(LocalDateTime.now());
                 member.setInviteBy(invitation.getInviterId());
                 classMemberMapper.insert(member);
@@ -1510,7 +1533,7 @@ public class ClassServiceImpl implements ClassService {
         ClassMember member = new ClassMember();
         member.setClassId(classInfo.getId());
         member.setUserId(currentUser.getId());
-        member.setIsTeacher(false);  // 以学生身份加入
+        member.setRole(0);  // 以学生身份加入
         member.setJoinTime(LocalDateTime.now());
         classMemberMapper.insert(member);
 
@@ -1564,15 +1587,15 @@ public class ClassServiceImpl implements ClassService {
         classInfoMapper.updateById(classInfo);
 
         // 将新所有者设置为老师
-        newOwnerMember.setIsTeacher(true);
+        newOwnerMember.setRole(1);
         classMemberMapper.updateById(newOwnerMember);
 
-        // 将原所有者降级为班级助理（保留在班级中）
+        // 将原所有者降级为学生（保留在班级中）
         QueryWrapper<ClassMember> oldOwnerQuery = new QueryWrapper<>();
         oldOwnerQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
         ClassMember oldOwnerMember = classMemberMapper.selectOne(oldOwnerQuery);
         if (oldOwnerMember != null) {
-            oldOwnerMember.setIsTeacher(true);  // 保持老师身份
+            oldOwnerMember.setRole(0);  // 降级为学生
             classMemberMapper.updateById(oldOwnerMember);
         }
 

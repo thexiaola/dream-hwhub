@@ -5,7 +5,11 @@ import { useUserStore } from '@/stores/user'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/dashboard'
+    redirect: '/student/courses'
+  },
+  {
+    path: '/dashboard',
+    redirect: '/student/courses'
   },
   {
     path: '/login',
@@ -29,44 +33,24 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     children: [
       {
-        path: 'dashboard',
-        name: 'Dashboard',
-        component: () => import('@/views/Dashboard.vue')
+        path: 'student/courses',
+        name: 'StudentCourses',
+        component: () => import('@/views/student/MyCourses.vue')
       },
       {
-        path: 'work',
-        name: 'WorkList',
-        component: () => import('@/views/work/WorkList.vue')
+        path: 'student/course/:id',
+        name: 'StudentCourseDetail',
+        component: () => import('@/views/student/StudentCourseDetail.vue')
       },
       {
-        path: 'work/create',
-        name: 'CreateWork',
-        component: () => import('@/views/work/CreateWork.vue')
+        path: 'teacher/courses',
+        name: 'TeacherCourses',
+        component: () => import('@/views/teacher/TeachingCourses.vue')
       },
       {
-        path: 'work/:id',
-        name: 'WorkDetail',
-        component: () => import('@/views/work/WorkDetail.vue')
-      },
-      {
-        path: 'class',
-        name: 'ClassList',
-        component: () => import('@/views/class/ClassList.vue')
-      },
-      {
-        path: 'class/create',
-        name: 'CreateClass',
-        component: () => import('@/views/class/CreateClass.vue')
-      },
-      {
-        path: 'class/:id',
-        name: 'ClassDetail',
-        component: () => import('@/views/class/ClassDetail.vue')
-      },
-      {
-        path: 'submission',
-        name: 'SubmissionList',
-        component: () => import('@/views/submission/SubmissionList.vue')
+        path: 'teacher/course/:id',
+        name: 'TeacherCourseDetail',
+        component: () => import('@/views/teacher/TeacherCourseDetail.vue')
       },
       {
         path: 'profile',
@@ -103,7 +87,7 @@ router.beforeEach(async (to, _from, next) => {
     next()
   } else {
     if (userStore.isLoggedIn && to.path === '/login') {
-      next('/dashboard')
+      next('/student/courses')
       return
     }
     next()

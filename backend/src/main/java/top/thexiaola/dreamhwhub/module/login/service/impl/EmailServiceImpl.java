@@ -308,7 +308,7 @@ public class EmailServiceImpl implements EmailService {
     private void sendModifyCodeEmail(String email, String code) {
         String subject = "Dream HWHub 换绑验证码";
         String content = String.format(
-                "您好！\n\n您正在申请修改绑定邮箱，验证码是：%s。\n\n验证码有效期为%d分钟，请及时使用。\n\n如非本人操作，请立即联系管理员。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
+                "您好！\n\n您正在申请修改绑定邮箱，验证码是：%s。\n\n验证码有效期为%d分钟，请及时使用。\n如非本人操作，请立即联系管理员。\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
                 code, expiryMinutes
         );
         sendEmail(email, subject, content);

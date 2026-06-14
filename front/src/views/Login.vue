@@ -99,7 +99,7 @@ const handleLogin = async () => {
     const result = await userStore.login(form.value.account, form.value.password)
     if (result.code === 200) {
       ElMessage.success('登录成功')
-      router.push('/dashboard')
+      router.push('/student/courses')
     } else {
       ElMessage.error(result.message)
       form.value.password = ''

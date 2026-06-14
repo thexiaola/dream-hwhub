@@ -9,12 +9,52 @@ const instance: AxiosInstance = axios.create({
   }
 })
 
+const JWT_SECRET = 'DreamHwhub2026SecureJWTSecretKeyForProductionUseOnly'
+
+async function generateCsrfToken(jwtToken: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const keyData = encoder.encode(JWT_SECRET)
+  const messageData = encoder.encode(jwtToken)
+  
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  
+  const signature = await crypto.subtle.sign('HMAC', key, messageData)
+  
+  // Convert to base64 URL-safe without padding
+  const bytes = new Uint8Array(signature)
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  const base64 = btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+  return base64
+}
+
 instance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers = config.headers || {}
       config.headers['Authorization'] = `Bearer ${token}`
+      
+      const method = config.method?.toUpperCase()
+      if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+        try {
+          const csrfToken = await generateCsrfToken(token)
+          config.headers['X-CSRF-Token'] = csrfToken
+        } catch (e) {
+          console.error('Failed to generate CSRF token:', e)
+        }
+      }
     }
     return config
   },
@@ -28,11 +68,10 @@ instance.interceptors.response.use(
     return response.data
   },
   (error) => {
-    const response = error.response?.data as ApiResponse
-    if (response) {
-      return Promise.reject(response)
+    if (error.response?.data) {
+      return error.response.data
     }
-    return Promise.reject({ code: -1, message: '网络请求失败', data: null })
+    return { code: -1, message: '网络请求失败', data: null }
   }
 )
 
@@ -40,12 +79,12 @@ export const get = <T = null>(url: string, params?: Record<string, unknown>): Pr
   return instance.get(url, { params })
 }
 
-export const post = <T = null>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.post(url, data)
+export const post = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
+  return instance.post(url, data, { params })
 }
 
-export const put = <T = null>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.put(url, data)
+export const put = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
+  return instance.put(url, data, { params })
 }
 
 export const patch = <T = null>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> => {

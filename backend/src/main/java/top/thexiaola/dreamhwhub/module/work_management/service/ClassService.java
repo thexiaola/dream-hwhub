@@ -155,7 +155,7 @@ public interface ClassService {
     /**
      * 更新成员角色
      */
-    void updateMemberRole(Integer classId, Integer userId, Boolean isTeacher);
+    void updateMemberRole(Integer classId, Integer userId, Integer role);
 
     /**
      * 提交创建班级申请

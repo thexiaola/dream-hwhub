@@ -27,12 +27,6 @@ public class ClassInfo {
     @TableField("invite_code")
     private String inviteCode;  // 班级邀请码（25位随机码）
 
-    @TableField("approval_status")
-    private Integer approvalStatus;  // 0-待审核，1-已通过，2-已拒绝
-
-    @TableField("admin_remark")
-    private String adminRemark;  // 管理员审核备注
-
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

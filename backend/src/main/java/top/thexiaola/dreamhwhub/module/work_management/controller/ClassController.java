@@ -37,8 +37,9 @@ public class ClassController {
     /**
      * 提交创建班级申请
      */
-    @PostMapping("/")
-    public ApiResponse<CreateClassApplicationResponse> applyCreateClass(@Valid @RequestBody CreateClassRequest request) {
+    @PostMapping("/create")
+    public ApiResponse<CreateClassApplicationResponse> applyCreateClass(
+            @Valid @RequestBody CreateClassRequest request) {
         request.validate();
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
@@ -97,11 +98,13 @@ public class ClassController {
      * 更新班级信息（老师或班级助理）
      */
     @PutMapping("/{classId}")
-    public ApiResponse<ClassInfo> updateClassInfo(@PathVariable Integer classId, @Valid @RequestBody UpdateClassRequest request) {
+    public ApiResponse<ClassInfo> updateClassInfo(@PathVariable Integer classId,
+            @Valid @RequestBody UpdateClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} requesting to update class info, ID: {}", userInfo, request.getClassId());
-        ClassInfo updatedClass = classService.updateClassInfo(classId, request.getClassName(), request.getDescription());
+        ClassInfo updatedClass = classService.updateClassInfo(classId, request.getClassName(),
+                request.getDescription());
         log.info("User {} updated class info successfully", userInfo);
         return ApiResponse.success(updatedClass, "班级信息更新成功");
     }
@@ -126,11 +129,13 @@ public class ClassController {
     public ApiResponse<Page<ClassDetailResponse>> getMyClasses(@Valid @ModelAttribute PageRequest pageRequest) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying my classes list, page={}, size={}", userInfo, pageRequest.getPageNum(), pageRequest.getPageSize());
+        log.info("User {} querying my classes list, page={}, size={}", userInfo, pageRequest.getPageNum(),
+                pageRequest.getPageSize());
         if (currentUser == null) {
             return ApiResponse.error(401, "用户未登录");
         }
-        Page<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId(), pageRequest.getPageNum(), pageRequest.getPageSize());
+        Page<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId(), pageRequest.getPageNum(),
+                pageRequest.getPageSize());
         log.info("User {} queried {} classes", userInfo, classes.getTotal());
         return ApiResponse.success(classes);
     }
@@ -144,8 +149,10 @@ public class ClassController {
             @Valid @ModelAttribute PageRequest pageRequest) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying class members, class ID: {}, page={}, size={}", userInfo, classId, pageRequest.getPageNum(), pageRequest.getPageSize());
-        Page<ClassMemberResponse> members = classService.getClassMembers(classId, pageRequest.getPageNum(), pageRequest.getPageSize());
+        log.info("User {} querying class members, class ID: {}, page={}, size={}", userInfo, classId,
+                pageRequest.getPageNum(), pageRequest.getPageSize());
+        Page<ClassMemberResponse> members = classService.getClassMembers(classId, pageRequest.getPageNum(),
+                pageRequest.getPageSize());
         log.info("User {} queried {} members", userInfo, members.getTotal());
         return ApiResponse.success(members);
     }
@@ -161,11 +168,11 @@ public class ClassController {
         if (currentUser == null) {
             return ApiResponse.error(401, "用户未登录");
         }
-        
+
         boolean isMember = classService.isClassMember(classId, currentUser.getId());
         Integer roleCode = classService.getUserRoleCodeInClass(classId, currentUser.getId());
         String roleName = classService.getUserRoleNameInClass(classId, currentUser.getId());
-        
+
         MemberCheckResponse response = new MemberCheckResponse(isMember, roleCode, roleName);
         log.info("User {} check result: isMember={}, roleCode={}, roleName={}", userInfo, isMember, roleCode, roleName);
         return ApiResponse.success(response);
@@ -173,6 +180,7 @@ public class ClassController {
 
     /**
      * 获取创建班级申请列表（管理员专用，分页）
+     * 
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
      */
     @GetMapping("/applications/create/list")
@@ -181,10 +189,11 @@ public class ClassController {
             @Valid @ModelAttribute PageRequest pageRequest) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying create class applications with filter: status={}, page={}, size={}", 
+        log.info("User {} querying create class applications with filter: status={}, page={}, size={}",
                 userInfo, status, pageRequest.getPageNum(), pageRequest.getPageSize());
-        Page<ClassCreateApplication> applications = classService.getCreateApplications(status, pageRequest.getPageNum(), pageRequest.getPageSize());
-        log.info("User {} queried {} create class applications (total: {})", 
+        Page<ClassCreateApplication> applications = classService.getCreateApplications(status, pageRequest.getPageNum(),
+                pageRequest.getPageSize());
+        log.info("User {} queried {} create class applications (total: {})",
                 userInfo, applications.getRecords().size(), applications.getTotal());
         return ApiResponse.success(applications, "查询创建申请列表成功");
     }
@@ -206,8 +215,9 @@ public class ClassController {
 
     /**
      * 获取加入班级申请列表（老师和管理员专用，分页）
+     * 
      * @param classId 班级 ID 筛选，可选
-     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     * @param status  状态筛选（0-待审核，1-已通过，2-已拒绝），可选
      */
     @GetMapping("/applications/join/list")
     public ApiResponse<Page<ClassJoinApplication>> getJoinApplications(
@@ -216,10 +226,11 @@ public class ClassController {
             @Valid @ModelAttribute PageRequest pageRequest) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying join class applications with filters: classId={}, status={}, page={}, size={}", 
+        log.info("User {} querying join class applications with filters: classId={}, status={}, page={}, size={}",
                 userInfo, classId, status, pageRequest.getPageNum(), pageRequest.getPageSize());
-        Page<ClassJoinApplication> applications = classService.getJoinApplications(classId, status, pageRequest.getPageNum(), pageRequest.getPageSize());
-        log.info("User {} queried {} join class applications (total: {})", 
+        Page<ClassJoinApplication> applications = classService.getJoinApplications(classId, status,
+                pageRequest.getPageNum(), pageRequest.getPageSize());
+        log.info("User {} queried {} join class applications (total: {})",
                 userInfo, applications.getRecords().size(), applications.getTotal());
         return ApiResponse.success(applications, "查询加入申请列表成功");
     }
@@ -244,10 +255,10 @@ public class ClassController {
      */
     @PutMapping("/{classId}/assistants")
     public ApiResponse<Void> setAssistantTeacher(@PathVariable Integer classId,
-                                                  @RequestParam Integer studentUserId) {
+            @RequestParam Integer studentUserId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} setting student {} as assistant teacher in class {}", 
+        log.info("User {} setting student {} as assistant teacher in class {}",
                 userInfo, studentUserId, classId);
         classService.setStudentAsAssistantTeacher(classId, studentUserId);
         log.info("User {} set student {} as assistant teacher successfully", userInfo, studentUserId);
@@ -259,13 +270,13 @@ public class ClassController {
      */
     @DeleteMapping("/{classId}/members/{studentUserId}")
     public ApiResponse<Void> kickStudent(@PathVariable Integer classId,
-                                            @PathVariable Integer studentUserId) {
+            @PathVariable Integer studentUserId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} kicking student {} from class {}", 
+        log.info("User {} kicking student {} from class {}",
                 userInfo, studentUserId, classId);
         classService.kickStudentFromClass(classId, studentUserId);
-        log.info("User {} kicked student {} from class {} successfully", 
+        log.info("User {} kicked student {} from class {} successfully",
                 userInfo, studentUserId, classId);
         return ApiResponse.success(null);
     }
@@ -275,13 +286,13 @@ public class ClassController {
      */
     @DeleteMapping("/{classId}/assistants/{teacherUserId}")
     public ApiResponse<Void> demoteAssistantTeacher(@PathVariable Integer classId,
-                                                     @PathVariable Integer teacherUserId) {
+            @PathVariable Integer teacherUserId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} demoting assistant teacher {} to student in class {}", 
+        log.info("User {} demoting assistant teacher {} to student in class {}",
                 userInfo, teacherUserId, classId);
         classService.demoteAssistantTeacher(classId, teacherUserId);
-        log.info("User {} demoted assistant teacher {} to student in class {} successfully", 
+        log.info("User {} demoted assistant teacher {} to student in class {} successfully",
                 userInfo, teacherUserId, classId);
         return ApiResponse.success(null);
     }
@@ -291,10 +302,10 @@ public class ClassController {
      */
     @PostMapping("/{classId}/invitations")
     public ApiResponse<Void> studentInviteUser(@PathVariable Integer classId,
-                                                                  @RequestParam String userAccount) {
+            @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("Student {} inviting user {} to class {} (needs user confirmation and teacher approval)", 
+        log.info("Student {} inviting user {} to class {} (needs user confirmation and teacher approval)",
                 userInfo, userAccount, classId);
         classService.studentInviteUser(classId, userAccount);
         log.info("Student {} invitation sent successfully, waiting for user confirmation", userInfo);
@@ -306,7 +317,7 @@ public class ClassController {
      */
     @PutMapping("/invitations/{invitationId}")
     public ApiResponse<Void> respondUserInvitation(@PathVariable Integer invitationId,
-                                                    @RequestParam Boolean accepted) {
+            @RequestParam Boolean accepted) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} responding to user invitation, id: {}, accepted: {}",
@@ -321,7 +332,8 @@ public class ClassController {
      * 教师或助理审核邀请申请
      */
     @PutMapping("/invitations/{applicationId}/approval")
-    public ApiResponse<Void> approveTeacherApproval(@PathVariable Integer applicationId, @Valid @RequestBody ApproveJoinClassRequest request) {
+    public ApiResponse<Void> approveTeacherApproval(@PathVariable Integer applicationId,
+            @Valid @RequestBody ApproveJoinClassRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} approving teacher approval, id: {}, approved: {}",
@@ -350,10 +362,10 @@ public class ClassController {
      */
     @PostMapping("/{classId}/invitations/teacher")
     public ApiResponse<ClassInvitation> inviteUserWithApproval(@PathVariable Integer classId,
-                                                                @RequestParam String userAccount) {
+            @RequestParam String userAccount) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} sending invitation to user {} for class {} (requires approval)", 
+        log.info("User {} sending invitation to user {} for class {} (requires approval)",
                 userInfo, userAccount, classId);
         ClassInvitation invitation = classService.inviteUserToClassWithApproval(classId, userAccount);
         log.info("User {} sent invitation, id: {}", userInfo, invitation.getId());
@@ -362,6 +374,7 @@ public class ClassController {
 
     /**
      * 获取我收到的邀请列表
+     * 
      * @param status 状态筛选（0-待处理，1-已同意，2-已拒绝，3-已过期），可选
      */
     @GetMapping("/my-invitations")
@@ -383,7 +396,7 @@ public class ClassController {
      */
     @PutMapping("/respond-invitation")
     public ApiResponse<Void> respondInvitation(@RequestParam Integer invitationId,
-                                                @RequestParam Boolean accepted) {
+            @RequestParam Boolean accepted) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User {} responding to invitation, id: {}, accepted: {}",
@@ -425,13 +438,13 @@ public class ClassController {
      */
     @PutMapping("/{classId}/owner")
     public ApiResponse<Void> transferOwnership(@PathVariable Integer classId,
-                                                @RequestParam Integer newOwnerId) {
+            @RequestParam Integer newOwnerId) {
         User currentUser = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} transferring ownership of class {} to user {}", 
+        log.info("User {} transferring ownership of class {} to user {}",
                 userInfo, classId, newOwnerId);
         classService.transferClassOwnership(classId, newOwnerId);
-        log.info("User {} transferred ownership of class {} to user {} successfully", 
+        log.info("User {} transferred ownership of class {} to user {} successfully",
                 userInfo, classId, newOwnerId);
         return ApiResponse.success(null, "班级所有权转让成功");
     }

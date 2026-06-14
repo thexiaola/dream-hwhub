@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `class_member` (
     `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '成员ID',
     `class_id` INT NOT NULL COMMENT '班级ID',
     `user_id` INT NOT NULL COMMENT '用户ID',
-    `role` BIT(1) NOT NULL COMMENT '角色：1-老师，0-学生',
+    `role` TINYINT NOT NULL DEFAULT 0 COMMENT '角色：1-老师，0-学生',
     `join_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
     `invite_by` INT DEFAULT NULL COMMENT '邀请人ID',
     INDEX idx_class_id (`class_id`),
