@@ -41,10 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -448,7 +445,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         
         return submissions.stream()
             .map(this::convertToResponse)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -491,7 +488,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         Set<Integer> submittedStudentIds = submissions.stream()
             .map(WorkSubmission::getSubmitterId)
-            .collect(java.util.stream.Collectors.toSet());
+            .collect(Collectors.toSet());
 
         // 3. 计算差集
         allStudentIds.removeAll(submittedStudentIds);
@@ -533,7 +530,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         
         if (pagedResult.getRecords().isEmpty()) {
             Page<WorkSubmissionResponse> page = new Page<>(pageNum, pageSize, 0);
-            page.setRecords(java.util.Collections.emptyList());
+            page.setRecords(Collections.emptyList());
             return page;
         }
         
@@ -561,7 +558,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 ));
         
         // 批量查询用户信息（提交人和批改人）
-        Set<Integer> userIds = new java.util.HashSet<>();
+        Set<Integer> userIds = new HashSet<>();
         for (WorkSubmission submission : pagedResult.getRecords()) {
             userIds.add(submission.getSubmitterId());
             if (submission.getGraderId() != null) {
@@ -569,7 +566,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             }
         }
         
-        Map<Integer, User> userMap = new java.util.HashMap<>();
+        Map<Integer, User> userMap = new HashMap<>();
         if (!userIds.isEmpty()) {
             QueryWrapper<User> userQuery = new QueryWrapper<>();
             userQuery.in("id", userIds);

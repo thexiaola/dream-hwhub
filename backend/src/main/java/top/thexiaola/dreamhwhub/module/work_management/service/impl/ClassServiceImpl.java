@@ -799,7 +799,7 @@ public class ClassServiceImpl implements ClassService {
         List<Integer> classIds = pagedMembers.getRecords().stream()
                 .map(ClassMember::getClassId)
                 .distinct()
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
         // 批量查询班级信息
         final Map<Integer, ClassInfo> classMap;
@@ -961,7 +961,7 @@ public class ClassServiceImpl implements ClassService {
         List<Integer> userIds = pagedResult.getRecords().stream()
                 .map(ClassMember::getUserId)
                 .distinct()
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
         // 批量查询用户信息
         final Map<Integer, User> userMap;
@@ -969,7 +969,7 @@ public class ClassServiceImpl implements ClassService {
             QueryWrapper<User> userQuery = new QueryWrapper<>();
             userQuery.in("id", userIds);
             List<User> users = userMapper.selectList(userQuery);
-            userMap = users.stream().collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
+            userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
         } else {
             userMap = new HashMap<>();
         }
@@ -1423,7 +1423,7 @@ public class ClassServiceImpl implements ClassService {
             }
 
             return response;
-        }).collect(java.util.stream.Collectors.toList());
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -1629,7 +1629,7 @@ public class ClassServiceImpl implements ClassService {
         
         List<Integer> workIds = worksInClass.stream()
                 .map(WorkInfo::getId)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         
         // 2. 查询该学生在这些作业中的提交记录
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();

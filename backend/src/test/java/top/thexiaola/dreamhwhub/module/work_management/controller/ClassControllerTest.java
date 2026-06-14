@@ -73,7 +73,7 @@ class ClassControllerTest {
         Mockito.when(classService.submitCreateClassRequest(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isOk())
@@ -291,7 +291,7 @@ class ClassControllerTest {
         Mockito.when(classService.submitCreateClassRequest(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isOk())
@@ -315,7 +315,7 @@ class ClassControllerTest {
         Mockito.when(classService.submitCreateClassRequest(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isOk())
@@ -355,7 +355,7 @@ class ClassControllerTest {
         request.setClassName(longName);
         request.setDescription("测试");
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest());
@@ -372,7 +372,7 @@ class ClassControllerTest {
         request.setClassName("测试班级");
         request.setDescription(longDesc);
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest());
@@ -414,7 +414,7 @@ class ClassControllerTest {
         request.setClassName("");
         request.setDescription("描述");
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest());
@@ -430,7 +430,7 @@ class ClassControllerTest {
         request.setClassName("测试\n班级");
         request.setDescription("描述");
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest());
@@ -446,7 +446,7 @@ class ClassControllerTest {
         request.setClassName("测试\t班级");
         request.setDescription("描述");
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest());
@@ -462,7 +462,7 @@ class ClassControllerTest {
         request.setClassName("测试班级");
         request.setDescription("这是\t描述");
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest());
@@ -503,7 +503,7 @@ class ClassControllerTest {
         request.setClassName("<script>alert('xss')</script>");
         request.setDescription("描述");
 
-        mockMvc.perform(post("/api/class/")
+        mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest());
