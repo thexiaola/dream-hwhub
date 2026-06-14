@@ -39,9 +39,12 @@ public class CsrfFilter implements Filter {
             "/api/users/login",
             "/api/users/logout",
             "/api/users/register",
+            "/api/users/getregcode",
             "/api/users/send-code",
-            "/api/users/retrieve-password/code",
-            "/api/users/retrieve-password/modify"
+            "/api/users/retrieve/sendcode",
+            "/api/users/retrieve/resetpassword",
+            "/api/users/modify/getmodifycode/before",
+            "/api/users/modify/getmodifycode/after"
     ));
     
     @Value("${app.csrf.enabled:true}")

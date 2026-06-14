@@ -31,9 +31,16 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const getUserInfo = async (): Promise<void> => {
-    const result = await get<UserInfo>('/users/info')
-    if (result.code === 200) {
-      userInfo.value = result.data!
+    if (userInfo.value) {
+      return
+    }
+    try {
+      const result = await get<UserInfo>('/users/info')
+      if (result.code === 200) {
+        userInfo.value = result.data!
+      }
+    } catch {
+      userInfo.value = null
     }
   }
 

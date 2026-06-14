@@ -28,13 +28,14 @@
             <span class="step-text">重置密码</span>
           </div>
         </div>
-        <el-form v-if="currentStep === 1" :model="step1Form" class="retrieve-form">
+        <el-form v-if="currentStep === 1" :model="step1Form" class="retrieve-form" @submit.prevent="goToStep2">
           <el-form-item>
             <el-input 
               v-model="step1Form.account" 
               placeholder="请输入账号"
               :prefix-icon="UserIcon"
               class="input-field"
+              @keyup.enter="goToStep2"
             />
           </el-form-item>
           <el-form-item>
@@ -43,13 +44,14 @@
             </el-button>
           </el-form-item>
         </el-form>
-        <el-form v-if="currentStep === 2" :model="step2Form" class="retrieve-form">
+        <el-form v-if="currentStep === 2" :model="step2Form" class="retrieve-form" @submit.prevent="goToStep3">
           <el-form-item>
             <el-input 
               v-model="step2Form.email" 
               placeholder="请输入绑定的邮箱"
               :prefix-icon="MailIcon"
               class="input-field"
+              @keyup.enter="sendVerifyCode"
             />
           </el-form-item>
           <el-form-item>
@@ -60,6 +62,7 @@
                   placeholder="验证码"
                   :prefix-icon="KeyIcon"
                   class="input-field"
+                  @keyup.enter="goToStep3"
                 />
               </el-col>
               <el-col :span="8">
@@ -79,7 +82,7 @@
             <el-button type="primary" @click="goToStep3" :loading="loading">下一步</el-button>
           </el-form-item>
         </el-form>
-        <el-form v-if="currentStep === 3" :model="step3Form" class="retrieve-form">
+        <el-form v-if="currentStep === 3" :model="step3Form" class="retrieve-form" @submit.prevent="resetPassword">
           <el-form-item>
             <el-input 
               v-model="step3Form.password" 
@@ -87,6 +90,7 @@
               placeholder="请输入新密码"
               :prefix-icon="LockIcon"
               class="input-field"
+              @keyup.enter="resetPassword"
             />
           </el-form-item>
           <el-form-item>
@@ -96,6 +100,7 @@
               placeholder="请确认新密码"
               :prefix-icon="LockIcon"
               class="input-field"
+              @keyup.enter="resetPassword"
             />
           </el-form-item>
           <el-form-item class="form-actions">
@@ -116,7 +121,7 @@ import { ref, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { BookOpen, User, Mail, Key, Lock } from '@lucide/vue'
-import { post } from '@/utils/http'
+import { post, put } from '@/utils/http'
 
 const router = useRouter()
 
@@ -169,9 +174,8 @@ const sendVerifyCode = async () => {
     return
   }
   
-  const result = await post('/users/retrieve-password/code', { 
-    account: step1Form.value.account,
-    email: step2Form.value.email 
+  const result = await post('/users/retrieve/sendcode', { 
+    account: step1Form.value.account
   })
   
   if (result.code === 200) {
@@ -202,11 +206,10 @@ const resetPassword = async () => {
   loading.value = true
   
   try {
-    const result = await post('/users/retrieve-password/modify', {
+    const result = await put('/users/retrieve/resetpassword', {
       account: step1Form.value.account,
-      email: step2Form.value.email,
-      verifyCode: step2Form.value.verifyCode,
-      password: step3Form.value.password
+      code: step2Form.value.verifyCode,
+      newPassword: step3Form.value.password
     })
     
     if (result.code === 200) {

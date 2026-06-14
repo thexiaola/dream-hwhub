@@ -5,11 +5,7 @@ import tsconfigPaths from "vite-plugin-tsconfig-paths";
 import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    VueDevTools(),
-    tsconfigPaths()
-  ],
+  plugins: [vue(), VueDevTools(), tsconfigPaths()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -19,7 +15,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        target: "http://localhost:35010",
         changeOrigin: true,
         secure: false,
       },

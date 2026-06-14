@@ -10,6 +10,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * JWT认证拦截器，从Token中提取用户信息
  */
@@ -18,6 +22,19 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthInterceptor.class);
     private final JwtUtil jwtUtil;
+    
+    // 不需要认证的公开接口白名单
+    private static final Set<String> PUBLIC_PATHS = new HashSet<>(Arrays.asList(
+            "/api/users/login",
+            "/api/users/logout",
+            "/api/users/register",
+            "/api/users/getregcode",
+            "/api/users/send-code",
+            "/api/users/retrieve/sendcode",
+            "/api/users/retrieve/resetpassword",
+            "/api/users/modify/getmodifycode/before",
+            "/api/users/modify/getmodifycode/after"
+    ));
 
     public AuthInterceptor(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
@@ -30,6 +47,12 @@ public class AuthInterceptor implements HandlerInterceptor {
             throws Exception {
 
         String requestURI = request.getRequestURI();
+        
+        // 检查是否是公开接口
+        if (isPublicPath(requestURI)) {
+            logger.debug("Public path, skipping authentication: {}", requestURI);
+            return true;
+        }
 
         // 从请求头中获取JWT Token
         String token = request.getHeader("Authorization");
@@ -81,5 +104,13 @@ public class AuthInterceptor implements HandlerInterceptor {
             logger.error("Failed to parse token for URI: {}", requestURI, e);
             return false;
         }
+    }
+    
+    /**
+     * 检查路径是否在公开接口白名单中
+     */
+    private boolean isPublicPath(String uri) {
+        return PUBLIC_PATHS.stream()
+                .anyMatch(uri::startsWith);
     }
 }

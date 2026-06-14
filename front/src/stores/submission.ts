@@ -18,7 +18,7 @@ export const useSubmissionStore = defineStore('submission', () => {
   }
 
   const submitWork = async (workId: number, content: string): Promise<{ code: number; message: string }> => {
-    const result = await post('/submissions', { workId, content })
+    const result = await post('/submissions/', { workId, content })
     return { code: result.code, message: result.message }
   }
 

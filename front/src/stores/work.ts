@@ -7,7 +7,7 @@ export const useWorkStore = defineStore('work', () => {
   const works = ref<WorkInfo[]>([])
 
   const getWorks = async (page: number = 1, size: number = 10): Promise<void> => {
-    const result = await get<{ records: WorkInfo[] }>('/works/list', { pageNum: page, pageSize: size })
+    const result = await get<{ records: WorkInfo[] }>('/works', { pageNum: page, pageSize: size })
     if (result.code === 200) {
       works.value = result.data!.records
     }

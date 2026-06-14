@@ -25,7 +25,7 @@ instance.interceptors.request.use(
 
 instance.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    return { data: response.data } as AxiosResponse<ApiResponse>
+    return response.data
   },
   (error) => {
     const response = error.response?.data as ApiResponse

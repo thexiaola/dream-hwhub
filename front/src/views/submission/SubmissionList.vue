@@ -120,7 +120,7 @@ const submitGrade = async () => {
     return
   }
   
-  const result = await submissionStore.gradeWork(currentSubmission.value.id, grade.value)
+  const result = await submissionStore.gradeWork(currentSubmission.value.id, grade.value, '已批改')
   if (result.code === 200) {
     ElMessage.success('批改成功')
     closeGradeDialog()

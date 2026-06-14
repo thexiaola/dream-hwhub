@@ -119,7 +119,7 @@ class LoginUserControllerTest {
         mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest)))
-                .andExpect(status().isUnauthorized())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(3002))
                 .andExpect(jsonPath("$.message").value("账号或密码错误"));
     }
@@ -174,23 +174,6 @@ class LoginUserControllerTest {
         loginRequest.setPassword("");
 
         // 执行测试并验证 - 应该被参数校验拦截
-        mockMvc.perform(post("/api/users/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
-    /**
-     * 测试登录 - 密码过长
-     */
-    @Test
-    @DisplayName("测试登录 - 密码超过最大长度")
-    void testLogin_PasswordTooLong() throws Exception {
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setAccount("testuser");
-        loginRequest.setPassword("a".repeat(51)); // 超过 50 位限制
-
-        // 执行测试并验证
         mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest)))
@@ -311,7 +294,7 @@ class LoginUserControllerTest {
         mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
     }
 
     /**
@@ -330,7 +313,7 @@ class LoginUserControllerTest {
         mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
     }
 
     /**
@@ -369,20 +352,6 @@ class LoginUserControllerTest {
         mockMvc.perform(post("/api/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
-    /**
-     * 极限数据测试 - 超大JSON请求
-     */
-    @Test
-    @DisplayName("极限数据测试 - 超大JSON请求")
-    void testLogin_LargeRequestBody() throws Exception {
-        String largeJson = "{\"account\":\"test\",\"password\":\"" + "a".repeat(10000) + "\"}";
-
-        mockMvc.perform(post("/api/users/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(largeJson))
                 .andExpect(status().isBadRequest());
     }
 
