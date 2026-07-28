@@ -52,7 +52,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="showCreateDialog" title="创建课程" width="500px">
+    <el-dialog v-model="showCreateDialog" title="创建课程" width="500px" class="dark-dialog">
       <el-form :model="createForm" label-width="80px">
         <el-form-item label="课程名称">
           <el-input v-model="createForm.className" placeholder="请输入课程名称" maxlength="64" />

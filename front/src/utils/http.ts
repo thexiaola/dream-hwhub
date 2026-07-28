@@ -65,34 +65,34 @@ instance.interceptors.request.use(
 
 instance.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    return response.data
+    return response
   },
   (error) => {
     if (error.response?.data) {
-      return error.response.data
+      return error.response
     }
-    return { code: -1, message: '网络请求失败', data: null }
+    return { data: { code: -1, message: '网络请求失败', data: null } } as AxiosResponse<ApiResponse>
   }
 )
 
 export const get = <T = null>(url: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.get(url, { params })
+  return instance.get<ApiResponse<T>>(url, { params }).then(res => res.data)
 }
 
 export const post = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.post(url, data, { params })
+  return instance.post<ApiResponse<T>>(url, data, { params }).then(res => res.data)
 }
 
 export const put = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.put(url, data, { params })
+  return instance.put<ApiResponse<T>>(url, data, { params }).then(res => res.data)
 }
 
 export const patch = <T = null>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.patch(url, data)
+  return instance.patch<ApiResponse<T>>(url, data).then(res => res.data)
 }
 
 export const del = <T = null>(url: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.delete(url, { params })
+  return instance.delete<ApiResponse<T>>(url, { params }).then(res => res.data)
 }
 
 export default instance

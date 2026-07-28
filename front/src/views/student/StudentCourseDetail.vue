@@ -48,7 +48,7 @@
         >
           <div class="work-header">
             <div class="title-row">
-              <h4>{{ work.title }}</h>
+              <h4>{{ work.title }}</h4>
               <span v-if="work.isPinned" class="pin-badge">
                 <Star :size="14" />
               </span>

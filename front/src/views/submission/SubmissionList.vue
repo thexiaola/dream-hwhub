@@ -48,7 +48,7 @@
         <p>暂无提交记录</p>
       </div>
     </el-card>
-    <el-dialog v-if="showGradeDialog" title="批改作业" @close="closeGradeDialog">
+    <el-dialog v-if="showGradeDialog" title="批改作业" @close="closeGradeDialog" class="dark-dialog">
       <div class="grade-form">
         <p class="submission-content">{{ currentSubmission?.content }}</p>
         <el-form-item label="成绩">
@@ -120,7 +120,7 @@ const submitGrade = async () => {
     return
   }
   
-  const result = await submissionStore.gradeWork(currentSubmission.value.id, grade.value, '已批改')
+  const result = await submissionStore.gradeWork(currentSubmission.value.id, grade.value)
   if (result.code === 200) {
     ElMessage.success('批改成功')
     closeGradeDialog()

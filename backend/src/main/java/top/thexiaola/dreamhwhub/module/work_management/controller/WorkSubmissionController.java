@@ -28,7 +28,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/submissions")
+@RequestMapping(value = "/api/submissions")
 @RequiredArgsConstructor
 public class WorkSubmissionController {
     private final WorkSubmissionService workSubmissionService;
@@ -38,22 +38,19 @@ public class WorkSubmissionController {
      */
     @PostMapping(value = "/", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> submitWork(
-            @RequestParam("workId") Integer workId,
+            @RequestParam(value = "workId") Integer workId,
             @RequestParam(value = "submissionContent", required = false) String submissionContent,
             @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments) {
         String ip = LogUtil.getCurrentClientIp();
         try {
-            // 参数验证
             if (workId == null || workId <= 0) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(400, "作业 ID 无效"));
             }
             
-            // 验证提交内容长度
             if (submissionContent != null && submissionContent.length() > 2048) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(400, "提交内容长度不能超过 2048 位"));
             }
             
-            // 验证提交内容不包含换行符
             if (submissionContent != null && (submissionContent.contains("\n") || submissionContent.contains("\r"))) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(400, "提交内容不能包含换行符"));
             }
@@ -61,7 +58,6 @@ public class WorkSubmissionController {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             
-            // 构建请求对象
             SubmitWorkRequest request = new SubmitWorkRequest();
             request.setWorkId(workId);
             request.setSubmissionContent(submissionContent);
@@ -83,8 +79,8 @@ public class WorkSubmissionController {
      */
     @PutMapping(value = "/{submissionId}", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> updateSubmission(
-            @PathVariable Integer submissionId,
-            @RequestParam(required = false) String submissionContent,
+            @PathVariable(value = "submissionId") Integer submissionId,
+            @RequestParam(value = "submissionContent", required = false) String submissionContent,
             @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments,
             @RequestParam(value = "removedAttachmentIds", required = false) List<Integer> removedAttachmentIds) {
         String ip = LogUtil.getCurrentClientIp();
@@ -104,8 +100,8 @@ public class WorkSubmissionController {
     /**
      * 删除提交的作业
      */
-    @DeleteMapping("/{submissionId}")
-    public ResponseEntity<ApiResponse<Void>> deleteSubmission(@PathVariable Integer submissionId) {
+    @DeleteMapping(value = "/{submissionId}")
+    public ResponseEntity<ApiResponse<Void>> deleteSubmission(@PathVariable(value = "submissionId") Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
@@ -123,8 +119,8 @@ public class WorkSubmissionController {
     /**
      * 查询提交详情
      */
-    @GetMapping("/{submissionId}")
-    public ResponseEntity<ApiResponse<WorkSubmission>> getSubmissionDetail(@PathVariable Integer submissionId) {
+    @GetMapping(value = "/{submissionId}")
+    public ResponseEntity<ApiResponse<WorkSubmission>> getSubmissionDetail(@PathVariable(value = "submissionId") Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         User user = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfoString(ip, user);
@@ -137,9 +133,9 @@ public class WorkSubmissionController {
     /**
      * 查询学生的提交列表
      */
-    @GetMapping("/student/list")
+    @GetMapping(value = "/student/list")
     public ResponseEntity<ApiResponse<List<WorkSubmissionResponse>>> getStudentSubmissions(
-            @RequestParam(required = false) Integer workId) {
+            @RequestParam(value = "workId", required = false) Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
@@ -160,10 +156,10 @@ public class WorkSubmissionController {
     /**
      * 查询某次作业的所有提交（教师专用，分页）
      */
-    @GetMapping("/work/list")
+    @GetMapping(value = "/work/list")
     public ResponseEntity<ApiResponse<Page<WorkSubmissionResponse>>> getWorkSubmissions(
-            @RequestParam Integer workId,
-            @Valid @ModelAttribute PageRequest pageRequest) {
+            @RequestParam(value = "workId") Integer workId,
+            @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
@@ -180,8 +176,9 @@ public class WorkSubmissionController {
     /**
      * 查询某次作业的已交名单（教师专用）
      */
-    @GetMapping("/work/submitted")
-    public ResponseEntity<ApiResponse<List<WorkSubmissionResponse>>> getSubmittedStudents(@RequestParam Integer workId) {
+    @GetMapping(value = "/work/submitted")
+    public ResponseEntity<ApiResponse<List<WorkSubmissionResponse>>> getSubmittedStudents(
+            @RequestParam(value = "workId") Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
@@ -199,8 +196,9 @@ public class WorkSubmissionController {
     /**
      * 查询某次作业的未交名单（教师专用）
      */
-    @GetMapping("/work/unsubmitted")
-    public ResponseEntity<ApiResponse<List<User>>> getUnsubmittedStudents(@RequestParam Integer workId) {
+    @GetMapping(value = "/work/unsubmitted")
+    public ResponseEntity<ApiResponse<List<User>>> getUnsubmittedStudents(
+            @RequestParam(value = "workId") Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
@@ -218,7 +216,7 @@ public class WorkSubmissionController {
     /**
      * 批改作业（教师专用）
      */
-    @PutMapping("/grade")
+    @PutMapping(value = "/grade")
     public ResponseEntity<ApiResponse<WorkSubmission>> gradeWork(@Valid @RequestBody GradeWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         User user = UserUtils.getCurrentUser();

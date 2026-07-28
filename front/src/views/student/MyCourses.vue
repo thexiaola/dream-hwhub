@@ -50,7 +50,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="showJoinDialog" title="加入课程" width="400px">
+    <el-dialog v-model="showJoinDialog" title="加入课程" width="400px" class="dark-dialog">
       <el-form :model="joinForm" label-width="80px">
         <el-form-item label="邀请码">
           <el-input v-model="joinForm.inviteCode" placeholder="请输入25位邀请码" />
@@ -110,7 +110,7 @@ const joinByCode = async () => {
     ElMessage.warning('请输入邀请码')
     return
   }
-  const result = await post('/class/join-by-code', null, { inviteCode: joinForm.value.inviteCode })
+  const result = await post('/class/join-by-code', { inviteCode: joinForm.value.inviteCode })
   if (result.code === 200) {
     ElMessage.success('加入成功')
     showJoinDialog.value = false

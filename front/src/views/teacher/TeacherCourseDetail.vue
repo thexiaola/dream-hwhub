@@ -51,7 +51,7 @@
           >
             <div class="work-header">
               <div class="title-row">
-                <h4>{{ work.title }}</h>
+                <h4>{{ work.title }}</h4>
                 <span v-if="work.isPinned" class="pin-badge">
                   <Star :size="14" />
                 </span>
@@ -164,7 +164,7 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog v-model="showCreateWorkDialog" title="发布作业" width="600px">
+    <el-dialog v-model="showCreateWorkDialog" title="发布作业" width="600px" class="dark-dialog">
       <el-form :model="workForm" label-width="80px">
         <el-form-item label="作业标题">
           <el-input v-model="workForm.title" placeholder="请输入作业标题" maxlength="128" />
@@ -199,7 +199,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showInviteDialog" title="邀请学生" width="400px">
+    <el-dialog v-model="showInviteDialog" title="邀请学生" width="400px" class="dark-dialog">
       <el-form :model="inviteForm" label-width="80px">
         <el-form-item label="学生账号">
           <el-input v-model="inviteForm.userAccount" placeholder="请输入学生学号/工号或邮箱" />
@@ -211,7 +211,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showInviteCodeDialog" title="邀请码" width="400px">
+    <el-dialog v-model="showInviteCodeDialog" title="邀请码" width="400px" class="dark-dialog">
       <div class="invite-code-content">
         <p>邀请码已生成：</p>
         <div class="invite-code-box">
@@ -431,7 +431,7 @@ const inviteStudent = async () => {
     ElMessage.warning('请输入学生账号')
     return
   }
-  const result = await post(`/class/${route.params.id}/invitations/teacher`, null, { userAccount: inviteForm.value.userAccount })
+  const result = await post(`/class/${route.params.id}/invitations/teacher`, undefined, { userAccount: inviteForm.value.userAccount })
   if (result.code === 200) {
     ElMessage.success('邀请已发送')
     showInviteDialog.value = false
@@ -442,7 +442,7 @@ const inviteStudent = async () => {
 }
 
 const setAssistant = async (userId: number) => {
-  const result = await put(`/class/${route.params.id}/assistants`, null, { studentUserId: userId })
+  const result = await put(`/class/${route.params.id}/assistants`, undefined, { studentUserId: userId })
   if (result.code === 200) {
     ElMessage.success('已设置为班级助理')
     loadMembers()
