@@ -431,7 +431,7 @@ const inviteStudent = async () => {
     ElMessage.warning('请输入学生账号')
     return
   }
-  const result = await post(`/class/${route.params.id}/invitations/teacher`, undefined, { userAccount: inviteForm.value.userAccount })
+  const result = await post(`/class/${route.params.id}/invitations/teacher`, { userAccount: inviteForm.value.userAccount })
   if (result.code === 200) {
     ElMessage.success('邀请已发送')
     showInviteDialog.value = false
@@ -442,7 +442,7 @@ const inviteStudent = async () => {
 }
 
 const setAssistant = async (userId: number) => {
-  const result = await put(`/class/${route.params.id}/assistants`, undefined, { studentUserId: userId })
+  const result = await put(`/class/${route.params.id}/assistants`, { studentUserId: userId })
   if (result.code === 200) {
     ElMessage.success('已设置为班级助理')
     loadMembers()

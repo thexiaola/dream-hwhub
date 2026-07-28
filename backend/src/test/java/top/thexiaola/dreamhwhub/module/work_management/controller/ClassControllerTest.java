@@ -16,7 +16,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.JoinByInviteCodeRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.JoinClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.TransferOwnershipRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
@@ -203,8 +205,12 @@ class ClassControllerTest {
         Mockito.when(classService.joinClassByInviteCode(Mockito.anyString()))
                 .thenReturn(application);
 
+        JoinByInviteCodeRequest request = new JoinByInviteCodeRequest();
+        request.setInviteCode("ABC123");
+
         mockMvc.perform(post("/api/class/join-by-code")
-                        .param("inviteCode", "ABC123"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("加入申请已提交，待审核"));
@@ -218,8 +224,12 @@ class ClassControllerTest {
     void testTransferOwnership_Success() throws Exception {
         Mockito.doNothing().when(classService).transferClassOwnership(Mockito.anyInt(), Mockito.anyInt());
 
+        TransferOwnershipRequest request = new TransferOwnershipRequest();
+        request.setNewOwnerId(2);
+
         mockMvc.perform(put("/api/class/1/owner")
-                        .param("newOwnerId", "2"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("班级所有权转让成功"));

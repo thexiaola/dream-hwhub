@@ -2242,12 +2242,20 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **请求参数**:
 
-| 参数          | 类型    | 必填 | 说明        |
-| ------------- | ------- | ---- | ----------- |
-| classId       | Integer | 是   | 班级 ID     |
-| studentUserId | Integer | 是   | 学生用户 ID |
+| 参数          | 类型    | 必填 | 说明        | 位置   |
+| ------------- | ------- | ---- | ----------- | ------ |
+| classId       | Integer | 是   | 班级 ID     | path   |
+| studentUserId | Integer | 是   | 学生用户 ID | body   |
 
-**请求示例**: `PUT /api/class/1/assistants?studentUserId=1002`
+**请求体 (JSON)**:
+
+```json
+{
+  "studentUserId": 1002
+}
+```
+
+**请求示例**: `PUT /api/class/1/assistants`
 
 **成功响应 (200)**:
 
@@ -2373,12 +2381,20 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **请求参数**:
 
-| 参数        | 类型    | 必填 | 说明             |
-| ----------- | ------- | ---- | ---------------- |
-| classId     | Integer | 是   | 班级 ID          |
-| userAccount | String  | 是   | 被邀请用户的账号 |
+| 参数        | 类型    | 必填 | 说明             | 位置 |
+| ----------- | ------- | ---- | ---------------- | ---- |
+| classId     | Integer | 是   | 班级 ID          | path |
+| userAccount | String  | 是   | 被邀请用户的账号 | body |
 
-**请求示例**: `POST /api/class/1/invitations?userAccount=2024002`
+**请求体 (JSON)**:
+
+```json
+{
+  "userAccount": "2024002"
+}
+```
+
+**请求示例**: `POST /api/class/1/invitations`
 
 **成功响应 (200)**:
 
@@ -2423,12 +2439,20 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **请求参数**:
 
-| 参数         | 类型    | 必填 | 说明                            |
-| ------------ | ------- | ---- | ------------------------------- |
-| invitationId | Integer | 是   | 邀请 ID                         |
-| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) |
+| 参数         | 类型    | 必填 | 说明                            | 位置 |
+| ------------ | ------- | ---- | ------------------------------- | ---- |
+| invitationId | Integer | 是   | 邀请 ID                         | path |
+| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) | body |
 
-**请求示例**: `PUT /api/class/invitations/1?accepted=true`
+**请求体 (JSON)**:
+
+```json
+{
+  "accepted": true
+}
+```
+
+**请求示例**: `PUT /api/class/invitations/1`
 
 **成功响应 (200)**:
 
@@ -2669,12 +2693,20 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **请求参数**:
 
-| 参数        | 类型    | 必填 | 说明             |
-| ----------- | ------- | ---- | ---------------- |
-| classId     | Integer | 是   | 班级 ID          |
-| userAccount | String  | 是   | 被邀请用户的账号 |
+| 参数        | 类型    | 必填 | 说明             | 位置 |
+| ----------- | ------- | ---- | ---------------- | ---- |
+| classId     | Integer | 是   | 班级 ID          | path |
+| userAccount | String  | 是   | 被邀请用户的账号 | body |
 
-**请求示例**: `POST /api/class/1/invitations/teacher?userAccount=2024001`
+**请求体 (JSON)**:
+
+```json
+{
+  "userAccount": "2024001"
+}
+```
+
+**请求示例**: `POST /api/class/1/invitations/teacher`
 
 **成功响应 (200)**:
 
@@ -2803,16 +2835,25 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ### 4.23 响应邀请（同意/拒绝）
 
-**接口地址**: `PUT /api/class/invitations/{invitationId}`
+**接口地址**: `PUT /api/class/respond-invitation`
 
 **请求参数**:
 
-| 参数         | 类型    | 必填 | 说明                            |
-| ------------ | ------- | ---- | ------------------------------- |
-| invitationId | Integer | 是   | 邀请 ID                         |
-| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) |
+| 参数         | 类型    | 必填 | 说明                            | 位置 |
+| ------------ | ------- | ---- | ------------------------------- | ---- |
+| invitationId | Integer | 是   | 邀请 ID                         | body |
+| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) | body |
 
-**请求示例**: `PUT /api/class/invitations/1?accepted=true`
+**请求体 (JSON)**:
+
+```json
+{
+  "invitationId": 1,
+  "accepted": true
+}
+```
+
+**请求示例**: `PUT /api/class/respond-invitation`
 
 **成功响应 (200)**:
 
@@ -2906,11 +2947,19 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **请求参数**:
 
-| 参数       | 类型   | 必填 | 说明       |
-| ---------- | ------ | ---- | ---------- |
-| inviteCode | String | 是   | 25位邀请码 |
+| 参数       | 类型   | 必填 | 说明       | 位置 |
+| ---------- | ------ | ---- | ---------- | ---- |
+| inviteCode | String | 是   | 25位邀请码 | body |
 
-**请求示例**: `POST /api/class/join-by-code?inviteCode=A3f9K2mN7pQ1xR5tY8wZ4bC6d`
+**请求体 (JSON)**:
+
+```json
+{
+  "inviteCode": "A3f9K2mN7pQ1xR5tY8wZ4bC6d"
+}
+```
+
+**请求示例**: `POST /api/class/join-by-code`
 
 **成功响应 (200)**:
 
@@ -2978,12 +3027,20 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **请求参数**:
 
-| 参数       | 类型    | 必填 | 说明        |
-| ---------- | ------- | ---- | ----------- |
-| classId    | Integer | 是   | 班级 ID     |
-| newOwnerId | Integer | 是   | 新所有者 ID |
+| 参数       | 类型    | 必填 | 说明        | 位置 |
+| ---------- | ------- | ---- | ----------- | ---- |
+| classId    | Integer | 是   | 班级 ID     | path |
+| newOwnerId | Integer | 是   | 新所有者 ID | body |
 
-**请求示例**: `PUT /api/class/1/owner?newOwnerId=1003`
+**请求体 (JSON)**:
+
+```json
+{
+  "newOwnerId": 1003
+}
+```
+
+**请求示例**: `PUT /api/class/1/owner`
 
 **成功响应 (200)**:
 

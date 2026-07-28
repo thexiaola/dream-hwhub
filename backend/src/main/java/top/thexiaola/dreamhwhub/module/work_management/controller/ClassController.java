@@ -11,7 +11,12 @@ import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ApproveJoinClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.InviteUserRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.JoinByInviteCodeRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.RespondInvitationRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.SetAssistantRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.TransferOwnershipRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassCreateApplication;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
@@ -268,13 +273,13 @@ public class ClassController {
         @PutMapping("/{classId}/assistants")
         public ApiResponse<Void> setAssistantTeacher(
                         @PathVariable(value = "classId") Integer classId,
-                        @RequestParam(value = "studentUserId") Integer studentUserId) {
+                        @Valid @RequestBody SetAssistantRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} setting student {} as assistant teacher in class {}",
-                                userInfo, studentUserId, classId);
-                classService.setStudentAsAssistantTeacher(classId, studentUserId);
-                log.info("User {} set student {} as assistant teacher successfully", userInfo, studentUserId);
+                                userInfo, request.getStudentUserId(), classId);
+                classService.setStudentAsAssistantTeacher(classId, request.getStudentUserId());
+                log.info("User {} set student {} as assistant teacher successfully", userInfo, request.getStudentUserId());
                 return ApiResponse.success(null);
         }
 
@@ -318,12 +323,12 @@ public class ClassController {
         @PostMapping("/{classId}/invitations")
         public ApiResponse<Void> studentInviteUser(
                         @PathVariable(value = "classId") Integer classId,
-                        @RequestParam(value = "userAccount") String userAccount) {
+                        @Valid @RequestBody InviteUserRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("Student {} inviting user {} to class {} (needs user confirmation and teacher approval)",
-                                userInfo, userAccount, classId);
-                classService.studentInviteUser(classId, userAccount);
+                                userInfo, request.getUserAccount(), classId);
+                classService.studentInviteUser(classId, request.getUserAccount());
                 log.info("Student {} invitation sent successfully, waiting for user confirmation", userInfo);
                 return ApiResponse.success(null, "邀请已发送，待用户确认");
         }
@@ -334,13 +339,13 @@ public class ClassController {
         @PutMapping("/invitations/{invitationId}")
         public ApiResponse<Void> respondUserInvitation(
                         @PathVariable(value = "invitationId") Integer invitationId,
-                        @RequestParam(value = "accepted") Boolean accepted) {
+                        @Valid @RequestBody RespondInvitationRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} responding to user invitation, id: {}, accepted: {}",
-                                userInfo, invitationId, accepted);
-                classService.respondUserInvitation(invitationId, accepted);
-                String result = accepted ? "accepted" : "rejected";
+                                userInfo, invitationId, request.getAccepted());
+                classService.respondUserInvitation(invitationId, request.getAccepted());
+                String result = request.getAccepted() ? "accepted" : "rejected";
                 log.info("User {} user invitation {}", userInfo, result);
                 return ApiResponse.success(null);
         }
@@ -382,12 +387,12 @@ public class ClassController {
         @PostMapping("/{classId}/invitations/teacher")
         public ApiResponse<ClassInvitation> inviteUserWithApproval(
                         @PathVariable(value = "classId") Integer classId,
-                        @RequestParam(value = "userAccount") String userAccount) {
+                        @Valid @RequestBody InviteUserRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} sending invitation to user {} for class {} (requires approval)",
-                                userInfo, userAccount, classId);
-                ClassInvitation invitation = classService.inviteUserToClassWithApproval(classId, userAccount);
+                                userInfo, request.getUserAccount(), classId);
+                ClassInvitation invitation = classService.inviteUserToClassWithApproval(classId, request.getUserAccount());
                 log.info("User {} sent invitation, id: {}", userInfo, invitation.getId());
                 return ApiResponse.success(invitation, "邀请已发送，等待用户响应");
         }
@@ -416,14 +421,13 @@ public class ClassController {
          */
         @PutMapping("/respond-invitation")
         public ApiResponse<Void> respondInvitation(
-                        @RequestParam(value = "invitationId") Integer invitationId,
-                        @RequestParam(value = "accepted") Boolean accepted) {
+                        @Valid @RequestBody RespondInvitationRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} responding to invitation, id: {}, accepted: {}",
-                                userInfo, invitationId, accepted);
-                classService.respondInvitation(invitationId, accepted);
-                String result = accepted ? "accepted" : "rejected";
+                                userInfo, request.getInvitationId(), request.getAccepted());
+                classService.respondInvitation(request.getInvitationId(), request.getAccepted());
+                String result = request.getAccepted() ? "accepted" : "rejected";
                 log.info("User {} invitation {}", userInfo, result);
                 return ApiResponse.success(null);
         }
@@ -447,11 +451,11 @@ public class ClassController {
          */
         @PostMapping("/join-by-code")
         public ApiResponse<ClassJoinApplication> joinByInviteCode(
-                        @RequestParam(value = "inviteCode") String inviteCode) {
+                        @Valid @RequestBody JoinByInviteCodeRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} joining class by invite code: {}", userInfo, inviteCode);
-                ClassJoinApplication application = classService.joinClassByInviteCode(inviteCode);
+                log.info("User {} joining class by invite code: {}", userInfo, request.getInviteCode());
+                ClassJoinApplication application = classService.joinClassByInviteCode(request.getInviteCode());
                 log.info("User {} submitted join application via invite code, id: {}", userInfo, application.getId());
                 return ApiResponse.success(application, "加入申请已提交，待审核");
         }
@@ -462,14 +466,14 @@ public class ClassController {
         @PutMapping("/{classId}/owner")
         public ApiResponse<Void> transferOwnership(
                         @PathVariable(value = "classId") Integer classId,
-                        @RequestParam(value = "newOwnerId") Integer newOwnerId) {
+                        @Valid @RequestBody TransferOwnershipRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} transferring ownership of class {} to user {}",
-                                userInfo, classId, newOwnerId);
-                classService.transferClassOwnership(classId, newOwnerId);
+                                userInfo, classId, request.getNewOwnerId());
+                classService.transferClassOwnership(classId, request.getNewOwnerId());
                 log.info("User {} transferred ownership of class {} to user {} successfully",
-                                userInfo, classId, newOwnerId);
+                                userInfo, classId, request.getNewOwnerId());
                 return ApiResponse.success(null, "班级所有权转让成功");
         }
 }

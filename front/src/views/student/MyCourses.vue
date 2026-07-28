@@ -15,9 +15,9 @@
 
     <el-card class="content-card">
       <div class="course-grid">
-        <div 
-          v-for="course in studentCourses" 
-          :key="course.id" 
+        <div
+          v-for="course in studentCourses"
+          :key="course.id"
           class="course-card"
           @click="goToCourse(course.id)"
         >
@@ -27,7 +27,7 @@
             </div>
             <h3>{{ course.className }}</h3>
           </div>
-          <p class="description">{{ course.description || '暂无描述' }}</p>
+          <p class="description">{{ course.description || "暂无描述" }}</p>
           <div class="card-info">
             <div class="info-item">
               <User :size="14" />
@@ -50,10 +50,18 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="showJoinDialog" title="加入课程" width="400px" class="dark-dialog">
+    <el-dialog
+      v-model="showJoinDialog"
+      title="加入课程"
+      width="400px"
+      class="dark-dialog"
+    >
       <el-form :model="joinForm" label-width="80px">
         <el-form-item label="邀请码">
-          <el-input v-model="joinForm.inviteCode" placeholder="请输入25位邀请码" />
+          <el-input
+            v-model="joinForm.inviteCode"
+            placeholder="请输入25位邀请码"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -65,65 +73,67 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { get, post } from '@/utils/http'
-import { ElMessage } from 'element-plus'
-import { Plus, BookOpen, User, Users, GraduationCap } from '@lucide/vue'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { get, post } from "@/utils/http";
+import { ElMessage } from "element-plus";
+import { Plus, BookOpen, User, Users, GraduationCap } from "@lucide/vue";
 
 interface CourseInfo {
-  id: number
-  className: string
-  description?: string
-  ownerId: number
-  ownerName: string
-  userRole: string
-  memberCount: number
-  teacherCount: number
-  studentCount: number
+  id: number;
+  className: string;
+  description?: string;
+  ownerId: number;
+  ownerName: string;
+  userRole: string;
+  memberCount: number;
+  teacherCount: number;
+  studentCount: number;
 }
 
-const router = useRouter()
+const router = useRouter();
 
-const studentCourses = ref<CourseInfo[]>([])
-const showJoinDialog = ref(false)
+const studentCourses = ref<CourseInfo[]>([]);
+const showJoinDialog = ref(false);
 const joinForm = ref({
-  inviteCode: ''
-})
+  inviteCode: "",
+});
 
 const loadStudentCourses = async () => {
-  const result = await get<{ records: CourseInfo[] }>('/class/mine')
+  const result = await get<{ records: CourseInfo[] }>("/class/mine");
   if (result.code === 200) {
     // 学生的课程
     studentCourses.value = result.data!.records.filter(
-      course => course.userRole === '学生'
-    )
+      (course) => course.userRole === "学生",
+    );
   }
-}
+};
 
 const goToCourse = (id: number) => {
-  router.push(`/student/course/${id}`)
-}
+  router.push(`/student/course/${id}`);
+};
 
 const joinByCode = async () => {
   if (!joinForm.value.inviteCode) {
-    ElMessage.warning('请输入邀请码')
-    return
+    ElMessage.warning("请输入邀请码");
+    return;
   }
-  const result = await post('/class/join-by-code', { inviteCode: joinForm.value.inviteCode })
+  const result = await post("/class/join-by-code", {
+    inviteCode: joinForm.value.inviteCode,
+  });
   if (result.code === 200) {
-    ElMessage.success('加入成功')
-    showJoinDialog.value = false
-    joinForm.value.inviteCode = ''
-    loadStudentCourses()
+    ElMessage.success("加入成功");
+    showJoinDialog.value = false;
+    joinForm.value.inviteCode = "";
+    loadStudentCourses();
   } else {
-    ElMessage.error(result.message)
+    ElMessage.error(result.message);
   }
-}
+};
 
 onMounted(() => {
-  loadStudentCourses()
-})
+  loadStudentCourses();
+});
 </script>
 
 <style scoped>
