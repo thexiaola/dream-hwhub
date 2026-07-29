@@ -542,8 +542,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-popper.dark-picker.is-time-spinner {
   width: auto !important;
-  min-width: 160px !important;
-  max-width: 180px !important;
+  min-width: 120px !important;
+  max-width: 132px !important;
   padding: 0 !important;
   overflow: visible !important;
 }
@@ -655,24 +655,265 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   color: #667eea !important;
 }
 
+/* 选中日期 - 优先级高于hover */
+.dark-picker .el-date-table-cell.selected:hover .el-date-table-cell__text,
+.dark-picker .el-date-table-cell.is-selected:hover .el-date-table-cell__text,
+.dark-picker .el-date-table-cell.current:hover .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+}
+
 .dark-picker .el-date-table-cell.today .el-date-table-cell__text {
-  color: #667eea !important;
+  color: #f0a04b !important;
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px #667eea !important;
+  box-shadow: none !important;
+  position: relative !important;
+}
+
+.dark-picker .el-date-table-cell.today .el-date-table-cell__text::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: #f0a04b !important;
 }
 
 .dark-picker
-  .el-date-table-cell.current:not(.selected)
+  .el-date-table-cell.current:not(.selected):not(.is-selected)
   .el-date-table-cell__text {
-  box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.4) !important;
+  box-shadow: inset 0 0 0 1px rgba(240, 160, 75, 0.4) !important;
 }
 
 .dark-picker .el-date-table-cell.selected .el-date-table-cell__text,
-.dark-picker .el-date-table-cell.is-selected .el-date-table-cell__text {
+.dark-picker .el-date-table-cell.is-selected .el-date-table-cell__text,
+.dark-picker .el-date-table-cell.current.selected .el-date-table-cell__text,
+.dark-picker .el-date-table-cell.current.is-selected .el-date-table-cell__text {
   background: linear-gradient(135deg, #667eea, #764ba2) !important;
   color: #ffffff !important;
   font-weight: 600;
   box-shadow: none !important;
+  position: relative !important;
+}
+
+.dark-picker .el-date-table-cell.selected .el-date-table-cell__text::after,
+.dark-picker .el-date-table-cell.is-selected .el-date-table-cell__text::after,
+.dark-picker
+  .el-date-table-cell.current.selected
+  .el-date-table-cell__text::after,
+.dark-picker
+  .el-date-table-cell.current.is-selected
+  .el-date-table-cell__text::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 6px rgba(102, 126, 234, 0.6) !important;
+}
+
+/* 全局日期选择器选中样式（保底） */
+.el-popper .el-date-table-cell.selected .el-date-table-cell__text,
+.el-popper .el-date-table-cell.is-selected .el-date-table-cell__text,
+.el-popper .el-date-table-cell.current .el-date-table-cell__text {
+  background: rgba(102, 126, 234, 0.25) !important;
+  color: #667eea !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  position: relative !important;
+  border-radius: 50% !important;
+}
+
+.el-popper .el-date-table-cell.selected .el-date-table-cell__text::after,
+.el-popper .el-date-table-cell.is-selected .el-date-table-cell__text::after,
+.el-popper .el-date-table-cell.current .el-date-table-cell__text::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 2px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 18px !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 6px rgba(102, 126, 234, 0.6) !important;
+  display: block !important;
+}
+
+/* 更高优先级的选中样式 - 覆盖 Element Plus 默认样式 */
+.el-popper
+  .el-date-table.selected
+  .el-date-table-cell
+  .el-date-table-cell__text,
+.el-popper
+  .el-date-table
+  .el-date-table-cell.selected
+  .el-date-table-cell__text,
+.el-popper
+  .el-date-table
+  .el-date-table-cell.is-selected
+  .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* 确保 dark-picker 下的选中样式 */
+.dark-picker .el-date-table-cell.selected .el-date-table-cell__text,
+.dark-picker .el-date-table-cell.is-selected .el-date-table-cell__text,
+.dark-picker .el-date-table-cell.current.selected .el-date-table-cell__text,
+.dark-picker .el-date-table-cell.current.is-selected .el-date-table-cell__text,
+.dark-picker
+  .el-date-table.selected
+  .el-date-table-cell
+  .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: none !important;
+  position: relative !important;
+  border-radius: 50% !important;
+}
+
+.dark-picker .el-date-table-cell.selected .el-date-table-cell__text::after,
+.dark-picker .el-date-table-cell.is-selected .el-date-table-cell__text::after,
+.dark-picker
+  .el-date-table-cell.current.selected
+  .el-date-table-cell__text::after,
+.dark-picker
+  .el-date-table-cell.current.is-selected
+  .el-date-table-cell__text::after,
+.dark-picker
+  .el-date-table.selected
+  .el-date-table-cell
+  .el-date-table-cell__text::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 2px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 18px !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 6px rgba(102, 126, 234, 0.6) !important;
+  display: block !important;
+}
+
+/* 覆盖 Element Plus 默认的 selected margin */
+.dark-picker .el-date-table.selected .el-date-table-cell,
+.dark-picker .el-date-table .el-date-table-cell.selected,
+.dark-picker .el-date-table .el-date-table-cell.is-selected,
+.dark-picker .el-date-table .el-date-table-cell.current:not(.disabled) {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* 使用 CSS 变量覆盖 Element Plus 默认选中色 */
+.dark-picker {
+  --el-datepicker-active-color: #667eea !important;
+}
+
+/* ==============================================
+   日期选择器 - .current 选中样式 (type=date 模式)
+   ============================================== */
+.dark-picker
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  position: relative !important;
+  border-radius: 50% !important;
+}
+
+.dark-picker
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 2px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 18px !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 6px rgba(102, 126, 234, 0.6) !important;
+  display: block !important;
+}
+
+/* Element Plus 日期面板内的选中样式（更精确的选择器） */
+.dark-picker
+  .el-date-picker-panel
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text,
+.el-popper.dark-picker
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  position: relative !important;
+  box-shadow: none !important;
+  border-radius: 50% !important;
+}
+
+.dark-picker
+  .el-date-picker-panel
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text::after,
+.el-popper.dark-picker
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 2px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 18px !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 6px rgba(102, 126, 234, 0.6) !important;
+  display: block !important;
+}
+
+/* 全局保底：任何地方的 current 选中状态 */
+.el-popper
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  position: relative !important;
+  box-shadow: none !important;
+  border-radius: 50% !important;
+}
+
+.el-popper
+  .el-date-table-cell.current:not(.disabled)
+  .el-date-table-cell__text::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 2px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 18px !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 6px rgba(102, 126, 234, 0.6) !important;
+  display: block !important;
 }
 
 .dark-picker .el-date-table-cell.disabled .el-date-table-cell__text {
@@ -851,7 +1092,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel .el-time-spinner {
   background: #1e1e2e !important;
-  height: 192px !important;
+  height: 240px !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 4px !important;
 }
@@ -884,6 +1125,14 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   flex-direction: column;
   align-items: center;
   overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.el-time-panel .el-time-spinner__list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .el-time-panel .el-time-spinner__list::before,
@@ -892,7 +1141,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   position: absolute;
   left: 0;
   right: 0;
-  height: 48px;
+  height: 72px;
   display: block;
   z-index: 1;
   pointer-events: none;
@@ -916,10 +1165,10 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-time-panel .el-time-spinner__wrap::after {
   content: "";
   position: absolute;
-  top: 56px;
+  top: 104px;
   left: 2px;
   right: 2px;
-  height: 28px;
+  height: 32px;
   border-radius: 4px;
   background: linear-gradient(
     135deg,
@@ -1023,8 +1272,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   overflow: visible !important;
   z-index: 3000 !important;
   width: auto !important;
-  min-width: 160px !important;
-  max-width: 180px !important;
+  min-width: 120px !important;
+  max-width: 132px !important;
 }
 
 .el-popper.is-time-spinner.el-popper > .el-popper__arrow {
@@ -1047,7 +1296,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel .el-time-spinner {
   background: #1e1e2e !important;
-  height: 140px !important;
+  height: 240px !important;
   width: auto !important;
   overflow: hidden !important;
   position: relative !important;
@@ -1055,22 +1304,28 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-time-panel .el-time-spinner__wrap {
-  width: 52px !important;
-  min-width: 52px !important;
-  max-width: 52px !important;
+  width: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
   box-sizing: border-box !important;
 }
 
 .el-time-panel .el-time-spinner__list {
   width: 100% !important;
-  padding: 56px 0 !important;
+  padding: 104px 0 !important;
+}
+
+.el-time-panel .el-time-spinner__list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .el-time-panel .el-time-spinner__item {
   color: rgba(255, 255, 255, 0.35) !important;
-  height: 28px !important;
-  line-height: 28px !important;
-  font-size: 14px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 13px !important;
   text-align: center !important;
   border-radius: 4px !important;
   transition: all 0.15s ease !important;
@@ -1082,15 +1337,24 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-time-panel .el-time-spinner__item.active:not(.disabled) {
-  background: linear-gradient(
-    135deg,
-    rgba(102, 126, 234, 0.35),
-    rgba(118, 75, 162, 0.35)
-  ) !important;
+  background: transparent !important;
   color: #ffffff !important;
   font-weight: 600 !important;
-  font-size: 15px !important;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+  font-size: 14px !important;
+  position: relative !important;
+}
+
+.el-time-panel .el-time-spinner__item.active:not(.disabled)::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.5) !important;
 }
 
 .el-time-panel .el-time-spinner__item.disabled {
@@ -1116,11 +1380,11 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 4px !important;
-  padding: 3px 8px !important;
-  font-size: 12px !important;
-  line-height: 1 !important;
-  height: 26px !important;
-  min-width: 48px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  height: 32px !important;
+  min-width: 60px !important;
   cursor: pointer !important;
   transition: all 0.2s ease;
   float: none !important;
@@ -1146,4 +1410,89 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-time-panel__btn.cancel {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 全局隐藏时间选择器相关滚动条 */
+.el-time-spinner__list,
+.el-time-spinner__wrap,
+.el-time-spinner,
+.el-time-panel__content,
+.el-time-panel,
+.el-popper.is-time-spinner .el-popper__body {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+}
+
+.el-time-spinner__list::-webkit-scrollbar,
+.el-time-spinner__wrap::-webkit-scrollbar,
+.el-time-spinner::-webkit-scrollbar,
+.el-time-panel__content::-webkit-scrollbar,
+.el-time-panel::-webkit-scrollbar,
+.el-popper.is-time-spinner .el-popper__body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 增强：隐藏所有子元素的滚动条 */
+.el-time-spinner *::-webkit-scrollbar,
+.el-time-panel *::-webkit-scrollbar,
+.el-popper.is-time-spinner *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.el-time-spinner *,
+.el-time-panel *,
+.el-popper.is-time-spinner * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* 强制隐藏所有可能的滚动容器 */
+.el-time-spinner__list,
+.el-time-spinner__wrap,
+.el-time-spinner__item,
+.el-time-spinner,
+.el-time-panel__content,
+.el-time-panel__body,
+.el-time-panel,
+.el-popper.is-time-spinner,
+.el-popper.is-time-spinner .el-popper__body {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.el-time-spinner__list::-webkit-scrollbar,
+.el-time-spinner__wrap::-webkit-scrollbar,
+.el-time-spinner__item::-webkit-scrollbar,
+.el-time-spinner::-webkit-scrollbar,
+.el-time-panel__content::-webkit-scrollbar,
+.el-time-panel__body::-webkit-scrollbar,
+.el-time-panel::-webkit-scrollbar,
+.el-popper.is-time-spinner::-webkit-scrollbar,
+.el-popper.is-time-spinner .el-popper__body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 终极方案：使用透明滚动条 */
+.el-time-spinner__list::-webkit-scrollbar-thumb,
+.el-time-spinner__wrap::-webkit-scrollbar-thumb,
+.el-time-spinner::-webkit-scrollbar-thumb,
+.el-time-panel__content::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border: none !important;
+}
+
+.el-time-spinner__list::-webkit-scrollbar-track,
+.el-time-spinner__wrap::-webkit-scrollbar-track,
+.el-time-spinner::-webkit-scrollbar-track,
+.el-time-panel__content::-webkit-scrollbar-track {
+  background: transparent !important;
 }
