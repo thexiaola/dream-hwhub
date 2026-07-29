@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * 班级详情响应VO
  */
@@ -51,4 +53,14 @@ public class ClassDetailResponse {
      * 学生数量
      */
     private Long studentCount;
+
+    /**
+     * 班级描述
+     */
+    private String description;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
 }

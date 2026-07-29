@@ -826,7 +826,9 @@ public class ClassServiceImpl implements ClassService {
                 userRole,
                 memberCount,
                 teacherCount,
-                studentCount
+                studentCount,
+                classInfo.getDescription(),
+                classInfo.getCreateTime()
         );
     }
 
@@ -912,7 +914,9 @@ public class ClassServiceImpl implements ClassService {
                             role,
                             memberCount,
                             teacherCount,
-                            studentCount
+                            studentCount,
+                            classInfo.getDescription(),
+                            classInfo.getCreateTime()
                     );
                 })
                 .filter(java.util.Objects::nonNull)

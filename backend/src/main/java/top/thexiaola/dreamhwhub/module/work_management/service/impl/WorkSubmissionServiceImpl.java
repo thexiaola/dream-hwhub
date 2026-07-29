@@ -54,8 +54,8 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
-    // 文件存储根目录
-    private static final String UPLOAD_DIR = "uploads/submissions/";
+    // 文件存储根目录（需与 FileUploadValidator.UPLOAD_BASE_DIR 保持一致）
+    private static final String UPLOAD_DIR = System.getProperty("user.home") + "/dream-hwhub/uploads/submissions/";
 
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;

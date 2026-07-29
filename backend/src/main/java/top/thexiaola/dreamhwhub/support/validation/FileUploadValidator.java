@@ -115,8 +115,8 @@ public class FileUploadValidator {
         }
         
         // 检查路径遍历攻击
-        if (filePath.contains("..") || filePath.contains("/") && filePath.startsWith("/")) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+        if (filePath.contains("..")) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "非法的文件路径", null);
         }
         
