@@ -960,94 +960,108 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   box-shadow: 0 0 0 1px #667eea inset !important;
 }
 
-/* —— 时间选择弹层（el-time-panel）外层 el-popper + 按钮对齐修复 —— */
+/* ====== 全局深色主题：时间选择面板（.el-time-panel） */
+/* 弹层 append 到 body，项目整体深色风格，直接全局覆盖；不改变内部结构 */
+
+/* — 外层容器：清除默认白边与底色，不干扰内部布局 — */
 .el-popper.is-time-spinner.el-popper,
 .el-time-panel.el-popper {
-  box-sizing: border-box !important;
+  background: #1e1e2e !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 8px !important;
   padding: 0 !important;
-  overflow: hidden !important;
   outline: none !important;
-  width: fit-content !important;
-  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.el-popper.is-time-spinner.el-popper > .el-popper__arrow {
+  display: none !important;
 }
 
 .el-time-panel {
-  width: fit-content !important;
-  min-width: 220px !important;
-  box-sizing: border-box !important;
-  padding: 0 !important;
-  overflow: hidden !important;
+  background: #1e1e2e !important;
+  border: none !important;
+  margin: 0 !important;
 }
 
 .el-time-panel__content {
-  width: fit-content !important;
-  box-sizing: border-box !important;
-  padding: 12px !important;
+  background: #1e1e2e !important;
+  margin: 0 !important;
+  padding: 8px 0 !important;
 }
 
 .el-time-panel .el-time-spinner {
-  width: auto !important;
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  box-sizing: border-box !important;
-  justify-content: space-between !important;
+  background: #1e1e2e !important;
+  height: 192px !important;
 }
 
-.el-time-panel .el-time-spinner::after {
-  content: none !important;
+.el-time-panel .el-time-spinner__item {
+  color: rgba(255, 255, 255, 0.4) !important;
+  height: 32px !important;
+  line-height: 32px !important;
 }
 
-.el-time-panel .el-time-spinner__wrap {
-  width: 56px !important;
-  box-sizing: border-box !important;
-  margin: 0 4px !important;
+.el-time-panel .el-time-spinner__item:hover:not(.disabled) {
+  background: rgba(102, 126, 234, 0.12) !important;
+  color: #667eea !important;
 }
 
-.el-time-panel .el-time-spinner__list {
-  width: 100% !important;
+.el-time-panel .el-time-spinner__item.active:not(.disabled) {
+  background: rgba(102, 126, 234, 0.25) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.el-time-panel .el-time-spinner__item.disabled {
+  color: rgba(255, 255, 255, 0.18) !important;
+  cursor: not-allowed !important;
 }
 
 .el-time-panel__footer {
-  width: 100% !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 6px 12px !important;
+  background: #1e1e2e !important;
   box-sizing: border-box !important;
-  padding: 8px 12px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 8px !important;
+  line-height: normal !important;
+  display: block !important;
 }
 
 .el-time-panel__btn {
   box-sizing: border-box !important;
-  min-width: 72px !important;
-  height: 32px !important;
-  line-height: 22px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 4px 14px !important;
-  margin: 0 !important;
-  font-size: 13px !important;
-  cursor: pointer !important;
-  user-select: none !important;
-}
-
-.el-time-panel__btn.cancel {
-  background: transparent !important;
   color: rgba(255, 255, 255, 0.7) !important;
+  background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 4px !important;
+  padding: 5px 14px !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  height: 30px !important;
+  min-width: 64px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease;
 }
 
-.el-time-panel__btn.cancel:hover:not(.disabled) {
+.el-time-panel__btn:hover:not(.disabled) {
   color: #ffffff !important;
   border-color: #667eea !important;
   background: rgba(102, 126, 234, 0.18) !important;
 }
 
 .el-time-panel__btn.confirm {
-  min-width: 72px !important;
-  height: 32px !important;
-  line-height: 22px !important;
-  padding: 4px 14px !important;
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  border: none !important;
+  float: right !important;
+}
+
+.el-time-panel__btn.confirm:hover:not(.disabled) {
+  filter: brightness(1.1);
+}
+
+.el-time-panel__btn.cancel {
+  float: right !important;
+  margin-right: 8px !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
