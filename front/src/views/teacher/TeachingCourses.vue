@@ -251,11 +251,6 @@ onMounted(() => {
   color: #764ba2;
 }
 
-.role-badge.assistant {
-  background: rgba(102, 126, 234, 0.2);
-  color: #667eea;
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;

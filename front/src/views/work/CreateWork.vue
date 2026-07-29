@@ -33,11 +33,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="满分" prop="score">
-          <el-input 
-            v-model.number="form.score" 
-            type="number" 
+          <el-input-number
+            v-model="form.score"
+            :min="1"
+            :max="1000"
+            :step="1"
             placeholder="请输入满分"
-            class="form-input"
+            class="form-input score-input"
           />
         </el-form-item>
         <el-form-item label="截止时间" prop="deadline">
@@ -223,5 +225,59 @@ onMounted(() => {
 
 .el-form-item {
   margin-bottom: 20px;
+}
+
+.score-input {
+  width: 100%;
+}
+
+.score-input :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: none !important;
+}
+
+.score-input :deep(.el-input__wrapper:focus-within) {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+.score-input :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.score-input :deep(.el-input-number__decrease),
+.score-input :deep(.el-input-number__increase) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.2s ease;
+}
+
+.score-input :deep(.el-input-number__decrease:hover),
+.score-input :deep(.el-input-number__increase:hover) {
+  background: rgba(102, 126, 234, 0.18) !important;
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.35) !important;
+}
+
+.score-input :deep(.el-input-number__decrease:active),
+.score-input :deep(.el-input-number__increase:active) {
+  background: rgba(102, 126, 234, 0.28) !important;
+}
+
+.score-input :deep(.is-disabled.el-input-number__decrease),
+.score-input :deep(.is-disabled.el-input-number__increase) {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  cursor: not-allowed;
+}
+
+.score-input :deep(.el-input-number__decrease.is-disabled:hover),
+.score-input :deep(.el-input-number__increase.is-disabled:hover) {
+  color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
 }
 </style>

@@ -52,7 +52,14 @@
       <div class="grade-form">
         <p class="submission-content">{{ currentSubmission?.content }}</p>
         <el-form-item label="成绩">
-          <el-input v-model.number="grade" type="number" placeholder="请输入成绩" class="grade-input" />
+          <el-input-number
+            v-model="grade"
+            :min="0"
+            :max="1000"
+            :step="1"
+            placeholder="请输入成绩"
+            class="grade-input"
+          />
         </el-form-item>
       </div>
       <template #footer>
@@ -253,6 +260,7 @@ onMounted(() => {
 .grade-input :deep(.el-input__wrapper) {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: none !important;
 }
 
 .filter-select :deep(.el-select__wrapper:focus-within),
@@ -268,6 +276,41 @@ onMounted(() => {
 
 .grade-input :deep(.el-input__inner) {
   color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.grade-input :deep(.el-input-number__decrease),
+.grade-input :deep(.el-input-number__increase) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.2s ease;
+}
+
+.grade-input :deep(.el-input-number__decrease:hover),
+.grade-input :deep(.el-input-number__increase:hover) {
+  background: rgba(102, 126, 234, 0.18) !important;
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.35) !important;
+}
+
+.grade-input :deep(.el-input-number__decrease:active),
+.grade-input :deep(.el-input-number__increase:active) {
+  background: rgba(102, 126, 234, 0.28) !important;
+}
+
+.grade-input :deep(.is-disabled.el-input-number__decrease),
+.grade-input :deep(.is-disabled.el-input-number__increase) {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  cursor: not-allowed;
+}
+
+.grade-input :deep(.el-input-number__decrease.is-disabled:hover),
+.grade-input :deep(.el-input-number__increase.is-disabled:hover) {
+  color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
 }
 
 .submission-table :deep(.el-table) {

@@ -646,13 +646,6 @@ onMounted(async () => {
   border-radius: 4px;
 }
 
-.role-badge.assistant {
-  background: rgba(102, 126, 234, 0.2);
-  color: #667eea;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
 .role-badge.student {
   background: rgba(156, 163, 175, 0.2);
   color: #9ca3af;
