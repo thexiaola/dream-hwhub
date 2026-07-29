@@ -214,7 +214,13 @@
           />
         </el-form-item>
         <el-form-item label="作业总分">
-          <el-input-number v-model="workForm.totalScore" :min="1" :max="1000" />
+          <el-input-number
+            v-model="workForm.totalScore"
+            :min="1"
+            :max="1000"
+            :step="1"
+            class="total-score-input"
+          />
         </el-form-item>
         <el-form-item label="允许逾期">
           <el-switch v-model="workForm.allowLateSubmit" />

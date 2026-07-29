@@ -258,3 +258,58 @@ input:not(.el-input__inner):not(.el-textarea__inner):focus, textarea:not(.el-inp
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   border: none;
 }
+
+.dark-dialog .el-input-number .el-input__wrapper {
+  --el-input-bg-color: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+  border-radius: 0;
+}
+
+.dark-dialog .el-input-number .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset !important;
+}
+
+.dark-dialog .el-input-number .el-input__wrapper:focus-within {
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
+}
+
+.dark-dialog .el-input-number .el-input__inner {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: transparent !important;
+}
+
+.dark-dialog .el-input-number__decrease,
+.dark-dialog .el-input-number__increase {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.2s ease;
+}
+
+.dark-dialog .el-input-number__decrease:hover,
+.dark-dialog .el-input-number__increase:hover {
+  background: rgba(102, 126, 234, 0.18) !important;
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.35) !important;
+}
+
+.dark-dialog .el-input-number__decrease:active,
+.dark-dialog .el-input-number__increase:active {
+  background: rgba(102, 126, 234, 0.28) !important;
+}
+
+.dark-dialog .el-input-number__decrease.is-disabled,
+.dark-dialog .el-input-number__increase.is-disabled {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  cursor: not-allowed;
+}
+
+.dark-dialog .el-input-number__decrease.is-disabled:hover,
+.dark-dialog .el-input-number__increase.is-disabled:hover {
+  color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+}
