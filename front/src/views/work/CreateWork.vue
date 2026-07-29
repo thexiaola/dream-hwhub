@@ -48,7 +48,29 @@
             type="datetime" 
             placeholder="请选择截止时间"
             class="form-input"
+            popper-class="dark-picker"
           />
+        </el-form-item>
+        <el-form-item label="作业附件">
+          <el-upload
+            v-model:file-list="attachmentFiles"
+            :auto-upload="false"
+            multiple
+            :on-exceed="handleAttachmentExceed"
+            :on-remove="handleAttachmentRemove"
+            :on-change="handleAttachmentChange"
+          >
+            <el-button type="primary" plain size="default" class="upload-trigger-btn">
+              <Upload :size="16" />
+              <span>选择文件</span>
+            </el-button>
+            <template #tip>
+              <div class="upload-tip">
+                <Paperclip :size="12" />
+                <span>支持多文件上传，单个文件不超过 50MB</span>
+              </div>
+            </template>
+          </el-upload>
         </el-form-item>
         <el-form-item label="置顶作业">
           <el-switch v-model="form.isPinned" />
@@ -64,6 +86,8 @@ import { useRouter } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import { useClassStore } from '@/stores/class'
 import { ElMessage } from 'element-plus'
+import type { UploadUserFile } from 'element-plus'
+import { Paperclip, Upload } from '@lucide/vue'
 
 const router = useRouter()
 const workStore = useWorkStore()
@@ -77,6 +101,27 @@ const form = ref({
   deadline: '',
   isPinned: false
 })
+
+const attachmentFiles = ref<UploadUserFile[]>([])
+const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
+
+const handleAttachmentExceed = () => {
+  ElMessage.warning('单次最多上传 20 个文件')
+}
+
+const handleAttachmentRemove = (file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
+  attachmentFiles.value = uploadFiles
+}
+
+const handleAttachmentChange = (file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
+  if (file.size && file.size > MAX_ATTACHMENT_SIZE) {
+    ElMessage.warning(`文件「${file.name}」超过 50MB，已自动跳过`)
+    const idx = attachmentFiles.value.findIndex(f => f.uid === file.uid)
+    if (idx > -1) attachmentFiles.value.splice(idx, 1)
+    return
+  }
+  attachmentFiles.value = uploadFiles.filter(f => !f.size || f.size <= MAX_ATTACHMENT_SIZE)
+}
 
 const loading = ref(false)
 const classOptions = ref<any[]>([])
@@ -105,14 +150,18 @@ const submitForm = async () => {
   loading.value = true
   
   try {
+    const files = attachmentFiles.value
+      .filter(f => f.raw)
+      .map(f => f.raw as File)
+    
     const result = await workStore.createWork({
       title: form.value.title,
       description: form.value.description,
       classId: form.value.classId,
-      score: form.value.score,
+      totalScore: form.value.score,
       deadline: form.value.deadline,
       isPinned: form.value.isPinned
-    })
+    }, files)
     
     if (result.code === 200) {
       ElMessage.success('创建成功')
@@ -279,5 +328,57 @@ onMounted(() => {
 .score-input :deep(.el-input-number__increase.is-disabled:hover) {
   color: rgba(255, 255, 255, 0.3) !important;
   background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.create-form :deep(.el-upload .el-upload--text) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.2s ease;
+}
+
+.create-form :deep(.el-upload .el-upload--text:hover) {
+  border-color: #667eea !important;
+  color: #667eea !important;
+  background: rgba(102, 126, 234, 0.08) !important;
+}
+
+.create-form :deep(.el-upload-list__item) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+}
+
+.create-form :deep(.el-upload-list__item-name) {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.create-form :deep(.el-upload-list__item-name:hover) {
+  color: #667eea !important;
+}
+
+.create-form :deep(.el-upload-list__item-delete) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.create-form :deep(.el-upload-list__item-delete:hover) {
+  color: #ef4444 !important;
+}
+
+.upload-trigger-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.upload-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 6px;
 }
 </style>

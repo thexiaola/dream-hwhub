@@ -191,7 +191,7 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog v-model="showCreateWorkDialog" title="发布作业" width="600px" class="dark-dialog">
+    <el-dialog v-model="showCreateWorkDialog" title="发布作业" width="600px" class="dark-dialog" @close="resetCreateWorkForm">
       <el-form :model="workForm" label-width="80px">
         <el-form-item label="作业标题">
           <el-input v-model="workForm.title" placeholder="请输入作业标题" maxlength="128" />
@@ -211,6 +211,7 @@
             placeholder="选择截止时间"
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DDTHH:mm:ss"
+            popper-class="dark-picker"
           />
         </el-form-item>
         <el-form-item label="作业总分">
@@ -221,6 +222,27 @@
             :step="1"
             class="total-score-input"
           />
+        </el-form-item>
+        <el-form-item label="作业附件">
+          <el-upload
+            v-model:file-list="attachmentFiles"
+            :auto-upload="false"
+            multiple
+            :on-exceed="handleAttachmentExceed"
+            :on-remove="handleAttachmentRemove"
+            :on-change="handleAttachmentChange"
+          >
+            <el-button type="primary" plain size="default" class="upload-trigger-btn">
+              <Upload :size="16" />
+              <span>选择文件</span>
+            </el-button>
+            <template #tip>
+              <div class="upload-tip">
+                <Paperclip :size="12" />
+                <span>支持多文件上传，单个文件不超过 50MB</span>
+              </div>
+            </template>
+          </el-upload>
         </el-form-item>
         <el-form-item label="允许逾期">
           <el-switch v-model="workForm.allowLateSubmit" />
@@ -260,12 +282,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { UploadUserFile } from 'element-plus'
 import { get, post, postForm, put, del, patch } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { 
   ArrowLeft, User, Users, Calendar, Clock, FileText, Star, Plus, 
-  Eye, Edit3, Trash2, UserPlus, Key
+  Eye, Edit3, Trash2, UserPlus, Key, Paperclip, Upload, X
 } from '@lucide/vue'
 
 interface CourseInfo {
@@ -333,6 +356,40 @@ const workForm = ref({
   allowLateSubmit: true,
   classId: Number(route.params.id)
 })
+
+const attachmentFiles = ref<UploadUserFile[]>([])
+
+const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
+
+const handleAttachmentExceed = () => {
+  ElMessage.warning('单次最多上传 20 个文件')
+}
+
+const handleAttachmentRemove = (file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
+  attachmentFiles.value = uploadFiles
+}
+
+const handleAttachmentChange = (file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
+  if (file.size && file.size > MAX_ATTACHMENT_SIZE) {
+    ElMessage.warning(`文件「${file.name}」超过 50MB，已自动跳过`)
+    const idx = attachmentFiles.value.findIndex(f => f.uid === file.uid)
+    if (idx > -1) attachmentFiles.value.splice(idx, 1)
+    return
+  }
+  attachmentFiles.value = uploadFiles.filter(f => !f.size || f.size <= MAX_ATTACHMENT_SIZE)
+}
+
+const resetCreateWorkForm = () => {
+  workForm.value = {
+    title: '',
+    description: '',
+    deadline: '',
+    totalScore: 100,
+    allowLateSubmit: true,
+    classId: Number(route.params.id)
+  }
+  attachmentFiles.value = []
+}
 
 const inviteForm = ref({
   userAccount: ''
@@ -443,18 +500,18 @@ const createWork = async () => {
   formData.append('totalScore', String(workForm.value.totalScore))
   formData.append('allowLateSubmit', String(workForm.value.allowLateSubmit))
   formData.append('classId', String(workForm.value.classId))
+  if (attachmentFiles.value && attachmentFiles.value.length > 0) {
+    for (const fileItem of attachmentFiles.value) {
+      if (fileItem.raw) {
+        formData.append('attachments', fileItem.raw)
+      }
+    }
+  }
   const result = await postForm('/works', formData)
   if (result.code === 200) {
     ElMessage.success('作业发布成功')
     showCreateWorkDialog.value = false
-    workForm.value = {
-      title: '',
-      description: '',
-      deadline: '',
-      totalScore: 100,
-      allowLateSubmit: true,
-      classId: Number(route.params.id)
-    }
+    resetCreateWorkForm()
     loadWorks()
   } else {
     ElMessage.error(result.message)

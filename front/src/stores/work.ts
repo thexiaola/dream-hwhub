@@ -21,11 +21,19 @@ export const useWorkStore = defineStore('work', () => {
     return null
   }
 
-  const createWork = async (data: Record<string, unknown>): Promise<{ code: number; message: string }> => {
+  const createWork = async (
+    data: Record<string, unknown>,
+    attachments?: File[]
+  ): Promise<{ code: number; message: string }> => {
     const formData = new FormData()
     for (const [key, value] of Object.entries(data)) {
       if (value !== null && value !== undefined) {
         formData.append(key, String(value))
+      }
+    }
+    if (attachments && attachments.length > 0) {
+      for (const file of attachments) {
+        formData.append('attachments', file)
       }
     }
     const result = await postForm('/works', formData)
