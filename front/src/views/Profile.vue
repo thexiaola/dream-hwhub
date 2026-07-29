@@ -85,6 +85,7 @@ const logout = () => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .profile-card {
@@ -115,6 +116,7 @@ const logout = () => {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .user-info p {
@@ -134,6 +136,7 @@ const logout = () => {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .info-grid {
@@ -159,6 +162,7 @@ const logout = () => {
 .info-item .value {
   font-size: 14px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .action-list {

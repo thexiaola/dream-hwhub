@@ -58,13 +58,6 @@ public class CreateWorkRequest {
     private Integer classId;
 
     /**
-     * 发布时间（必填，立即发布则传当前时间）
-     */
-    @NotNull(message = "发布时间不能为空")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime publishTime;
-
-    /**
      * 附件文件列表（直接上传的文件）
      */
     private List<MultipartFile> attachments;
@@ -76,16 +69,5 @@ public class CreateWorkRequest {
         // XSS防护
         XssValidator.validateNoXss(title, "作业标题");
         XssValidator.validateNoXss(description, "作业描述");
-        
-        // 时间逻辑校验
-        if (deadline != null && publishTime != null) {
-            if (deadline.isBefore(publishTime)) {
-                throw new top.thexiaola.dreamhwhub.exception.BusinessException(
-                    top.thexiaola.dreamhwhub.enums.BusinessErrorCode.PARAMETER_ERROR,
-                    "截止时间不能早于发布时间",
-                    null
-                );
-            }
-        }
     }
 }

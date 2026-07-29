@@ -32,6 +32,11 @@ public interface ClassService {
     void kickStudentFromClass(Integer classId, Integer studentUserId);
 
     /**
+     * 批量将学生踢出班级（老师/班级助理/管理员专用）
+     */
+    void batchKickStudentsFromClass(Integer classId, List<Integer> studentUserIds);
+
+    /**
      * 取消班级助理权限（降级为学生，仅创建者可用）
      */
     void demoteAssistantTeacher(Integer classId, Integer teacherUserId);

@@ -244,6 +244,7 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .stat-label {
@@ -280,6 +281,7 @@ onMounted(() => {
 .card-header h3 {
   font-size: 16px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .view-all {
@@ -317,6 +319,7 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 500;
   margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .work-meta {
@@ -407,6 +410,7 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .class-info p {

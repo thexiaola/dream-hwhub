@@ -132,6 +132,110 @@
           />
         </div>
       </el-tab-pane>
+
+      <!-- 班级管理 -->
+      <el-tab-pane label="班级管理" name="classes">
+        <div class="filter-bar">
+          <el-input
+            v-model="classSearchKeyword"
+            placeholder="搜索班级名称"
+            style="width: 240px"
+            clearable
+            @clear="loadClasses"
+            @keyup.enter="loadClasses"
+          />
+          <el-button type="primary" @click="loadClasses">搜索</el-button>
+        </div>
+
+        <div class="class-list">
+          <div v-for="cls in classList" :key="cls.id" class="application-card">
+            <div class="app-header">
+              <div class="app-title">
+                <h4>{{ cls.className }}</h4>
+              </div>
+              <span class="app-time">创建时间：{{ formatDate(cls.createTime) }}</span>
+            </div>
+            <div class="app-body">
+              <div class="app-info">
+                <span class="label">班级ID：</span>
+                <span class="value">{{ cls.id }}</span>
+              </div>
+              <div class="app-info">
+                <span class="label">创建者ID：</span>
+                <span class="value">{{ cls.ownerId }}</span>
+              </div>
+              <div class="app-info" v-if="cls.description">
+                <span class="label">描述：</span>
+                <span class="value">{{ cls.description }}</span>
+              </div>
+            </div>
+            <div class="class-actions">
+              <el-button
+                type="danger"
+                size="small"
+                @click="dissolveClass(cls.id, cls.className)"
+              >
+                解散课堂
+              </el-button>
+              <el-button
+                size="small"
+                @click="toggleClassDetail(cls.id)"
+              >
+                {{ expandedClassId === cls.id ? '收起成员' : '查看成员' }}
+              </el-button>
+            </div>
+            <div v-if="expandedClassId === cls.id" class="class-members">
+              <div class="members-header">
+                <span>班级成员 ({{ classMembers.length }})</span>
+                <el-button
+                  v-if="selectedAdminKickIds.length > 0"
+                  type="danger"
+                  size="small"
+                  @click="batchKickFromAdmin(cls.id)"
+                >
+                  批量踢出 ({{ selectedAdminKickIds.length }})
+                </el-button>
+              </div>
+              <div v-if="classMembers.length === 0" class="empty-tip">暂无成员</div>
+              <div v-for="member in classMembers" :key="member.id" class="member-row">
+                <el-checkbox
+                  v-if="member.role === '学生'"
+                  v-model="selectedAdminKickIds"
+                  :label="member.userId"
+                />
+                <span class="member-name">{{ member.userName }}</span>
+                <span class="member-no">{{ member.userNo }}</span>
+                <span :class="['member-role', member.role === '老师' ? 'teacher' : 'student']">
+                  {{ member.role }}
+                </span>
+                <el-button
+                  v-if="member.role === '学生'"
+                  type="danger"
+                  size="small"
+                  text
+                  @click="kickStudentFromAdmin(cls.id, member.userId)"
+                >
+                  踢出
+                </el-button>
+              </div>
+            </div>
+          </div>
+          <div v-if="classList.length === 0" class="empty-state">
+            <FileText :size="32" />
+            <p>暂无班级</p>
+          </div>
+        </div>
+
+        <div class="pagination" v-if="classTotal > 0">
+          <el-pagination
+            v-model:current-page="classPage"
+            :page-size="10"
+            :total="classTotal"
+            layout="prev, pager, next"
+            @current-change="loadClasses"
+          />
+        </div>
+      </el-tab-pane>
     </el-tabs>
 
     <!-- 审核对话框 -->
@@ -158,8 +262,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { get, put } from '@/utils/http'
-import { ElMessage } from 'element-plus'
+import { get, put, del } from '@/utils/http'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { FileText } from '@lucide/vue'
 
 interface ClassCreateApplication {
@@ -290,7 +394,126 @@ const submitReview = async () => {
 onMounted(() => {
   loadCreateApplications()
   loadJoinApplications()
+  loadClasses()
 })
+
+interface ClassInfoSimple {
+  id: number
+  className: string
+  ownerId: number
+  description: string
+  createTime: string
+}
+
+interface ClassMemberInfo {
+  id: number
+  userId: number
+  userName: string
+  userNo: string
+  role: string
+}
+
+const classList = ref<ClassInfoSimple[]>([])
+const classTotal = ref(0)
+const classPage = ref(1)
+const classSearchKeyword = ref('')
+const expandedClassId = ref<number | null>(null)
+const classMembers = ref<ClassMemberInfo[]>([])
+const selectedAdminKickIds = ref<number[]>([])
+
+const loadClasses = async () => {
+  const params: Record<string, unknown> = {
+    pageNum: classPage.value,
+    pageSize: 10
+  }
+  if (classSearchKeyword.value) {
+    params.keyword = classSearchKeyword.value
+  }
+  const result = await get<PageResult<ClassInfoSimple>>('/class/mine', params)
+  if (result.code === 200) {
+    classList.value = result.data!.records
+    classTotal.value = result.data!.total
+  }
+}
+
+const toggleClassDetail = async (classId: number) => {
+  if (expandedClassId.value === classId) {
+    expandedClassId.value = null
+    classMembers.value = []
+    return
+  }
+  expandedClassId.value = classId
+  selectedAdminKickIds.value = []
+  const result = await get<{ records: ClassMemberInfo[] }>(`/class/${classId}/members`)
+  if (result.code === 200) {
+    classMembers.value = result.data!.records
+  }
+}
+
+const dissolveClass = async (classId: number, className: string) => {
+  try {
+    await ElMessageBox.confirm(
+      `解散课堂"${className}"后，所有数据将被永久删除，此操作不可恢复。确认解散？`,
+      '危险操作',
+      { confirmButtonText: '确认解散', cancelButtonText: '取消', type: 'error' }
+    )
+    const result = await del(`/class/${classId}`)
+    if (result.code === 200) {
+      ElMessage.success('课堂已解散')
+      if (expandedClassId.value === classId) {
+        expandedClassId.value = null
+        classMembers.value = []
+      }
+      loadClasses()
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch {
+    // 用户取消
+  }
+}
+
+const kickStudentFromAdmin = async (classId: number, userId: number) => {
+  try {
+    await ElMessageBox.confirm('确认踢出此学生？', '提示', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消'
+    })
+    const result = await del(`/class/${classId}/members/${userId}`)
+    if (result.code === 200) {
+      ElMessage.success('已踢出')
+      toggleClassDetail(classId)
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch {
+    // 用户取消
+  }
+}
+
+const batchKickFromAdmin = async (classId: number) => {
+  if (selectedAdminKickIds.value.length === 0) {
+    ElMessage.warning('请选择要踢出的学生')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认批量踢出 ${selectedAdminKickIds.value.length} 名学生？`,
+      '提示',
+      { confirmButtonText: '确认', cancelButtonText: '取消' }
+    )
+    const result = await del(`/class/${classId}/members/batch`, selectedAdminKickIds.value)
+    if (result.code === 200) {
+      ElMessage.success(`已踢出 ${selectedAdminKickIds.value.length} 名学生`)
+      selectedAdminKickIds.value = []
+      toggleClassDetail(classId)
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch {
+    // 用户取消
+  }
+}
 </script>
 
 <style scoped>
@@ -305,10 +528,31 @@ onMounted(() => {
 .page-header h2 {
   font-size: 24px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .filter-bar {
   margin-bottom: 20px;
+}
+
+.admin-tabs :deep(.el-tabs__item) {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-tabs :deep(.el-tabs__item.is-active) {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.admin-tabs :deep(.el-tabs__item:hover) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-tabs :deep(.el-tabs__active-bar) {
+  background-color: #667eea;
+}
+
+.admin-tabs :deep(.el-tabs__nav-wrap::after) {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .application-list {
@@ -345,6 +589,7 @@ onMounted(() => {
 .app-title h4 {
   font-size: 16px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .app-time {
@@ -415,5 +660,129 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 24px;
+}
+
+.class-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.class-members {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  min-width: 100px;
+}
+
+.member-no {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.member-role {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.member-role.teacher {
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+}
+
+.member-role.student {
+  background: rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+}
+
+.empty-tip {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  padding: 16px;
+}
+
+.filter-bar :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.filter-bar :deep(.el-input__wrapper:focus-within) {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+.filter-bar :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.filter-bar :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.filter-bar :deep(.el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.filter-bar :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: rgba(102, 126, 234, 0.3) !important;
+  border-color: #667eea !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: -1px 0 0 0 #667eea !important;
+}
+
+.admin-tabs :deep(.el-pagination .el-pagination__total),
+.admin-tabs :deep(.el-pagination button:disabled),
+.admin-tabs :deep(.el-pagination .btn-prev),
+.admin-tabs :deep(.el-pagination .btn-next),
+.admin-tabs :deep(.el-pagination .el-pager li) {
+  color: rgba(255, 255, 255, 0.6);
+  background: transparent;
+}
+
+.admin-tabs :deep(.el-pagination .el-pager li.is-active) {
+  color: #667eea;
+}
+
+.admin-tabs :deep(.el-checkbox__label) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-tabs :deep(.el-checkbox__inner) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.admin-tabs :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #667eea;
+  border-color: #667eea;
 }
 </style>

@@ -68,19 +68,6 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以发布作业", null);
         }
 
-        // 处理发布时间
-        LocalDateTime publishTime;
-        if (request.getPublishTime() == null) {
-            // 如果不填时间，当作即时发布
-            publishTime = LocalDateTime.now();
-        } else {
-            // 如果填了以前的时间，拒绝发布
-            if (request.getPublishTime().isBefore(LocalDateTime.now())) {
-                throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "发布时间不能是过去的时间", null);
-            }
-            publishTime = request.getPublishTime();
-        }
-
         // 校验截止时间：不能设置为过去的时间
         if (request.getDeadline() != null && request.getDeadline().isBefore(LocalDateTime.now())) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "截止时间不能是过去的时间", null);
@@ -90,11 +77,12 @@ public class WorkServiceImpl implements WorkService {
         WorkInfo workInfo = new WorkInfo();
         workInfo.setTitle(request.getTitle());
         workInfo.setDescription(request.getDescription());
+        workInfo.setPublisherId(currentUser.getId());
         workInfo.setClassId(request.getClassId());
         workInfo.setDeadline(request.getDeadline());
         workInfo.setTotalScore(request.getTotalScore());
         workInfo.setAllowLateSubmit(request.getAllowLateSubmit() != null ? request.getAllowLateSubmit() : true);
-        workInfo.setPublishTime(publishTime);
+        workInfo.setPublishTime(LocalDateTime.now());
         workInfo.setCreateTime(LocalDateTime.now());
         workInfo.setUpdateTime(LocalDateTime.now());
 

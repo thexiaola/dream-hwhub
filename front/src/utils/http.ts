@@ -68,8 +68,22 @@ instance.interceptors.response.use(
     return response
   },
   (error) => {
-    if (error.response?.data) {
-      return error.response
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+      
+      if (status === 401 || (data && data.code === 401)) {
+        localStorage.removeItem('token')
+        window.dispatchEvent(new CustomEvent('auth-expired'))
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login'
+        }
+        return { data: { code: 401, message: '登录已过期，请重新登录', data: null } } as AxiosResponse<ApiResponse>
+      }
+      
+      if (data) {
+        return error.response
+      }
     }
     return { data: { code: -1, message: '网络请求失败', data: null } } as AxiosResponse<ApiResponse>
   }
@@ -83,6 +97,12 @@ export const post = <T = null>(url: string, data?: Record<string, unknown>, para
   return instance.post<ApiResponse<T>>(url, data, { params }).then(res => res.data)
 }
 
+export const postForm = <T = null>(url: string, formData: FormData): Promise<ApiResponse<T>> => {
+  return instance.post<ApiResponse<T>>(url, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data)
+}
+
 export const put = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
   return instance.put<ApiResponse<T>>(url, data, { params }).then(res => res.data)
 }
@@ -91,8 +111,8 @@ export const patch = <T = null>(url: string, data?: Record<string, unknown>): Pr
   return instance.patch<ApiResponse<T>>(url, data).then(res => res.data)
 }
 
-export const del = <T = null>(url: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.delete<ApiResponse<T>>(url, { params }).then(res => res.data)
+export const del = <T = null>(url: string, data?: Record<string, unknown> | unknown[], params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
+  return instance.delete<ApiResponse<T>>(url, { data, params }).then(res => res.data)
 }
 
 export default instance

@@ -235,6 +235,7 @@ onMounted(async () => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .course-info-card {
@@ -252,13 +253,15 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-}
-
-.info-item .label {
   color: rgba(255, 255, 255, 0.6);
 }
 
+.info-item svg {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .info-item .value {
+  color: rgba(255, 255, 255, 0.95);
   font-weight: 500;
 }
 

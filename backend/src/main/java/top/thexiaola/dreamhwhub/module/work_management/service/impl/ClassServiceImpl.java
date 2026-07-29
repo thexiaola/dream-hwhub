@@ -223,6 +223,51 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void batchKickStudentsFromClass(Integer classId, List<Integer> studentUserIds) {
+        User currentUser = getCurrentUserOrThrow();
+
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        boolean isAdmin = isAdmin(currentUser);
+        boolean isClassTeacher = isTeacher(classId, currentUser.getId());
+
+        if (!isAdmin && !isClassTeacher) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或管理员可以踢出学生", null);
+        }
+
+        int kickedCount = 0;
+        for (Integer studentUserId : studentUserIds) {
+            if (studentUserId.equals(currentUser.getId())) {
+                continue;
+            }
+
+            QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
+            teacherQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 1);
+            if (classMemberMapper.selectCount(teacherQuery) > 0) {
+                continue;
+            }
+
+            QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
+            studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
+            ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
+
+            if (studentMember == null) {
+                continue;
+            }
+
+            cleanupStudentSubmissions(classId, studentUserId);
+            classMemberMapper.deleteById(studentMember.getId());
+            kickedCount++;
+        }
+
+        log.info("User {} batch kicked {} students from class {}", currentUser.getId(), kickedCount, classId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void demoteAssistantTeacher(Integer classId, Integer teacherUserId) {
         User currentUser = getCurrentUserOrThrow();
 
@@ -522,9 +567,11 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 只有创建者可以解散班级
-        if (!classInfo.getOwnerId().equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者可以解散班级", null);
+        // 创建者或管理员可以解散班级
+        boolean isAdmin = isAdmin(currentUser);
+        boolean isOwner = classInfo.getOwnerId().equals(currentUser.getId());
+        if (!isAdmin && !isOwner) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者或管理员可以解散班级", null);
         }
 
         // 1. 硬删除该班级下的所有作业提交记录和附件

@@ -76,7 +76,7 @@ class WorkSubmissionControllerTest {
         Mockito.when(workSubmissionService.submitWork(Mockito.any()))
                 .thenReturn(response);
 
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .file(file)
                         .param("workId", "1")
                         .param("submissionContent", "这是我的作业")
@@ -256,7 +256,7 @@ class WorkSubmissionControllerTest {
         Mockito.when(workSubmissionService.submitWork(Mockito.any()))
                 .thenReturn(response);
 
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "1")
                         .param("submissionContent", longContent)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -324,7 +324,7 @@ class WorkSubmissionControllerTest {
     void testSubmitWork_ContentTooLong() throws Exception {
         String longContent = "内".repeat(2049);
 
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "1")
                         .param("submissionContent", longContent)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -390,7 +390,7 @@ class WorkSubmissionControllerTest {
     @Test
     @DisplayName("非法数据测试 - 缺少 workId")
     void testSubmitWork_MissingWorkId() throws Exception {
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isBadRequest())
@@ -404,7 +404,7 @@ class WorkSubmissionControllerTest {
     @Test
     @DisplayName("非法数据测试 - workId为负数")
     void testSubmitWork_NegativeWorkId() throws Exception {
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "-1")
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -449,7 +449,7 @@ class WorkSubmissionControllerTest {
     @Test
     @DisplayName("非法数据测试 - 提交内容包含XSS攻击代码")
     void testSubmitWork_ContentWithXss() throws Exception {
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "1")
                         .param("submissionContent", "<script>alert('xss')</script>")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -462,7 +462,7 @@ class WorkSubmissionControllerTest {
     @Test
     @DisplayName("非法数据测试 - 提交内容包含换行符")
     void testSubmitWork_ContentWithNewline() throws Exception {
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "1")
                         .param("submissionContent", "第一行\n第二行")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -493,7 +493,7 @@ class WorkSubmissionControllerTest {
         Mockito.when(workSubmissionService.submitWork(Mockito.any()))
                 .thenThrow(new BusinessException(BusinessErrorCode.WORK_NOT_FOUND));
 
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "999")
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -511,7 +511,7 @@ class WorkSubmissionControllerTest {
         Mockito.when(workSubmissionService.submitWork(Mockito.any()))
                 .thenThrow(new BusinessException(BusinessErrorCode.NOT_IN_CLASS));
 
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "1")
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -529,7 +529,7 @@ class WorkSubmissionControllerTest {
         Mockito.when(workSubmissionService.submitWork(Mockito.any()))
                 .thenThrow(new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR));
 
-        mockMvc.perform(multipart("/api/submissions/")
+        mockMvc.perform(multipart("/api/submissions")
                         .param("workId", "1")
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))

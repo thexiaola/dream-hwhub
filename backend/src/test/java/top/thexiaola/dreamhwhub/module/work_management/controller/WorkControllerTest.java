@@ -77,7 +77,7 @@ class WorkControllerTest {
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
                 .thenReturn(workInfo);
 
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .file(file)
                         .param("title", "测试作业")
                         .param("description", "测试作业描述")
@@ -134,7 +134,7 @@ class WorkControllerTest {
         Mockito.when(workService.getWorkList(Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/api/works/")
+        mockMvc.perform(get("/api/works")
                         .param("pageNum", "1")
                         .param("pageSize", "10"))
                 .andExpect(status().isOk())
@@ -242,7 +242,7 @@ class WorkControllerTest {
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
                 .thenReturn(workInfo);
 
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", longTitle)
                         .param("description", "测试")
                         .param("classId", "1")
@@ -266,7 +266,7 @@ class WorkControllerTest {
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
                 .thenReturn(workInfo);
 
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -291,7 +291,7 @@ class WorkControllerTest {
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
                 .thenReturn(workInfo);
 
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -313,7 +313,7 @@ class WorkControllerTest {
     void testCreateWork_TitleTooLong() throws Exception {
         String longTitle = "a".repeat(129);
 
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", longTitle)
                         .param("description", "测试")
                         .param("classId", "1")
@@ -329,7 +329,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("越界数据测试 - 作业总分超过最大值1001")
     void testCreateWork_TotalScoreTooHigh() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -346,7 +346,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("越界数据测试 - 作业总分小于最小值0")
     void testCreateWork_TotalScoreTooLow() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -363,7 +363,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("越界数据测试 - 分页大小超过最大限制301")
     void testGetWorkList_PageSizeTooLarge() throws Exception {
-        mockMvc.perform(get("/api/works/")
+        mockMvc.perform(get("/api/works")
                         .param("pageNum", "1")
                         .param("pageSize", "301"))
                 .andExpect(status().isBadRequest());
@@ -377,7 +377,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 作业标题为空")
     void testCreateWork_EmptyTitle() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -393,7 +393,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 作业标题包含换行符")
     void testCreateWork_TitleWithNewline() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试\n作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -409,7 +409,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 作业标题包含制表符")
     void testCreateWork_TitleWithTab() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试\t作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -425,7 +425,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 班级ID为空")
     void testCreateWork_EmptyClassId() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "")
@@ -441,7 +441,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 班级ID为负数")
     void testCreateWork_NegativeClassId() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "-1")
@@ -457,7 +457,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 截止时间格式错误")
     void testCreateWork_InvalidDeadlineFormat() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -488,7 +488,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 发布时间早于当前时间")
     void testCreateWork_PublishTimeInPast() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -505,7 +505,7 @@ class WorkControllerTest {
     @DisplayName("非法数据测试 - 截止时间早于发布时间")
     void testCreateWork_DeadlineBeforePublishTime() throws Exception {
         LocalDateTime now = LocalDateTime.now();
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
                         .param("description", "测试")
                         .param("classId", "1")
@@ -521,7 +521,7 @@ class WorkControllerTest {
     @Test
     @DisplayName("非法数据测试 - 作业标题包含XSS攻击代码")
     void testCreateWork_TitleWithXss() throws Exception {
-        mockMvc.perform(multipart("/api/works/")
+        mockMvc.perform(multipart("/api/works")
                         .param("title", "<script>alert('xss')</script>")
                         .param("description", "测试")
                         .param("classId", "1")

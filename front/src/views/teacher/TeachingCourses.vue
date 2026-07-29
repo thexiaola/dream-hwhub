@@ -153,6 +153,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .subtitle {
@@ -202,6 +203,7 @@ onMounted(() => {
 .card-header h3 {
   font-size: 16px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .description {
@@ -227,6 +229,10 @@ onMounted(() => {
   gap: 4px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
+}
+
+.info-item svg {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .card-footer {

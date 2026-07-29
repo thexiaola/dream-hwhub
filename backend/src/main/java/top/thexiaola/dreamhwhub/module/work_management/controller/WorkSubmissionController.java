@@ -36,7 +36,7 @@ public class WorkSubmissionController {
     /**
      * 提交作业
      */
-    @PostMapping(value = "/", consumes = "multipart/form-data")
+    @PostMapping(value = "", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> submitWork(
             @RequestParam(value = "workId") Integer workId,
             @RequestParam(value = "submissionContent", required = false) String submissionContent,

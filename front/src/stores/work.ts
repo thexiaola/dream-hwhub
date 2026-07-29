@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { WorkInfo } from '@/types'
-import { get, post, put, del, patch } from '@/utils/http'
+import { get, post, postForm, put, del, patch } from '@/utils/http'
 
 export const useWorkStore = defineStore('work', () => {
   const works = ref<WorkInfo[]>([])
@@ -22,7 +22,13 @@ export const useWorkStore = defineStore('work', () => {
   }
 
   const createWork = async (data: Record<string, unknown>): Promise<{ code: number; message: string }> => {
-    const result = await post('/works', data)
+    const formData = new FormData()
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== null && value !== undefined) {
+        formData.append(key, String(value))
+      }
+    }
+    const result = await postForm('/works', formData)
     return { code: result.code, message: result.message }
   }
 

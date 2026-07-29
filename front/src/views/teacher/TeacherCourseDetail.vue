@@ -12,6 +12,14 @@
           <Plus :size="18" />
           发布作业
         </el-button>
+        <el-button
+          v-if="canDissolve"
+          type="danger"
+          @click="dissolveClassAction"
+        >
+          <Trash2 :size="18" />
+          解散课堂
+        </el-button>
       </div>
     </div>
 
@@ -111,6 +119,19 @@
             <Key :size="18" />
             生成邀请码
           </el-button>
+          <el-button
+            v-if="selectedStudentIds.length > 0"
+            type="danger"
+            @click="batchKickStudentsAction"
+          >
+            批量踢出 ({{ selectedStudentIds.length }})
+          </el-button>
+          <el-button
+            v-if="selectedStudentIds.length > 0"
+            @click="clearSelection"
+          >
+            取消选择
+          </el-button>
         </div>
         <div class="student-list">
           <div 
@@ -119,6 +140,12 @@
             class="student-item"
           >
             <div class="student-info">
+              <el-checkbox
+                v-if="member.role === '学生'"
+                v-model="selectedStudentIds"
+                :label="member.userId"
+                @change="handleStudentSelect"
+              />
               <div class="student-icon">
                 <User :size="16" />
               </div>
@@ -225,10 +252,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { get, post, put, del, patch } from '@/utils/http'
+import { get, post, postForm, put, del, patch } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 import { 
   ArrowLeft, User, Users, Calendar, Clock, FileText, Star, Plus, 
   Eye, Edit3, Trash2, UserPlus, Key
@@ -271,11 +299,20 @@ interface MemberInfo {
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 
 const course = ref<CourseInfo | null>(null)
 const works = ref<WorkInfo[]>([])
 const members = ref<MemberInfo[]>([])
 const activeTab = ref('works')
+const selectedStudentIds = ref<number[]>([])
+
+const canDissolve = computed(() => {
+  if (!course.value || !userStore.userInfo) return false
+  const isOwner = course.value.userRole === '创建者'
+  const isAdmin = userStore.userInfo.permission >= 100
+  return isOwner || isAdmin
+})
 
 const showCreateWorkDialog = ref(false)
 const showInviteDialog = ref(false)
@@ -393,7 +430,14 @@ const createWork = async () => {
     ElMessage.warning('请选择截止时间')
     return
   }
-  const result = await post('/works', workForm.value)
+  const formData = new FormData()
+  formData.append('title', workForm.value.title)
+  formData.append('description', workForm.value.description)
+  formData.append('deadline', workForm.value.deadline)
+  formData.append('totalScore', String(workForm.value.totalScore))
+  formData.append('allowLateSubmit', String(workForm.value.allowLateSubmit))
+  formData.append('classId', String(workForm.value.classId))
+  const result = await postForm('/works', formData)
   if (result.code === 200) {
     ElMessage.success('作业发布成功')
     showCreateWorkDialog.value = false
@@ -479,6 +523,60 @@ const kickStudent = async (userId: number) => {
   }
 }
 
+const handleStudentSelect = () => {
+  selectedStudentIds.value = selectedStudentIds.value.filter(id => {
+    const member = members.value.find(m => m.userId === id)
+    return member && member.role === '学生'
+  })
+}
+
+const clearSelection = () => {
+  selectedStudentIds.value = []
+}
+
+const batchKickStudentsAction = async () => {
+  if (selectedStudentIds.value.length === 0) {
+    ElMessage.warning('请选择要踢出的学生')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认批量踢出 ${selectedStudentIds.value.length} 名学生？`,
+      '提示',
+      { confirmButtonText: '确认', cancelButtonText: '取消' }
+    )
+    const result = await del(`/class/${route.params.id}/members/batch`, selectedStudentIds.value)
+    if (result.code === 200) {
+      ElMessage.success(`已踢出 ${selectedStudentIds.value.length} 名学生`)
+      selectedStudentIds.value = []
+      loadMembers()
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch {
+    // 用户取消
+  }
+}
+
+const dissolveClassAction = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '解散课堂后，所有作业、成员、邀请等数据将被永久删除，此操作不可恢复。确认解散？',
+      '危险操作',
+      { confirmButtonText: '确认解散', cancelButtonText: '取消', type: 'error' }
+    )
+    const result = await del(`/class/${route.params.id}`)
+    if (result.code === 200) {
+      ElMessage.success('课堂已解散')
+      router.push('/teacher/courses')
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch {
+    // 用户取消
+  }
+}
+
 onMounted(async () => {
   await loadCourse()
   await loadWorks()
@@ -511,6 +609,7 @@ onMounted(async () => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .course-info-card {
@@ -528,13 +627,15 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-}
-
-.info-item .label {
   color: rgba(255, 255, 255, 0.6);
 }
 
+.info-item svg {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .info-item .value {
+  color: rgba(255, 255, 255, 0.95);
   font-weight: 500;
 }
 
@@ -574,6 +675,26 @@ onMounted(async () => {
 
 .course-tabs {
   margin-bottom: 20px;
+}
+
+.course-tabs :deep(.el-tabs__item) {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.course-tabs :deep(.el-tabs__item.is-active) {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.course-tabs :deep(.el-tabs__item:hover) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.course-tabs :deep(.el-tabs__active-bar) {
+  background-color: #667eea;
+}
+
+.course-tabs :deep(.el-tabs__nav-wrap::after) {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .work-list {
@@ -776,5 +897,19 @@ onMounted(async () => {
 .invite-tip {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
+}
+
+.course-tabs :deep(.el-checkbox__label) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.course-tabs :deep(.el-checkbox__inner) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.course-tabs :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #667eea;
+  border-color: #667eea;
 }
 </style>

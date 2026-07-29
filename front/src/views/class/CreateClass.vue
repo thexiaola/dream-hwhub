@@ -97,6 +97,7 @@ const submitForm = async () => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .subtitle {
@@ -119,6 +120,44 @@ const submitForm = async () => {
 
 .form-input {
   width: 100%;
+}
+
+.create-form :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.create-form :deep(.el-input__wrapper:focus-within) {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+.create-form :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.create-form :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.create-form :deep(.el-textarea__inner) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.create-form :deep(.el-textarea__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.create-form :deep(.el-textarea__inner:focus) {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+.create-form :deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .el-form-item {

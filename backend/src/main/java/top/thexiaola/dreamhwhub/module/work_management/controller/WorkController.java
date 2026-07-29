@@ -32,7 +32,7 @@ public class WorkController {
     /**
      * 创建作业
      */
-    @PostMapping(value = "/", consumes = "multipart/form-data")
+    @PostMapping(value = "", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkInfo>> createWork(@Validated CreateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
@@ -122,7 +122,7 @@ public class WorkController {
     /**
      * 查询作业列表
      */
-    @GetMapping(value = "/")
+    @GetMapping(value = "")
     public ResponseEntity<ApiResponse<Page<WorkResponse>>> getWorkList(
             @RequestParam(value = "publisherUserNo", required = false) String publisherUserNo,
             @RequestParam(value = "status", required = false) Integer status,

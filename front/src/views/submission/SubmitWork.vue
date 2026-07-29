@@ -129,6 +129,7 @@ onMounted(() => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .content-card {
@@ -146,6 +147,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .work-info p {
@@ -164,6 +166,25 @@ onMounted(() => {
 
 .submit-form {
   padding: 20px 0;
+}
+
+.submit-form :deep(.el-textarea__inner) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.submit-form :deep(.el-textarea__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.submit-form :deep(.el-textarea__inner:focus) {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+.submit-form :deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .form-input {

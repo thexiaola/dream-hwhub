@@ -136,6 +136,7 @@ onMounted(() => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .detail-card, .members-section {
@@ -179,6 +180,7 @@ onMounted(() => {
 .info-item .value {
   font-size: 14px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .description {

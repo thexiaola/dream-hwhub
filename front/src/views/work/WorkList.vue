@@ -189,6 +189,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .subtitle {
@@ -251,6 +252,7 @@ onMounted(() => {
 .title-row h3 {
   font-size: 16px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .pin-badge {
@@ -304,6 +306,10 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.6);
 }
 
+.info-item svg {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .card-actions {
   display: flex;
   gap: 10px;
@@ -340,6 +346,31 @@ onMounted(() => {
   justify-content: center;
   padding: 60px;
   color: rgba(255, 255, 255, 0.4);
+}
+
+.search-input :deep(.el-input__wrapper),
+.filter-select :deep(.el-select__wrapper) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.search-input :deep(.el-input__wrapper:focus-within),
+.filter-select :deep(.el-select__wrapper:focus-within) {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+.search-input :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.search-input :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.filter-select :deep(.el-select__placeholder),
+.filter-select :deep(.el-select__selected-item) {
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
 .empty-state p {

@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ApproveJoinClassRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.BatchKickStudentsRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateClassRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.InviteUserRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.JoinByInviteCodeRequest;
@@ -88,7 +89,7 @@ public class ClassController {
         }
 
         /**
-         * 解散班级（仅创建者）
+         * 解散班级（创建者或管理员）
          */
         @DeleteMapping("/{classId}")
         public ApiResponse<Void> dissolveClass(
@@ -297,6 +298,23 @@ public class ClassController {
                 classService.kickStudentFromClass(classId, studentUserId);
                 log.info("User {} kicked student {} from class {} successfully",
                                 userInfo, studentUserId, classId);
+                return ApiResponse.success(null);
+        }
+
+        /**
+         * 批量将学生踢出班级（老师/班级助理/管理员专用）
+         */
+        @DeleteMapping("/{classId}/members/batch")
+        public ApiResponse<Void> batchKickStudents(
+                        @PathVariable(value = "classId") Integer classId,
+                        @Valid @RequestBody BatchKickStudentsRequest request) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                log.info("User {} batch kicking students {} from class {}",
+                                userInfo, request.getStudentUserIds(), classId);
+                classService.batchKickStudentsFromClass(classId, request.getStudentUserIds());
+                log.info("User {} batch kicked students from class {} successfully",
+                                userInfo, classId);
                 return ApiResponse.success(null);
         }
 

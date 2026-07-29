@@ -38,6 +38,8 @@ export const useUserStore = defineStore('user', () => {
       const result = await get<UserInfo>('/users/info')
       if (result.code === 200) {
         userInfo.value = result.data!
+      } else if (result.code === 401) {
+        logout()
       }
     } catch {
       userInfo.value = null
@@ -48,6 +50,11 @@ export const useUserStore = defineStore('user', () => {
     const result = await post('/users/getregcode', { email, userNo, username })
     return { code: result.code, message: result.message }
   }
+
+  window.addEventListener('auth-expired', () => {
+    token.value = ''
+    userInfo.value = null
+  })
 
   return {
     userInfo,

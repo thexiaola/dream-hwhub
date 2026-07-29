@@ -155,6 +155,7 @@ onMounted(() => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .header-right {
@@ -178,6 +179,7 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .info-grid {
@@ -203,6 +205,7 @@ onMounted(() => {
 .info-item .value {
   font-size: 14px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .status-badge {
@@ -249,6 +252,7 @@ onMounted(() => {
 
 .submitter {
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .submission-content {

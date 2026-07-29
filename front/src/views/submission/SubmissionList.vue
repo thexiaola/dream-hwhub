@@ -154,6 +154,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .subtitle {
@@ -246,6 +247,54 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   margin-bottom: 20px;
+}
+
+.filter-select :deep(.el-select__wrapper),
+.grade-input :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.filter-select :deep(.el-select__wrapper:focus-within),
+.grade-input :deep(.el-input__wrapper:focus-within) {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+.filter-select :deep(.el-select__selected-item),
+.filter-select :deep(.el-select__placeholder) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.grade-input :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.submission-table :deep(.el-table) {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.submission-table :deep(.el-table th.el-table__cell) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: rgba(255, 255, 255, 0.7);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.submission-table :deep(.el-table td.el-table__cell) {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.submission-table :deep(.el-table tr) {
+  background: transparent;
+}
+
+.submission-table :deep(.el-table__row:hover > td.el-table__cell) {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.submission-table :deep(.el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .grade-input {
