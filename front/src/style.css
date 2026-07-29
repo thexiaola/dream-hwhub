@@ -315,6 +315,49 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: transparent !important;
 }
 
+.dark-dialog .el-time-editor,
+.dark-dialog .el-time-editor.el-input,
+.dark-dialog .el-time-editor .el-input__wrapper {
+  --el-input-bg-color: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark-dialog .el-time-picker .el-input__wrapper,
+.dark-dialog .el-time-editor .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+  border-radius: 4px !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.dark-dialog .el-time-picker .el-input__wrapper:hover,
+.dark-dialog .el-time-editor .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22) inset !important;
+}
+
+.dark-dialog .el-time-picker .el-input__wrapper:focus-within,
+.dark-dialog .el-time-editor .el-input__wrapper:focus-within {
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
+}
+
+.dark-dialog .el-time-picker .el-input__inner,
+.dark-dialog .el-time-editor .el-input__inner {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.dark-dialog .el-time-picker .el-input__inner::placeholder,
+.dark-dialog .el-time-editor .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.dark-dialog .el-time-picker .el-input__prefix .el-icon,
+.dark-dialog .el-time-picker .el-input__suffix .el-icon {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
 .dark-dialog .el-textarea__inner {
   background: rgba(255, 255, 255, 0.06) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -480,7 +523,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 /* ====== 深色主题 el-date-picker 弹层面板 ====== */
 /* 使用：给 el-date-picker 加 popper-class="dark-picker" */
 
-/* — 外层 .el-popper 容器：清除默认白边与底色 — */
+/* — 外层 .el-popper 容器：清除默认白边与底色，紧凑化尺寸 — */
 .el-popper.dark-picker,
 .el-popper.is-dark.dark-picker,
 .dark-picker.el-popper {
@@ -491,7 +534,18 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   outline: none !important;
   box-sizing: border-box !important;
   padding: 0 !important;
-  overflow: hidden !important;
+  width: 340px !important;
+  min-width: 340px !important;
+  max-width: 340px !important;
+  overflow: visible !important;
+}
+
+.el-popper.dark-picker.is-time-spinner {
+  width: auto !important;
+  min-width: 160px !important;
+  max-width: 180px !important;
+  padding: 0 !important;
+  overflow: visible !important;
 }
 
 .el-popper.dark-picker > .el-popper__arrow {
@@ -502,17 +556,41 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .dark-picker .el-picker-panel {
   background: #1e1e2e !important;
   color: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 340px !important;
+  min-width: 340px !important;
+  max-width: 340px !important;
+  padding: 10px !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
 }
 
 .dark-picker .el-picker-panel__body-wrapper {
   background: #1e1e2e !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.dark-picker .el-picker-panel__body {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dark-picker .el-date-picker__header {
+  padding: 4px 4px 8px !important;
+  margin: 0 !important;
+  height: auto !important;
 }
 
 .dark-picker .el-picker-panel__icon-btn,
 .dark-picker .el-date-picker__header .el-picker-panel__icon-btn {
   color: rgba(255, 255, 255, 0.6) !important;
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 14px !important;
 }
 
 .dark-picker .el-picker-panel__icon-btn:hover,
@@ -523,35 +601,53 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .dark-picker .el-date-picker__header-label {
   color: rgba(255, 255, 255, 0.9) !important;
   font-weight: 600;
+  font-size: 14px !important;
 }
 
 .dark-picker .el-date-picker__header-label:hover {
   color: #667eea !important;
 }
 
+.dark-picker .el-date-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
 .dark-picker .el-date-table th {
   color: rgba(255, 255, 255, 0.5) !important;
   background: transparent !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-  padding: 8px 0 !important;
+  padding: 4px 0 !important;
   font-weight: 500;
+  font-size: 12px !important;
+  width: calc(100% / 7) !important;
 }
 
 .dark-picker .el-date-table td {
-  padding: 2px 0 !important;
+  padding: 0 !important;
+  width: calc(100% / 7) !important;
+  height: 30px !important;
+  text-align: center !important;
 }
 
 .dark-picker .el-date-table-cell {
-  height: 32px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .dark-picker .el-date-table-cell .el-date-table-cell__text {
   color: rgba(255, 255, 255, 0.85) !important;
   background: transparent !important;
-  width: 28px !important;
-  height: 28px !important;
+  width: 26px !important;
+  height: 26px !important;
   border-radius: 50% !important;
-  line-height: 28px !important;
+  line-height: 26px !important;
+  font-size: 13px !important;
 }
 
 .dark-picker .el-date-table-cell:hover .el-date-table-cell__text {
@@ -602,7 +698,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .dark-picker .el-picker-panel__footer {
   background: #1e1e2e !important;
   border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  padding: 8px 16px !important;
+  padding: 6px 8px !important;
+  margin-top: 4px !important;
 }
 
 .dark-picker .el-picker-panel__link-btn {
@@ -795,7 +892,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   position: absolute;
   left: 0;
   right: 0;
-  height: 64px;
+  height: 48px;
   display: block;
   z-index: 1;
   pointer-events: none;
@@ -815,47 +912,28 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: linear-gradient(to top, #1e1e2e, rgba(30, 30, 46, 0)) !important;
 }
 
+/* 选中行高亮指示条 */
+.el-time-panel .el-time-spinner__wrap::after {
+  content: "";
+  position: absolute;
+  top: 56px;
+  left: 2px;
+  right: 2px;
+  height: 28px;
+  border-radius: 4px;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.2),
+    rgba(118, 75, 162, 0.2)
+  ) !important;
+  box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.3) !important;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .el-time-panel .el-time-spinner__wrap {
   background: #1e1e2e !important;
-}
-
-.el-time-panel__footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  padding: 6px 12px !important;
-  background: #1e1e2e !important;
-  border-radius: 0 0 8px 8px !important;
-}
-
-.el-time-panel__btn {
-  color: rgba(255, 255, 255, 0.65) !important;
-  padding: 4px 12px !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 4px !important;
-  background: transparent !important;
-  transition: all 0.2s ease;
-}
-
-.el-time-panel__btn:hover:not(.disabled) {
-  color: #ffffff !important;
-  border-color: #667eea !important;
-  background: rgba(102, 126, 234, 0.18) !important;
-}
-
-.el-time-panel__btn.confirm,
-.el-time-panel__btn.el-button--primary {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
-  color: #ffffff !important;
-  border: none !important;
-}
-
-.el-time-panel__btn.confirm:hover:not(.disabled),
-.el-time-panel__btn.el-button--primary:hover:not(.disabled) {
-  filter: brightness(1.1);
-}
-
-.el-time-panel__btn.cancel {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+  position: relative !important;
 }
 
 /* —— 弹层箭头颜色（修正 Element Plus 亮色小三角箭头 */
@@ -929,37 +1007,6 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: transparent !important;
 }
 
-/* —— datetime 模式：顶部时间编辑输入框（HH:mm:ss）修复 —— */
-
-.dark-picker .el-date-picker__time-header {
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-  background: #1e1e2e !important;
-  padding: 8px 12px !important;
-}
-
-.dark-picker .el-date-picker__editor-wrap .el-input__wrapper {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: none !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
-  border-radius: 4px !important;
-}
-
-.dark-picker .el-date-picker__editor-wrap .el-input__inner {
-  color: rgba(255, 255, 255, 0.9) !important;
-  -webkit-text-fill-color: rgba(255, 255, 255, 0.9) !important;
-  background: transparent !important;
-  text-align: center;
-}
-
-.dark-picker .el-date-picker__editor-wrap .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset !important;
-}
-
-.dark-picker .el-date-picker__editor-wrap .el-input.is-focus .el-input__wrapper,
-.dark-picker .el-date-picker__editor-wrap .el-input__wrapper:focus-within {
-  box-shadow: 0 0 0 1px #667eea inset !important;
-}
-
 /* ====== 全局深色主题：时间选择面板（.el-time-panel） */
 /* 弹层 append 到 body，项目整体深色风格，直接全局覆盖；不改变内部结构 */
 
@@ -973,6 +1020,11 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   padding: 0 !important;
   outline: none !important;
   box-sizing: border-box !important;
+  overflow: visible !important;
+  z-index: 3000 !important;
+  width: auto !important;
+  min-width: 160px !important;
+  max-width: 180px !important;
 }
 
 .el-popper.is-time-spinner.el-popper > .el-popper__arrow {
@@ -983,34 +1035,62 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: #1e1e2e !important;
   border: none !important;
   margin: 0 !important;
+  width: auto !important;
 }
 
 .el-time-panel__content {
   background: #1e1e2e !important;
   margin: 0 !important;
   padding: 8px 0 !important;
+  width: auto !important;
 }
 
 .el-time-panel .el-time-spinner {
   background: #1e1e2e !important;
-  height: 192px !important;
+  height: 140px !important;
+  width: auto !important;
+  overflow: hidden !important;
+  position: relative !important;
+  border-radius: 6px !important;
+}
+
+.el-time-panel .el-time-spinner__wrap {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  box-sizing: border-box !important;
+}
+
+.el-time-panel .el-time-spinner__list {
+  width: 100% !important;
+  padding: 56px 0 !important;
 }
 
 .el-time-panel .el-time-spinner__item {
-  color: rgba(255, 255, 255, 0.4) !important;
-  height: 32px !important;
-  line-height: 32px !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 14px !important;
+  text-align: center !important;
+  border-radius: 4px !important;
+  transition: all 0.15s ease !important;
 }
 
 .el-time-panel .el-time-spinner__item:hover:not(.disabled) {
-  background: rgba(102, 126, 234, 0.12) !important;
-  color: #667eea !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(102, 126, 234, 0.08) !important;
 }
 
 .el-time-panel .el-time-spinner__item.active:not(.disabled) {
-  background: rgba(102, 126, 234, 0.25) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.35),
+    rgba(118, 75, 162, 0.35)
+  ) !important;
   color: #ffffff !important;
   font-weight: 600 !important;
+  font-size: 15px !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
 }
 
 .el-time-panel .el-time-spinner__item.disabled {
@@ -1020,11 +1100,14 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel__footer {
   border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  padding: 6px 12px !important;
+  padding: 8px 10px !important;
   background: #1e1e2e !important;
   box-sizing: border-box !important;
   line-height: normal !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
 }
 
 .el-time-panel__btn {
@@ -1033,13 +1116,15 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 4px !important;
-  padding: 5px 14px !important;
-  font-size: 13px !important;
+  padding: 3px 8px !important;
+  font-size: 12px !important;
   line-height: 1 !important;
-  height: 30px !important;
-  min-width: 64px !important;
+  height: 26px !important;
+  min-width: 48px !important;
   cursor: pointer !important;
   transition: all 0.2s ease;
+  float: none !important;
+  margin: 0 !important;
 }
 
 .el-time-panel__btn:hover:not(.disabled) {
@@ -1052,7 +1137,6 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: linear-gradient(135deg, #667eea, #764ba2) !important;
   color: #ffffff !important;
   border: none !important;
-  float: right !important;
 }
 
 .el-time-panel__btn.confirm:hover:not(.disabled) {
@@ -1060,8 +1144,6 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-time-panel__btn.cancel {
-  float: right !important;
-  margin-right: 8px !important;
   background: transparent !important;
   color: rgba(255, 255, 255, 0.7) !important;
 }

@@ -205,14 +205,23 @@
           />
         </el-form-item>
         <el-form-item label="截止时间">
-          <el-date-picker 
-            v-model="workForm.deadline" 
-            type="datetime" 
-            placeholder="选择截止时间"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-            popper-class="dark-picker"
-          />
+          <div class="deadline-split-wrap">
+            <el-date-picker
+              v-model="workFormDate"
+              type="date"
+              placeholder="选择日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              popper-class="dark-picker"
+            />
+            <el-time-picker
+              v-model="workFormTime"
+              placeholder="选择时间"
+              format="HH:mm:ss"
+              value-format="HH:mm:ss"
+              popper-class="dark-picker"
+            />
+          </div>
         </el-form-item>
         <el-form-item label="作业总分">
           <el-input-number
@@ -357,6 +366,19 @@ const workForm = ref({
   classId: Number(route.params.id)
 })
 
+const workFormDate = ref('')
+const workFormTime = ref('')
+
+const buildDeadline = (): string => {
+  if (workFormDate.value && workFormTime.value) {
+    return `${workFormDate.value}T${workFormTime.value}`
+  }
+  if (workFormDate.value) {
+    return `${workFormDate.value}T23:59:59`
+  }
+  return ''
+}
+
 const attachmentFiles = ref<UploadUserFile[]>([])
 
 const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
@@ -388,6 +410,8 @@ const resetCreateWorkForm = () => {
     allowLateSubmit: true,
     classId: Number(route.params.id)
   }
+  workFormDate.value = ''
+  workFormTime.value = ''
   attachmentFiles.value = []
 }
 
@@ -489,10 +513,12 @@ const createWork = async () => {
     ElMessage.warning('请输入作业描述')
     return
   }
-  if (!workForm.value.deadline) {
+  const deadline = buildDeadline()
+  if (!deadline) {
     ElMessage.warning('请选择截止时间')
     return
   }
+  workForm.value.deadline = deadline
   const formData = new FormData()
   formData.append('title', workForm.value.title)
   formData.append('description', workForm.value.description)
@@ -967,5 +993,25 @@ onMounted(async () => {
 .course-tabs :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #667eea;
   border-color: #667eea;
+}
+
+.deadline-split-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+}
+
+.deadline-split-wrap :deep(.el-date-editor),
+.deadline-split-wrap :deep(.el-time-editor) {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.deadline-split-wrap :deep(.el-input__wrapper) {
+  width: 100% !important;
+  min-width: 0 !important;
 }
 </style>

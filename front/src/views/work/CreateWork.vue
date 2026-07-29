@@ -43,13 +43,25 @@
           />
         </el-form-item>
         <el-form-item label="截止时间" prop="deadline">
-          <el-date-picker 
-            v-model="form.deadline" 
-            type="datetime" 
-            placeholder="请选择截止时间"
-            class="form-input"
-            popper-class="dark-picker"
-          />
+          <div class="deadline-split-wrap">
+            <el-date-picker
+              v-model="formDate"
+              type="date"
+              placeholder="选择日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              class="form-input"
+              popper-class="dark-picker"
+            />
+            <el-time-picker
+              v-model="formTime"
+              placeholder="选择时间"
+              format="HH:mm:ss"
+              value-format="HH:mm:ss"
+              class="form-input"
+              popper-class="dark-picker"
+            />
+          </div>
         </el-form-item>
         <el-form-item label="作业附件">
           <el-upload
@@ -81,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import { useClassStore } from '@/stores/class'
@@ -101,6 +113,23 @@ const form = ref({
   deadline: '',
   isPinned: false
 })
+
+const formDate = ref('')
+const formTime = ref('')
+
+const buildDeadline = (): string => {
+  if (formDate.value && formTime.value) {
+    return `${formDate.value}T${formTime.value}`
+  }
+  if (formDate.value) {
+    return `${formDate.value}T23:59:59`
+  }
+  return ''
+}
+
+watch([formDate, formTime], () => {
+  form.value.deadline = buildDeadline()
+}, { immediate: false })
 
 const attachmentFiles = ref<UploadUserFile[]>([])
 const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
@@ -380,5 +409,30 @@ onMounted(() => {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.4);
   margin-top: 6px;
+}
+
+.deadline-split-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+}
+
+.deadline-split-wrap :deep(.el-date-editor),
+.deadline-split-wrap :deep(.el-time-editor) {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.deadline-split-wrap :deep(.el-input__wrapper) {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.deadline-split-wrap :deep(.el-time-editor .el-input__inner),
+.deadline-split-wrap :deep(.el-time-editor .el-input__wrapper) {
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 </style>
