@@ -222,9 +222,10 @@ input:not(.el-input__inner):not(.el-textarea__inner):focus, textarea:not(.el-inp
 
 .dark-dialog .el-textarea__inner {
   background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
 }
 
 .dark-dialog .el-textarea__inner::placeholder {
@@ -232,19 +233,25 @@ input:not(.el-input__inner):not(.el-textarea__inner):focus, textarea:not(.el-inp
   -webkit-text-fill-color: rgba(255, 255, 255, 0.35) !important;
 }
 
+.dark-dialog .el-textarea__inner:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
 .dark-dialog .el-textarea__inner:focus {
   border-color: var(--primary-color) !important;
   box-shadow: none !important;
 }
 
-.dark-dialog .el-button {
-  color: var(--el-button-text-color);
-  border-color: var(--el-button-border-color);
-  background: var(--el-button-bg-color);
+.dark-dialog .el-button:not(.el-button--primary):not(.el-button--danger) {
+  color: rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.dark-dialog .el-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+.dark-dialog .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .dark-dialog .el-button--primary {
