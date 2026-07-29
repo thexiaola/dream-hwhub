@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 /**
  * 用户登录控制器
@@ -42,7 +44,7 @@ public class LoginUserController {
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
 
             // 生成JWT Token并设置到响应中
-            String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+            String token = jwtUtil.generateToken(user);
             userResponse.setToken(token);
 
             String userInfo = LogUtil.getUserInfoString(ip, user);
@@ -90,6 +92,21 @@ public class LoginUserController {
             log.error("User logout failed", e);
             return ResponseEntity.status(500).body(ApiResponse.error(500, "登出失败"));
         }
+    }
+
+    /**
+     * 获取当前登录用户信息
+     */
+    @GetMapping("/info")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUserInfo() {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401, "未登录"));
+        }
+        String userInfo = LogUtil.getUserInfo(currentUser);
+        log.info("User ({}) fetched user info", userInfo);
+        UserResponse userResponse = userResponseMapper.toUserResponse(currentUser);
+        return ResponseEntity.ok(ApiResponse.success(userResponse, "获取用户信息成功"));
     }
 
 }

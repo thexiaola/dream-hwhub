@@ -7,21 +7,30 @@
           <span class="logo-text">作业管理系统</span>
         </div>
         <div class="nav-tabs">
-          <button 
-            class="nav-tab" 
+          <button
+            class="nav-tab"
             :class="{ active: activeTab === 'student' }"
             @click="switchTab('student')"
           >
             <GraduationCap :size="18" />
             我听的课
           </button>
-          <button 
-            class="nav-tab" 
+          <button
+            class="nav-tab"
             :class="{ active: activeTab === 'teacher' }"
             @click="switchTab('teacher')"
           >
             <Presentation :size="18" />
             我教的课
+          </button>
+          <button
+            v-if="isAdmin"
+            class="nav-tab"
+            :class="{ active: activeTab === 'admin' }"
+            @click="switchTab('admin')"
+          >
+            <Shield :size="18" />
+            管理面板
           </button>
         </div>
       </div>
@@ -54,23 +63,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut } from '@lucide/vue'
+import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield } from '@lucide/vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const activeTab = ref<'student' | 'teacher'>('student')
+const isAdmin = computed(() => (userStore.userInfo?.permission ?? 0) >= 100)
+const activeTab = ref<'student' | 'teacher' | 'admin'>('student')
 
-const switchTab = (tab: 'student' | 'teacher') => {
+const switchTab = (tab: 'student' | 'teacher' | 'admin') => {
   activeTab.value = tab
   if (tab === 'student') {
     router.push('/student/courses')
-  } else {
+  } else if (tab === 'teacher') {
     router.push('/teacher/courses')
+  } else {
+    router.push('/admin/panel')
   }
 }
 
@@ -86,6 +98,8 @@ const handleCommand = (command: string) => {
 onMounted(() => {
   if (route.path.startsWith('/teacher')) {
     activeTab.value = 'teacher'
+  } else if (route.path.startsWith('/admin')) {
+    activeTab.value = 'admin'
   } else {
     activeTab.value = 'student'
   }

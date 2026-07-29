@@ -10,6 +10,7 @@ export interface UserInfo {
   username: string
   userNo: string
   email: string
+  permission: number
   role: 'teacher' | 'student'
 }
 

@@ -6,6 +6,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -35,37 +36,36 @@ public class JwtUtil {
     }
 
     /**
-     * 生成JWT Token
-     *
-     * @param userId   用户ID
-     * @param username 用户名
-     * @return JWT Token字符串
+     * 生成JWT Token，包含完整用户信息
      */
-    public String generateToken(Integer userId, String username) {
+    public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId);
-        claims.put("username", username);
+        claims.put("userId", user.getId());
+        claims.put("username", user.getUsername());
+        claims.put("userNo", user.getUserNo());
+        claims.put("email", user.getEmail());
+        claims.put("permission", user.getPermission());
+        claims.put("isBanned", user.getIsBanned() != null && user.getIsBanned() ? 1 : 0);
+        claims.put("phone", user.getPhone());
+        claims.put("idName", user.getIdName());
         
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         String token = Jwts.builder()
                 .claims(claims)
-                .subject(username)
+                .subject(user.getUsername())
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
 
-        log.debug("Generated JWT token for user: {}", userId);
+        log.debug("Generated JWT token for user: {}", user.getId());
         return token;
     }
 
     /**
      * 从Token中解析Claims
-     *
-     * @param token JWT Token
-     * @return Claims对象
      */
     public Claims parseToken(String token) {
         try {
@@ -81,10 +81,25 @@ public class JwtUtil {
     }
 
     /**
+     * 从Token中获取完整用户信息（无需查库）
+     */
+    public User getUserFromToken(String token) {
+        Claims claims = parseToken(token);
+        User user = new User();
+        user.setId(claims.get("userId", Integer.class));
+        user.setUsername(claims.get("username", String.class));
+        user.setUserNo(claims.get("userNo", String.class));
+        user.setEmail(claims.get("email", String.class));
+        user.setPermission(claims.get("permission", Short.class));
+        Integer isBanned = claims.get("isBanned", Integer.class);
+        user.setIsBanned(isBanned != null && isBanned == 1);
+        user.setPhone(claims.get("phone", String.class));
+        user.setIdName(claims.get("idName", String.class));
+        return user;
+    }
+
+    /**
      * 从Token中获取用户ID
-     *
-     * @param token JWT Token
-     * @return 用户ID
      */
     public Integer getUserIdFromToken(String token) {
         Claims claims = parseToken(token);
@@ -93,9 +108,6 @@ public class JwtUtil {
 
     /**
      * 从Token中获取用户名
-     *
-     * @param token JWT Token
-     * @return 用户名
      */
     public String getUsernameFromToken(String token) {
         Claims claims = parseToken(token);
@@ -104,9 +116,6 @@ public class JwtUtil {
 
     /**
      * 验证Token是否有效
-     *
-     * @param token JWT Token
-     * @return 是否有效
      */
     public boolean validateToken(String token) {
         try {
@@ -120,9 +129,6 @@ public class JwtUtil {
 
     /**
      * 检查Token是否过期
-     *
-     * @param token JWT Token
-     * @return 是否过期
      */
     public boolean isTokenExpired(String token) {
         try {

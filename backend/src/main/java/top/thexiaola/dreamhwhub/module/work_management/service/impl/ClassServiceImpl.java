@@ -156,7 +156,7 @@ public class ClassServiceImpl implements ClassService {
 
         // 检查目标用户是否是学生
         QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-        studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("is_teacher", false);
+        studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
         ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
         
         if (studentMember == null) {
@@ -197,14 +197,14 @@ public class ClassServiceImpl implements ClassService {
 
         // 不能踢出其他老师（包括创建者和班级助理）
         QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
-        teacherQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("is_teacher", true);
+        teacherQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 1);
         if (classMemberMapper.selectCount(teacherQuery) > 0) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能踢出老师", null);
         }
 
         // 检查目标用户是否是学生
         QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-        studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("is_teacher", false);
+        studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
         ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
         
         if (studentMember == null) {
@@ -247,7 +247,7 @@ public class ClassServiceImpl implements ClassService {
 
         // 检查目标用户是否是老师（包括班级助理）
         QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
-        teacherQuery.eq("class_id", classId).eq("user_id", teacherUserId).eq("is_teacher", true);
+        teacherQuery.eq("class_id", classId).eq("user_id", teacherUserId).eq("role", 1);
         ClassMember teacherMember = classMemberMapper.selectOne(teacherQuery);
         
         if (teacherMember == null) {
@@ -271,7 +271,7 @@ public class ClassServiceImpl implements ClassService {
     public boolean isOrdinaryTeacher(Integer classId, Integer userId) {
         // 检查是否是班级成员且是老师
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("is_teacher", true);
+        queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("role", 1);
         ClassMember member = classMemberMapper.selectOne(queryWrapper);
         
         if (member == null) {
@@ -754,11 +754,11 @@ public class ClassServiceImpl implements ClassService {
         long memberCount = classMemberMapper.selectCount(countQuery);
 
         QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
-        teacherQuery.eq("class_id", classId).eq("is_teacher", true);
+        teacherQuery.eq("class_id", classId).eq("role", 1);
         long teacherCount = classMemberMapper.selectCount(teacherQuery);
 
         QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-        studentQuery.eq("class_id", classId).eq("is_teacher", false);
+        studentQuery.eq("class_id", classId).eq("role", 0);
         long studentCount = classMemberMapper.selectCount(studentQuery);
 
         // 查询当前用户在该班级的角色
@@ -847,11 +847,11 @@ public class ClassServiceImpl implements ClassService {
                     long memberCount = classMemberMapper.selectCount(countQuery);
 
                     QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
-                    teacherQuery.eq("class_id", classInfo.getId()).eq("is_teacher", true);
+                    teacherQuery.eq("class_id", classInfo.getId()).eq("role", 1);
                     long teacherCount = classMemberMapper.selectCount(teacherQuery);
 
                     QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-                    studentQuery.eq("class_id", classInfo.getId()).eq("is_teacher", false);
+                    studentQuery.eq("class_id", classInfo.getId()).eq("role", 0);
                     long studentCount = classMemberMapper.selectCount(studentQuery);
 
                     // 确定用户角色
@@ -1229,7 +1229,7 @@ public class ClassServiceImpl implements ClassService {
             // 非管理员且classId为空：查询自己担任老师的所有班级的申请
             QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
             teacherQuery.eq("user_id", currentUser.getId())
-                       .eq("is_teacher", true)
+                       .eq("role", 1)
                        .select("class_id");
             List<ClassMember> teacherMembers = classMemberMapper.selectList(teacherQuery);
             

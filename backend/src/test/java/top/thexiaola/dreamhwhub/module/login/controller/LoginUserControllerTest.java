@@ -87,7 +87,7 @@ class LoginUserControllerTest {
                 .thenReturn(mockUser);
         Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
                 .thenReturn(userResponse);
-        Mockito.when(jwtUtil.generateToken(Mockito.anyInt(), Mockito.anyString()))
+        Mockito.when(jwtUtil.generateToken(Mockito.any(User.class)))
                 .thenReturn(mockToken);
 
         // 执行测试并验证
@@ -228,7 +228,7 @@ class LoginUserControllerTest {
                 .thenReturn(mockUser);
         Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
                 .thenReturn(userResponse);
-        Mockito.when(jwtUtil.generateToken(Mockito.anyInt(), Mockito.anyString()))
+        Mockito.when(jwtUtil.generateToken(Mockito.any(User.class)))
                 .thenReturn(mockToken);
 
         mockMvc.perform(post("/api/users/login")
@@ -265,7 +265,7 @@ class LoginUserControllerTest {
                 .thenReturn(mockUser);
         Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
                 .thenReturn(userResponse);
-        Mockito.when(jwtUtil.generateToken(Mockito.anyInt(), Mockito.anyString()))
+        Mockito.when(jwtUtil.generateToken(Mockito.any(User.class)))
                 .thenReturn(mockToken);
 
         mockMvc.perform(post("/api/users/login")

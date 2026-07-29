@@ -82,20 +82,14 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
         
-        // 从Token中提取用户信息
+        // 从Token中直接解析完整用户信息（无需查库）
         try {
-            Integer userId = jwtUtil.getUserIdFromToken(token);
-            String username = jwtUtil.getUsernameFromToken(token);
-            
-            // 创建简化的User对象并存储到request属性中
-            User user = new User();
-            user.setId(userId);
-            user.setUsername(username);
+            User user = jwtUtil.getUserFromToken(token);
             
             // 将用户信息存储到request属性中，供后续使用
             request.setAttribute("currentUser", user);
             
-            logger.debug("Authenticated user: {} (ID: {}) for URI: {}", username, userId, requestURI);
+            logger.debug("Authenticated user: {} (ID: {}) for URI: {}", user.getUsername(), user.getId(), requestURI);
             return true;
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

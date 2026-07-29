@@ -56,6 +56,12 @@ const routes: RouteRecordRaw[] = [
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/Profile.vue')
+      },
+      {
+        path: 'admin/panel',
+        name: 'AdminPanel',
+        component: () => import('@/views/admin/AdminPanel.vue'),
+        meta: { requiresAdmin: true }
       }
     ]
   }
@@ -83,6 +89,11 @@ router.beforeEach(async (to, _from, next) => {
         next('/login')
         return
       }
+    }
+
+    if (to.meta.requiresAdmin && (userStore.userInfo?.permission ?? 0) < 100) {
+      next('/student/courses')
+      return
     }
     next()
   } else {
