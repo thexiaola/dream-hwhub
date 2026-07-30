@@ -451,17 +451,31 @@ public class ClassController {
         }
 
         /**
-         * 生成或刷新班级邀请码
+         * 获取班级当前邀请码（不存在则生成，存在则返回已有的，不刷新）
          */
-        @PostMapping("/{classId}/invite-code")
-        public ApiResponse<String> generateInviteCode(
+        @GetMapping("/{classId}/invite-code")
+        public ApiResponse<String> getInviteCode(
                         @PathVariable(value = "classId") Integer classId) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} generating invite code for class {}", userInfo, classId);
-                String inviteCode = classService.generateOrRefreshInviteCode(classId);
-                log.info("User {} generated invite code successfully", userInfo);
-                return ApiResponse.success(inviteCode, "邀请码生成成功");
+                log.info("User {} querying invite code for class {}", userInfo, classId);
+                String inviteCode = classService.getInviteCode(classId);
+                log.info("User ({}) queried invite code successfully", userInfo);
+                return ApiResponse.success(inviteCode, "邀请码获取成功");
+        }
+
+        /**
+         * 重置班级邀请码（旧码立即失效，生成新码覆盖）
+         */
+        @PostMapping("/{classId}/invite-code/reset")
+        public ApiResponse<String> resetInviteCode(
+                        @PathVariable(value = "classId") Integer classId) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                log.info("User {} resetting invite code for class {}", userInfo, classId);
+                String inviteCode = classService.resetInviteCode(classId);
+                log.info("User ({}) reset invite code successfully, old code invalidated", userInfo);
+                return ApiResponse.success(inviteCode, "邀请码已重置，旧邀请码已失效");
         }
 
         /**

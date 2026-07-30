@@ -229,9 +229,14 @@ public interface ClassService {
     void respondInvitation(Integer invitationId, Boolean accepted);
 
     /**
-     * 生成或刷新班级邀请码
+     * 获取班级当前邀请码（不存在则生成，存在则返回已有的，不刷新）
      */
-    String generateOrRefreshInviteCode(Integer classId);
+    String getInviteCode(Integer classId);
+
+    /**
+     * 重置班级邀请码（旧码失效，生成新码覆盖）
+     */
+    String resetInviteCode(Integer classId);
 
     /**
      * 通过邀请码加入班级

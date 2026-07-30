@@ -104,6 +104,7 @@ const router = useRouter()
 const route = useRoute()
 
 const pageLoading = ref(false)
+const workClassId = ref<number | null>(null)
 const loading = ref(false)
 const removedAttachmentIds = ref<number[]>([])
 const existingAttachmentMap = new Map<number, number>()
@@ -171,7 +172,11 @@ const rules = {
 }
 
 const goBack = () => {
-  router.back()
+  if (workClassId.value) {
+    router.push(`/teacher/course/${workClassId.value}`)
+    return
+  }
+  router.push('/teacher/courses')
 }
 
 const loadWork = async () => {
@@ -181,6 +186,7 @@ const loadWork = async () => {
     const result = await get<any>(`/works/${workId}`)
     if (result.code === 200 && result.data) {
       const data = result.data
+      workClassId.value = data.classId ?? null
       form.value.title = data.title || ''
       form.value.description = data.description || ''
       form.value.totalScore = data.totalScore || 100

@@ -686,6 +686,82 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   justify-content: center !important;
 }
 
+.dark-picker .el-date-table-cell__text {
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease !important;
+}
+
+.dark-picker td.available:hover:not(.disabled) .el-date-table-cell__text {
+  /* 不做任何 transform，仅保留颜色过渡 */
+}
+
+/* ==============================================
+   日期选择器 - 选中日期高亮（类名在 <td> 上，非 .el-date-table-cell）
+   优先级：hover > 被选中(current) > 今天(today)
+   注意：__text 默认是 position:absolute + left:50% + translateX 居中，
+        不能加 position:relative 否则会破坏居中导致位置偏移
+   ============================================== */
+
+/* 今天日期（未被选中）：浅紫字 + 底部小圆点（最低优先级） */
+.dark-picker td.today:not(.current):not(.disabled) .el-date-table-cell__text {
+  color: #a9b7f5 !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+}
+
+.dark-picker td.today:not(.current):not(.disabled) .el-date-table-cell__text::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: -3px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 50% !important;
+  background: #a9b7f5 !important;
+  display: block !important;
+}
+
+/* 被选中日期(current)：紫色渐变背景圆 + 白字（中优先级，无底部横线） */
+.dark-picker td.current:not(.disabled) .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4) !important;
+  border-radius: 50% !important;
+}
+
+/* 范围选择选中的日期(selected/is-selected)：同 current 样式 */
+.dark-picker td.selected:not(.disabled) .el-date-table-cell__text,
+.dark-picker td.is-selected:not(.disabled) .el-date-table-cell__text {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4) !important;
+  border-radius: 50% !important;
+}
+
+/* hover 状态：最高优先级，覆盖 today 和 current */
+.dark-picker td.available:hover:not(.disabled) .el-date-table-cell__text {
+  background: rgba(102, 126, 234, 0.25) !important;
+  color: #667eea !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+}
+
+.dark-picker td.available:hover:not(.disabled) .el-date-table-cell__text::after {
+  display: none !important;
+}
+
+/* hover 选中日期：保持紫底但提亮，白字 */
+.dark-picker td.current.available:hover:not(.disabled) .el-date-table-cell__text,
+.dark-picker td.selected.available:hover:not(.disabled) .el-date-table-cell__text,
+.dark-picker td.is-selected.available:hover:not(.disabled) .el-date-table-cell__text {
+  background: rgba(102, 126, 234, 0.4) !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5) !important;
+}
+
 .dark-picker .el-date-table-cell .el-date-table-cell__text {
   color: rgba(255, 255, 255, 0.85) !important;
   background: transparent !important;
@@ -1049,13 +1125,32 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: rgba(102, 126, 234, 0.1) !important;
 }
 
-.dark-picker .el-time-spinner .el-time-spinner__item.active:not(.disabled) {
-  color: #ffffff !important;
-  background: rgba(102, 126, 234, 0.22) !important;
+.dark-picker .el-time-spinner .el-time-spinner__item.active:not(.disabled),
+.dark-picker .el-time-spinner .el-time-spinner__item.is-active:not(.is-disabled) {
+  color: #667eea !important;
+  background: transparent !important;
   font-weight: 600;
+  position: relative;
 }
 
-.dark-picker .el-time-spinner__item.disabled {
+.dark-picker .el-time-spinner .el-time-spinner__item.active:not(.disabled)::after,
+.dark-picker .el-time-spinner .el-time-spinner__item.is-active:not(.is-disabled)::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.5) !important;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.dark-picker .el-time-spinner__item.disabled,
+.dark-picker .el-time-spinner__item.is-disabled {
   color: rgba(255, 255, 255, 0.2) !important;
 }
 
@@ -1149,18 +1244,21 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   line-height: 32px !important;
 }
 
-.el-time-panel .el-time-spinner__item:hover:not(.disabled) {
+.el-time-panel .el-time-spinner__item:hover:not(.disabled),
+.el-time-panel .el-time-spinner__item:hover:not(.is-disabled) {
   background: rgba(102, 126, 234, 0.12) !important;
   color: #667eea !important;
 }
 
-.el-time-panel .el-time-spinner__item.active:not(.disabled) {
+.el-time-panel .el-time-spinner__item.active:not(.disabled),
+.el-time-panel .el-time-spinner__item.is-active:not(.is-disabled) {
   background: rgba(102, 126, 234, 0.25) !important;
   color: #ffffff !important;
   font-weight: 600 !important;
 }
 
-.el-time-panel .el-time-spinner__item.disabled {
+.el-time-panel .el-time-spinner__item.disabled,
+.el-time-panel .el-time-spinner__item.is-disabled {
   color: rgba(255, 255, 255, 0.18) !important;
   cursor: not-allowed !important;
 }
@@ -1347,6 +1445,11 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   overflow: hidden !important;
   position: relative !important;
   border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  padding: 0 4px !important;
 }
 
 .el-time-panel .el-time-spinner__wrap {
@@ -1354,6 +1457,27 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   min-width: 30px !important;
   max-width: 30px !important;
   box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.el-time-panel .el-time-spinner .el-scrollbar__bar {
+  display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.el-time-panel .el-time-spinner .el-scrollbar__wrap {
+  overflow: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.el-time-panel .el-time-spinner .el-scrollbar__wrap::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .el-time-panel .el-time-spinner__list {
@@ -1377,12 +1501,14 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   transition: all 0.15s ease !important;
 }
 
-.el-time-panel .el-time-spinner__item:hover:not(.disabled) {
+.el-time-panel .el-time-spinner__item:hover:not(.disabled),
+.el-time-panel .el-time-spinner__item:hover:not(.is-disabled) {
   color: rgba(255, 255, 255, 0.7) !important;
   background: rgba(102, 126, 234, 0.08) !important;
 }
 
-.el-time-panel .el-time-spinner__item.active:not(.disabled) {
+.el-time-panel .el-time-spinner__item.active:not(.disabled),
+.el-time-panel .el-time-spinner__item.is-active:not(.is-disabled) {
   background: transparent !important;
   color: #ffffff !important;
   font-weight: 600 !important;
@@ -1390,7 +1516,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   position: relative !important;
 }
 
-.el-time-panel .el-time-spinner__item.active:not(.disabled)::after {
+.el-time-panel .el-time-spinner__item.active:not(.disabled)::after,
+.el-time-panel .el-time-spinner__item.is-active:not(.is-disabled)::after {
   content: "";
   position: absolute;
   bottom: 4px;
@@ -1401,9 +1528,12 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   border-radius: 2px;
   background: linear-gradient(90deg, #667eea, #764ba2) !important;
   box-shadow: 0 0 8px rgba(102, 126, 234, 0.5) !important;
+  z-index: 10;
+  pointer-events: none;
 }
 
-.el-time-panel .el-time-spinner__item.disabled {
+.el-time-panel .el-time-spinner__item.disabled,
+.el-time-panel .el-time-spinner__item.is-disabled {
   color: rgba(255, 255, 255, 0.18) !important;
   cursor: not-allowed !important;
 }
@@ -1458,7 +1588,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
-/* 全局隐藏时间选择器相关滚动条 */
+/* 全局隐藏时间选择器滚动条视觉，但保留滚动行为 */
 .el-time-spinner__list,
 .el-time-spinner__wrap,
 .el-time-spinner,
@@ -1467,8 +1597,6 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-popper.is-time-spinner .el-popper__body {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
-  overflow-y: hidden !important;
-  overflow-x: hidden !important;
 }
 
 .el-time-spinner__list::-webkit-scrollbar,
@@ -1498,30 +1626,25 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   -ms-overflow-style: none !important;
 }
 
-/* 强制隐藏所有可能的滚动容器 */
-.el-time-spinner__list,
-.el-time-spinner__wrap,
-.el-time-spinner__item,
-.el-time-spinner,
-.el-time-panel__content,
-.el-time-panel__body,
-.el-time-panel,
-.el-popper.is-time-spinner,
-.el-popper.is-time-spinner .el-popper__body {
-  overflow: hidden !important;
+/* 隐藏 Element Plus 自定义滚动条组件的视觉，但保留滚动能力 */
+.el-time-spinner .el-scrollbar__bar,
+.el-time-panel .el-scrollbar__bar,
+.el-popper.is-time-spinner .el-scrollbar__bar {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.el-time-spinner .el-scrollbar__wrap,
+.el-time-panel .el-scrollbar__wrap,
+.el-popper.is-time-spinner .el-scrollbar__wrap {
+  overflow: auto !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
-.el-time-spinner__list::-webkit-scrollbar,
-.el-time-spinner__wrap::-webkit-scrollbar,
-.el-time-spinner__item::-webkit-scrollbar,
-.el-time-spinner::-webkit-scrollbar,
-.el-time-panel__content::-webkit-scrollbar,
-.el-time-panel__body::-webkit-scrollbar,
-.el-time-panel::-webkit-scrollbar,
-.el-popper.is-time-spinner::-webkit-scrollbar,
-.el-popper.is-time-spinner .el-popper__body::-webkit-scrollbar {
+.el-time-spinner .el-scrollbar__wrap::-webkit-scrollbar,
+.el-time-panel .el-scrollbar__wrap::-webkit-scrollbar,
+.el-popper.is-time-spinner .el-scrollbar__wrap::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;

@@ -116,7 +116,7 @@
           </el-button>
           <el-button @click="generateInviteCode">
             <Key :size="18" />
-            生成邀请码
+            查看邀请码
           </el-button>
           <el-button
             v-if="selectedStudentIds.length > 0"
@@ -307,17 +307,29 @@
 
     <el-dialog
       v-model="showInviteCodeDialog"
-      title="邀请码"
-      width="400px"
+      title="班级邀请码"
+      width="420px"
       class="dark-dialog"
     >
       <div class="invite-code-content">
-        <p>邀请码已生成：</p>
+        <p class="invite-code-label">当前邀请码：</p>
         <div class="invite-code-box">
           <span class="invite-code">{{ inviteCode }}</span>
           <el-button size="small" @click="copyInviteCode">复制</el-button>
         </div>
         <p class="invite-tip">学生可使用此邀请码直接加入课程</p>
+        <div class="invite-code-actions">
+          <el-button
+            type="warning"
+            plain
+            size="small"
+            @click="resetInviteCode"
+            :loading="resettingCode"
+          >
+            重置邀请码
+          </el-button>
+        </div>
+        <p class="invite-warning">重置后旧邀请码立即失效，需重新分享新码</p>
       </div>
     </el-dialog>
   </div>
@@ -625,12 +637,42 @@ const createWork = async () => {
 };
 
 const generateInviteCode = async () => {
-  const result = await post<string>(`/class/${route.params.id}/invite-code`);
+  const result = await get<string>(`/class/${route.params.id}/invite-code`);
   if (result.code === 200) {
     inviteCode.value = result.data!;
     showInviteCodeDialog.value = true;
   } else {
     ElMessage.error(result.message);
+  }
+};
+
+const resettingCode = ref(false);
+
+const resetInviteCode = async () => {
+  try {
+    await ElMessageBox.confirm(
+      "重置后旧邀请码将立即失效，学生需使用新邀请码加入课程。确定重置？",
+      "重置邀请码",
+      { type: "warning", confirmButtonText: "重置", cancelButtonText: "取消" },
+    );
+  } catch {
+    return;
+  }
+  resettingCode.value = true;
+  try {
+    const result = await post<string>(
+      `/class/${route.params.id}/invite-code/reset`,
+    );
+    if (result.code === 200) {
+      inviteCode.value = result.data!;
+      ElMessage.success("邀请码已重置，旧码已失效");
+    } else {
+      ElMessage.error(result.message);
+    }
+  } catch {
+    ElMessage.error("重置失败");
+  } finally {
+    resettingCode.value = false;
   }
 };
 
@@ -1045,6 +1087,12 @@ onMounted(async () => {
   text-align: center;
 }
 
+.invite-code-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 4px;
+}
+
 .invite-code-box {
   display: flex;
   justify-content: center;
@@ -1060,11 +1108,25 @@ onMounted(async () => {
   padding: 8px 16px;
   background: rgba(102, 126, 234, 0.1);
   border-radius: 8px;
+  letter-spacing: 1px;
+  word-break: break-all;
 }
 
 .invite-tip {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
+}
+
+.invite-code-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.invite-warning {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(239, 68, 68, 0.7);
 }
 
 .course-tabs :deep(.el-checkbox__label) {

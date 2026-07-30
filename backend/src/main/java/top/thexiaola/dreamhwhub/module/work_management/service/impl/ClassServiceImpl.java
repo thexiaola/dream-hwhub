@@ -1534,32 +1534,57 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String generateOrRefreshInviteCode(Integer classId) {
+    public String getInviteCode(Integer classId) {
         User currentUser = getCurrentUserOrThrow();
 
-        // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否是老师或管理员
-        boolean isAdmin = isAdmin(currentUser);
-        boolean isTeacher = isTeacher(classId, currentUser.getId());
-        
-        if (!isAdmin && !isTeacher) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以生成邀请码", null);
+        boolean isAdminUser = isAdmin(currentUser);
+        boolean isTeacherUser = isTeacher(classId, currentUser.getId());
+        if (!isAdminUser && !isTeacherUser) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以查看邀请码", null);
         }
 
-        // 生成25位随机邀请码（大小写字母+数字）
-        String inviteCode = generateRandomCode(25);
-        
-        // 更新班级邀请码
-        classInfo.setInviteCode(inviteCode);
+        // 已存在邀请码则直接返回，不刷新
+        if (StrUtil.isNotBlank(classInfo.getInviteCode())) {
+            return classInfo.getInviteCode();
+        }
+
+        // 不存在则生成并保存
+        String newCode = generateRandomCode(25);
+        classInfo.setInviteCode(newCode);
         classInfoMapper.updateById(classInfo);
 
-        log.info("User {} generated invite code {} for class {}", currentUser.getId(), inviteCode, classId);
-        return inviteCode;
+        log.info("User {} generated invite code for class {} (first time)", currentUser.getId(), classId);
+        return newCode;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String resetInviteCode(Integer classId) {
+        User currentUser = getCurrentUserOrThrow();
+
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        boolean isAdminUser = isAdmin(currentUser);
+        boolean isTeacherUser = isTeacher(classId, currentUser.getId());
+        if (!isAdminUser && !isTeacherUser) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以重置邀请码", null);
+        }
+
+        // 生成新码覆盖旧码，旧码立即失效
+        String newCode = generateRandomCode(25);
+        classInfo.setInviteCode(newCode);
+        classInfoMapper.updateById(classInfo);
+
+        log.info("User {} reset invite code for class {} (old code invalidated)", currentUser.getId(), classId);
+        return newCode;
     }
 
     @Override
