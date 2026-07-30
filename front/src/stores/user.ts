@@ -30,8 +30,8 @@ export const useUserStore = defineStore('user', () => {
     return { code: result.code, message: result.message }
   }
 
-  const getUserInfo = async (): Promise<void> => {
-    if (userInfo.value) {
+  const getUserInfo = async (forceRefresh = false): Promise<void> => {
+    if (!forceRefresh && userInfo.value) {
       return
     }
     try {
@@ -44,6 +44,23 @@ export const useUserStore = defineStore('user', () => {
     } catch {
       userInfo.value = null
     }
+  }
+
+  const setUserInfo = (u: UserInfo) => {
+    userInfo.value = u
+  }
+
+  const refreshUserInfo = async (): Promise<boolean> => {
+    try {
+      const result = await get<UserInfo>('/users/info')
+      if (result.code === 200 && result.data) {
+        userInfo.value = result.data
+        return true
+      }
+    } catch {
+      /* ignore */
+    }
+    return false
   }
 
   const sendCode = async (email: string, userNo: string, username: string): Promise<{ code: number; message: string }> => {
@@ -64,6 +81,8 @@ export const useUserStore = defineStore('user', () => {
     logout,
     register,
     getUserInfo,
+    setUserInfo,
+    refreshUserInfo,
     sendCode
   }
 })

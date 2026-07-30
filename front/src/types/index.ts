@@ -10,8 +10,13 @@ export interface UserInfo {
   username: string
   userNo: string
   email: string
+  idName?: string
+  phone?: string
   permission: number
   role: 'teacher' | 'student'
+  registerTime?: string
+  lastLoginTime?: string
+  isBanned?: boolean
 }
 
 export interface LoginRequest {
