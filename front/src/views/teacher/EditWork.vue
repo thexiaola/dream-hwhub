@@ -2,11 +2,16 @@
   <div class="create-work-page">
     <div class="page-header">
       <div class="header-left">
-        <h2>编辑作业</h2>
-        <p class="subtitle">修改作业信息</p>
+        <el-button @click="goBack" class="page-back-btn" text>
+          <ArrowLeft :size="18" />
+        </el-button>
+        <div>
+          <h2>编辑作业</h2>
+          <p class="subtitle">修改作业信息</p>
+        </div>
       </div>
       <div class="header-right">
-        <el-button @click="goBack">取消</el-button>
+        <el-button @click="goBack" class="page-cancel-btn">取消</el-button>
         <el-button type="primary" @click="submitForm" :loading="loading">保存</el-button>
       </div>
     </div>
@@ -20,10 +25,12 @@
           />
         </el-form-item>
         <el-form-item label="作业描述" prop="description">
-          <el-textarea
+          <el-input
             v-model="form.description"
+            type="textarea"
             placeholder="请输入作业描述"
-            :rows="4"
+            :autosize="{ minRows: 10, maxRows: 24 }"
+            resize="vertical"
             class="form-input"
           />
         </el-form-item>
@@ -92,7 +99,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { UploadUserFile } from 'element-plus'
-import { Paperclip, Upload } from '@lucide/vue'
+import { Paperclip, Upload, ArrowLeft } from '@lucide/vue'
 import { get, putForm } from '@/utils/http'
 
 const router = useRouter()
@@ -258,6 +265,9 @@ onMounted(() => {
 <style scoped>
 .create-work-page {
   padding-bottom: 24px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -265,6 +275,12 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .header-left h2 {
@@ -285,11 +301,15 @@ onMounted(() => {
 }
 
 .content-card {
-  max-width: 600px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .create-form {
-  padding: 20px 0;
+  padding: 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .form-input {
@@ -326,6 +346,8 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
   color: rgba(255, 255, 255, 0.95) !important;
+  min-height: 280px !important;
+  line-height: 1.7;
 }
 
 .create-form :deep(.el-textarea__inner::placeholder) {

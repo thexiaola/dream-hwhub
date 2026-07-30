@@ -472,57 +472,102 @@ public class WorkServiceImpl implements WorkService {
         if (CollUtil.isEmpty(files)) {
             return;
         }
-        
+
+        // 预检查：收集文件的扩展名和大小，在落盘前先校验扩展名和大小
+        List<MultipartFile> validFiles = new ArrayList<>();
         for (MultipartFile file : files) {
             if (file == null || file.isEmpty()) {
                 continue;
             }
-            
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.contains("..")) {
+                throw new BusinessException(BusinessErrorCode.INVALID_FILE_PATH, "非法的文件名", null);
+            }
+            // 1. 落盘前先校验扩展名白名单（最常见的非法类型）
+            FileUploadValidator.validateFileExtension(originalFilename);
+            // 2. 落盘前先校验文件大小
+            FileUploadValidator.validateFileSize(file.getSize());
+            validFiles.add(file);
+        }
+
+        if (validFiles.isEmpty()) {
+            return;
+        }
+
+        // 确保上传目录存在
+        Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+        try {
+            Files.createDirectories(uploadPath);
+        } catch (Exception e) {
+            log.error("Failed to create upload directory: {}", uploadPath, e);
+            throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, "无法创建上传目录", null);
+        }
+
+        for (MultipartFile file : validFiles) {
+            Path savedFilePath = null;
             try {
-                // 1. 获取原始文件名
                 String originalFilename = file.getOriginalFilename();
-                if (originalFilename == null || originalFilename.contains("..")) {
-                    throw new BusinessException(BusinessErrorCode.INVALID_FILE_PATH, "非法的文件名", null);
+                if (originalFilename == null) {
+                    continue;
                 }
-                
-                // 2. 生成安全的文件名（业务ID-用户ID-时间戳）
+
+                // 生成安全的文件名（业务ID-用户ID-时间戳）
                 String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
                 String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
                 String safeFileName = workId + "_" + userId + "_" + timestamp + extension;
-                
-                // 3. 确保上传目录存在
-                Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-                Files.createDirectories(uploadPath);
-                
-                // 4. 保存文件
-                Path filePath = uploadPath.resolve(safeFileName);
-                Files.copy(file.getInputStream(), filePath);
-                
-                // 5. 获取文件信息
-                long fileSize = Files.size(filePath);
-                String fileType = FileUploadValidator.detectFileType(filePath.toString());
-                
-                // 6. 执行完整的安全检查
-                FileUploadValidator.performFullSecurityCheck(filePath.toString(), fileSize);
-                
-                // 7. 保存到数据库
+
+                savedFilePath = uploadPath.resolve(safeFileName);
+
+                // 3. 保存文件
+                Files.copy(file.getInputStream(), savedFilePath);
+
+                // 4. 获取落盘后的实际文件信息
+                long fileSize = Files.size(savedFilePath);
+                String fileType = FileUploadValidator.detectFileType(savedFilePath.toString());
+
+                // 5. 执行完整的安全检查（含魔数、路径、存在性、MIME 等）
+                // 注：落盘前的大小/扩展名已在前面检查过，这里是深度校验
+                FileUploadValidator.performFullSecurityCheck(savedFilePath.toString(), fileSize);
+
+                // 6. 全部校验通过后，才持久化到数据库
                 WorkAttachment attachment = new WorkAttachment();
                 attachment.setWorkId(workId);
                 attachment.setFileName(originalFilename);
-                attachment.setFilePath(filePath.toString());
+                attachment.setFilePath(savedFilePath.toString());
                 attachment.setFileSize(fileSize);
                 attachment.setFileType(fileType);
                 attachment.setUploadTime(LocalDateTime.now());
                 workAttachmentMapper.insert(attachment);
-                
-                log.info("Saved work attachment directly: {}, size: {}, type: {}", 
+
+                log.info("Saved work attachment directly: {}, size: {}, type: {}",
                         originalFilename, fileSize, fileType);
-                        
+
             } catch (BusinessException e) {
+                // 任意校验失败：如果文件已经落盘，立刻物理删除后再抛异常
+                if (savedFilePath != null) {
+                    try {
+                        if (Files.exists(savedFilePath)) {
+                            Files.delete(savedFilePath);
+                            log.info("Rollback: deleted invalid attachment file: {}", savedFilePath);
+                        }
+                    } catch (Exception delEx) {
+                        log.warn("Failed to rollback invalid attachment file: {}", savedFilePath, delEx);
+                    }
+                }
                 throw e;
             } catch (Exception e) {
+                // IO 或其他异常：同样清理已落盘的文件
+                if (savedFilePath != null) {
+                    try {
+                        if (Files.exists(savedFilePath)) {
+                            Files.delete(savedFilePath);
+                        }
+                    } catch (Exception delEx) {
+                        log.warn("Failed to rollback attachment file on error: {}", savedFilePath, delEx);
+                    }
+                }
                 log.error("Failed to save work attachment", e);
-                throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, 
+                throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED,
                         "文件上传失败：" + e.getMessage(), null);
             }
         }

@@ -520,6 +520,52 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   margin-top: 6px;
 }
 
+/* ====== 通用返回/取消按钮（深色主题适配） ====== */
+
+.page-back-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 2px solid rgba(255, 255, 255, 0.28) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  transition: all 0.2s ease;
+  box-sizing: border-box !important;
+}
+
+.page-back-btn:hover {
+  background: rgba(102, 126, 234, 0.2) !important;
+  border-color: rgba(102, 126, 234, 0.65) !important;
+  color: #a9b7f5 !important;
+}
+
+.page-back-btn:active {
+  background: rgba(102, 126, 234, 0.32) !important;
+}
+
+.page-cancel-btn {
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 2px solid rgba(255, 255, 255, 0.28) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  transition: all 0.2s ease;
+  box-sizing: border-box !important;
+}
+
+.page-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.page-cancel-btn:active {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
 /* ====== 深色主题 el-date-picker 弹层面板 ====== */
 /* 使用：给 el-date-picker 加 popper-class="dark-picker" */
 

@@ -2,7 +2,7 @@
   <div class="teacher-course-detail">
     <div class="page-header">
       <div class="header-left">
-        <el-button @click="goBack" class="back-btn">
+        <el-button @click="goBack" class="page-back-btn" text>
           <ArrowLeft :size="18" />
         </el-button>
         <h2>{{ course?.className }}</h2>
@@ -782,8 +782,10 @@ onMounted(async () => {
   gap: 12px;
 }
 
-.back-btn {
-  padding: 8px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .header-left h2 {
