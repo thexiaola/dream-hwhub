@@ -43,6 +43,7 @@ public class ClassServiceImpl implements ClassService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
+    private final top.thexiaola.dreamhwhub.support.password.PasswordUtil passwordUtil;
 
     /**
      * 获取当前登录用户，如果未登录则抛出异常
@@ -559,7 +560,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void dissolveClass(Integer classId) {
+    public void dissolveClass(Integer classId, String account, String password, String confirmText) {
         User currentUser = getCurrentUserOrThrow();
 
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -572,6 +573,27 @@ public class ClassServiceImpl implements ClassService {
         boolean isOwner = classInfo.getOwnerId().equals(currentUser.getId());
         if (!isAdmin && !isOwner) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者或管理员可以解散班级", null);
+        }
+
+        // 账号密码二次校验
+        if (StrUtil.isBlank(account) || StrUtil.isBlank(password)) {
+            throw new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS, "账号和密码不能为空", null);
+        }
+        QueryWrapper<User> accQuery = new QueryWrapper<>();
+        accQuery.and(q -> q.eq("user_no", account).or().eq("email", account).or().eq("username", account));
+        User checkUser = userMapper.selectOne(accQuery);
+        if (checkUser == null || !checkUser.getId().equals(currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS, "账号不属于当前登录用户", null);
+        }
+        if (!passwordUtil.matches(password, checkUser.getPassword())) {
+            throw new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS, "密码错误", null);
+        }
+
+        // 确认文案校验：我已确认要删除{className}课堂
+        String className = classInfo.getClassName();
+        String expected = "我已确认要删除" + (className == null ? "" : className) + "课堂";
+        if (StrUtil.isBlank(confirmText) || !confirmText.equals(expected)) {
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "确认文案不匹配，请完整输入：" + expected, null);
         }
 
         // 1. 硬删除该班级下的所有作业提交记录和附件

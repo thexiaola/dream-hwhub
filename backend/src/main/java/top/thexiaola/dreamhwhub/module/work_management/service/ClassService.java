@@ -68,9 +68,9 @@ public interface ClassService {
     String leaveClass(Integer classId);
 
     /**
-     * 解散班级（仅创建者）
+     * 解散班级（仅创建者或管理员，需账号密码二次校验+确认文案）
      */
-    void dissolveClass(Integer classId);
+    void dissolveClass(Integer classId, String account, String password, String confirmText);
 
     /**
      * 查询用户所在的班级列表

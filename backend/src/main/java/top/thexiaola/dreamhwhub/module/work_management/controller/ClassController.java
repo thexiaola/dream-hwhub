@@ -89,16 +89,20 @@ public class ClassController {
         }
 
         /**
-         * 解散班级（创建者或管理员）
+         * 解散班级（创建者或管理员，需二次校验：账号密码+确认文案）
          */
         @DeleteMapping("/{classId}")
         public ApiResponse<Void> dissolveClass(
-                        @PathVariable(value = "classId") Integer classId) {
+                        @PathVariable(value = "classId") Integer classId,
+                        @RequestParam(value = "password") String password,
+                        @RequestParam(value = "confirmText") String confirmText) {
                 String ip = LogUtil.getCurrentClientIp();
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfoString(ip, currentUser);
                 log.info("User ({}) requesting to dissolve class, ID: {}", userInfo, classId);
-                classService.dissolveClass(classId);
+                // 账号直接取当前用户，用 userNo / username / email 任一唯一标识回填
+                String account = (currentUser != null) ? (currentUser.getUserNo() != null ? currentUser.getUserNo() : currentUser.getUsername()) : null;
+                classService.dissolveClass(classId, account, password, confirmText);
                 log.info("User ({}) dissolved class successfully, class ID: {}", userInfo, classId);
                 return ApiResponse.success(null);
         }

@@ -1665,3 +1665,144 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-time-panel__content::-webkit-scrollbar-track {
   background: transparent !important;
 }
+
+/* =========================================================
+   Element Plus ElMessageBox / el-overlay-message-box 深色适配
+   ========================================================= */
+
+.el-overlay {
+  background-color: rgba(20, 20, 40, 0.55) !important;
+}
+
+.el-overlay-message-box,
+.el-message-box {
+  background: rgba(26, 26, 60, 0.98) !important;
+  border: 1px solid rgba(102, 126, 234, 0.35) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(102, 126, 234, 0.15) inset !important;
+}
+
+.el-message-box__header {
+  background: transparent !important;
+  padding: 20px 20px 14px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.el-message-box__title {
+  color: #ffffff !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+}
+
+.el-message-box__headerbtn {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.el-message-box__headerbtn:hover {
+  color: #667eea !important;
+}
+
+.el-message-box__close {
+  color: currentColor !important;
+  font-size: 16px !important;
+}
+
+.el-message-box__content {
+  color: rgba(255, 255, 255, 0.9) !important;
+  padding: 20px !important;
+  background: transparent !important;
+}
+
+.el-message-box__status.el-message-box-icon--error {
+  color: #f87171 !important;
+}
+
+.el-message-box__status.el-message-box-icon--warning {
+  color: #fbbf24 !important;
+}
+
+.el-message-box__status.el-message-box-icon--success {
+  color: #34d399 !important;
+}
+
+.el-message-box__status.el-message-box-icon--info {
+  color: #667eea !important;
+}
+
+.el-message-box__message p {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+}
+
+.el-message-box__input .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset !important;
+  border-radius: 8px !important;
+}
+
+.el-message-box__input .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28) inset !important;
+}
+
+.el-message-box__input .el-input__wrapper.is-focus {
+  box-shadow:
+    0 0 0 1px var(--primary-color) inset,
+    0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+}
+
+.el-message-box__input .el-input__inner {
+  color: #ffffff !important;
+}
+
+.el-message-box__input .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.el-message-box__errormsg {
+  color: #fca5a5 !important;
+  font-size: 12px !important;
+}
+
+.el-message-box__btns {
+  padding: 0 20px 20px 20px !important;
+  background: transparent !important;
+  gap: 10px !important;
+  justify-content: flex-end !important;
+}
+
+.el-message-box__btns .el-button {
+  border-radius: 8px !important;
+  padding: 9px 18px !important;
+  font-weight: 500 !important;
+}
+
+.el-message-box__btns .el-button:not(.el-button--primary):not(.el-button--danger) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.el-message-box__btns .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: rgba(102, 126, 234, 0.16) !important;
+  border-color: rgba(102, 126, 234, 0.5) !important;
+  color: #667eea !important;
+}
+
+.el-message-box__btns .el-button--primary {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.el-message-box__btns .el-button--primary:hover {
+  filter: brightness(1.08) !important;
+}
+
+.el-message-box__btns .el-button--danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border: none !important;
+  color: #ffffff !important;
+}

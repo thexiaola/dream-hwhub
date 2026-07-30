@@ -110,11 +110,11 @@
 
       <el-tab-pane label="学生管理" name="students">
         <div class="student-header">
-          <el-button @click="showInviteDialog = true">
+          <el-button @click="showInviteDialog = true" class="toolbar-btn">
             <UserPlus :size="18" />
             邀请学生
           </el-button>
-          <el-button @click="generateInviteCode">
+          <el-button @click="generateInviteCode" class="toolbar-btn">
             <Key :size="18" />
             查看邀请码
           </el-button>
@@ -122,12 +122,14 @@
             v-if="selectedStudentIds.length > 0"
             type="danger"
             @click="batchKickStudentsAction"
+            class="toolbar-btn"
           >
             批量踢出 ({{ selectedStudentIds.length }})
           </el-button>
           <el-button
             v-if="selectedStudentIds.length > 0"
             @click="clearSelection"
+            class="toolbar-btn"
           >
             取消选择
           </el-button>
@@ -308,27 +310,29 @@
     <el-dialog
       v-model="showInviteCodeDialog"
       title="班级邀请码"
-      width="420px"
-      class="dark-dialog"
+      width="520px"
+      class="dark-dialog invite-code-dialog"
     >
       <div class="invite-code-content">
-        <p class="invite-code-label">当前邀请码：</p>
         <div class="invite-code-box">
+          <Copy :size="16" class="copy-icon-decor" />
           <span class="invite-code">{{ inviteCode }}</span>
-          <el-button size="small" @click="copyInviteCode">复制</el-button>
         </div>
-        <p class="invite-tip">学生可使用此邀请码直接加入课程</p>
-        <div class="invite-code-actions">
+        <div class="invite-code-toolbar">
+          <el-button type="primary" @click="copyInviteCode" class="copy-btn">
+            <Copy :size="14" /> 复制邀请码
+          </el-button>
           <el-button
-            type="warning"
+            type="danger"
             plain
-            size="small"
             @click="resetInviteCode"
             :loading="resettingCode"
+            class="reset-btn"
           >
-            重置邀请码
+            <RefreshCw :size="14" /> 重置邀请码
           </el-button>
         </div>
+        <p class="invite-tip">学生可使用此邀请码直接加入课程</p>
         <p class="invite-warning">重置后旧邀请码立即失效，需重新分享新码</p>
       </div>
     </el-dialog>
@@ -360,6 +364,8 @@ import {
   Paperclip,
   Upload,
   X,
+  Copy,
+  RefreshCw,
 } from "@lucide/vue";
 
 interface CourseInfo {
@@ -1087,46 +1093,169 @@ onMounted(async () => {
   text-align: center;
 }
 
-.invite-code-label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 4px;
+.invite-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 20px 24px;
+  margin: 12px 0 8px;
+  background: rgba(102, 126, 234, 0.08);
+  border: 1.5px solid rgba(102, 126, 234, 0.28);
+  border-radius: 14px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.invite-code-box {
+.invite-code-box .copy-icon-decor {
+  flex-shrink: 0;
+  color: rgba(102, 126, 234, 0.6);
+}
+
+.invite-code {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(90deg, #667eea, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1.5px;
+  word-break: break-all;
+  text-align: left;
+  padding: 0 4px;
+  user-select: all;
+}
+
+.invite-code-toolbar {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  margin: 16px 0;
+  margin: 12px 0 16px;
+  flex-wrap: wrap;
 }
 
-.invite-code {
-  font-size: 18px;
-  font-weight: 600;
-  color: #667eea;
-  padding: 8px 16px;
-  background: rgba(102, 126, 234, 0.1);
-  border-radius: 8px;
-  letter-spacing: 1px;
-  word-break: break-all;
+/* 复制邀请码按钮：白底紫字，高对比度 */
+.copy-btn {
+  padding: 10px 22px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35) !important;
+  transition: all 0.2s ease !important;
+}
+
+.copy-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5) !important;
+  filter: brightness(1.08) !important;
+}
+
+.copy-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* 重置邀请码按钮：淡红色底色，红边红字 */
+.reset-btn {
+  padding: 10px 22px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.35) !important;
+  transition: all 0.2s ease !important;
+}
+
+.reset-btn:hover {
+  color: #ffffff !important;
+  background: rgba(239, 68, 68, 0.28) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
 }
 
 .invite-tip {
-  font-size: 12px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
-}
-
-.invite-code-actions {
-  margin-top: 16px;
-  display: flex;
-  justify-content: center;
+  margin-bottom: 4px;
 }
 
 .invite-warning {
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 12px;
   color: rgba(239, 68, 68, 0.7);
+}
+
+/* ========== 学生管理工具栏按钮深色适配 ========== */
+.toolbar-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 10px 16px !important;
+  height: auto !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  border-radius: 10px !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  transition: all 0.2s ease !important;
+}
+
+.toolbar-btn:hover {
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.55) !important;
+  background: rgba(102, 126, 234, 0.12) !important;
+}
+
+/* danger 类型按钮走红色路线，覆盖上面紫色 */
+.toolbar-btn.el-button--danger {
+  color: #fecaca !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+.toolbar-btn.el-button--danger:hover {
+  color: #ffffff !important;
+  background: rgba(239, 68, 68, 0.28) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+}
+
+/* 手机端适配 */
+@media (max-width: 560px) {
+  .invite-code-dialog :deep(.el-dialog) {
+    width: 92vw !important;
+    min-width: 0 !important;
+    margin: 5vh auto !important;
+  }
+
+  .invite-code-box {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .invite-code-box > .copy-icon-decor {
+    display: none;
+  }
+
+  .invite-code {
+    font-size: 16px;
+    letter-spacing: 1px;
+    padding: 0;
+    text-align: center;
+    width: 100%;
+  }
+
+  .copy-btn {
+    width: 100% !important;
+  }
 }
 
 .course-tabs :deep(.el-checkbox__label) {
