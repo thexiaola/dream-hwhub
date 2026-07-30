@@ -967,8 +967,8 @@ const dissolveClassAction = async () => {
       {
         confirmButtonText: "确认解散",
         cancelButtonText: "取消",
-        type: "error",
-        customClass: "danger-message-box",
+        type: "warning",
+        customClass: "danger-warning-message-box",
       },
     );
     // 进入Step2

@@ -164,9 +164,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog {
-  --el-dialog-bg-color: rgba(30, 30, 65, 0.95);
-  --el-dialog-header-bg-color: rgba(30, 30, 65, 0.95);
-  --el-dialog-footer-bg-color: rgba(30, 30, 65, 0.95);
+  --el-dialog-bg-color: rgba(30, 30, 65, 0.72);
+  --el-dialog-header-bg-color: transparent;
+  --el-dialog-footer-bg-color: transparent;
   --el-dialog-border-color: rgba(102, 126, 234, 0.4);
   --el-dialog-title-color: var(--text-primary);
   --el-form-item-label-color: var(--text-secondary);
@@ -190,25 +190,57 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   --el-input-focus-border-color: var(--primary-color);
 }
 
-.dark-dialog .el-dialog {
-  background: var(--el-dialog-bg-color);
-  border: 1px solid var(--el-dialog-border-color);
+.dark-dialog.el-dialog {
+  background: rgba(30, 30, 65, 1) !important;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(102, 126, 234, 0.45) !important;
+  border-radius: 14px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(102, 126, 234, 0.15);
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(102, 126, 234, 0.12) inset !important;
+}
+
+.el-dialog.dark-dialog {
+  background: rgba(30, 30, 65, 1) !important;
+  border: 1px solid rgba(102, 126, 234, 0.45) !important;
+  border-radius: 14px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.dark-dialog.el-dialog .el-dialog__header,
+.el-dialog.dark-dialog .el-dialog__header {
+  padding: 20px 24px 16px 24px !important;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+}
+
+.dark-dialog.el-dialog .el-dialog__body,
+.el-dialog.dark-dialog .el-dialog__body {
+  padding: 16px 24px !important;
+}
+
+.dark-dialog.el-dialog .el-dialog__footer,
+.el-dialog.dark-dialog .el-dialog__footer {
+  padding: 14px 24px 20px 24px !important;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
 }
 
 .dark-dialog .el-dialog__header {
-  background: var(--el-dialog-header-bg-color);
+  background: rgba(30, 30, 65, 1) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dark-dialog .el-dialog__body {
-  background: var(--el-dialog-bg-color);
+  background: rgba(30, 30, 65, 1) !important;
 }
 
 .dark-dialog .el-dialog__footer {
-  background: var(--el-dialog-bg-color);
+  background: rgba(30, 30, 65, 1) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1695,34 +1727,76 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   backdrop-filter: blur(2px);
 }
 
-.el-overlay-message-box,
-.el-message-box {
-  background: rgba(26, 26, 60, 0.98) !important;
+/* ========== 解散课堂弹窗所在的遮罩：浅红色透明 ========== */
+.el-overlay.is-message-box:has(.el-message-box.danger-message-box),
+.el-overlay.is-message-box:has(.el-message-box.danger-warning-message-box),
+.el-overlay.el-modal-dialog:has(.el-overlay-dialog > .danger-dialog),
+.el-overlay:has(.danger-dialog) {
+  background-color: rgba(127, 29, 29, 0.4) !important;
+}
+
+/* ========== MessageBox 外层容器：完全透明，交由内层自定义主题定色 ========== */
+.el-overlay-message-box {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ========== MessageBox 通用内层样式（无 customClass 时的默认深色主题） ========== */
+.el-message-box:not(.danger-message-box):not(.danger-warning-message-box) {
+  background: rgba(30, 30, 65, 1) !important;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
   border: 1px solid rgba(102, 126, 234, 0.35) !important;
   border-radius: 14px !important;
   box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(102, 126, 234, 0.15) inset !important;
+    0 10px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(102, 126, 234, 0.12) inset !important;
 }
 
-/* ========== 危险操作 ElMessageBox 红色主题 ========== */
-.el-overlay-message-box.danger-message-box,
+/* ========== MessageBox 默认深色：内部区块不透明 ========== */
+.el-message-box:not(.danger-message-box):not(.danger-warning-message-box)
+  .el-message-box__header {
+  background: rgba(30, 30, 65, 1) !important;
+}
+.el-message-box:not(.danger-message-box):not(.danger-warning-message-box)
+  .el-message-box__content {
+  background: rgba(30, 30, 65, 1) !important;
+}
+.el-message-box:not(.danger-message-box):not(.danger-warning-message-box)
+  .el-message-box__btns {
+  background: rgba(30, 30, 65, 1) !important;
+}
+
 .el-message-box.danger-message-box {
-  background: rgba(48, 20, 26, 0.98) !important;
-  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+  background: rgba(64, 18, 24, 1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.5) !important;
   box-shadow:
-    0 16px 48px rgba(127, 29, 29, 0.35),
-    0 0 0 1px rgba(239, 68, 68, 0.2) inset !important;
+    0 20px 56px rgba(127, 29, 29, 0.55),
+    0 0 0 1px rgba(239, 68, 68, 0.25) inset !important;
 }
 
 .el-message-box.danger-message-box .el-message-box__header,
 .el-overlay-message-box.danger-message-box .el-message-box__header {
   border-bottom: 1px solid rgba(239, 68, 68, 0.18) !important;
+  background: rgba(64, 18, 24, 1) !important;
 }
 
 .el-message-box.danger-message-box .el-message-box__title,
 .el-overlay-message-box.danger-message-box .el-message-box__title {
   color: #fecaca !important;
+}
+
+.el-message-box.danger-message-box .el-message-box__content,
+.el-overlay-message-box.danger-message-box .el-message-box__content {
+  background: rgba(64, 18, 24, 1) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.el-message-box.danger-message-box .el-message-box__btns,
+.el-overlay-message-box.danger-message-box .el-message-box__btns {
+  background: rgba(64, 18, 24, 1) !important;
 }
 
 .el-message-box.danger-message-box .el-message-box__btns .el-button--primary,
@@ -1763,6 +1837,117 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: rgba(239, 68, 68, 0.14) !important;
   border-color: rgba(239, 68, 68, 0.45) !important;
   color: #fecaca !important;
+}
+
+/* ========== 警告提示框（解散课堂 Step1：不透明深红） ========== */
+.el-overlay-message-box.danger-warning-message-box,
+.el-message-box.danger-warning-message-box {
+  background: rgba(74, 22, 28, 1) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(252, 165, 165, 0.52) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 24px 60px rgba(127, 29, 29, 0.55),
+    0 0 0 1px rgba(254, 202, 202, 0.16) inset !important;
+}
+
+.el-message-box.danger-warning-message-box .el-message-box__header,
+.el-overlay-message-box.danger-warning-message-box .el-message-box__header {
+  border-bottom: 1px solid rgba(252, 165, 165, 0.18) !important;
+  background: rgba(74, 22, 28, 1) !important;
+}
+
+.el-message-box.danger-warning-message-box .el-message-box__title,
+.el-overlay-message-box.danger-warning-message-box .el-message-box__title {
+  color: #fecaca !important;
+}
+
+.el-message-box.danger-warning-message-box .el-message-box__headerbtn,
+.el-overlay-message-box.danger-warning-message-box .el-message-box__headerbtn {
+  color: rgba(254, 202, 202, 0.6) !important;
+}
+
+.el-message-box.danger-warning-message-box .el-message-box__headerbtn:hover,
+.el-overlay-message-box.danger-warning-message-box
+  .el-message-box__headerbtn:hover {
+  color: #ffffff !important;
+}
+
+.el-message-box.danger-warning-message-box .el-message-box__content,
+.el-overlay-message-box.danger-warning-message-box .el-message-box__content {
+  background: rgba(74, 22, 28, 1) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.el-message-box.danger-warning-message-box
+  .el-message-box__status.el-message-box-icon--warning,
+.el-overlay-message-box.danger-warning-message-box
+  .el-message-box__status.el-message-box-icon--warning {
+  color: #fca5a5 !important;
+}
+
+.el-message-box.danger-warning-message-box
+  .el-message-box__status.el-message-box-icon--error,
+.el-overlay-message-box.danger-warning-message-box
+  .el-message-box__status.el-message-box-icon--error {
+  color: #fca5a5 !important;
+}
+
+.el-message-box.danger-warning-message-box .el-message-box__message p,
+.el-overlay-message-box.danger-warning-message-box .el-message-box__message p {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.el-message-box.danger-warning-message-box .el-message-box__btns,
+.el-overlay-message-box.danger-warning-message-box .el-message-box__btns {
+  background: rgba(74, 22, 28, 1) !important;
+}
+
+.el-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button--primary,
+.el-overlay-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button--primary {
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.95),
+    rgba(185, 28, 28, 0.95)
+  ) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.el-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button--primary:hover,
+.el-overlay-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button--primary:hover {
+  filter: brightness(1.08) !important;
+}
+
+.el-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger),
+.el-overlay-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(254, 202, 202, 0.28) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.el-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger):hover,
+.el-overlay-message-box.danger-warning-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: rgba(252, 165, 165, 0.22) !important;
+  border-color: rgba(252, 165, 165, 0.55) !important;
+  color: #ffffff !important;
 }
 
 .el-message-box__header {
@@ -1894,38 +2079,43 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
    danger-dialog 危险操作对话框（二次确认 / 密码校验） 红色主题
    ========================================================= */
 .danger-dialog {
-  --el-dialog-bg-color: rgba(48, 20, 26, 0.97);
-  --el-dialog-header-bg-color: rgba(48, 20, 26, 0.97);
-  --el-dialog-footer-bg-color: rgba(48, 20, 26, 0.97);
-  --el-dialog-border-color: rgba(239, 68, 68, 0.4);
+  --el-dialog-bg-color: rgba(64, 18, 24, 1);
+  --el-dialog-header-bg-color: rgba(64, 18, 24, 1);
+  --el-dialog-footer-bg-color: rgba(64, 18, 24, 1);
+  --el-dialog-border-color: rgba(239, 68, 68, 0.48);
   --el-dialog-title-color: #fecaca;
   --el-text-color-regular: rgba(255, 255, 255, 0.9);
   --el-text-color-primary: #ffffff;
 }
 
-.danger-dialog .el-dialog {
-  background: var(--el-dialog-bg-color);
-  border: 1px solid rgba(239, 68, 68, 0.45);
-  border-radius: 16px;
+.danger-dialog.dark-dialog.el-dialog,
+.danger-dialog.el-dialog {
+  background: rgba(64, 18, 24, 1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.52) !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
   box-shadow:
-    0 24px 60px rgba(127, 29, 29, 0.45),
-    0 0 0 1px rgba(239, 68, 68, 0.18) inset;
+    0 28px 64px rgba(127, 29, 29, 0.55),
+    0 0 0 1px rgba(239, 68, 68, 0.22) inset !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .danger-dialog .el-dialog__header {
-  background: var(--el-dialog-header-bg-color);
+  background: rgba(64, 18, 24, 1) !important;
   border-bottom: 1px solid rgba(239, 68, 68, 0.18);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
 }
 
 .danger-dialog .el-dialog__body {
-  background: var(--el-dialog-bg-color);
+  background: rgba(64, 18, 24, 1) !important;
   color: rgba(255, 255, 255, 0.88);
 }
 
 .danger-dialog .el-dialog__footer {
-  background: var(--el-dialog-footer-bg-color);
+  background: rgba(64, 18, 24, 1) !important;
   border-top: 1px solid rgba(239, 68, 68, 0.18);
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
