@@ -97,10 +97,9 @@ public class FileUploadValidator {
     }
     
     /**
-     * 安全的上传目录（非 Web 目录）
+     * 安全的上传目录（运行目录下的 upload 目录）
      */
-    private static final String UPLOAD_BASE_DIR = System.getProperty("user.home") + 
-            "/dream-hwhub/uploads/";
+    private static final String UPLOAD_BASE_DIR = "upload/";
     
     /**
      * 验证文件路径安全性

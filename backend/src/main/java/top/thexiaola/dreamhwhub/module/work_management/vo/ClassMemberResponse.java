@@ -41,4 +41,9 @@ public class ClassMemberResponse {
      * 加入时间
      */
     private java.time.LocalDateTime joinTime;
+
+    /**
+     * 班级教师总数
+     */
+    private Long teacherCount;
 }

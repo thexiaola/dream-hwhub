@@ -35,12 +35,15 @@
           <span class="label">学生人数：</span>
           <span class="value">{{ course?.studentCount }} 人</span>
         </div>
+        <div class="info-item" v-if="memberTeacherCount !== null">
+          <UserCheck :size="16" />
+          <span class="label">教师人数：</span>
+          <span class="value">{{ memberTeacherCount }} 人</span>
+        </div>
         <div class="info-item">
           <Calendar :size="16" />
           <span class="label">我的角色：</span>
-          <span :class="['value', 'role-badge', course?.userRole === '创建者' ? 'owner' : 'teacher']">
-            {{ course?.userRole }}
-          </span>
+          <span class="value">{{ course?.userRole }}</span>
         </div>
       </div>
       <div v-if="course?.description" class="description-section">
@@ -52,11 +55,7 @@
     <el-tabs v-model="activeTab" class="course-tabs">
       <el-tab-pane label="作业管理" name="works">
         <div class="work-list">
-          <div 
-            v-for="work in works" 
-            :key="work.id" 
-            class="work-item"
-          >
+          <div v-for="work in works" :key="work.id" class="work-item">
             <div class="work-header">
               <div class="title-row">
                 <h4>{{ work.title }}</h4>
@@ -93,7 +92,7 @@
               </button>
               <button class="action-btn" @click="togglePin(work)">
                 <Star :size="14" />
-                {{ work.isPinned ? '取消置顶' : '置顶' }}
+                {{ work.isPinned ? "取消置顶" : "置顶" }}
               </button>
               <button class="action-btn danger" @click="deleteWork(work.id)">
                 <Trash2 :size="14" />
@@ -134,11 +133,7 @@
           </el-button>
         </div>
         <div class="student-list">
-          <div 
-            v-for="member in members" 
-            :key="member.id" 
-            class="student-item"
-          >
+          <div v-for="member in members" :key="member.id" class="student-item">
             <div class="student-info">
               <el-checkbox
                 v-if="member.role === '学生'"
@@ -155,28 +150,38 @@
               </div>
             </div>
             <div class="student-role">
-              <span :class="['role-badge', member.role === '创建者' || member.role === '老师' ? 'teacher' : 'student']">
+              <span
+                :class="[
+                  'role-badge',
+                  member.role === '创建者' || member.role === '老师'
+                    ? 'teacher'
+                    : 'student',
+                ]"
+              >
                 {{ member.role }}
               </span>
             </div>
             <div class="student-actions">
-              <button 
-                v-if="member.role === '学生' && (course?.userRole === '创建者' || course?.userRole === '老师')" 
-                class="action-btn" 
+              <button
+                v-if="
+                  member.role === '学生' &&
+                  (course?.userRole === '创建者' || course?.userRole === '老师')
+                "
+                class="action-btn"
                 @click="setAssistant(member.userId)"
               >
                 设为老师
               </button>
-              <button 
-                v-if="member.role === '老师' && course?.userRole === '创建者'" 
-                class="action-btn" 
+              <button
+                v-if="member.role === '老师' && course?.userRole === '创建者'"
+                class="action-btn"
                 @click="removeAssistant(member.userId)"
               >
                 取消老师
               </button>
-              <button 
-                v-if="member.role === '学生'" 
-                class="action-btn danger" 
+              <button
+                v-if="member.role === '学生'"
+                class="action-btn danger"
                 @click="kickStudent(member.userId)"
               >
                 踢出
@@ -191,15 +196,25 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog v-model="showCreateWorkDialog" title="发布作业" width="600px" class="dark-dialog" @close="resetCreateWorkForm">
+    <el-dialog
+      v-model="showCreateWorkDialog"
+      title="发布作业"
+      width="600px"
+      class="dark-dialog"
+      @close="resetCreateWorkForm"
+    >
       <el-form :model="workForm" label-width="80px">
         <el-form-item label="作业标题">
-          <el-input v-model="workForm.title" placeholder="请输入作业标题" maxlength="128" />
+          <el-input
+            v-model="workForm.title"
+            placeholder="请输入作业标题"
+            maxlength="128"
+          />
         </el-form-item>
         <el-form-item label="作业描述">
-          <el-input 
-            v-model="workForm.description" 
-            type="textarea" 
+          <el-input
+            v-model="workForm.description"
+            type="textarea"
             placeholder="请输入作业描述"
             :rows="4"
           />
@@ -241,7 +256,12 @@
             :on-remove="handleAttachmentRemove"
             :on-change="handleAttachmentChange"
           >
-            <el-button type="primary" plain size="default" class="upload-trigger-btn">
+            <el-button
+              type="primary"
+              plain
+              size="default"
+              class="upload-trigger-btn"
+            >
               <Upload :size="16" />
               <span>选择文件</span>
             </el-button>
@@ -259,14 +279,24 @@
       </el-form>
       <template #footer>
         <el-button @click="showCreateWorkDialog = false">取消</el-button>
-        <el-button type="primary" @click="createWork">发布</el-button>
+        <el-button type="primary" @click="createWork" :loading="workSubmitting"
+          >发布</el-button
+        >
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showInviteDialog" title="邀请学生" width="400px" class="dark-dialog">
+    <el-dialog
+      v-model="showInviteDialog"
+      title="邀请学生"
+      width="400px"
+      class="dark-dialog"
+    >
       <el-form :model="inviteForm" label-width="80px">
         <el-form-item label="学生账号">
-          <el-input v-model="inviteForm.userAccount" placeholder="请输入学生学号/工号或邮箱" />
+          <el-input
+            v-model="inviteForm.userAccount"
+            placeholder="请输入学生学号/工号或邮箱"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -275,7 +305,12 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showInviteCodeDialog" title="邀请码" width="400px" class="dark-dialog">
+    <el-dialog
+      v-model="showInviteCodeDialog"
+      title="邀请码"
+      width="400px"
+      class="dark-dialog"
+    >
       <div class="invite-code-content">
         <p>邀请码已生成：</p>
         <div class="invite-code-box">
@@ -289,388 +324,444 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import type { UploadUserFile } from 'element-plus'
-import { get, post, postForm, put, del, patch } from '@/utils/http'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/stores/user'
-import { 
-  ArrowLeft, User, Users, Calendar, Clock, FileText, Star, Plus, 
-  Eye, Edit3, Trash2, UserPlus, Key, Paperclip, Upload, X
-} from '@lucide/vue'
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import type { UploadUserFile } from "element-plus";
+import { get, post, postForm, put, del, patch } from "@/utils/http";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useUserStore } from "@/stores/user";
+import {
+  ArrowLeft,
+  User,
+  Users,
+  Calendar,
+  Clock,
+  FileText,
+  Star,
+  Plus,
+  Eye,
+  Edit3,
+  Trash2,
+  UserPlus,
+  UserCheck,
+  Key,
+  Paperclip,
+  Upload,
+  X,
+} from "@lucide/vue";
 
 interface CourseInfo {
-  id: number
-  className: string
-  description?: string
-  ownerId: number
-  ownerName: string
-  userRole: string
-  memberCount: number
-  teacherCount: number
-  studentCount: number
+  id: number;
+  className: string;
+  description?: string;
+  ownerId: number;
+  ownerName: string;
+  userRole: string;
+  memberCount: number;
+  teacherCount: number;
+  studentCount: number;
 }
 
 interface WorkInfo {
-  id: number
-  title: string
-  description: string
-  classId: number
-  className: string
-  deadline: string
-  totalScore: number
-  isPinned: boolean
-  status: number
-  publishTime: string
-  submittedCount?: number
+  id: number;
+  title: string;
+  description: string;
+  classId: number;
+  className: string;
+  deadline: string;
+  totalScore: number;
+  isPinned: boolean;
+  status: number;
+  publishTime: string;
+  submittedCount?: number;
 }
 
 interface MemberInfo {
-  id: number
-  userId: number
-  userName: string
-  userNo: string
-  role: string
-  joinTime: string
+  id: number;
+  userId: number;
+  userName: string;
+  userNo: string;
+  role: string;
+  joinTime: string;
+  teacherCount: number;
 }
 
-const route = useRoute()
-const router = useRouter()
-const userStore = useUserStore()
+const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
 
-const course = ref<CourseInfo | null>(null)
-const works = ref<WorkInfo[]>([])
-const members = ref<MemberInfo[]>([])
-const activeTab = ref('works')
-const selectedStudentIds = ref<number[]>([])
+const course = ref<CourseInfo | null>(null);
+const works = ref<WorkInfo[]>([]);
+const members = ref<MemberInfo[]>([]);
+const memberTeacherCount = ref<number | null>(null);
+const activeTab = ref("works");
+const selectedStudentIds = ref<number[]>([]);
 
 const canDissolve = computed(() => {
-  if (!course.value || !userStore.userInfo) return false
-  const isOwner = course.value.userRole === '创建者'
-  const isAdmin = userStore.userInfo.permission >= 100
-  return isOwner || isAdmin
-})
+  if (!course.value || !userStore.userInfo) return false;
+  const isOwner = course.value.userRole === "创建者";
+  const isAdmin = userStore.userInfo.permission >= 100;
+  return isOwner || isAdmin;
+});
 
-const showCreateWorkDialog = ref(false)
-const showInviteDialog = ref(false)
-const showInviteCodeDialog = ref(false)
-const inviteCode = ref('')
+const showCreateWorkDialog = ref(false);
+const workSubmitting = ref(false);
+const showInviteDialog = ref(false);
+const showInviteCodeDialog = ref(false);
+const inviteCode = ref("");
 
 const workForm = ref({
-  title: '',
-  description: '',
-  deadline: '',
+  title: "",
+  description: "",
+  deadline: "",
   totalScore: 100,
   allowLateSubmit: true,
-  classId: Number(route.params.id)
-})
+  classId: Number(route.params.id),
+});
 
-const workFormDate = ref('')
-const workFormTime = ref('')
+const workFormDate = ref("");
+const workFormTime = ref("");
 
 const buildDeadline = (): string => {
   if (workFormDate.value && workFormTime.value) {
-    return `${workFormDate.value}T${workFormTime.value}`
+    return `${workFormDate.value}T${workFormTime.value}`;
   }
   if (workFormDate.value) {
-    return `${workFormDate.value}T23:59:59`
+    return `${workFormDate.value}T23:59:59`;
   }
-  return ''
-}
+  return "";
+};
 
-const attachmentFiles = ref<UploadUserFile[]>([])
+const attachmentFiles = ref<UploadUserFile[]>([]);
 
-const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
+const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024;
 
 const handleAttachmentExceed = () => {
-  ElMessage.warning('单次最多上传 20 个文件')
-}
+  ElMessage.warning("单次最多上传 20 个文件");
+};
 
-const handleAttachmentRemove = (file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
-  attachmentFiles.value = uploadFiles
-}
+const handleAttachmentRemove = (
+  file: UploadUserFile,
+  uploadFiles: UploadUserFile[],
+) => {
+  attachmentFiles.value = uploadFiles;
+};
 
-const handleAttachmentChange = (file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
+const handleAttachmentChange = (
+  file: UploadUserFile,
+  uploadFiles: UploadUserFile[],
+) => {
   if (file.size && file.size > MAX_ATTACHMENT_SIZE) {
-    ElMessage.warning(`文件「${file.name}」超过 50MB，已自动跳过`)
-    const idx = attachmentFiles.value.findIndex(f => f.uid === file.uid)
-    if (idx > -1) attachmentFiles.value.splice(idx, 1)
-    return
+    ElMessage.warning(`文件「${file.name}」超过 50MB，已自动跳过`);
+    const idx = attachmentFiles.value.findIndex((f) => f.uid === file.uid);
+    if (idx > -1) attachmentFiles.value.splice(idx, 1);
+    return;
   }
-  attachmentFiles.value = uploadFiles.filter(f => !f.size || f.size <= MAX_ATTACHMENT_SIZE)
-}
+  attachmentFiles.value = uploadFiles.filter(
+    (f) => !f.size || f.size <= MAX_ATTACHMENT_SIZE,
+  );
+};
 
 const resetCreateWorkForm = () => {
   workForm.value = {
-    title: '',
-    description: '',
-    deadline: '',
+    title: "",
+    description: "",
+    deadline: "",
     totalScore: 100,
     allowLateSubmit: true,
-    classId: Number(route.params.id)
-  }
-  workFormDate.value = ''
-  workFormTime.value = ''
-  attachmentFiles.value = []
-}
+    classId: Number(route.params.id),
+  };
+  workFormDate.value = "";
+  workFormTime.value = "";
+  attachmentFiles.value = [];
+};
 
 const inviteForm = ref({
-  userAccount: ''
-})
+  userAccount: "",
+});
 
 const loadCourse = async () => {
-  const result = await get<CourseInfo>(`/class/${route.params.id}`)
+  const result = await get<CourseInfo>(`/class/${route.params.id}`);
   if (result.code === 200) {
-    course.value = result.data!
+    course.value = result.data!;
   }
-}
+};
 
 const loadWorks = async () => {
-  const result = await get<{ records: WorkInfo[] }>('/works')
+  const result = await get<{ records: WorkInfo[] }>("/works");
   if (result.code === 200) {
-    const classId = Number(route.params.id)
-    works.value = result.data!.records.filter(work => work.classId === classId)
+    const classId = Number(route.params.id);
+    works.value = result.data!.records.filter(
+      (work) => work.classId === classId,
+    );
   }
-}
+};
 
 const loadMembers = async () => {
-  const result = await get<{ records: MemberInfo[] }>(`/class/${route.params.id}/members`)
+  const result = await get<{ records: MemberInfo[] }>(
+    `/class/${route.params.id}/members`,
+  );
   if (result.code === 200) {
-    members.value = result.data!.records
+    members.value = result.data!.records;
+    if (result.data!.records.length > 0) {
+      memberTeacherCount.value = result.data!.records[0].teacherCount;
+    } else {
+      memberTeacherCount.value = 0;
+    }
   }
-}
+};
 
 const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
+  const date = new Date(dateStr);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+};
 
 const getWorkStatus = (work: WorkInfo) => {
-  const now = new Date()
-  const deadline = new Date(work.deadline)
-  if (now > deadline) return 'expired'
-  if (work.status === 1) return 'active'
-  return 'pending'
-}
+  const now = new Date();
+  const deadline = new Date(work.deadline);
+  if (now > deadline) return "expired";
+  if (work.status === 1) return "active";
+  return "pending";
+};
 
 const getWorkStatusText = (work: WorkInfo) => {
-  const status = getWorkStatus(work)
+  const status = getWorkStatus(work);
   const map: Record<string, string> = {
-    active: '进行中',
-    expired: '已截止',
-    pending: '未发布'
-  }
-  return map[status] || status
-}
+    active: "进行中",
+    expired: "已截止",
+    pending: "未发布",
+  };
+  return map[status] || status;
+};
 
 const goBack = () => {
-  router.push('/teacher/courses')
-}
+  router.push("/teacher/courses");
+};
 
 const viewSubmissions = (workId: number) => {
-  router.push(`/teacher/work/${workId}/submissions`)
-}
+  router.push(`/teacher/work/${workId}/submissions`);
+};
 
 const editWork = (workId: number) => {
-  router.push(`/teacher/work/${workId}/edit`)
-}
+  router.push(`/teacher/work/${workId}/edit`);
+};
 
 const togglePin = async (work: WorkInfo) => {
-  const result = await patch(`/works/${work.id}/pin`, { workId: work.id, isPinned: !work.isPinned })
+  const result = await patch(`/works/${work.id}/pin`, {
+    workId: work.id,
+    isPinned: !work.isPinned,
+  });
   if (result.code === 200) {
-    ElMessage.success(work.isPinned ? '已取消置顶' : '已置顶')
-    loadWorks()
+    ElMessage.success(work.isPinned ? "已取消置顶" : "已置顶");
+    loadWorks();
   } else {
-    ElMessage.error(result.message)
+    ElMessage.error(result.message);
   }
-}
+};
 
 const deleteWork = async (workId: number) => {
   try {
-    await ElMessageBox.confirm('确认删除此作业？', '提示', {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消'
-    })
-    const result = await del(`/works/${workId}`)
+    await ElMessageBox.confirm("确认删除此作业？", "提示", {
+      confirmButtonText: "确认",
+      cancelButtonText: "取消",
+    });
+    const result = await del(`/works/${workId}`);
     if (result.code === 200) {
-      ElMessage.success('删除成功')
-      loadWorks()
+      ElMessage.success("删除成功");
+      loadWorks();
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(result.message);
     }
   } catch {
     // 用户取消
   }
-}
+};
 
 const createWork = async () => {
   if (!workForm.value.title) {
-    ElMessage.warning('请输入作业标题')
-    return
+    ElMessage.warning("请输入作业标题");
+    return;
   }
   if (!workForm.value.description) {
-    ElMessage.warning('请输入作业描述')
-    return
+    ElMessage.warning("请输入作业描述");
+    return;
   }
-  const deadline = buildDeadline()
+  const deadline = buildDeadline();
   if (!deadline) {
-    ElMessage.warning('请选择截止时间')
-    return
+    ElMessage.warning("请选择截止时间");
+    return;
   }
-  workForm.value.deadline = deadline
-  const formData = new FormData()
-  formData.append('title', workForm.value.title)
-  formData.append('description', workForm.value.description)
-  formData.append('deadline', workForm.value.deadline)
-  formData.append('totalScore', String(workForm.value.totalScore))
-  formData.append('allowLateSubmit', String(workForm.value.allowLateSubmit))
-  formData.append('classId', String(workForm.value.classId))
-  if (attachmentFiles.value && attachmentFiles.value.length > 0) {
-    for (const fileItem of attachmentFiles.value) {
-      if (fileItem.raw) {
-        formData.append('attachments', fileItem.raw)
+  workSubmitting.value = true;
+  try {
+    workForm.value.deadline = deadline;
+    const formData = new FormData();
+    formData.append("title", workForm.value.title);
+    formData.append("description", workForm.value.description);
+    formData.append("deadline", workForm.value.deadline);
+    formData.append("totalScore", String(workForm.value.totalScore));
+    formData.append("allowLateSubmit", String(workForm.value.allowLateSubmit));
+    formData.append("classId", String(workForm.value.classId));
+    if (attachmentFiles.value && attachmentFiles.value.length > 0) {
+      for (const fileItem of attachmentFiles.value) {
+        if (fileItem.raw) {
+          formData.append("attachments", fileItem.raw);
+        }
       }
     }
+    const result = await postForm("/works", formData);
+    if (result.code === 200) {
+      ElMessage.success("作业发布成功");
+      showCreateWorkDialog.value = false;
+      resetCreateWorkForm();
+      loadWorks();
+    } else {
+      ElMessage.error(result.message);
+    }
+  } catch {
+    ElMessage.error("发布失败，请重试");
+  } finally {
+    workSubmitting.value = false;
   }
-  const result = await postForm('/works', formData)
-  if (result.code === 200) {
-    ElMessage.success('作业发布成功')
-    showCreateWorkDialog.value = false
-    resetCreateWorkForm()
-    loadWorks()
-  } else {
-    ElMessage.error(result.message)
-  }
-}
+};
 
 const generateInviteCode = async () => {
-  const result = await post<string>(`/class/${route.params.id}/invite-code`)
+  const result = await post<string>(`/class/${route.params.id}/invite-code`);
   if (result.code === 200) {
-    inviteCode.value = result.data!
-    showInviteCodeDialog.value = true
+    inviteCode.value = result.data!;
+    showInviteCodeDialog.value = true;
   } else {
-    ElMessage.error(result.message)
+    ElMessage.error(result.message);
   }
-}
+};
 
 const copyInviteCode = () => {
-  navigator.clipboard.writeText(inviteCode.value)
-  ElMessage.success('已复制到剪贴板')
-}
+  navigator.clipboard.writeText(inviteCode.value);
+  ElMessage.success("已复制到剪贴板");
+};
 
 const inviteStudent = async () => {
   if (!inviteForm.value.userAccount) {
-    ElMessage.warning('请输入学生账号')
-    return
+    ElMessage.warning("请输入学生账号");
+    return;
   }
-  const result = await post(`/class/${route.params.id}/invitations/teacher`, { userAccount: inviteForm.value.userAccount })
+  const result = await post(`/class/${route.params.id}/invitations/teacher`, {
+    userAccount: inviteForm.value.userAccount,
+  });
   if (result.code === 200) {
-    ElMessage.success('邀请已发送')
-    showInviteDialog.value = false
-    inviteForm.value.userAccount = ''
+    ElMessage.success("邀请已发送");
+    showInviteDialog.value = false;
+    inviteForm.value.userAccount = "";
   } else {
-    ElMessage.error(result.message)
+    ElMessage.error(result.message);
   }
-}
+};
 
 const setAssistant = async (userId: number) => {
-  const result = await put(`/class/${route.params.id}/assistants`, { studentUserId: userId })
+  const result = await put(`/class/${route.params.id}/assistants`, {
+    studentUserId: userId,
+  });
   if (result.code === 200) {
-    ElMessage.success('已设置为班级助理')
-    loadMembers()
+    ElMessage.success("已设置为班级助理");
+    loadMembers();
   } else {
-    ElMessage.error(result.message)
+    ElMessage.error(result.message);
   }
-}
+};
 
 const removeAssistant = async (userId: number) => {
-  const result = await del(`/class/${route.params.id}/assistants/${userId}`)
+  const result = await del(`/class/${route.params.id}/assistants/${userId}`);
   if (result.code === 200) {
-    ElMessage.success('已取消班级助理')
-    loadMembers()
+    ElMessage.success("已取消班级助理");
+    loadMembers();
   } else {
-    ElMessage.error(result.message)
+    ElMessage.error(result.message);
   }
-}
+};
 
 const kickStudent = async (userId: number) => {
   try {
-    await ElMessageBox.confirm('确认踢出此学生？', '提示', {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消'
-    })
-    const result = await del(`/class/${route.params.id}/members/${userId}`)
+    await ElMessageBox.confirm("确认踢出此学生？", "提示", {
+      confirmButtonText: "确认",
+      cancelButtonText: "取消",
+    });
+    const result = await del(`/class/${route.params.id}/members/${userId}`);
     if (result.code === 200) {
-      ElMessage.success('已踢出')
-      loadMembers()
+      ElMessage.success("已踢出");
+      loadMembers();
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(result.message);
     }
   } catch {
     // 用户取消
   }
-}
+};
 
 const handleStudentSelect = () => {
-  selectedStudentIds.value = selectedStudentIds.value.filter(id => {
-    const member = members.value.find(m => m.userId === id)
-    return member && member.role === '学生'
-  })
-}
+  selectedStudentIds.value = selectedStudentIds.value.filter((id) => {
+    const member = members.value.find((m) => m.userId === id);
+    return member && member.role === "学生";
+  });
+};
 
 const clearSelection = () => {
-  selectedStudentIds.value = []
-}
+  selectedStudentIds.value = [];
+};
 
 const batchKickStudentsAction = async () => {
   if (selectedStudentIds.value.length === 0) {
-    ElMessage.warning('请选择要踢出的学生')
-    return
+    ElMessage.warning("请选择要踢出的学生");
+    return;
   }
   try {
     await ElMessageBox.confirm(
       `确认批量踢出 ${selectedStudentIds.value.length} 名学生？`,
-      '提示',
-      { confirmButtonText: '确认', cancelButtonText: '取消' }
-    )
-    const result = await del(`/class/${route.params.id}/members/batch`, selectedStudentIds.value)
+      "提示",
+      { confirmButtonText: "确认", cancelButtonText: "取消" },
+    );
+    const result = await del(
+      `/class/${route.params.id}/members/batch`,
+      selectedStudentIds.value,
+    );
     if (result.code === 200) {
-      ElMessage.success(`已踢出 ${selectedStudentIds.value.length} 名学生`)
-      selectedStudentIds.value = []
-      loadMembers()
+      ElMessage.success(`已踢出 ${selectedStudentIds.value.length} 名学生`);
+      selectedStudentIds.value = [];
+      loadMembers();
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(result.message);
     }
   } catch {
     // 用户取消
   }
-}
+};
 
 const dissolveClassAction = async () => {
   try {
     await ElMessageBox.confirm(
-      '解散课堂后，所有作业、成员、邀请等数据将被永久删除，此操作不可恢复。确认解散？',
-      '危险操作',
-      { confirmButtonText: '确认解散', cancelButtonText: '取消', type: 'error' }
-    )
-    const result = await del(`/class/${route.params.id}`)
+      "解散课堂后，所有作业、成员、邀请等数据将被永久删除，此操作不可恢复。确认解散？",
+      "危险操作",
+      {
+        confirmButtonText: "确认解散",
+        cancelButtonText: "取消",
+        type: "error",
+      },
+    );
+    const result = await del(`/class/${route.params.id}`);
     if (result.code === 200) {
-      ElMessage.success('课堂已解散')
-      router.push('/teacher/courses')
+      ElMessage.success("课堂已解散");
+      router.push("/teacher/courses");
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(result.message);
     }
   } catch {
     // 用户取消
   }
-}
+};
 
 onMounted(async () => {
-  await loadCourse()
-  await loadWorks()
-  await loadMembers()
-})
+  await loadCourse();
+  await loadWorks();
+  await loadMembers();
+});
 </script>
 
 <style scoped>
@@ -728,14 +819,7 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-.role-badge.owner {
-  background: rgba(118, 75, 162, 0.2);
-  color: #764ba2;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.role-badge.student {
+.role-badge.teacher {
   background: rgba(156, 163, 175, 0.2);
   color: #9ca3af;
   padding: 2px 8px;

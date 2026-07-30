@@ -1025,13 +1025,18 @@ public class ClassServiceImpl implements ClassService {
             userMap = new HashMap<>();
         }
 
+        // 查询班级教师总数（role=1 表示教师）
+        QueryWrapper<ClassMember> teacherCountQuery = new QueryWrapper<>();
+        teacherCountQuery.eq("class_id", classId).eq("role", 1);
+        long teacherCount = classMemberMapper.selectCount(teacherCountQuery);
+
         List<ClassMemberResponse> responses = pagedResult.getRecords().stream()
                 .map(member -> {
                     // 从缓存中获取用户信息
                     User user = userMap.get(member.getUserId());
                     String userName = user != null ? user.getUsername() : "未知";
                     String userNo = user != null ? user.getUserNo() : "未知";
-                    
+
                     // 确定角色
                     String role = getUserRole(classInfo, member);
 
@@ -1041,7 +1046,8 @@ public class ClassServiceImpl implements ClassService {
                             userName,
                             userNo,
                             role,
-                            member.getJoinTime()
+                            member.getJoinTime(),
+                            teacherCount
                     );
                 })
                 .toList();
@@ -1077,7 +1083,8 @@ public class ClassServiceImpl implements ClassService {
                             userName,
                             userNo,
                             role,
-                            member.getJoinTime()
+                            member.getJoinTime(),
+                            null
                     );
                 })
                 .toList();

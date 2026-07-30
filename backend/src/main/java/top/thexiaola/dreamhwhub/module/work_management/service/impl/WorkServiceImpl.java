@@ -44,8 +44,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkServiceImpl implements WorkService {
 
-    // 文件存储根目录（需与 FileUploadValidator.UPLOAD_BASE_DIR 保持一致）
-    private static final String UPLOAD_DIR = System.getProperty("user.home") + "/dream-hwhub/uploads/works/";
+    // 文件存储根目录（运行目录下的 upload/workfiles）
+    private static final String UPLOAD_DIR = "upload/workfiles/";
 
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
