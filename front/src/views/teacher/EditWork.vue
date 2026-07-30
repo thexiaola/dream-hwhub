@@ -15,8 +15,8 @@
         <el-button type="primary" @click="submitForm" :loading="loading">保存</el-button>
       </div>
     </div>
-    <el-card class="content-card" v-loading="pageLoading">
-      <el-form :model="form" :rules="rules" ref="formRef" class="create-form">
+    <el-card class="content-card dark-dialog" v-loading="pageLoading">
+      <el-form :model="form" :rules="rules" ref="formRef" class="create-form" label-width="100px">
         <el-form-item label="作业标题" prop="title">
           <el-input
             v-model="form.title"
@@ -41,7 +41,7 @@
             :max="1000"
             :step="1"
             placeholder="请输入满分"
-            class="form-input score-input"
+            class="score-input"
           />
         </el-form-item>
         <el-form-item label="截止时间" prop="deadline">
@@ -52,7 +52,6 @@
               placeholder="选择日期"
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
-              class="form-input"
               popper-class="dark-picker"
             />
             <el-time-picker
@@ -60,7 +59,6 @@
               placeholder="选择时间"
               format="HH:mm:ss"
               value-format="HH:mm:ss"
-              class="form-input"
               popper-class="dark-picker"
             />
           </div>
@@ -316,47 +314,9 @@ onMounted(() => {
   width: 100%;
 }
 
-.create-form :deep(.el-input__wrapper),
-.create-form :deep(.el-select__wrapper),
-.create-form :deep(.el-date-editor) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-}
-
-.create-form :deep(.el-input__wrapper:focus-within),
-.create-form :deep(.el-select__wrapper:focus-within),
-.create-form :deep(.el-date-editor:focus-within) {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-.create-form :deep(.el-input__inner),
-.create-form :deep(.el-select__selected-item),
-.create-form :deep(.el-date-editor .el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
-  background: transparent !important;
-}
-
-.create-form :deep(.el-input__inner::placeholder),
-.create-form :deep(.el-select__placeholder) {
-  color: rgba(255, 255, 255, 0.4);
-}
-
 .create-form :deep(.el-textarea__inner) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
   min-height: 280px !important;
   line-height: 1.7;
-}
-
-.create-form :deep(.el-textarea__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.create-form :deep(.el-textarea__inner:focus) {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
 }
 
 .create-form :deep(.el-form-item__label) {
@@ -368,23 +328,19 @@ onMounted(() => {
 }
 
 .score-input {
-  width: 100%;
+  width: 220px;
 }
 
 .score-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  box-shadow: none !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+}
+
+.score-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22) inset !important;
 }
 
 .score-input :deep(.el-input__wrapper:focus-within) {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-.score-input :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
-  background: transparent !important;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
 .score-input :deep(.el-input-number__decrease),
@@ -478,14 +434,14 @@ onMounted(() => {
   align-items: center !important;
   gap: 8px !important;
   flex-wrap: nowrap !important;
-  width: 100% !important;
+  width: auto !important;
 }
 
 .deadline-split-wrap :deep(.el-date-editor),
 .deadline-split-wrap :deep(.el-time-editor) {
-  flex: 1 1 0 !important;
+  flex: 0 0 auto !important;
   min-width: 0 !important;
-  width: 100% !important;
+  width: 220px !important;
 }
 
 .deadline-split-wrap :deep(.el-input__wrapper) {
