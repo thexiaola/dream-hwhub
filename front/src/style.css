@@ -687,7 +687,11 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-date-table-cell__text {
-  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease !important;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.15s ease !important;
 }
 
 .dark-picker td.available:hover:not(.disabled) .el-date-table-cell__text {
@@ -708,7 +712,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: transparent !important;
 }
 
-.dark-picker td.today:not(.current):not(.disabled) .el-date-table-cell__text::after {
+.dark-picker
+  td.today:not(.current):not(.disabled)
+  .el-date-table-cell__text::after {
   content: "" !important;
   position: absolute !important;
   bottom: -3px !important;
@@ -748,14 +754,22 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   box-shadow: none !important;
 }
 
-.dark-picker td.available:hover:not(.disabled) .el-date-table-cell__text::after {
+.dark-picker
+  td.available:hover:not(.disabled)
+  .el-date-table-cell__text::after {
   display: none !important;
 }
 
 /* hover 选中日期：保持紫底但提亮，白字 */
-.dark-picker td.current.available:hover:not(.disabled) .el-date-table-cell__text,
-.dark-picker td.selected.available:hover:not(.disabled) .el-date-table-cell__text,
-.dark-picker td.is-selected.available:hover:not(.disabled) .el-date-table-cell__text {
+.dark-picker
+  td.current.available:hover:not(.disabled)
+  .el-date-table-cell__text,
+.dark-picker
+  td.selected.available:hover:not(.disabled)
+  .el-date-table-cell__text,
+.dark-picker
+  td.is-selected.available:hover:not(.disabled)
+  .el-date-table-cell__text {
   background: rgba(102, 126, 234, 0.4) !important;
   color: #ffffff !important;
   border-radius: 50% !important;
@@ -1126,15 +1140,21 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-time-spinner .el-time-spinner__item.active:not(.disabled),
-.dark-picker .el-time-spinner .el-time-spinner__item.is-active:not(.is-disabled) {
+.dark-picker
+  .el-time-spinner
+  .el-time-spinner__item.is-active:not(.is-disabled) {
   color: #667eea !important;
   background: transparent !important;
   font-weight: 600;
   position: relative;
 }
 
-.dark-picker .el-time-spinner .el-time-spinner__item.active:not(.disabled)::after,
-.dark-picker .el-time-spinner .el-time-spinner__item.is-active:not(.is-disabled)::after {
+.dark-picker
+  .el-time-spinner
+  .el-time-spinner__item.active:not(.disabled)::after,
+.dark-picker
+  .el-time-spinner
+  .el-time-spinner__item.is-active:not(.is-disabled)::after {
   content: "";
   position: absolute;
   bottom: 4px;
@@ -1671,7 +1691,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
    ========================================================= */
 
 .el-overlay {
-  background-color: rgba(20, 20, 40, 0.55) !important;
+  background-color: rgba(20, 20, 30, 0.42) !important;
+  backdrop-filter: blur(2px);
 }
 
 .el-overlay-message-box,
@@ -1680,8 +1701,68 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   border: 1px solid rgba(102, 126, 234, 0.35) !important;
   border-radius: 14px !important;
   box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.6),
+    0 10px 40px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(102, 126, 234, 0.15) inset !important;
+}
+
+/* ========== 危险操作 ElMessageBox 红色主题 ========== */
+.el-overlay-message-box.danger-message-box,
+.el-message-box.danger-message-box {
+  background: rgba(48, 20, 26, 0.98) !important;
+  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+  box-shadow:
+    0 16px 48px rgba(127, 29, 29, 0.35),
+    0 0 0 1px rgba(239, 68, 68, 0.2) inset !important;
+}
+
+.el-message-box.danger-message-box .el-message-box__header,
+.el-overlay-message-box.danger-message-box .el-message-box__header {
+  border-bottom: 1px solid rgba(239, 68, 68, 0.18) !important;
+}
+
+.el-message-box.danger-message-box .el-message-box__title,
+.el-overlay-message-box.danger-message-box .el-message-box__title {
+  color: #fecaca !important;
+}
+
+.el-message-box.danger-message-box .el-message-box__btns .el-button--primary,
+.el-overlay-message-box.danger-message-box
+  .el-message-box__btns
+  .el-button--primary {
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.el-message-box.danger-message-box
+  .el-message-box__btns
+  .el-button--primary:hover,
+.el-overlay-message-box.danger-message-box
+  .el-message-box__btns
+  .el-button--primary:hover {
+  filter: brightness(1.1) !important;
+}
+
+.el-message-box.danger-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger),
+.el-overlay-message-box.danger-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.el-message-box.danger-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger):hover,
+.el-overlay-message-box.danger-message-box
+  .el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: rgba(239, 68, 68, 0.14) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #fecaca !important;
 }
 
 .el-message-box__header {
@@ -1779,13 +1860,15 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   font-weight: 500 !important;
 }
 
-.el-message-box__btns .el-button:not(.el-button--primary):not(.el-button--danger) {
+.el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger) {
   background: rgba(255, 255, 255, 0.06) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   color: rgba(255, 255, 255, 0.88) !important;
 }
 
-.el-message-box__btns .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+.el-message-box__btns
+  .el-button:not(.el-button--primary):not(.el-button--danger):hover {
   background: rgba(102, 126, 234, 0.16) !important;
   border-color: rgba(102, 126, 234, 0.5) !important;
   color: #667eea !important;
@@ -1805,4 +1888,230 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: linear-gradient(135deg, #ef4444, #dc2626) !important;
   border: none !important;
   color: #ffffff !important;
+}
+
+/* =========================================================
+   danger-dialog 危险操作对话框（二次确认 / 密码校验） 红色主题
+   ========================================================= */
+.danger-dialog {
+  --el-dialog-bg-color: rgba(48, 20, 26, 0.97);
+  --el-dialog-header-bg-color: rgba(48, 20, 26, 0.97);
+  --el-dialog-footer-bg-color: rgba(48, 20, 26, 0.97);
+  --el-dialog-border-color: rgba(239, 68, 68, 0.4);
+  --el-dialog-title-color: #fecaca;
+  --el-text-color-regular: rgba(255, 255, 255, 0.9);
+  --el-text-color-primary: #ffffff;
+}
+
+.danger-dialog .el-dialog {
+  background: var(--el-dialog-bg-color);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 16px;
+  box-shadow:
+    0 24px 60px rgba(127, 29, 29, 0.45),
+    0 0 0 1px rgba(239, 68, 68, 0.18) inset;
+}
+
+.danger-dialog .el-dialog__header {
+  background: var(--el-dialog-header-bg-color);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.18);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.danger-dialog .el-dialog__body {
+  background: var(--el-dialog-bg-color);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.danger-dialog .el-dialog__footer {
+  background: var(--el-dialog-footer-bg-color);
+  border-top: 1px solid rgba(239, 68, 68, 0.18);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.danger-dialog .el-dialog__title {
+  color: var(--el-dialog-title-color) !important;
+  font-weight: 600;
+}
+
+.danger-dialog .el-dialog__headerbtn .el-dialog__close {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.danger-dialog .el-dialog__headerbtn:hover .el-dialog__close {
+  color: #fca5a5 !important;
+}
+
+.danger-content {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+}
+
+.danger-content .danger-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f87171;
+}
+
+.danger-content .danger-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.danger-content .danger-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fecaca;
+  margin: 0 0 6px 0;
+}
+
+.danger-content .danger-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.danger-strong {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.confirm-text-wrap {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.confirm-text-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 8px;
+}
+
+.confirm-text-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.confirm-text-expected {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  word-break: break-all;
+  user-select: all;
+  line-height: 1.5;
+}
+
+.danger-textarea :deep(.el-textarea__inner),
+.danger-dialog .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset !important;
+  border-radius: 10px !important;
+}
+
+.danger-textarea :deep(.el-textarea__inner):hover,
+.danger-dialog .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.26) inset !important;
+}
+
+.danger-textarea :deep(.el-textarea__inner):focus,
+.danger-dialog .el-input__wrapper.is-focus,
+.danger-dialog .el-input__wrapper:focus-within {
+  box-shadow:
+    0 0 0 1px #ef4444 inset,
+    0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+
+.danger-textarea :deep(.el-textarea__inner),
+.danger-dialog .el-input__inner {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.danger-textarea :deep(.el-textarea__inner)::placeholder,
+.danger-dialog .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.danger-dialog .el-button {
+  border-radius: 10px !important;
+  padding: 9px 20px !important;
+  font-weight: 500 !important;
+}
+
+.danger-dialog
+  .el-button:not(.el-button--primary):not(.el-button--danger):not(.is-plain) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.danger-dialog
+  .el-button:not(.el-button--primary):not(.el-button--danger):not(
+    .is-plain
+  ):hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #fecaca !important;
+}
+
+.danger-dialog .el-button--primary {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.danger-dialog .el-button--primary:hover {
+  filter: brightness(1.08) !important;
+}
+
+.danger-dialog .el-button--primary.is-disabled {
+  background: rgba(239, 68, 68, 0.45) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.danger-dialog .el-button--primary.is-plain {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+  color: #fca5a5 !important;
+}
+
+.danger-dialog .el-button--primary.is-plain:hover {
+  background: rgba(239, 68, 68, 0.24) !important;
+  color: #ffffff !important;
+}
+
+.danger-dialog .el-button--danger {
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.danger-dialog .el-button--danger:hover {
+  filter: brightness(1.1) !important;
 }

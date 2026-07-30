@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { WorkInfo } from '@/types'
-import { get, post, postForm, put, del, patch } from '@/utils/http'
+import { get, postForm, put, del, patch } from '@/utils/http'
 
 export const useWorkStore = defineStore('work', () => {
   const works = ref<WorkInfo[]>([])

@@ -138,7 +138,7 @@ const handleAttachmentExceed = () => {
   ElMessage.warning('单次最多上传 20 个文件')
 }
 
-const handleAttachmentRemove = (file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
+const handleAttachmentRemove = (_file: UploadUserFile, uploadFiles: UploadUserFile[]) => {
   attachmentFiles.value = uploadFiles
 }
 

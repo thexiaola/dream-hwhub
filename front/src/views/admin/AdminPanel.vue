@@ -257,14 +257,104 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- ========== 危险操作 Step2：确认文案输入 ========== -->
+    <el-dialog
+      v-model="showDangerConfirmTextDialog"
+      title="二次确认"
+      width="520px"
+      class="dark-dialog danger-dialog"
+      :close-on-click-modal="true"
+      :close-on-press-escape="true"
+      @close="clearDangerInputs"
+    >
+      <div class="danger-content">
+        <div class="danger-icon">
+          <AlertTriangle :size="22" />
+        </div>
+        <div class="danger-info">
+          <p class="danger-title">请完整输入下方确认文案</p>
+          <p class="danger-desc">解散课堂后，所有作业、成员、邀请等数据将被<b class="danger-strong">永久删除</b>，此操作不可恢复。</p>
+        </div>
+      </div>
+      <div class="confirm-text-wrap">
+        <div class="confirm-text-label">需输入的确认文案：</div>
+        <div class="confirm-text-copy">
+          <span class="confirm-text-expected">{{ expectedConfirmText }}</span>
+          <el-button type="primary" plain size="default" @click="copyExpectedText">
+            <Copy :size="14" /> 复制
+          </el-button>
+        </div>
+      </div>
+      <el-input
+        v-model="dangerConfirmText"
+        type="textarea"
+        :rows="2"
+        placeholder="请输入上方确认文案..."
+        class="danger-textarea"
+      />
+      <template #footer>
+        <el-button @click="confirmTextDialogCancel">取消</el-button>
+        <el-button
+          type="primary"
+          :disabled="dangerConfirmText !== expectedConfirmText"
+          @click="confirmTextDialogNext"
+        >
+          下一步
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ========== 危险操作 Step3：密码校验 ========== -->
+    <el-dialog
+      v-model="showDangerPasswordDialog"
+      title="最终确认"
+      width="460px"
+      class="dark-dialog danger-dialog"
+      :close-on-click-modal="true"
+      :close-on-press-escape="true"
+      @close="clearDangerInputs"
+    >
+      <div class="danger-content">
+        <div class="danger-icon">
+          <ShieldAlert :size="22" />
+        </div>
+        <div class="danger-info">
+          <p class="danger-title">请输入登录密码以继续</p>
+          <p class="danger-desc">
+            当前操作账号：
+            <b class="danger-strong">{{ currentAccountDisplay }}</b>
+          </p>
+        </div>
+      </div>
+      <el-input
+        v-model="dangerPassword"
+        type="password"
+        show-password
+        placeholder="请输入登录密码"
+        @keyup.enter="passwordDialogConfirm"
+      />
+      <template #footer>
+        <el-button @click="passwordDialogCancel">取消</el-button>
+        <el-button
+          type="danger"
+          :disabled="dangerPassword.length === 0"
+          :loading="dangerSubmitting"
+          @click="passwordDialogConfirm"
+        >
+          确认解散课堂
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { get, put, del } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { FileText } from '@lucide/vue'
+import { FileText, AlertTriangle, ShieldAlert, Copy } from '@lucide/vue'
+import { useUserStore } from '@/stores/user'
 
 interface ClassCreateApplication {
   id: number
@@ -297,7 +387,9 @@ interface PageResult<T> {
   current: number
 }
 
-const activeTab = ref<'create' | 'join'>('create')
+const activeTab = ref<'create' | 'join' | 'classes'>('create')
+
+const userStore = useUserStore()
 
 const createApplications = ref<ClassCreateApplication[]>([])
 const createFilter = ref(-1)
@@ -457,21 +549,101 @@ const dissolveClass = async (classId: number, className: string) => {
     await ElMessageBox.confirm(
       `解散课堂"${className}"后，所有数据将被永久删除，此操作不可恢复。确认解散？`,
       '危险操作',
-      { confirmButtonText: '确认解散', cancelButtonText: '取消', type: 'error' }
+      { confirmButtonText: '确认解散', cancelButtonText: '取消', type: 'error', customClass: 'danger-message-box' }
     )
-    const result = await del(`/class/${classId}`)
+    pendingDissolve.value.classId = classId
+    pendingDissolve.value.className = className
+    showDangerConfirmTextDialog.value = true
+  } catch {
+    clearDangerInputs()
+  }
+}
+
+// ========== 危险操作（解散课堂）三步弹窗状态 ==========
+const showDangerConfirmTextDialog = ref(false)
+const showDangerPasswordDialog = ref(false)
+const dangerConfirmText = ref('')
+const dangerPassword = ref('')
+const dangerSubmitting = ref(false)
+const pendingDissolve = ref<{ classId: number; className: string }>({ classId: 0, className: '' })
+
+const expectedConfirmText = computed(() => {
+  return `我已确认要删除${pendingDissolve.value.className ?? ''}课堂`
+})
+
+const currentAccountDisplay = computed(() => {
+  const u = userStore.userInfo
+  if (!u) return '-'
+  return (u.userNo || u.username || u.email || '-') as string
+})
+
+const clearDangerInputs = () => {
+  dangerConfirmText.value = ''
+  dangerPassword.value = ''
+  dangerSubmitting.value = false
+  showDangerConfirmTextDialog.value = false
+  showDangerPasswordDialog.value = false
+  pendingDissolve.value = { classId: 0, className: '' }
+}
+
+const copyExpectedText = async () => {
+  try {
+    await navigator.clipboard.writeText(expectedConfirmText.value)
+    ElMessage.success('已复制确认文案')
+  } catch {
+    ElMessage.warning('复制失败，请手动选中复制')
+  }
+}
+
+const confirmTextDialogCancel = () => {
+  clearDangerInputs()
+}
+
+const confirmTextDialogNext = () => {
+  if (dangerConfirmText.value !== expectedConfirmText.value) {
+    ElMessage.warning('确认文案不匹配')
+    return
+  }
+  showDangerConfirmTextDialog.value = false
+  showDangerPasswordDialog.value = true
+}
+
+const passwordDialogCancel = () => {
+  clearDangerInputs()
+}
+
+const passwordDialogConfirm = async () => {
+  if (!dangerPassword.value) {
+    ElMessage.warning('请输入登录密码')
+    return
+  }
+  if (!pendingDissolve.value.classId) {
+    ElMessage.warning('请先选择要解散的课堂')
+    return
+  }
+  dangerSubmitting.value = true
+  const classId = pendingDissolve.value.classId
+  try {
+    const params = {
+      password: dangerPassword.value,
+      confirmText: dangerConfirmText.value,
+    }
+    const result = await del(`/class/${classId}`, undefined, params)
     if (result.code === 200) {
       ElMessage.success('课堂已解散')
       if (expandedClassId.value === classId) {
         expandedClassId.value = null
         classMembers.value = []
       }
+      clearDangerInputs()
       loadClasses()
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(result.message || '解散失败')
     }
   } catch {
-    // 用户取消
+    ElMessage.error('解散失败，请重试')
+  } finally {
+    dangerSubmitting.value = false
   }
 }
 
