@@ -214,7 +214,7 @@ public class WorkServiceImpl implements WorkService {
         if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
-        
+
         // 检查权限：未发布的作业只有老师可以查看
         User currentUser = UserUtils.getCurrentUser();
         Integer status = calculateWorkStatus(workInfo);
@@ -223,7 +223,10 @@ public class WorkServiceImpl implements WorkService {
                 throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "该作业尚未发布，无法查看", null);
             }
         }
-        
+
+        // 填充附件列表
+        workInfo.setAttachments(getWorkAttachments(workId));
+
         return workInfo;
     }
 

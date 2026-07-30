@@ -103,6 +103,12 @@ export const postForm = <T = null>(url: string, formData: FormData): Promise<Api
   }).then(res => res.data)
 }
 
+export const putForm = <T = null>(url: string, formData: FormData): Promise<ApiResponse<T>> => {
+  return instance.put<ApiResponse<T>>(url, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data)
+}
+
 export const put = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
   return instance.put<ApiResponse<T>>(url, data, { params }).then(res => res.data)
 }

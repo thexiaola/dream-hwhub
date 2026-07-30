@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 作业实体类
@@ -91,4 +93,10 @@ public class WorkInfo implements Serializable {
      */
     @TableField("update_time")
     private LocalDateTime updateTime;
+
+    /**
+     * 附件列表（非数据库字段，仅用于接口返回）
+     */
+    @TableField(exist = false)
+    private List<WorkResponse.AttachmentInfo> attachments;
 }
