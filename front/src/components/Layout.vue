@@ -190,11 +190,19 @@ onMounted(() => {
   padding: 8px 16px;
   cursor: pointer;
   border-radius: 8px;
-  transition: background 0.3s;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
 }
 
 .user-info:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+:deep(.user-info .el-icon) {
+  color: inherit;
 }
 
 .main-content {

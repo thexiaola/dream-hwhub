@@ -651,6 +651,113 @@ const handleLogout = async () => {
   padding-top: 8px;
 }
 
+/* 表单元素：适配深色主题 */
+:deep(.profile-form .el-form-item__label) {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+:deep(.profile-form .el-form-item.is-error .el-form-item__label) {
+  color: #fca5a5 !important;
+}
+
+:deep(.profile-form .el-form-item__error) {
+  color: #fca5a5 !important;
+}
+
+:deep(.profile-form .el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+:deep(.profile-form .el-input__wrapper:hover) {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(102, 126, 234, 0.45) !important;
+}
+
+:deep(.profile-form .el-input__wrapper.is-focus),
+:deep(.profile-form .el-input.is-focus .el-input__wrapper) {
+  background: rgba(102, 126, 234, 0.08) !important;
+  border-color: rgba(102, 126, 234, 0.75) !important;
+}
+
+:deep(.profile-form .el-input.is-disabled .el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  cursor: not-allowed;
+}
+
+:deep(.profile-form .el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+:deep(.profile-form .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.32) !important;
+}
+
+:deep(.profile-form .el-input.is-disabled .el-input__inner) {
+  color: rgba(255, 255, 255, 0.55) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.55) !important;
+}
+
+:deep(.profile-form .el-textarea__inner) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+:deep(.profile-form .el-textarea__inner:hover) {
+  border-color: rgba(102, 126, 234, 0.45) !important;
+}
+
+:deep(.profile-form .el-textarea__inner:focus) {
+  border-color: rgba(102, 126, 234, 0.75) !important;
+  background: rgba(102, 126, 234, 0.08) !important;
+}
+
+:deep(.profile-form .el-textarea__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.32) !important;
+}
+
+:deep(.profile-form .el-count) {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* el-divider / el-alert 文本色适配 */
+:deep(.profile-form .el-divider__text) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-weight: 600;
+}
+
+:deep(.profile-form .el-divider) {
+  --el-border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:deep(.profile-alert.el-alert) {
+  background: rgba(202, 138, 4, 0.12) !important;
+  border: 1px solid rgba(234, 179, 8, 0.3) !important;
+}
+
+:deep(.profile-alert .el-alert__title) {
+  color: #fde68a !important;
+}
+
+:deep(.profile-alert .el-alert__description) {
+  color: rgba(253, 230, 138, 0.8) !important;
+}
+
+:deep(.profile-alert .el-alert__icon) {
+  color: #facc15 !important;
+}
+
 .profile-alert {
   margin-bottom: 20px;
   border-radius: 10px;

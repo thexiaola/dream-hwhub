@@ -2305,3 +2305,102 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .danger-dialog .el-button--danger:hover {
   filter: brightness(1.1) !important;
 }
+
+/* =========================================================
+   Header dropdown 菜单深色主题适配
+   Element Plus el-dropdown 菜单是 Popper teleport 到 body
+   因此在全局 style.css 中覆盖，不可以写在组件 scoped 样式内
+   ========================================================= */
+.el-dropdown,
+.layout .header-right .el-dropdown {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* 最外层 popper：去掉 Element Plus 默认的白色外框，交给内部 el-dropdown-menu 承载 */
+.el-dropdown__popper.el-popper,
+.el-popper.el-dropdown__popper {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+}
+
+.el-dropdown__popper.el-popper > .el-scrollbar,
+.el-dropdown__popper.el-popper > .el-popper__mask,
+.el-dropdown__popper.el-popper .el-scrollbar__wrap,
+.el-dropdown__popper.el-popper .el-scrollbar__view,
+.el-dropdown__popper.el-popper .el-dropdown__list {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.el-dropdown-menu {
+  background: rgba(26, 26, 60, 0.98) !important;
+  border: 1px solid rgba(102, 126, 234, 0.35) !important;
+  border-radius: 10px !important;
+  padding: 6px !important;
+  margin: 0 !important;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(102, 126, 234, 0.12) inset !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+  border-radius: 6px !important;
+  padding: 10px 14px !important;
+  font-size: 14px;
+  line-height: 1.4;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item:not(.is-disabled):hover,
+.el-dropdown-menu .el-dropdown-menu__item:not(.is-disabled).focus {
+  background: rgba(102, 126, 234, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item.is-disabled {
+  color: rgba(255, 255, 255, 0.3) !important;
+  cursor: not-allowed;
+}
+
+.el-dropdown-menu__item .el-icon {
+  color: inherit !important;
+  flex-shrink: 0;
+}
+
+.el-popper[data-popper-placement^="bottom"] > .el-dropdown-menu__arrow::after,
+.el-dropdown-menu__popper.el-popper[data-popper-placement^="bottom"]
+  > .el-popper__arrow::after {
+  border-bottom-color: rgba(26, 26, 60, 0.98) !important;
+}
+
+.el-popper[data-popper-placement^="top"] > .el-dropdown-menu__arrow::after,
+.el-dropdown-menu__popper.el-popper[data-popper-placement^="top"]
+  > .el-popper__arrow::after {
+  border-top-color: rgba(26, 26, 60, 0.98) !important;
+}
+
+.el-dropdown-menu__popper.el-popper > .el-popper__arrow::before {
+  border-color: rgba(102, 126, 234, 0.35) !important;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35));
+}
+
+.el-dropdown-menu .el-dropdown-menu__separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
