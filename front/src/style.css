@@ -1741,6 +1741,28 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+}
+
+/* 移动端 MessageBox 居中适配 */
+@media (max-width: 768px) {
+  .el-overlay-message-box {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px !important;
+  }
+
+  .el-overlay-message-box .el-message-box {
+    margin: 0 auto !important;
+    transform: none !important;
+    top: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    width: auto !important;
+  }
 }
 
 /* ========== MessageBox 通用内层样式（无 customClass 时的默认深色主题） ========== */
