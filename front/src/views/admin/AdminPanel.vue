@@ -932,4 +932,62 @@ const batchKickFromAdmin = async (classId: number) => {
   background-color: #667eea;
   border-color: #667eea;
 }
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+  .page-header h2 {
+    font-size: 20px;
+  }
+
+  .filter-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-bar .el-radio-group {
+    gap: 4px;
+    min-width: max-content;
+  }
+
+  .filter-bar .el-radio-button__inner {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+  }
+
+  .application-list {
+    gap: 12px;
+  }
+
+  .application-card {
+    padding: 14px 16px;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .app-actions {
+    flex-wrap: wrap;
+  }
+
+  .app-actions .el-button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-tabs :deep(.el-tabs__header) {
+    min-width: max-content;
+  }
+
+  .user-list-card {
+    padding: 12px;
+  }
+}
 </style>

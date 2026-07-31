@@ -38,7 +38,7 @@
         <el-dropdown @command="handleCommand">
           <div class="user-info">
             <User :size="18" />
-            <span>{{ userStore.userInfo?.username }}</span>
+            <span class="user-name">{{ userStore.userInfo?.username }}</span>
             <ChevronDown :size="14" />
           </div>
           <template #dropdown>
@@ -59,6 +59,43 @@
     <main class="main-content">
       <router-view />
     </main>
+
+    <!-- 手机端底部导航 -->
+    <nav class="mobile-tab-bar">
+      <button
+        class="mobile-tab"
+        :class="{ active: activeTab === 'student' }"
+        @click="switchTab('student')"
+      >
+        <GraduationCap :size="22" />
+        <span>我的课</span>
+      </button>
+      <button
+        class="mobile-tab"
+        :class="{ active: activeTab === 'teacher' }"
+        @click="switchTab('teacher')"
+      >
+        <Presentation :size="22" />
+        <span>我教的</span>
+      </button>
+      <button
+        v-if="isAdmin"
+        class="mobile-tab"
+        :class="{ active: activeTab === 'admin' }"
+        @click="switchTab('admin')"
+      >
+        <Shield :size="22" />
+        <span>管理</span>
+      </button>
+      <button
+        class="mobile-tab"
+        :class="{ active: route.path.startsWith('/profile') }"
+        @click="router.push('/profile')"
+      >
+        <User :size="22" />
+        <span>我的</span>
+      </button>
+    </nav>
   </div>
 </template>
 
@@ -110,7 +147,7 @@ onMounted(() => {
 .layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 .header {
@@ -121,6 +158,7 @@ onMounted(() => {
   height: 64px;
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -146,6 +184,7 @@ onMounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  white-space: nowrap;
 }
 
 .nav-tabs {
@@ -201,6 +240,13 @@ onMounted(() => {
   color: #ffffff;
 }
 
+.user-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 :deep(.user-info .el-icon) {
   color: inherit;
 }
@@ -209,5 +255,83 @@ onMounted(() => {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+}
+
+/* 手机端底部导航 */
+.mobile-tab-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(20, 20, 40, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 999;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.mobile-tab .lucide {
+  stroke-width: 2;
+}
+
+.mobile-tab.active {
+  color: #667eea;
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 12px;
+    height: 56px;
+  }
+
+  .header-left {
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .logo-text {
+    font-size: 14px;
+  }
+
+  .nav-tabs {
+    display: none;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .user-info {
+    padding: 6px 10px;
+  }
+
+  .main-content {
+    padding: 12px;
+    padding-bottom: 80px;
+  }
+
+  .mobile-tab-bar {
+    display: flex;
+  }
 }
 </style>

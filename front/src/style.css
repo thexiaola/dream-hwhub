@@ -2404,3 +2404,135 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   margin: 4px 2px;
   background: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* =========================================================
+   全局手机端响应式适配 (max-width: 768px)
+   ========================================================= */
+@media (max-width: 768px) {
+  /* el-dialog: 手机端全宽、去除圆角与过度内边距 */
+  .el-dialog {
+    width: calc(100vw - 24px) !important;
+    margin: 12px auto !important;
+    max-width: none !important;
+  }
+  .el-dialog .el-dialog__header {
+    padding: 14px 16px 10px !important;
+  }
+  .el-dialog .el-dialog__body {
+    padding: 10px 16px !important;
+  }
+  .el-dialog .el-dialog__footer {
+    padding: 10px 16px 14px !important;
+  }
+
+  /* el-message-box: 手机端全宽 */
+  .el-message-box {
+    width: calc(100vw - 32px) !important;
+    max-width: none !important;
+    margin: 16px auto !important;
+  }
+
+  /* el-table: 横向滚动 */
+  .el-table {
+    display: block !important;
+    overflow-x: auto !important;
+  }
+
+  /* el-card: 手机端减小内边距 */
+  .el-card .el-card__header {
+    padding: 14px 16px !important;
+  }
+  .el-card .el-card__body {
+    padding: 14px 16px !important;
+  }
+
+  /* el-form: 手机端 label 居上对齐 */
+  .el-form-item {
+    margin-bottom: 14px !important;
+  }
+  .el-form-item .el-form-item__label {
+    float: none !important;
+    width: 100% !important;
+    line-height: 1.4 !important;
+    padding-bottom: 4px !important;
+    text-align: left !important;
+  }
+  .el-form-item .el-form-item__content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* el-input / el-select / el-date-picker: 手机端全宽 */
+  .el-form-item .el-input,
+  .el-form-item .el-select,
+  .el-form-item .el-date-editor,
+  .el-form-item .el-date-editor.el-input,
+  .el-form-item .el-date-editor.el-input__wrapper {
+    width: 100% !important;
+  }
+  .el-form-item .el-date-editor .el-input__wrapper {
+    width: 100% !important;
+  }
+
+  /* el-tabs: 手机端 tab 自适应 */
+  .el-tabs__header {
+    margin-bottom: 14px !important;
+  }
+  .el-tabs__item {
+    padding: 0 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* el-pagination: 手机端居中 */
+  .el-pagination {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* el-button: 手机端减小 padding */
+  .el-button {
+    padding: 8px 14px !important;
+  }
+
+  /* el-tag: 手机端减小 padding */
+  .el-tag {
+    padding: 0 6px !important;
+  }
+
+  /* 页面通用: 移动端全宽 */
+  .page-header {
+    max-width: 100% !important;
+    padding: 0 4px;
+  }
+  .page-header h2 {
+    font-size: 20px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* 全局卡片: 移动端圆角稍小 */
+  .el-card,
+  .profile-card,
+  .aside-card {
+    border-radius: 14px !important;
+  }
+}
+
+/* 超小屏幕 (max-width: 480px) */
+@media (max-width: 480px) {
+  .el-dialog {
+    width: calc(100vw - 16px) !important;
+    margin: 8px auto !important;
+  }
+
+  .el-message-box {
+    width: calc(100vw - 24px) !important;
+  }
+
+  .el-card .el-card__header {
+    padding: 12px 14px !important;
+  }
+  .el-card .el-card__body {
+    padding: 12px 14px !important;
+  }
+}

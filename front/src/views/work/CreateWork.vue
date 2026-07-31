@@ -435,4 +435,32 @@ onMounted(() => {
 .deadline-split-wrap :deep(.el-time-editor .el-input__wrapper) {
   color: rgba(255, 255, 255, 0.95) !important;
 }
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .content-card {
+    max-width: 100%;
+  }
+
+  .create-form {
+    padding: 16px 0;
+  }
+
+  .deadline-split-wrap {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .deadline-split-wrap :deep(.el-date-editor),
+  .deadline-split-wrap :deep(.el-time-editor) {
+    flex: none !important;
+    width: 100% !important;
+  }
+}
 </style>

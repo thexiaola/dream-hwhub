@@ -1146,19 +1146,34 @@ const handleLogout = async () => {
 @media (max-width: 640px) {
   .code-row {
     flex-direction: column;
+    gap: 12px;
+  }
+  .code-row .el-input,
+  .code-row .el-button {
+    width: 100%;
   }
   .profile-card {
     border-radius: 14px;
   }
   :deep(.profile-card .el-card__body) {
-    padding: 18px !important;
+    padding: 16px !important;
   }
   :deep(.profile-card .el-card__header) {
-    padding: 18px !important;
+    padding: 14px 16px !important;
   }
   :deep(.el-form-item__label) {
     width: auto !important;
     text-align: left !important;
+  }
+  .summary-row {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+  .completion-percent {
+    font-size: 28px;
+  }
+  .danger-zone .action-item {
+    padding: 14px 16px;
   }
 }
 </style>

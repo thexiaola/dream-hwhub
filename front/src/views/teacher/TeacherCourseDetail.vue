@@ -202,7 +202,7 @@
       v-model="showCreateWorkDialog"
       title="发布作业"
       width="600px"
-      class="dark-dialog"
+      class="dark-dialog create-work-dialog"
       @close="resetCreateWorkForm"
     >
       <el-form :model="workForm" label-width="80px">
@@ -291,7 +291,7 @@
       v-model="showInviteDialog"
       title="邀请学生"
       width="400px"
-      class="dark-dialog"
+      class="dark-dialog invite-student-dialog"
     >
       <el-form :model="inviteForm" label-width="80px">
         <el-form-item label="学生账号">
@@ -1429,6 +1429,109 @@ onMounted(async () => {
 
   .copy-btn {
     width: 100% !important;
+  }
+}
+
+/* 手机端适配（768px 以下） */
+@media (max-width: 768px) {
+  /* 页面头部：纵向堆叠 */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-left h2 {
+    font-size: 20px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-right .el-button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* 课程信息卡片：信息项换行 */
+  .info-section {
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    margin-bottom: 12px;
+  }
+
+  .info-item {
+    font-size: 13px;
+  }
+
+  /* 作业列表项 */
+  .work-item {
+    padding: 14px;
+  }
+
+  .work-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .title-row h4 {
+    font-size: 14px;
+  }
+
+  .work-info {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+
+  .work-info .info-item {
+    font-size: 12px;
+  }
+
+  /* 作业操作按钮：2 列网格 */
+  .work-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .action-btn {
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  /* 发布作业弹窗：全宽 */
+  .create-work-dialog :deep(.el-dialog) {
+    width: calc(100vw - 24px) !important;
+    min-width: 0 !important;
+    margin: 12px auto !important;
+  }
+
+  /* 截止时间：日期和时间纵向堆叠 */
+  .deadline-split-wrap {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .deadline-split-wrap :deep(.el-date-editor),
+  .deadline-split-wrap :deep(.el-time-editor) {
+    flex: none !important;
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  /* 邀请学生弹窗：全宽 */
+  .invite-dialog :deep(.el-dialog),
+  .invite-student-dialog :deep(.el-dialog) {
+    width: calc(100vw - 24px) !important;
+    min-width: 0 !important;
+    margin: 12px auto !important;
   }
 }
 
