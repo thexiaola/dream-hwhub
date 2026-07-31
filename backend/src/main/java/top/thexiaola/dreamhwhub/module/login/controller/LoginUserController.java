@@ -16,10 +16,10 @@ import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
-import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 /**
@@ -31,7 +31,8 @@ import top.thexiaola.dreamhwhub.support.session.UserUtils;
 @RequiredArgsConstructor
 public class LoginUserController {
     private final LoginUserService loginUserService;
-    private final UserMapper userResponseMapper;
+    private final UserMapper userMapper;
+    private final top.thexiaola.dreamhwhub.support.mapper.UserMapper userResponseMapper;
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
@@ -105,7 +106,14 @@ public class LoginUserController {
         }
         String userInfo = LogUtil.getUserInfo(currentUser);
         log.info("User ({}) fetched user info", userInfo);
-        UserResponse userResponse = userResponseMapper.toUserResponse(currentUser);
+
+        // 从数据库查询完整用户数据，确保 registerTime/lastLoginTime 等字段为最新值
+        User fullUser = userMapper.selectById(currentUser.getId());
+        if (fullUser == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error(404, "用户不存在"));
+        }
+        fullUser.setPassword(null);
+        UserResponse userResponse = userResponseMapper.toUserResponse(fullUser);
         return ResponseEntity.ok(ApiResponse.success(userResponse, "获取用户信息成功"));
     }
 

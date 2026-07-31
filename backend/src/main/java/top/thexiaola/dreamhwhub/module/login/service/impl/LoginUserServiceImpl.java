@@ -48,8 +48,12 @@ public class LoginUserServiceImpl implements LoginUserService {
         if (passwordUtil.matches(loginRequest.getPassword(), user.getPassword())) {
             log.info(LogUtil.getSuccessLog(operation + " - password verified", user));
             
-            // 更新最后登录时间
-            user.setLastLoginTime(LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            // 更新最后登录时间；若注册时间为空（历史数据），一并补全为首次登录时间
+            user.setLastLoginTime(now);
+            if (user.getRegisterTime() == null) {
+                user.setRegisterTime(now);
+            }
             userMapper.updateById(user);
             
             // 清除敏感信息(不返回密码哈希)

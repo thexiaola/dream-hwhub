@@ -10,6 +10,8 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +28,8 @@ public class JwtUtil {
 
     @Value("${app.jwt.expiration:86400000}") // 默认24小时(毫秒)
     private long expiration;
+
+    private static final DateTimeFormatter JWT_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     /**
      * 获取签名密钥
@@ -48,6 +52,12 @@ public class JwtUtil {
         claims.put("isBanned", user.getIsBanned() != null && user.getIsBanned() ? 1 : 0);
         claims.put("phone", user.getPhone());
         claims.put("idName", user.getIdName());
+        if (user.getRegisterTime() != null) {
+            claims.put("registerTime", user.getRegisterTime().format(JWT_DATE_FORMAT));
+        }
+        if (user.getLastLoginTime() != null) {
+            claims.put("lastLoginTime", user.getLastLoginTime().format(JWT_DATE_FORMAT));
+        }
         
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
@@ -95,6 +105,14 @@ public class JwtUtil {
         user.setIsBanned(isBanned != null && isBanned == 1);
         user.setPhone(claims.get("phone", String.class));
         user.setIdName(claims.get("idName", String.class));
+        String registerTimeStr = claims.get("registerTime", String.class);
+        if (registerTimeStr != null && !registerTimeStr.isEmpty()) {
+            user.setRegisterTime(LocalDateTime.parse(registerTimeStr, JWT_DATE_FORMAT));
+        }
+        String lastLoginTimeStr = claims.get("lastLoginTime", String.class);
+        if (lastLoginTimeStr != null && !lastLoginTimeStr.isEmpty()) {
+            user.setLastLoginTime(LocalDateTime.parse(lastLoginTimeStr, JWT_DATE_FORMAT));
+        }
         return user;
     }
 

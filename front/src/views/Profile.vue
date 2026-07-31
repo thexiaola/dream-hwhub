@@ -198,7 +198,7 @@
     </el-card>
     </div><!-- /profile-main -->
 
-      <!-- ============ 右栏：账号概览 + 安全建议 ============ -->
+      <!-- ============ 右栏：账号概览 + 账号完成度 ============ -->
       <aside class="profile-aside">
         <el-card class="aside-card" shadow="never">
           <template #header>
@@ -213,8 +213,8 @@
               <span class="summary-value">{{ userStore.userInfo?.id ?? '—' }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-label">账号</span>
-              <span class="summary-value">{{ userStore.userInfo?.account ?? '—' }}</span>
+              <span class="summary-label">学号/工号</span>
+              <span class="summary-value">{{ userStore.userInfo?.userNo || '—' }}</span>
             </div>
             <div class="summary-row">
               <span class="summary-label">真实姓名</span>
@@ -222,7 +222,7 @@
             </div>
             <div class="summary-row">
               <span class="summary-label">手机号</span>
-              <span class="summary-value">{{ maskedPhone || '未绑定' }}</span>
+              <span class="summary-value">{{ userStore.userInfo?.phone || '未绑定' }}</span>
             </div>
             <div class="summary-row">
               <span class="summary-label">注册时间</span>
@@ -232,46 +232,44 @@
               <span class="summary-label">上次登录</span>
               <span class="summary-value">{{ formattedLastLoginTime }}</span>
             </div>
-            <div class="summary-row">
-              <span class="summary-label">账号状态</span>
-              <span class="summary-value">
-                <el-tag :type="userStore.userInfo?.isBanned ? 'danger' : 'success'" size="small" effect="dark" round>
-                  {{ userStore.userInfo?.isBanned ? '已封禁' : '正常' }}
-                </el-tag>
-              </span>
-            </div>
           </div>
         </el-card>
 
         <el-card class="aside-card" shadow="never">
           <template #header>
             <div class="aside-header">
-              <ShieldCheck :size="18" />
-              <span>安全建议</span>
+              <CircleCheck :size="18" />
+              <span>账号完成度</span>
             </div>
           </template>
-          <ul class="tip-list">
-            <li :class="{ done: hasPhone }">
-              <Check v-if="hasPhone" :size="14" />
-              <Circle v-else :size="14" />
-              <span>{{ hasPhone ? '已绑定手机号' : '未绑定手机号' }}</span>
-            </li>
-            <li :class="{ done: hasIdName }">
-              <Check v-if="hasIdName" :size="14" />
-              <Circle v-else :size="14" />
-              <span>{{ hasIdName ? '已填写真实姓名' : '未填写真实姓名' }}</span>
-            </li>
-            <li class="tip-item-action" @click="activeTab = 'password'">
-              <Lock :size="14" />
-              <span>定期修改密码</span>
-              <ChevronRight :size="14" />
-            </li>
-            <li class="tip-item-action" @click="activeTab = 'email'">
-              <Mail :size="14" />
-              <span>保持邮箱可用</span>
-              <ChevronRight :size="14" />
-            </li>
-          </ul>
+          <div class="completion">
+            <div class="completion-ring">
+              <span class="completion-percent">{{ completionPercent }}%</span>
+            </div>
+            <el-progress :percentage="completionPercent" :stroke-width="8" :show-text="false" :color="progressColors" />
+            <ul class="completion-list">
+              <li :class="{ done: isUsernameFilled }" @click="!isUsernameFilled && (activeTab = 'info')">
+                <Check v-if="isUsernameFilled" :size="14" />
+                <Circle v-else :size="14" />
+                <span>用户昵称</span>
+              </li>
+              <li :class="{ done: isIdNameFilled }" @click="!isIdNameFilled && (activeTab = 'info')">
+                <Check v-if="isIdNameFilled" :size="14" />
+                <Circle v-else :size="14" />
+                <span>真实姓名</span>
+              </li>
+              <li :class="{ done: isPhoneFilled }" @click="!isPhoneFilled && (activeTab = 'info')">
+                <Check v-if="isPhoneFilled" :size="14" />
+                <Circle v-else :size="14" />
+                <span>手机号</span>
+              </li>
+              <li :class="{ done: isEmailFilled }" @click="!isEmailFilled && (activeTab = 'email')">
+                <Check v-if="isEmailFilled" :size="14" />
+                <Circle v-else :size="14" />
+                <span>邮箱</span>
+              </li>
+            </ul>
+          </div>
         </el-card>
       </aside>
     </div><!-- /profile-layout -->
@@ -291,14 +289,12 @@ import {
   Check,
   ChevronRight,
   Circle,
+  CircleCheck,
   Info,
-  Lock,
   LockKeyhole,
   LogOut,
-  Mail,
   MailCheck,
   Save,
-  ShieldCheck,
   User,
 } from '@lucide/vue'
 
@@ -322,17 +318,24 @@ const formatDateTime = (raw?: string): string => {
 const formattedRegisterTime = computed(() => formatDateTime(userStore.userInfo?.registerTime))
 const formattedLastLoginTime = computed(() => formatDateTime(userStore.userInfo?.lastLoginTime))
 
-// 手机号脱敏
-const maskedPhone = computed(() => {
-  const p = userStore.userInfo?.phone
-  if (!p) return ''
-  if (p.length <= 4) return p
-  if (p.length <= 7) return p.slice(0, 3) + '****'
-  return p.slice(0, 3) + '****' + p.slice(-4)
+// ========== 账号完成度 ==========
+const isUsernameFilled = computed(() => Boolean(userStore.userInfo?.username))
+const isIdNameFilled = computed(() => Boolean(userStore.userInfo?.idName))
+const isPhoneFilled = computed(() => Boolean(userStore.userInfo?.phone))
+const isEmailFilled = computed(() => Boolean(userStore.userInfo?.email))
+
+const completionPercent = computed(() => {
+  const flags = [isUsernameFilled.value, isIdNameFilled.value, isPhoneFilled.value, isEmailFilled.value]
+  const done = flags.filter(Boolean).length
+  return Math.round((done / flags.length) * 100)
 })
 
-const hasPhone = computed(() => Boolean(userStore.userInfo?.phone))
-const hasIdName = computed(() => Boolean(userStore.userInfo?.idName))
+const progressColors = computed(() => {
+  const p = completionPercent.value
+  if (p < 50) return '#ef4444'
+  if (p < 100) return '#f59e0b'
+  return '#22c55e'
+})
 
 const roleText = computed(() => {
   const r = userStore.userInfo?.role
@@ -680,6 +683,7 @@ const handleLogout = async () => {
   gap: 20px;
   align-items: start;
   max-width: 1120px;
+  margin: 0 auto;
 }
 
 .profile-main {
@@ -701,6 +705,11 @@ const handleLogout = async () => {
   .profile-aside {
     position: static;
   }
+}
+
+.page-header {
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .page-header h2 {
@@ -1046,54 +1055,91 @@ const handleLogout = async () => {
   font-weight: 500;
 }
 
-.tip-list {
+/* ============ 账号完成度卡片 ============ */
+.completion {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.completion-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0;
+}
+
+.completion-percent {
+  font-size: 34px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:deep(.aside-card .el-progress-bar) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+:deep(.aside-card .el-progress-bar__outer) {
+  background-color: transparent !important;
+}
+
+:deep(.aside-card .el-progress-bar__inner) {
+  border-radius: 8px !important;
+  transition: width 0.3s ease, background-color 0.3s ease !important;
+}
+
+.completion-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.tip-list li {
+.completion-list li {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
-.tip-list li .lucide {
+.completion-list li .lucide {
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.3);
 }
 
-.tip-list li.done {
-  color: rgba(134, 239, 172, 0.85);
+.completion-list li:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.tip-list li.done .lucide {
-  color: #86efac;
-}
-
-.tip-list li.tip-item-action {
-  cursor: pointer;
-}
-
-.tip-list li.tip-item-action:hover {
-  background: rgba(102, 126, 234, 0.12);
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.tip-list li.tip-item-action:hover .lucide {
+.completion-list li:hover .lucide {
   color: #667eea;
 }
 
-.tip-list li.tip-item-action > :last-child {
-  margin-left: auto;
+.completion-list li.done {
+  color: rgba(134, 239, 172, 0.85);
+  cursor: default;
+}
+
+.completion-list li.done .lucide {
+  color: #86efac;
+}
+
+.completion-list li.done:hover {
+  background: transparent;
+  color: rgba(134, 239, 172, 0.85);
 }
 
 /* 手机端适配 */
