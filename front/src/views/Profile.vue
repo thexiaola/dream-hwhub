@@ -729,6 +729,20 @@ const handleLogout = async () => {
   color: rgba(255, 255, 255, 0.35) !important;
 }
 
+/* 字符计数器（show-word-limit 产生的 "x / 64"）深色主题适配 */
+:deep(.profile-form .el-input__count),
+:deep(.profile-form .el-input__count-inner),
+:deep(.profile-form .el-textarea .el-input__count) {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+:deep(.profile-form .el-input__count-inner) {
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
 /* el-divider / el-alert 文本色适配 */
 :deep(.profile-form .el-divider__text) {
   background: transparent !important;
