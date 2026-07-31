@@ -844,17 +844,66 @@ const batchKickFromAdmin = async (classId: number) => {
   color: rgba(255, 255, 255, 0.4);
 }
 
-.filter-bar :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+/* el-radio-button 深色主题适配
+   注意：Element Plus 新版本 .el-radio-button__inner 的外边框用的是
+   outline: var(--el-border)（即 1px solid var(--el-border-color)），
+   不是 border！所以必须覆盖 outline / --el-border-color，覆盖 border-color 无效。 */
+.filter-bar :deep(.el-radio-group) {
+  --el-border-color: rgba(255, 255, 255, 0.2);
 }
 
+.filter-bar :deep(.el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  outline: 1px solid rgba(255, 255, 255, 0.2) !important;
+  outline-offset: -1px;
+  color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.2) inset !important;
+  transition: background-color 0.2s ease, color 0.2s ease, outline-color 0.2s ease;
+}
+
+.filter-bar :deep(.el-radio-button:first-child .el-radio-button__inner) {
+  border-top-left-radius: 8px !important;
+  border-bottom-left-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.filter-bar :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+.filter-bar :deep(.el-radio-button:not(.is-active):hover .el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  outline-color: rgba(255, 255, 255, 0.32) !important;
+  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.32) inset !important;
+}
+
+.filter-bar :deep(.el-radio-button:first-child:not(.is-active):hover .el-radio-button__inner) {
+  box-shadow: none !important;
+}
+
+.filter-bar :deep(.el-radio-button.is-active .el-radio-button__inner),
 .filter-bar :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: rgba(102, 126, 234, 0.3) !important;
-  border-color: #667eea !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  box-shadow: -1px 0 0 0 #667eea !important;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.85), rgba(118, 75, 162, 0.85)) !important;
+  outline: 1px solid rgba(102, 126, 234, 0.8) !important;
+  outline-offset: -1px;
+  color: #ffffff !important;
+  box-shadow: -1px 0 0 0 rgba(102, 126, 234, 0.8) inset !important;
+  font-weight: 600;
+}
+
+.filter-bar :deep(.el-radio-button.is-active:first-child .el-radio-button__inner),
+.filter-bar :deep(.el-radio-button:first-child .el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  box-shadow: none !important;
+}
+
+.filter-bar :deep(.el-radio-button.is-disabled .el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.02) !important;
+  outline: 1px solid rgba(255, 255, 255, 0.08) !important;
+  outline-offset: -1px;
+  color: rgba(255, 255, 255, 0.25) !important;
+  cursor: not-allowed;
 }
 
 .admin-tabs :deep(.el-pagination .el-pagination__total),
