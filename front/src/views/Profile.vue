@@ -4,6 +4,9 @@
       <h2>个人中心</h2>
     </div>
 
+    <div class="profile-layout">
+      <!-- ============ 左栏：表单卡片 + 危险操作 ============ -->
+    <div class="profile-main">
     <el-card class="profile-card" shadow="never">
       <template #header>
         <div class="profile-header">
@@ -193,6 +196,85 @@
         </button>
       </div>
     </el-card>
+    </div><!-- /profile-main -->
+
+      <!-- ============ 右栏：账号概览 + 安全建议 ============ -->
+      <aside class="profile-aside">
+        <el-card class="aside-card" shadow="never">
+          <template #header>
+            <div class="aside-header">
+              <Info :size="18" />
+              <span>账号概览</span>
+            </div>
+          </template>
+          <div class="summary-list">
+            <div class="summary-row">
+              <span class="summary-label">用户 ID</span>
+              <span class="summary-value">{{ userStore.userInfo?.id ?? '—' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">账号</span>
+              <span class="summary-value">{{ userStore.userInfo?.account ?? '—' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">真实姓名</span>
+              <span class="summary-value">{{ userStore.userInfo?.idName || '未填写' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">手机号</span>
+              <span class="summary-value">{{ maskedPhone || '未绑定' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">注册时间</span>
+              <span class="summary-value">{{ formattedRegisterTime }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">上次登录</span>
+              <span class="summary-value">{{ formattedLastLoginTime }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">账号状态</span>
+              <span class="summary-value">
+                <el-tag :type="userStore.userInfo?.isBanned ? 'danger' : 'success'" size="small" effect="dark" round>
+                  {{ userStore.userInfo?.isBanned ? '已封禁' : '正常' }}
+                </el-tag>
+              </span>
+            </div>
+          </div>
+        </el-card>
+
+        <el-card class="aside-card" shadow="never">
+          <template #header>
+            <div class="aside-header">
+              <ShieldCheck :size="18" />
+              <span>安全建议</span>
+            </div>
+          </template>
+          <ul class="tip-list">
+            <li :class="{ done: hasPhone }">
+              <Check v-if="hasPhone" :size="14" />
+              <Circle v-else :size="14" />
+              <span>{{ hasPhone ? '已绑定手机号' : '未绑定手机号' }}</span>
+            </li>
+            <li :class="{ done: hasIdName }">
+              <Check v-if="hasIdName" :size="14" />
+              <Circle v-else :size="14" />
+              <span>{{ hasIdName ? '已填写真实姓名' : '未填写真实姓名' }}</span>
+            </li>
+            <li class="tip-item-action" @click="activeTab = 'password'">
+              <Lock :size="14" />
+              <span>定期修改密码</span>
+              <ChevronRight :size="14" />
+            </li>
+            <li class="tip-item-action" @click="activeTab = 'email'">
+              <Mail :size="14" />
+              <span>保持邮箱可用</span>
+              <ChevronRight :size="14" />
+            </li>
+          </ul>
+        </el-card>
+      </aside>
+    </div><!-- /profile-layout -->
   </div>
 </template>
 
@@ -206,11 +288,17 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { put, post } from '@/utils/http'
 import {
   AlertTriangle,
+  Check,
   ChevronRight,
+  Circle,
+  Info,
+  Lock,
   LockKeyhole,
   LogOut,
+  Mail,
   MailCheck,
   Save,
+  ShieldCheck,
   User,
 } from '@lucide/vue'
 
@@ -221,6 +309,30 @@ const activeTab = ref('info')
 
 // ========== 公用 ==========
 const currentEmail = computed(() => userStore.userInfo?.email ?? '')
+
+// 格式化日期：后端返回 ISO 或时间戳字符串，统一显示 yyyy-MM-dd HH:mm
+const formatDateTime = (raw?: string): string => {
+  if (!raw) return '—'
+  const d = new Date(raw)
+  if (Number.isNaN(d.getTime())) return '—'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+const formattedRegisterTime = computed(() => formatDateTime(userStore.userInfo?.registerTime))
+const formattedLastLoginTime = computed(() => formatDateTime(userStore.userInfo?.lastLoginTime))
+
+// 手机号脱敏
+const maskedPhone = computed(() => {
+  const p = userStore.userInfo?.phone
+  if (!p) return ''
+  if (p.length <= 4) return p
+  if (p.length <= 7) return p.slice(0, 3) + '****'
+  return p.slice(0, 3) + '****' + p.slice(-4)
+})
+
+const hasPhone = computed(() => Boolean(userStore.userInfo?.phone))
+const hasIdName = computed(() => Boolean(userStore.userInfo?.idName))
 
 const roleText = computed(() => {
   const r = userStore.userInfo?.role
@@ -561,6 +673,36 @@ const handleLogout = async () => {
   padding-bottom: 32px;
 }
 
+/* 双栏布局：宽屏左右分列，窄屏堆叠 */
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+  max-width: 1120px;
+}
+
+.profile-main {
+  min-width: 0;
+}
+
+.profile-aside {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+  .profile-aside {
+    position: static;
+  }
+}
+
 .page-header h2 {
   font-size: 24px;
   font-weight: 600;
@@ -569,7 +711,6 @@ const handleLogout = async () => {
 }
 
 .profile-card {
-  max-width: 760px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
@@ -838,6 +979,121 @@ const handleLogout = async () => {
 
 .danger-header-icon {
   color: #ef4444;
+}
+
+/* ============ 右栏侧边卡片 ============ */
+.aside-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+:deep(.aside-card .el-card__header) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
+  padding: 16px 20px !important;
+}
+
+:deep(.aside-card .el-card__body) {
+  background: transparent !important;
+  padding: 16px 20px !important;
+}
+
+.aside-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.aside-header .lucide {
+  color: #667eea;
+}
+
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-label {
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.summary-value {
+  color: rgba(255, 255, 255, 0.88);
+  text-align: right;
+  word-break: break-all;
+  font-weight: 500;
+}
+
+.tip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tip-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.tip-list li .lucide {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.tip-list li.done {
+  color: rgba(134, 239, 172, 0.85);
+}
+
+.tip-list li.done .lucide {
+  color: #86efac;
+}
+
+.tip-list li.tip-item-action {
+  cursor: pointer;
+}
+
+.tip-list li.tip-item-action:hover {
+  background: rgba(102, 126, 234, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.tip-list li.tip-item-action:hover .lucide {
+  color: #667eea;
+}
+
+.tip-list li.tip-item-action > :last-child {
+  margin-left: auto;
 }
 
 /* 手机端适配 */
