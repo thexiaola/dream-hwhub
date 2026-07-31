@@ -464,8 +464,32 @@ onMounted(() => {
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 12px;
+  }
+
+  .header-left h2 {
+    font-size: 20px;
+  }
+
+  .header-right {
+    display: flex;
+    gap: 8px;
+  }
+
+  .header-right .el-button {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+  }
+
+  .create-work-page {
+    padding: 12px;
+    padding-bottom: 32px;
+  }
+
+  .content-card {
+    border-radius: 10px;
   }
 
   .create-form {
@@ -473,14 +497,52 @@ onMounted(() => {
     gap: 4px;
   }
 
-  .create-form :deep(.el-textarea__inner) {
-    min-height: 200px !important;
+  /* 表单标签：从左侧变为上方 */
+  .create-form :deep(.el-form-item) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    margin-bottom: 18px !important;
   }
 
+  .create-form :deep(.el-form-item__label) {
+    float: none !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    line-height: 1.5 !important;
+    padding: 0 0 6px 0 !important;
+    text-align: left !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 14px !important;
+  }
+
+  .create-form :deep(.el-form-item__content) {
+    display: block !important;
+    margin-left: 0 !important;
+    line-height: normal !important;
+  }
+
+  /* 输入框全宽 + 触控高度 */
+  .create-form :deep(.el-input__wrapper) {
+    min-height: 40px;
+  }
+
+  .create-form :deep(.el-textarea__inner) {
+    min-height: 120px !important;
+    font-size: 15px;
+  }
+
+  /* 满分输入全宽 */
   .score-input {
     width: 100%;
   }
 
+  .score-input :deep(.el-input-number) {
+    width: 100% !important;
+  }
+
+  /* 截止时间纵向堆叠 */
   .deadline-split-wrap {
     flex-direction: column !important;
     gap: 10px !important;
@@ -491,6 +553,41 @@ onMounted(() => {
   .deadline-split-wrap :deep(.el-time-editor) {
     flex: none !important;
     width: 100% !important;
+  }
+
+  /* 上传区域全宽 */
+  .create-form :deep(.el-upload) {
+    width: 100%;
+  }
+
+  .upload-trigger-btn {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .create-form :deep(.el-upload-list) {
+    margin-top: 10px;
+  }
+
+  /* Switch 触控优化 */
+  .create-form :deep(.el-switch) {
+    height: 32px;
+  }
+}
+</style>
+
+<!-- 非 scoped 样式：控制 teleport 到 body 的组件移动端样式 -->
+<style>
+@media (max-width: 768px) {
+  /* 日期/时间选择器弹出层适配 */
+  .dark-picker.el-picker-panel {
+    max-width: calc(100vw - 24px) !important;
+    width: auto !important;
+  }
+
+  .dark-picker.el-picker-panel .el-picker-panel__body-wrapper {
+    min-width: 0 !important;
   }
 }
 </style>
