@@ -1504,28 +1504,6 @@ onMounted(async () => {
     font-size: 13px;
   }
 
-  /* 发布作业弹窗：全宽 */
-  .create-work-dialog :deep(.el-dialog) {
-    width: calc(100vw - 24px) !important;
-    min-width: 0 !important;
-    margin: 12px auto !important;
-  }
-
-  /* 截止时间：日期和时间纵向堆叠 */
-  .deadline-split-wrap {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
-    width: 100% !important;
-  }
-
-  .deadline-split-wrap :deep(.el-date-editor),
-  .deadline-split-wrap :deep(.el-time-editor) {
-    flex: none !important;
-    width: 100% !important;
-    margin-right: 0 !important;
-  }
-
   /* 邀请学生弹窗：全宽 */
   .invite-dialog :deep(.el-dialog),
   .invite-student-dialog :deep(.el-dialog) {
@@ -1567,5 +1545,111 @@ onMounted(async () => {
 .deadline-split-wrap :deep(.el-input__wrapper) {
   width: 100% !important;
   min-width: 0 !important;
+}
+</style>
+
+<!-- 非 scoped 样式：用于控制 teleport 到 body 的 Dialog 移动端样式 -->
+<style>
+@media (max-width: 768px) {
+  .create-work-dialog .el-dialog {
+    width: calc(100vw - 24px) !important;
+    min-width: 0 !important;
+    margin: 12px auto !important;
+  }
+
+  .create-work-dialog .el-dialog__body {
+    padding: 16px 14px !important;
+  }
+
+  .create-work-dialog .el-form-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    margin-bottom: 18px !important;
+  }
+
+  .create-work-dialog .el-form-item__label {
+    float: none !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    line-height: 1.5 !important;
+    padding: 0 0 6px 0 !important;
+    text-align: left !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 14px !important;
+  }
+
+  .create-work-dialog .el-form-item__content {
+    display: block !important;
+    margin-left: 0 !important;
+    line-height: normal !important;
+  }
+
+  .create-work-dialog .el-input__wrapper,
+  .create-work-dialog .el-textarea__inner,
+  .create-work-dialog .el-input-number,
+  .create-work-dialog .el-date-editor,
+  .create-work-dialog .el-time-editor {
+    width: 100% !important;
+  }
+
+  .create-work-dialog .el-input__wrapper {
+    min-height: 40px;
+  }
+
+  .create-work-dialog .el-textarea__inner {
+    min-height: 96px;
+    font-size: 15px;
+  }
+
+  .create-work-dialog .el-input-number {
+    width: 100% !important;
+  }
+
+  .create-work-dialog .deadline-split-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .create-work-dialog .deadline-split-wrap .el-date-editor,
+  .create-work-dialog .deadline-split-wrap .el-time-editor {
+    flex: none !important;
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .create-work-dialog .total-score-input {
+    width: 100%;
+  }
+
+  .create-work-dialog .el-upload {
+    width: 100%;
+  }
+
+  .create-work-dialog .upload-trigger-btn {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .create-work-dialog .el-upload-list {
+    margin-top: 10px;
+  }
+
+  .create-work-dialog .el-dialog__footer {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px 16px;
+  }
+
+  .create-work-dialog .el-dialog__footer .el-button {
+    flex: 1;
+    min-height: 42px;
+    font-size: 15px;
+  }
 }
 </style>
