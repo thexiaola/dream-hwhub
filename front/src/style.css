@@ -130,6 +130,31 @@
   inherits: true;
   initial-value: rgba(0, 0, 0, 0.18);
 }
+@property --success-text {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #15803d;
+}
+@property --success-icon {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #16a34a;
+}
+@property --warn-title {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #92400e;
+}
+@property --warn-desc {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(146, 64, 14, 0.85);
+}
+@property --warn-icon {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #d97706;
+}
 @property --el-bg-color {
   syntax: "<color>";
   inherits: true;
@@ -262,6 +287,11 @@
   --danger-shadow: rgba(127, 29, 29, 0.25);
   --danger-overlay: rgba(127, 29, 29, 0.22);
   --dropdown-shadow: rgba(0, 0, 0, 0.18);
+  --success-text: #15803d;
+  --success-icon: #16a34a;
+  --warn-title: #92400e;
+  --warn-desc: rgba(146, 64, 14, 0.85);
+  --warn-icon: #d97706;
 
   /* 文本层级 */
   --text-primary: var(--fg);
@@ -318,6 +348,11 @@ html[data-theme="dark"] {
   --danger-shadow: rgba(127, 29, 29, 0.55);
   --danger-overlay: rgba(127, 29, 29, 0.4);
   --dropdown-shadow: rgba(0, 0, 0, 0.55);
+  --success-text: rgba(134, 239, 172, 0.85);
+  --success-icon: #86efac;
+  --warn-title: #fde68a;
+  --warn-desc: rgba(253, 230, 138, 0.8);
+  --warn-icon: #facc15;
 
   --text-primary: var(--fg);
   --text-secondary: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);

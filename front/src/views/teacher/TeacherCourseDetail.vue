@@ -1342,7 +1342,7 @@ onMounted(async () => {
   border-radius: 10px !important;
   font-weight: 600 !important;
   font-size: 14px !important;
-  color: #fca5a5 !important;
+  color: var(--danger-strong) !important;
   background: rgba(239, 68, 68, 0.12) !important;
   border: 1.5px solid rgba(239, 68, 68, 0.35) !important;
   transition: all 0.2s ease !important;
@@ -1390,7 +1390,7 @@ onMounted(async () => {
 
 /* danger 类型按钮走红色路线，覆盖上面紫色 */
 .toolbar-btn.el-button--danger {
-  color: #fecaca !important;
+  color: var(--danger-title) !important;
   background: rgba(239, 68, 68, 0.1) !important;
   border-color: rgba(239, 68, 68, 0.35) !important;
 }
