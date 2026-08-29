@@ -690,6 +690,11 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public boolean isTeacher(Integer classId, Integer userId) {
+        // 管理员可以像老师一样管理所有班级
+        User user = userMapper.selectById(userId);
+        if (isAdmin(user)) {
+            return true;
+        }
         // 检查是否是班级创建者
         ClassInfo classInfo = classInfoMapper.selectById(classId);
         if (classInfo != null && classInfo.getOwnerId().equals(userId)) {
@@ -706,7 +711,17 @@ public class ClassServiceImpl implements ClassService {
         if (userId == null) {
             return Collections.emptyList();
         }
-        
+
+        // 管理员可管理所有班级，返回全部班级 ID
+        User user = userMapper.selectById(userId);
+        if (isAdmin(user)) {
+            QueryWrapper<ClassInfo> allQuery = new QueryWrapper<>();
+            allQuery.select("id");
+            return classInfoMapper.selectList(allQuery).stream()
+                    .map(ClassInfo::getId)
+                    .collect(Collectors.toList());
+        }
+
         // 查询自己是创建者的班级
         QueryWrapper<ClassInfo> ownerQuery = new QueryWrapper<>();
         ownerQuery.eq("owner_id", userId).select("id");
@@ -856,39 +871,77 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize) {
-        // 第一步：使用MyBatisPlus分页查询用户的班级成员关系
+        // 按班级成员关系分页查询（管理员管理全部班级走 getAdminManageClasses）
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("user_id", userId);
-        Page<ClassMember> memberPage = new Page<>(pageNum, pageSize);
-        Page<ClassMember> pagedMembers = classMemberMapper.selectPage(memberPage, memberQuery);
-
-        if (pagedMembers.getRecords().isEmpty()) {
-            return new Page<>(pageNum, pageSize, 0);
-        }
-
-        // 第二步：批量查询优化 - 收集所有需要的ID
-        List<Integer> classIds = pagedMembers.getRecords().stream()
+        Page<ClassMember> memberPage = classMemberMapper.selectPage(
+                new Page<>(pageNum, pageSize), memberQuery);
+        Map<Integer, ClassMember> memberMap = memberPage.getRecords().stream()
+                .collect(Collectors.toMap(ClassMember::getClassId, m -> m, (a, b) -> a));
+        List<Integer> classIds = memberPage.getRecords().stream()
                 .map(ClassMember::getClassId)
                 .distinct()
                 .collect(Collectors.toList());
 
+        if (classIds.isEmpty()) {
+            return new Page<>(pageNum, pageSize, 0);
+        }
+
+        List<ClassDetailResponse> responses = buildClassDetailResponses(classIds, memberMap, false);
+        Page<ClassDetailResponse> page = new Page<>(pageNum, pageSize, memberPage.getTotal());
+        page.setRecords(responses);
+        return page;
+    }
+
+    @Override
+    public Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize, String keyword) {
+        // 仅管理员可管理全部班级
+        User currentUser = userMapper.selectById(userId);
+        if (!isAdmin(currentUser)) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "仅管理员可管理全部班级", null);
+        }
+
+        // 分页查询全部班级（可按班级名称关键字过滤）
+        QueryWrapper<ClassInfo> queryWrapper = new QueryWrapper<>();
+        if (keyword != null && !keyword.isBlank()) {
+            queryWrapper.like("class_name", keyword.trim());
+        }
+        Page<ClassInfo> classPage = classInfoMapper.selectPage(
+                new Page<>(pageNum, pageSize), queryWrapper);
+        List<Integer> classIds = classPage.getRecords().stream()
+                .map(ClassInfo::getId)
+                .collect(Collectors.toList());
+
+        if (classIds.isEmpty()) {
+            return new Page<>(pageNum, pageSize, 0);
+        }
+
+        List<ClassDetailResponse> responses = buildClassDetailResponses(classIds, Collections.emptyMap(), true);
+        Page<ClassDetailResponse> page = new Page<>(pageNum, pageSize, classPage.getTotal());
+        page.setRecords(responses);
+        return page;
+    }
+
+    /**
+     * 批量构建班级列表响应（复用班级信息/创建者/成员统计查询）
+     *
+     * @param forceTeacherRole 为 true 时所有班级的角色统一按"老师"返回（管理员视角）
+     */
+    private List<ClassDetailResponse> buildClassDetailResponses(
+            List<Integer> classIds, Map<Integer, ClassMember> memberMap, boolean forceTeacherRole) {
         // 批量查询班级信息
         final Map<Integer, ClassInfo> classMap;
-        if (!classIds.isEmpty()) {
-            QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
-            classQuery.in("id", classIds);
-            List<ClassInfo> classes = classInfoMapper.selectList(classQuery);
-            classMap = classes.stream().collect(Collectors.toMap(ClassInfo::getId, c -> c));
-        } else {
-            classMap = new HashMap<>();
-        }
-        
+        QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
+        classQuery.in("id", classIds);
+        List<ClassInfo> classes = classInfoMapper.selectList(classQuery);
+        classMap = classes.stream().collect(Collectors.toMap(ClassInfo::getId, c -> c));
+
         // 从已查询的班级信息中收集所有者ID
         List<Integer> ownerIds = classMap.values().stream()
                 .map(ClassInfo::getOwnerId)
                 .distinct()
                 .collect(Collectors.toList());
-        
+
         // 批量查询用户信息
         final Map<Integer, User> userMap;
         if (!ownerIds.isEmpty()) {
@@ -900,10 +953,10 @@ public class ClassServiceImpl implements ClassService {
             userMap = new HashMap<>();
         }
 
-        // 第三步：转换为响应对象
-        List<ClassDetailResponse> responses = pagedMembers.getRecords().stream()
-                .map(member -> {
-                    ClassInfo classInfo = classMap.get(member.getClassId());
+        // 转换为响应对象
+        return classIds.stream()
+                .map(classId -> {
+                    ClassInfo classInfo = classMap.get(classId);
                     if (classInfo == null) {
                         return null;
                     }
@@ -925,8 +978,8 @@ public class ClassServiceImpl implements ClassService {
                     studentQuery.eq("class_id", classInfo.getId()).eq("role", 0);
                     long studentCount = classMemberMapper.selectCount(studentQuery);
 
-                    // 确定用户角色
-                    String role = getUserRole(classInfo, member);
+                    // 确定用户角色（管理员视角统一按老师处理）
+                    String role = forceTeacherRole ? "老师" : getUserRole(classInfo, memberMap.get(classId));
 
                     return new ClassDetailResponse(
                             classInfo.getId(),
@@ -943,11 +996,6 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();
-
-        // 构建分页结果
-        Page<ClassDetailResponse> page = new Page<>(pageNum, pageSize, pagedMembers.getTotal());
-        page.setRecords(responses);
-        return page;
     }
 
     /**

@@ -171,6 +171,14 @@
             </div>
             <div class="class-actions">
               <el-button
+                type="primary"
+                size="small"
+                plain
+                @click="goManageClass(cls.id)"
+              >
+                进入管理
+              </el-button>
+              <el-button
                 type="danger"
                 size="small"
                 @click="dissolveClass(cls.id, cls.className)"
@@ -304,6 +312,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { get, put, del } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { FileText, ShieldAlert } from '@lucide/vue'
@@ -341,6 +350,8 @@ interface PageResult<T> {
 }
 
 const activeTab = ref<'create' | 'join' | 'classes'>('create')
+
+const router = useRouter()
 
 const userStore = useUserStore()
 
@@ -476,11 +487,15 @@ const loadClasses = async () => {
   if (classSearchKeyword.value) {
     params.keyword = classSearchKeyword.value
   }
-  const result = await get<PageResult<ClassInfoSimple>>('/class/mine', params)
+  const result = await get<PageResult<ClassInfoSimple>>('/class/manage', params)
   if (result.code === 200) {
     classList.value = result.data!.records
     classTotal.value = result.data!.total
   }
+}
+
+const goManageClass = (classId: number) => {
+  router.push(`/teacher/course/${classId}`)
 }
 
 const toggleClassDetail = async (classId: number) => {

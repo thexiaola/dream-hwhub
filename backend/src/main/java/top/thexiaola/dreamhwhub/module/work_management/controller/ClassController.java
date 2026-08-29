@@ -158,6 +158,27 @@ public class ClassController {
         }
 
         /**
+         * 管理员获取全部班级（管理面板的班级管理入口）
+         */
+        @GetMapping("/manage")
+        public ApiResponse<Page<ClassDetailResponse>> getAdminManageClasses(
+                        @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                log.info("User {} querying all classes for management, page={}, size={}", userInfo,
+                                pageRequest.getPageNum(), pageRequest.getPageSize());
+                if (currentUser == null) {
+                        return ApiResponse.error(401, "用户未登录");
+                }
+                Page<ClassDetailResponse> classes = classService.getAdminManageClasses(currentUser.getId(),
+                                pageRequest.getPageNum(),
+                                pageRequest.getPageSize(),
+                                pageRequest.getKeyword());
+                log.info("User {} queried {} classes for management", userInfo, classes.getTotal());
+                return ApiResponse.success(classes);
+        }
+
+        /**
          * 获取班级成员列表（分页）
          */
         @GetMapping("/{classId}/members")

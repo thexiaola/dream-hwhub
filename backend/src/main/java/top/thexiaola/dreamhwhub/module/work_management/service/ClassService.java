@@ -148,6 +148,11 @@ public interface ClassService {
     Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize);
 
     /**
+     * 管理员获取全部班级（用于管理面板的班级管理入口）
+     */
+    Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize, String keyword);
+
+    /**
      * 获取班级成员列表（分页）
      */
     Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize);

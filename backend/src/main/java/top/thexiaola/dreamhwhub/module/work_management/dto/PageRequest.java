@@ -22,4 +22,9 @@ public class PageRequest {
     @Min(value = 1, message = "每页大小必须大于等于1")
     @Max(value = 300, message = "每页大小不能超过300")
     private Integer pageSize = 20;
+
+    /**
+     * 关键字（按场景用于名称等字段的模糊搜索，可选）
+     */
+    private String keyword;
 }
