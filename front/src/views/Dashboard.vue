@@ -201,8 +201,8 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: rgba(var(--rgb-fg), 0.05);
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -244,12 +244,12 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 4px;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .stat-label {
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .row {
@@ -281,7 +281,7 @@ onMounted(() => {
 .card-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .view-all {
@@ -305,26 +305,26 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: rgba(var(--rgb-fg), 0.03);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.3s;
 }
 
 .work-item:hover {
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
 }
 
 .work-title {
   font-size: 15px;
   font-weight: 500;
   margin-bottom: 4px;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .work-meta {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
 .status-badge {
@@ -360,8 +360,8 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   padding: 14px 20px;
-  background: rgba(var(--rgb-fg), 0.05);
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 10px;
   color: var(--fg);
   font-size: 14px;
@@ -385,14 +385,14 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(var(--rgb-fg), 0.03);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.3s;
 }
 
 .class-item:hover {
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
 }
 
 .class-icon {
@@ -410,11 +410,11 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 2px;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .class-info p {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 </style>

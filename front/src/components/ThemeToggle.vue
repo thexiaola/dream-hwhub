@@ -26,15 +26,15 @@ const { isDark, toggle } = useTheme()
   height: 36px;
   margin-right: 8px;
   background: transparent;
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 8px;
-  color: rgba(var(--rgb-fg), 0.7);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
   cursor: pointer;
   transition: background 0.3s, color 0.3s, border-color 0.3s;
 }
 
 .theme-toggle:hover {
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   color: var(--fg);
 }
 </style>

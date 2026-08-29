@@ -1,3 +1,236 @@
+/* =========================================================
+   主题变量注册（@property）
+   未注册的 CSS 变量取值变化不会被 transition 平滑过渡；
+   注册为 <color>/<number> 后，引用它们的 color/background
+   等属性即可参与过渡插值，实现亮暗主题平滑切换。
+   旧浏览器不支持 @property 时会忽略本块，变量照常工作（无过渡）。
+   ========================================================= */
+@property --primary-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #667eea;
+}
+@property --secondary-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #764ba2;
+}
+@property --bg-page {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f5f7fa;
+}
+@property --bg-elevated {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+@property --dialog-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(255, 255, 255, 0.82);
+}
+@property --bg-card {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.04);
+}
+@property --border-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.1);
+}
+@property --r-fg {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --g-fg {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --b-fg {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --fg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1a2e;
+}
+@property --fg-on-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+@property --text-primary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1a2e;
+}
+@property --text-secondary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.62);
+}
+@property --text-muted {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.4);
+}
+@property --bg-dark {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f5f7fa;
+}
+@property --danger-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #fff5f5;
+}
+@property --danger-bg-strong {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffe4e6;
+}
+@property --danger-title {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b91c1c;
+}
+@property --danger-strong {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #dc2626;
+}
+@property --danger-border {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(185, 28, 28, 0.35);
+}
+@property --danger-border-soft {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(185, 28, 28, 0.18);
+}
+@property --danger-shadow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(127, 29, 29, 0.25);
+}
+@property --danger-overlay {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(127, 29, 29, 0.22);
+}
+@property --dropdown-shadow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.18);
+}
+@property --el-bg-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+@property --el-bg-color-page {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f5f7fa;
+}
+@property --el-text-color-primary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1a2e;
+}
+@property --el-text-color-regular {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.62);
+}
+@property --el-text-color-secondary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.4);
+}
+@property --el-border-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.1);
+}
+@property --el-border-color-light {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.1);
+}
+@property --el-fill-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.03);
+}
+@property --el-fill-color-light {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.02);
+}
+@property --el-fill-color-blank {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --el-dialog-bg-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+@property --el-dialog-title-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1a2e;
+}
+@property --el-input-bg-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.03);
+}
+@property --el-input-text-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1a2e;
+}
+@property --el-input-border-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.1);
+}
+@property --el-input-hover-border-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.3);
+}
+@property --el-input-focus-border-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #667eea;
+}
+@property --el-button-text-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1a2e;
+}
+@property --el-button-bg-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.04);
+}
+@property --el-button-border-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.1);
+}
+
 :root {
   /* 品牌色：亮暗两主题保持一致 */
   --primary-color: #667eea;
@@ -7,11 +240,15 @@
   --bg-page: #f5f7fa;
   --bg-elevated: #ffffff;
   --dialog-bg: rgba(255, 255, 255, 0.82);
-  --bg-card: rgba(var(--rgb-fg), 0.04);
-  --border-color: rgba(var(--rgb-fg), 0.1);
+  --bg-card: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  --border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
 
-  /* 前景色：--rgb-fg 供 rgba(var(--rgb-fg), X) 使用；--fg 为实色前景；--fg-on-accent 用于渐变/主色面上的文字（恒白） */
-  --rgb-fg: 0, 0, 0;
+  /* 前景色：--r-fg/--g-fg/--b-fg 为 RGB 分量（已 @property 注册可插值），
+     供 rgba(var(--r-fg), var(--g-fg), var(--b-fg), X) 使用；--fg 为实色前景；
+     --fg-on-accent 用于渐变/主色面上的文字（恒白） */
+  --r-fg: 0;
+  --g-fg: 0;
+  --b-fg: 0;
   --fg: #1a1a2e;
   --fg-on-accent: #ffffff;
 
@@ -24,11 +261,12 @@
   --danger-border-soft: rgba(185, 28, 28, 0.18);
   --danger-shadow: rgba(127, 29, 29, 0.25);
   --danger-overlay: rgba(127, 29, 29, 0.22);
+  --dropdown-shadow: rgba(0, 0, 0, 0.18);
 
   /* 文本层级 */
   --text-primary: var(--fg);
-  --text-secondary: rgba(var(--rgb-fg), 0.62);
-  --text-muted: rgba(var(--rgb-fg), 0.4);
+  --text-secondary: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.62);
+  --text-muted: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 
   /* 兼容历史引用 */
   --bg-dark: var(--bg-page);
@@ -41,18 +279,18 @@
   --el-text-color-secondary: var(--text-muted);
   --el-border-color: var(--border-color);
   --el-border-color-light: var(--border-color);
-  --el-fill-color: rgba(var(--rgb-fg), 0.03);
-  --el-fill-color-light: rgba(var(--rgb-fg), 0.02);
+  --el-fill-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  --el-fill-color-light: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.02);
   --el-fill-color-blank: transparent;
   --el-dialog-bg-color: var(--bg-elevated);
   --el-dialog-title-color: var(--text-primary);
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.03);
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   --el-input-text-color: var(--text-primary);
   --el-input-border-color: var(--border-color);
-  --el-input-hover-border-color: rgba(var(--rgb-fg), 0.3);
+  --el-input-hover-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.3);
   --el-input-focus-border-color: var(--primary-color);
   --el-button-text-color: var(--text-primary);
-  --el-button-bg-color: rgba(var(--rgb-fg), 0.04);
+  --el-button-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
   --el-button-border-color: var(--border-color);
   color-scheme: light;
 }
@@ -61,15 +299,17 @@ html[data-theme="dark"] {
   --bg-page: #0a0a1a;
   --bg-elevated: #1e1e2e;
   --dialog-bg: rgba(30, 30, 65, 0.72);
-  --bg-card: rgba(var(--rgb-fg), 0.05);
-  --border-color: rgba(var(--rgb-fg), 0.1);
+  --bg-card: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  --border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
 
-  --rgb-fg: 255, 255, 255;
+  --r-fg: 255;
+  --g-fg: 255;
+  --b-fg: 255;
   --fg: #ffffff;
   --fg-on-accent: #ffffff;
 
   /* 危险操作弹窗（解散课堂等）主题色：暗色下保持原深红系 */
-  --danger-bg: var(--danger-bg);
+  --danger-bg: rgba(64, 18, 24, 1);
   --danger-bg-strong: rgba(74, 22, 28, 1);
   --danger-title: #fecaca;
   --danger-strong: #fca5a5;
@@ -77,10 +317,11 @@ html[data-theme="dark"] {
   --danger-border-soft: rgba(254, 202, 202, 0.18);
   --danger-shadow: rgba(127, 29, 29, 0.55);
   --danger-overlay: rgba(127, 29, 29, 0.4);
+  --dropdown-shadow: rgba(0, 0, 0, 0.55);
 
   --text-primary: var(--fg);
-  --text-secondary: rgba(var(--rgb-fg), 0.6);
-  --text-muted: rgba(var(--rgb-fg), 0.4);
+  --text-secondary: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
+  --text-muted: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 
   --bg-dark: var(--bg-page);
 
@@ -91,19 +332,19 @@ html[data-theme="dark"] {
   --el-text-color-secondary: var(--text-muted);
   --el-border-color: var(--border-color);
   --el-border-color-light: var(--border-color);
-  --el-fill-color: rgba(var(--rgb-fg), 0.05);
-  --el-fill-color-light: rgba(var(--rgb-fg), 0.03);
+  --el-fill-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  --el-fill-color-light: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   --el-fill-color-blank: transparent;
   --el-dialog-bg-color: var(--dialog-bg);
   --el-dialog-title-color: var(--text-primary);
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06);
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06);
   --el-input-text-color: var(--fg);
-  --el-input-border-color: rgba(var(--rgb-fg), 0.25);
-  --el-input-hover-border-color: rgba(var(--rgb-fg), 0.35);
+  --el-input-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25);
+  --el-input-hover-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35);
   --el-input-focus-border-color: var(--primary-color);
   --el-button-text-color: var(--text-primary);
-  --el-button-bg-color: rgba(var(--rgb-fg), 0.05);
-  --el-button-border-color: rgba(var(--rgb-fg), 0.2);
+  --el-button-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  --el-button-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2);
   color-scheme: dark;
 }
 
@@ -147,12 +388,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(var(--rgb-fg), 0.2);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(var(--rgb-fg), 0.3);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.3);
 }
 
 .gradient-text {
@@ -195,7 +436,7 @@ body {
 
 input:not(.el-input__inner):not(.el-textarea__inner),
 textarea:not(.el-input__inner):not(.el-textarea__inner) {
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-primary);
@@ -212,7 +453,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-input__wrapper {
-  background: rgba(var(--rgb-fg), 0.05) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05) !important;
   border-color: var(--border-color) !important;
 }
 
@@ -251,7 +492,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-table__header {
-  background: rgba(var(--rgb-fg), 0.03) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03) !important;
 }
 
 .el-menu {
@@ -277,22 +518,22 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   --el-dialog-title-color: var(--text-primary);
   --el-form-item-label-color: var(--text-secondary);
   --el-input-text-color: var(--fg);
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06);
-  --el-input-border-color: rgba(var(--rgb-fg), 0.25);
-  --el-input-hover-border-color: rgba(var(--rgb-fg), 0.35);
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06);
+  --el-input-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25);
+  --el-input-hover-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35);
   --el-input-focus-border-color: var(--primary-color);
   --el-button-text-color: var(--text-primary);
-  --el-button-border-color: rgba(var(--rgb-fg), 0.2);
-  --el-button-bg-color: rgba(var(--rgb-fg), 0.05);
-  --el-text-color-regular: rgba(var(--rgb-fg), 0.95);
-  --el-text-color-primary: rgba(var(--rgb-fg), 0.95);
+  --el-button-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2);
+  --el-button-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  --el-text-color-regular: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
+  --el-text-color-primary: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .dark-dialog .el-input {
   --el-input-text-color: var(--fg);
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06);
-  --el-input-border-color: rgba(var(--rgb-fg), 0.25);
-  --el-input-hover-border-color: rgba(var(--rgb-fg), 0.35);
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06);
+  --el-input-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25);
+  --el-input-hover-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35);
   --el-input-focus-border-color: var(--primary-color);
 }
 
@@ -338,7 +579,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-dialog .el-dialog__header {
   background: var(--bg-elevated) !important;
-  border-bottom: 1px solid rgba(var(--rgb-fg), 0.08);
+  border-bottom: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
 }
 
 .dark-dialog .el-dialog__body {
@@ -347,7 +588,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-dialog .el-dialog__footer {
   background: var(--bg-elevated) !important;
-  border-top: 1px solid rgba(var(--rgb-fg), 0.08);
+  border-top: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
 }
 
 .dark-dialog .el-dialog__title {
@@ -359,13 +600,13 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-input__wrapper {
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06) !important;
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.12) inset !important;
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) inset !important;
 }
 
 .dark-dialog .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.2) inset !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) inset !important;
 }
 
 .dark-dialog .el-input__wrapper:focus-within {
@@ -378,12 +619,12 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-input__inner::placeholder {
-  color: rgba(var(--rgb-fg), 0.35) !important;
-  -webkit-text-fill-color: rgba(var(--rgb-fg), 0.35) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
+  -webkit-text-fill-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
 }
 
 .dark-dialog .el-date-editor {
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06) !important;
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -399,16 +640,16 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-date-editor .el-input__wrapper {
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06) !important;
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.12) inset !important;
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) inset !important;
   border-radius: 4px !important;
   border: none !important;
   outline: none !important;
 }
 
 .dark-dialog .el-date-editor .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.22) inset !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.22) inset !important;
 }
 
 .dark-dialog .el-date-editor .el-input__wrapper:focus-within,
@@ -426,18 +667,18 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-date-editor .el-input__inner::placeholder {
-  color: rgba(var(--rgb-fg), 0.35) !important;
-  -webkit-text-fill-color: rgba(var(--rgb-fg), 0.35) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
+  -webkit-text-fill-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
 }
 
 .dark-dialog .el-date-editor .el-input__prefix .el-icon,
 .dark-dialog .el-date-editor .el-input__suffix .el-icon,
 .dark-dialog .el-date-editor .el-range__icon {
-  color: rgba(var(--rgb-fg), 0.5) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5) !important;
 }
 
 .dark-dialog .el-date-editor .el-input__clear {
-  color: rgba(var(--rgb-fg), 0.5) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5) !important;
 }
 
 .dark-dialog .el-date-editor .el-input__clear:hover {
@@ -445,7 +686,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-date-editor.is-range .el-range-separator {
-  color: rgba(var(--rgb-fg), 0.5) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5) !important;
 }
 
 .dark-dialog .el-date-editor.is-range .el-range-input {
@@ -456,14 +697,14 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .dark-dialog .el-time-editor,
 .dark-dialog .el-time-editor.el-input,
 .dark-dialog .el-time-editor .el-input__wrapper {
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06) !important;
-  background: rgba(var(--rgb-fg), 0.06) !important;
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
 }
 
 .dark-dialog .el-time-picker .el-input__wrapper,
 .dark-dialog .el-time-editor .el-input__wrapper {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.12) inset !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) inset !important;
   border-radius: 4px !important;
   border: none !important;
   outline: none !important;
@@ -471,7 +712,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-dialog .el-time-picker .el-input__wrapper:hover,
 .dark-dialog .el-time-editor .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.22) inset !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.22) inset !important;
 }
 
 .dark-dialog .el-time-picker .el-input__wrapper:focus-within,
@@ -487,30 +728,30 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-dialog .el-time-picker .el-input__inner::placeholder,
 .dark-dialog .el-time-editor .el-input__inner::placeholder {
-  color: rgba(var(--rgb-fg), 0.35) !important;
-  -webkit-text-fill-color: rgba(var(--rgb-fg), 0.35) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
+  -webkit-text-fill-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
 }
 
 .dark-dialog .el-time-picker .el-input__prefix .el-icon,
 .dark-dialog .el-time-picker .el-input__suffix .el-icon {
-  color: rgba(var(--rgb-fg), 0.5) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5) !important;
 }
 
 .dark-dialog .el-textarea__inner {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
   color: var(--fg) !important;
   -webkit-text-fill-color: var(--fg) !important;
   box-shadow: none !important;
 }
 
 .dark-dialog .el-textarea__inner::placeholder {
-  color: rgba(var(--rgb-fg), 0.35) !important;
-  -webkit-text-fill-color: rgba(var(--rgb-fg), 0.35) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
+  -webkit-text-fill-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
 }
 
 .dark-dialog .el-textarea__inner:hover {
-  border-color: rgba(var(--rgb-fg), 0.15) !important;
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.15) !important;
 }
 
 .dark-dialog .el-textarea__inner:focus {
@@ -519,15 +760,15 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-button:not(.el-button--primary):not(.el-button--danger) {
-  color: rgba(var(--rgb-fg), 0.65);
-  border-color: rgba(var(--rgb-fg), 0.1);
-  background: rgba(var(--rgb-fg), 0.03);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.65);
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
 }
 
 .dark-dialog .el-button:not(.el-button--primary):not(.el-button--danger):hover {
-  color: rgba(var(--rgb-fg), 0.85);
-  border-color: rgba(var(--rgb-fg), 0.15);
-  background: rgba(var(--rgb-fg), 0.06);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.15);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06);
 }
 
 .dark-dialog .el-button--primary {
@@ -540,14 +781,14 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-input-number .el-input__wrapper {
-  --el-input-bg-color: rgba(var(--rgb-fg), 0.06) !important;
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.12) inset !important;
+  --el-input-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) inset !important;
   border-radius: 0;
 }
 
 .dark-dialog .el-input-number .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.2) inset !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) inset !important;
 }
 
 .dark-dialog .el-input-number .el-input__wrapper:focus-within {
@@ -562,9 +803,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-dialog .el-input-number__decrease,
 .dark-dialog .el-input-number__increase {
-  background: rgba(var(--rgb-fg), 0.04) !important;
-  border-color: rgba(var(--rgb-fg), 0.15) !important;
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04) !important;
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.15) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
   transition: all 0.2s ease;
 }
 
@@ -582,22 +823,22 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-dialog .el-input-number__decrease.is-disabled,
 .dark-dialog .el-input-number__increase.is-disabled {
-  background: rgba(var(--rgb-fg), 0.02) !important;
-  color: rgba(var(--rgb-fg), 0.3) !important;
-  border-color: rgba(var(--rgb-fg), 0.08) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.02) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.3) !important;
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
   cursor: not-allowed;
 }
 
 .dark-dialog .el-input-number__decrease.is-disabled:hover,
 .dark-dialog .el-input-number__increase.is-disabled:hover {
-  color: rgba(var(--rgb-fg), 0.3) !important;
-  background: rgba(var(--rgb-fg), 0.02) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.3) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.02) !important;
 }
 
 .dark-dialog .el-upload .el-upload--text {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  border: 1px dashed rgba(var(--rgb-fg), 0.2) !important;
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  border: 1px dashed rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
   transition: all 0.2s ease;
 }
 
@@ -608,8 +849,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-upload-dragger {
-  background: rgba(var(--rgb-fg), 0.03) !important;
-  border: 1px dashed rgba(var(--rgb-fg), 0.15) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03) !important;
+  border: 1px dashed rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.15) !important;
 }
 
 .dark-dialog .el-upload-dragger:hover {
@@ -618,15 +859,15 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-dialog .el-upload-list .el-upload-list__item {
-  background: rgba(var(--rgb-fg), 0.04) !important;
-  color: rgba(var(--rgb-fg), 0.85) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85) !important;
   border-radius: 6px;
   padding: 6px 10px;
   margin-bottom: 6px;
 }
 
 .dark-dialog .el-upload-list .el-upload-list__item-name {
-  color: rgba(var(--rgb-fg), 0.85) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85) !important;
 }
 
 .dark-dialog .el-upload-list .el-upload-list__item-name:hover {
@@ -635,7 +876,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-dialog .el-upload-list .el-icon--close-tip,
 .dark-dialog .el-upload-list .el-upload-list__item-delete {
-  color: rgba(var(--rgb-fg), 0.5) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5) !important;
 }
 
 .dark-dialog .el-upload-list .el-icon--close-tip:hover,
@@ -654,7 +895,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.4) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4) !important;
   margin-top: 6px;
 }
 
@@ -668,9 +909,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 8px !important;
-  background: rgba(var(--rgb-fg), 0.08) !important;
-  border: 2px solid rgba(var(--rgb-fg), 0.28) !important;
-  color: rgba(var(--rgb-fg), 0.82) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
+  border: 2px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.28) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.82) !important;
   transition: all 0.2s ease;
   box-sizing: border-box !important;
 }
@@ -687,21 +928,21 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .page-cancel-btn {
   border-radius: 8px !important;
-  background: rgba(var(--rgb-fg), 0.1) !important;
-  border: 2px solid rgba(var(--rgb-fg), 0.28) !important;
-  color: rgba(var(--rgb-fg), 0.82) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1) !important;
+  border: 2px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.28) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.82) !important;
   transition: all 0.2s ease;
   box-sizing: border-box !important;
 }
 
 .page-cancel-btn:hover {
-  background: rgba(var(--rgb-fg), 0.16) !important;
-  border-color: rgba(var(--rgb-fg), 0.38) !important;
-  color: rgba(var(--rgb-fg), 0.95) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.16) !important;
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.38) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95) !important;
 }
 
 .page-cancel-btn:active {
-  background: rgba(var(--rgb-fg), 0.22) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.22) !important;
 }
 
 /* ====== 深色主题 el-date-picker 弹层面板 ====== */
@@ -712,7 +953,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-popper.is-dark.dark-picker,
 .dark-picker.el-popper {
   background: var(--bg-elevated) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
   border-radius: 8px !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
   outline: none !important;
@@ -739,7 +980,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .dark-picker.el-picker-panel,
 .dark-picker .el-picker-panel {
   background: var(--bg-elevated) !important;
-  color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
   border: none !important;
   box-shadow: none !important;
   width: 340px !important;
@@ -771,7 +1012,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-picker .el-picker-panel__icon-btn,
 .dark-picker .el-date-picker__header .el-picker-panel__icon-btn {
-  color: rgba(var(--rgb-fg), 0.6) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6) !important;
   width: 24px !important;
   height: 24px !important;
   font-size: 14px !important;
@@ -783,7 +1024,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-date-picker__header-label {
-  color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
   font-weight: 600;
   font-size: 14px !important;
 }
@@ -799,9 +1040,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-date-table th {
-  color: rgba(var(--rgb-fg), 0.5) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5) !important;
   background: transparent !important;
-  border-bottom: 1px solid rgba(var(--rgb-fg), 0.06) !important;
+  border-bottom: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
   padding: 4px 0 !important;
   font-weight: 500;
   font-size: 12px !important;
@@ -915,7 +1156,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-date-table-cell .el-date-table-cell__text {
-  color: rgba(var(--rgb-fg), 0.85) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85) !important;
   background: transparent !important;
   width: 26px !important;
   height: 26px !important;
@@ -1191,34 +1432,34 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-date-table-cell.disabled .el-date-table-cell__text {
-  color: rgba(var(--rgb-fg), 0.25) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
   background: transparent !important;
   cursor: not-allowed !important;
 }
 
 .dark-picker .el-date-table-cell.disabled:hover .el-date-table-cell__text {
   background: transparent !important;
-  color: rgba(var(--rgb-fg), 0.25) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
 }
 
 .dark-picker .el-date-table-cell.prev-month .el-date-table-cell__text,
 .dark-picker .el-date-table-cell.next-month .el-date-table-cell__text {
-  color: rgba(var(--rgb-fg), 0.3) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.3) !important;
 }
 
 .dark-picker .el-date-table {
-  color: rgba(var(--rgb-fg), 0.85) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85) !important;
 }
 
 .dark-picker .el-picker-panel__footer {
   background: var(--bg-elevated) !important;
-  border-top: 1px solid rgba(var(--rgb-fg), 0.06) !important;
+  border-top: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
   padding: 6px 8px !important;
   margin-top: 4px !important;
 }
 
 .dark-picker .el-picker-panel__link-btn {
-  color: rgba(var(--rgb-fg), 0.6) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6) !important;
 }
 
 .dark-picker .el-picker-panel__link-btn:hover {
@@ -1227,8 +1468,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-picker .el-picker-panel__btn {
   background: transparent !important;
-  color: rgba(var(--rgb-fg), 0.75) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.2) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) !important;
   padding: 4px 12px !important;
   border-radius: 4px !important;
   transition: all 0.2s ease;
@@ -1257,17 +1498,17 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: linear-gradient(
     to bottom,
     var(--bg-elevated),
-    rgba(var(--rgb-fg), 0)
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0)
   ) !important;
-  border-color: rgba(var(--rgb-fg), 0.08) !important;
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .dark-picker .el-time-spinner__list::after {
-  background: linear-gradient(to top, var(--bg-elevated), rgba(var(--rgb-fg), 0)) !important;
+  background: linear-gradient(to top, var(--bg-elevated), rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0)) !important;
 }
 
 .dark-picker .el-time-spinner .el-time-spinner__item {
-  color: rgba(var(--rgb-fg), 0.4) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4) !important;
   height: 32px !important;
   line-height: 32px !important;
 }
@@ -1309,28 +1550,28 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-picker .el-time-spinner__item.disabled,
 .dark-picker .el-time-spinner__item.is-disabled {
-  color: rgba(var(--rgb-fg), 0.2) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) !important;
 }
 
 .dark-picker .el-date-picker__time-header {
-  border-top: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border-top: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
   background: var(--bg-elevated) !important;
 }
 
 .dark-picker .el-date-picker__time-header .el-text__inner {
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
 }
 
 .dark-picker .el-date-picker__editor-wrap .el-input__wrapper,
 .dark-picker .el-date-picker__time-header .el-input__wrapper {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.12) inset !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) inset !important;
 }
 
 .dark-picker .el-date-picker__editor-wrap .el-input__inner,
 .dark-picker .el-date-picker__time-header .el-input__inner {
-  color: rgba(var(--rgb-fg), 0.9) !important;
-  -webkit-text-fill-color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
+  -webkit-text-fill-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
 }
 
 /* 范围选择（range）面板 */
@@ -1339,7 +1580,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-range-separator {
-  color: rgba(var(--rgb-fg), 0.5) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5) !important;
 }
 
 .dark-picker .el-date-range-picker__content .el-date-range-picker__header {
@@ -1347,17 +1588,17 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .dark-picker .el-date-range-picker__header div {
-  color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
 }
 
 /* 左侧 Shortcuts 侧栏 */
 .dark-picker .el-picker-panel__sidebar {
   background: #181826 !important;
-  border-right: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border-right: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .dark-picker .el-picker-panel__shortcut {
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
 }
 
 .dark-picker .el-picker-panel__shortcut:hover {
@@ -1377,7 +1618,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-time-panel,
 .el-time-panel.el-popper {
   background: var(--bg-elevated) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
   margin: 4px 0 !important;
   border-radius: 8px !important;
@@ -1392,12 +1633,12 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-time-panel .el-time-spinner {
   background: var(--bg-elevated) !important;
   height: 240px !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.06) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
   border-radius: 4px !important;
 }
 
 .el-time-panel .el-time-spinner__item {
-  color: rgba(var(--rgb-fg), 0.4) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4) !important;
   height: 32px !important;
   line-height: 32px !important;
 }
@@ -1417,7 +1658,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel .el-time-spinner__item.disabled,
 .el-time-panel .el-time-spinner__item.is-disabled {
-  color: rgba(var(--rgb-fg), 0.18) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.18) !important;
   cursor: not-allowed !important;
 }
 
@@ -1454,13 +1695,13 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   background: linear-gradient(
     to bottom,
     var(--bg-elevated),
-    rgba(var(--rgb-fg), 0)
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0)
   ) !important;
 }
 
 .el-time-panel .el-time-spinner__list::after {
   bottom: 0;
-  background: linear-gradient(to top, var(--bg-elevated), rgba(var(--rgb-fg), 0)) !important;
+  background: linear-gradient(to top, var(--bg-elevated), rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0)) !important;
 }
 
 /* 选中行高亮指示条 */
@@ -1492,25 +1733,25 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-popper[data-popper-placement^="bottom"] > .el-popper__arrow::before {
   border-top-color: var(--bg-elevated) !important;
   background: var(--bg-elevated) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .el-popper[data-popper-placement^="top"] > .el-popper__arrow::before {
   border-bottom-color: var(--bg-elevated) !important;
   background: var(--bg-elevated) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .el-popper[data-popper-placement^="left"] > .el-popper__arrow::before {
   border-right-color: var(--bg-elevated) !important;
   background: var(--bg-elevated) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .el-popper[data-popper-placement^="right"] > .el-popper__arrow::before {
   border-left-color: var(--bg-elevated) !important;
   background: var(--bg-elevated) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .el-popper__arrow::after {
@@ -1521,8 +1762,8 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-picker .el-picker-panel__footer .el-button {
   background: transparent !important;
-  color: rgba(var(--rgb-fg), 0.75) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.2) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) !important;
   padding: 5px 14px !important;
   border-radius: 4px !important;
   font-size: 13px !important;
@@ -1547,7 +1788,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .dark-picker .el-picker-panel__footer .el-button--text {
   background: transparent !important;
-  color: rgba(var(--rgb-fg), 0.6) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6) !important;
   border: none !important;
   padding: 5px 4px !important;
   box-shadow: none !important;
@@ -1565,7 +1806,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-popper.is-time-spinner.el-popper,
 .el-time-panel.el-popper {
   background: var(--bg-elevated) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
   border-radius: 8px !important;
   padding: 0 !important;
@@ -1650,7 +1891,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-time-panel .el-time-spinner__item {
-  color: rgba(var(--rgb-fg), 0.35) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
   height: 32px !important;
   line-height: 32px !important;
   font-size: 13px !important;
@@ -1661,7 +1902,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel .el-time-spinner__item:hover:not(.disabled),
 .el-time-panel .el-time-spinner__item:hover:not(.is-disabled) {
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
   background: rgba(102, 126, 234, 0.08) !important;
 }
 
@@ -1692,12 +1933,12 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel .el-time-spinner__item.disabled,
 .el-time-panel .el-time-spinner__item.is-disabled {
-  color: rgba(var(--rgb-fg), 0.18) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.18) !important;
   cursor: not-allowed !important;
 }
 
 .el-time-panel__footer {
-  border-top: 1px solid rgba(var(--rgb-fg), 0.06) !important;
+  border-top: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
   padding: 8px 10px !important;
   background: var(--bg-elevated) !important;
   box-sizing: border-box !important;
@@ -1710,9 +1951,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel__btn {
   box-sizing: border-box !important;
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
   background: transparent !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.15) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.15) !important;
   border-radius: 4px !important;
   padding: 6px 12px !important;
   font-size: 13px !important;
@@ -1743,7 +1984,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-time-panel__btn.cancel {
   background: transparent !important;
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
 }
 
 /* 全局隐藏时间选择器滚动条视觉，但保留滚动行为 */
@@ -1919,7 +2160,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-message-box.danger-message-box .el-message-box__content,
 .el-overlay-message-box.danger-message-box .el-message-box__content {
   background: var(--danger-bg) !important;
-  color: rgba(var(--rgb-fg), 0.92) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.92) !important;
 }
 
 .el-message-box.danger-message-box .el-message-box__btns,
@@ -1951,9 +2192,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-overlay-message-box.danger-message-box
   .el-message-box__btns
   .el-button:not(.el-button--primary):not(.el-button--danger) {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.18) !important;
-  color: rgba(var(--rgb-fg), 0.88) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.18) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.88) !important;
 }
 
 .el-message-box.danger-message-box
@@ -1993,7 +2234,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-message-box.danger-warning-message-box .el-message-box__headerbtn,
 .el-overlay-message-box.danger-warning-message-box .el-message-box__headerbtn {
-  color: rgba(var(--rgb-fg), 0.6) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6) !important;
 }
 
 .el-message-box.danger-warning-message-box .el-message-box__headerbtn:hover,
@@ -2005,7 +2246,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-message-box.danger-warning-message-box .el-message-box__content,
 .el-overlay-message-box.danger-warning-message-box .el-message-box__content {
   background: var(--danger-bg-strong) !important;
-  color: rgba(var(--rgb-fg), 0.92) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.92) !important;
 }
 
 .el-message-box.danger-warning-message-box
@@ -2024,7 +2265,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-message-box.danger-warning-message-box .el-message-box__message p,
 .el-overlay-message-box.danger-warning-message-box .el-message-box__message p {
-  color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
 }
 
 .el-message-box.danger-warning-message-box .el-message-box__btns,
@@ -2062,9 +2303,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-overlay-message-box.danger-warning-message-box
   .el-message-box__btns
   .el-button:not(.el-button--primary):not(.el-button--danger) {
-  background: rgba(var(--rgb-fg), 0.08) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
   border: 1px solid var(--danger-border) !important;
-  color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
 }
 
 .el-message-box.danger-warning-message-box
@@ -2081,7 +2322,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .el-message-box__header {
   background: transparent !important;
   padding: 20px 20px 14px 20px !important;
-  border-bottom: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  border-bottom: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .el-message-box__title {
@@ -2091,7 +2332,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-message-box__headerbtn {
-  color: rgba(var(--rgb-fg), 0.55) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55) !important;
 }
 
 .el-message-box__headerbtn:hover {
@@ -2104,7 +2345,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-message-box__content {
-  color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
   padding: 20px !important;
   background: transparent !important;
 }
@@ -2126,19 +2367,19 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-message-box__message p {
-  color: rgba(var(--rgb-fg), 0.88) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.88) !important;
   font-size: 14px !important;
   line-height: 1.7 !important;
 }
 
 .el-message-box__input .el-input__wrapper {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.15) inset !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.15) inset !important;
   border-radius: 8px !important;
 }
 
 .el-message-box__input .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.28) inset !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.28) inset !important;
 }
 
 .el-message-box__input .el-input__wrapper.is-focus {
@@ -2152,7 +2393,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-message-box__input .el-input__inner::placeholder {
-  color: rgba(var(--rgb-fg), 0.35) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
 }
 
 .el-message-box__errormsg {
@@ -2175,9 +2416,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .el-message-box__btns
   .el-button:not(.el-button--primary):not(.el-button--danger) {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.18) !important;
-  color: rgba(var(--rgb-fg), 0.88) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.18) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.88) !important;
 }
 
 .el-message-box__btns
@@ -2212,7 +2453,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   --el-dialog-footer-bg-color: var(--danger-bg);
   --el-dialog-border-color: var(--danger-border);
   --el-dialog-title-color: var(--danger-title);
-  --el-text-color-regular: rgba(var(--rgb-fg), 0.9);
+  --el-text-color-regular: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
   --el-text-color-primary: var(--fg);
 }
 
@@ -2239,7 +2480,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .danger-dialog .el-dialog__body {
   background: var(--danger-bg) !important;
-  color: rgba(var(--rgb-fg), 0.88);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.88);
 }
 
 .danger-dialog .el-dialog__footer {
@@ -2255,7 +2496,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .danger-dialog .el-dialog__headerbtn .el-dialog__close {
-  color: rgba(var(--rgb-fg), 0.55) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55) !important;
 }
 
 .danger-dialog .el-dialog__headerbtn:hover .el-dialog__close {
@@ -2299,7 +2540,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .danger-content .danger-desc {
   font-size: 13px;
-  color: rgba(var(--rgb-fg), 0.7);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
   line-height: 1.6;
   margin: 0;
 }
@@ -2312,14 +2553,14 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 .confirm-text-wrap {
   margin-bottom: 14px;
   padding: 12px 14px;
-  background: rgba(var(--rgb-fg), 0.03);
-  border: 1px solid rgba(var(--rgb-fg), 0.08);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
   border-radius: 10px;
 }
 
 .confirm-text-label {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.55);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
   margin-bottom: 8px;
 }
 
@@ -2347,14 +2588,14 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .danger-textarea :deep(.el-textarea__inner),
 .danger-dialog .el-input__wrapper {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.14) inset !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.14) inset !important;
   border-radius: 10px !important;
 }
 
 .danger-textarea :deep(.el-textarea__inner):hover,
 .danger-dialog .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(var(--rgb-fg), 0.26) inset !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.26) inset !important;
 }
 
 .danger-textarea :deep(.el-textarea__inner):focus,
@@ -2373,7 +2614,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .danger-textarea :deep(.el-textarea__inner)::placeholder,
 .danger-dialog .el-input__inner::placeholder {
-  color: rgba(var(--rgb-fg), 0.35) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35) !important;
 }
 
 .danger-dialog .el-button {
@@ -2384,9 +2625,9 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .danger-dialog
   .el-button:not(.el-button--primary):not(.el-button--danger):not(.is-plain) {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.18) !important;
-  color: rgba(var(--rgb-fg), 0.88) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.18) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.88) !important;
 }
 
 .danger-dialog
@@ -2410,7 +2651,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 
 .danger-dialog .el-button--primary.is-disabled {
   background: rgba(239, 68, 68, 0.45) !important;
-  color: rgba(var(--rgb-fg), 0.7) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
 }
 
 .danger-dialog .el-button--primary.is-plain {
@@ -2441,18 +2682,24 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
    ========================================================= */
 .el-dropdown,
 .layout .header-right .el-dropdown {
-  color: rgba(var(--rgb-fg), 0.88) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.88) !important;
 }
 
-/* 最外层 popper：去掉 Element Plus 默认的白色外框，交给内部 el-dropdown-menu 承载 */
+/* 下拉菜单：背景/圆角/边框/阴影统一承载在最外层 popper（.el-dropdown__popper）
+   单一层上，内层菜单与中间层全透明——只渲染一层背景、一个圆角，
+   不再有内外层背景/圆角叠加的问题 */
 .el-dropdown__popper.el-popper,
 .el-popper.el-dropdown__popper {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding: 0 !important;
+  background: var(--bg-elevated) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 12px 32px var(--dropdown-shadow),
+    0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04) inset !important;
+  padding: 6px !important;
   min-width: 0 !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
 .el-dropdown__popper.el-popper > .el-scrollbar,
@@ -2466,24 +2713,20 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   box-shadow: none !important;
 }
 
-.el-dropdown-menu {
-  background: rgba(26, 26, 60, 0.98) !important;
-  border: 1px solid rgba(102, 126, 234, 0.35) !important;
-  border-radius: 10px !important;
-  padding: 6px !important;
+.el-dropdown__popper.el-popper .el-dropdown-menu {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
   margin: 0 !important;
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(102, 126, 234, 0.12) inset !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: none !important;
 }
 
 .el-dropdown-menu .el-dropdown-menu__item {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: rgba(var(--rgb-fg), 0.9) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
   background: transparent !important;
   border-radius: 6px !important;
   padding: 10px 14px !important;
@@ -2501,7 +2744,7 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-dropdown-menu .el-dropdown-menu__item.is-disabled {
-  color: rgba(var(--rgb-fg), 0.3) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.3) !important;
   cursor: not-allowed;
 }
 
@@ -2510,27 +2753,42 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   flex-shrink: 0;
 }
 
-.el-popper[data-popper-placement^="bottom"] > .el-dropdown-menu__arrow::after,
-.el-dropdown-menu__popper.el-popper[data-popper-placement^="bottom"]
-  > .el-popper__arrow::after {
-  border-bottom-color: rgba(26, 26, 60, 0.98) !important;
+/* 箭头：底色与 popper 背景一致，外露的尖自然衔接圆角边框；
+   与 popper 重叠的部分被单一背景层覆盖，无多余边框线 */
+.el-dropdown__popper.el-popper > .el-popper__arrow::before {
+  background: var(--bg-elevated) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) !important;
+  box-sizing: border-box !important;
 }
 
-.el-popper[data-popper-placement^="top"] > .el-dropdown-menu__arrow::after,
-.el-dropdown-menu__popper.el-popper[data-popper-placement^="top"]
-  > .el-popper__arrow::after {
-  border-top-color: rgba(26, 26, 60, 0.98) !important;
+.el-dropdown__popper.el-popper[data-popper-placement^="bottom"]
+  > .el-popper__arrow::before {
+  border-bottom-color: transparent !important;
+  border-right-color: transparent !important;
 }
 
-.el-dropdown-menu__popper.el-popper > .el-popper__arrow::before {
-  border-color: rgba(102, 126, 234, 0.35) !important;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35));
+.el-dropdown__popper.el-popper[data-popper-placement^="top"]
+  > .el-popper__arrow::before {
+  border-top-color: transparent !important;
+  border-left-color: transparent !important;
+}
+
+.el-dropdown__popper.el-popper[data-popper-placement^="left"]
+  > .el-popper__arrow::before {
+  border-bottom-color: transparent !important;
+  border-left-color: transparent !important;
+}
+
+.el-dropdown__popper.el-popper[data-popper-placement^="right"]
+  > .el-popper__arrow::before {
+  border-top-color: transparent !important;
+  border-right-color: transparent !important;
 }
 
 .el-dropdown-menu .el-dropdown-menu__separator {
   height: 1px;
   margin: 4px 2px;
-  background: rgba(var(--rgb-fg), 0.08) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 /* =========================================================

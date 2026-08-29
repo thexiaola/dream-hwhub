@@ -158,8 +158,8 @@ onMounted(() => {
   align-items: center;
   padding: 0 24px;
   height: 64px;
-  background: rgba(var(--rgb-fg), 0.03);
-  border-bottom: 1px solid rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border-bottom: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   flex-shrink: 0;
 }
 
@@ -200,16 +200,16 @@ onMounted(() => {
   gap: 8px;
   padding: 10px 20px;
   background: transparent;
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 8px;
-  color: rgba(var(--rgb-fg), 0.7);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .nav-tab:hover {
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   color: var(--fg);
 }
 
@@ -231,14 +231,14 @@ onMounted(() => {
   padding: 8px 16px;
   cursor: pointer;
   border-radius: 8px;
-  color: rgba(var(--rgb-fg), 0.88);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.88);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.3s;
 }
 
 .user-info:hover {
-  background: rgba(var(--rgb-fg), 0.08);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
   color: var(--fg);
 }
 
@@ -268,7 +268,7 @@ onMounted(() => {
   right: 0;
   height: 64px;
   background: var(--bg-elevated);
-  border-top: 1px solid rgba(var(--rgb-fg), 0.1);
+  border-top: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 999;
@@ -284,7 +284,7 @@ onMounted(() => {
   gap: 3px;
   background: transparent;
   border: none;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
   font-size: 11px;
   cursor: pointer;
   transition: color 0.2s;

@@ -1013,7 +1013,7 @@ onMounted(async () => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .course-info-card {
@@ -1031,15 +1031,15 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .info-item svg {
-  color: rgba(var(--rgb-fg), 0.7);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
 }
 
 .info-item .value {
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
   font-weight: 500;
 }
 
@@ -1054,12 +1054,12 @@ onMounted(async () => {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: rgba(var(--rgb-fg), 0.8);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
 }
 
 .description-section p {
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.7);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
   line-height: 1.6;
 }
 
@@ -1068,15 +1068,15 @@ onMounted(async () => {
 }
 
 .course-tabs :deep(.el-tabs__item) {
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .course-tabs :deep(.el-tabs__item.is-active) {
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .course-tabs :deep(.el-tabs__item:hover) {
-  color: rgba(var(--rgb-fg), 0.8);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
 }
 
 .course-tabs :deep(.el-tabs__active-bar) {
@@ -1084,7 +1084,7 @@ onMounted(async () => {
 }
 
 .course-tabs :deep(.el-tabs__nav-wrap::after) {
-  background-color: rgba(var(--rgb-fg), 0.1);
+  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
 }
 
 .work-list {
@@ -1094,8 +1094,8 @@ onMounted(async () => {
 }
 
 .work-item {
-  background: rgba(var(--rgb-fg), 0.03);
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 12px;
   padding: 16px;
 }
@@ -1152,7 +1152,7 @@ onMounted(async () => {
 
 .work-info .info-item {
   font-size: 13px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .work-actions {
@@ -1165,8 +1165,8 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: rgba(var(--rgb-fg), 0.05);
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 8px;
   color: var(--fg);
   font-size: 13px;
@@ -1200,8 +1200,8 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(var(--rgb-fg), 0.03);
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 12px;
   padding: 16px;
 }
@@ -1231,7 +1231,7 @@ onMounted(async () => {
 
 .student-details p {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
 .student-role {
@@ -1250,7 +1250,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: rgba(var(--rgb-fg), 0.4);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }
 
 .empty-state p {
@@ -1356,7 +1356,7 @@ onMounted(async () => {
 
 .invite-tip {
   font-size: 13px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
   margin-bottom: 4px;
 }
 
@@ -1376,9 +1376,9 @@ onMounted(async () => {
   font-weight: 500 !important;
   font-size: 14px !important;
   border-radius: 10px !important;
-  color: rgba(var(--rgb-fg), 0.85) !important;
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  border: 1.5px solid rgba(var(--rgb-fg), 0.18) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  border: 1.5px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.18) !important;
   transition: all 0.2s ease !important;
 }
 
@@ -1514,12 +1514,12 @@ onMounted(async () => {
 }
 
 .course-tabs :deep(.el-checkbox__label) {
-  color: rgba(var(--rgb-fg), 0.8);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
 }
 
 .course-tabs :deep(.el-checkbox__inner) {
-  background: rgba(var(--rgb-fg), 0.06);
-  border-color: rgba(var(--rgb-fg), 0.25);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06);
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25);
 }
 
 .course-tabs :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
@@ -1576,7 +1576,7 @@ onMounted(async () => {
     line-height: 1.5 !important;
     padding: 0 0 6px 0 !important;
     text-align: left !important;
-    color: rgba(var(--rgb-fg), 0.85) !important;
+    color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85) !important;
     font-size: 14px !important;
   }
 

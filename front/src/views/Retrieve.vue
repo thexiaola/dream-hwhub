@@ -295,9 +295,9 @@ const resetPassword = async () => {
 }
 
 .retrieve-card {
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 24px;
   padding: 40px;
 }
@@ -323,7 +323,7 @@ const resetPassword = async () => {
 }
 
 .retrieve-subtitle {
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
   font-size: 14px;
 }
 
@@ -345,7 +345,7 @@ const resetPassword = async () => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -364,13 +364,13 @@ const resetPassword = async () => {
 
 .step-text {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .step-line {
   width: 40px;
   height: 2px;
-  background: rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   margin: 0 8px;
 }
 

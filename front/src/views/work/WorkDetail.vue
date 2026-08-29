@@ -155,7 +155,7 @@ onMounted(() => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .header-right {
@@ -179,7 +179,7 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .info-grid {
@@ -193,19 +193,19 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: rgba(var(--rgb-fg), 0.03);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
 }
 
 .info-item .label {
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
   font-size: 14px;
 }
 
 .info-item .value {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .status-badge {
@@ -232,10 +232,10 @@ onMounted(() => {
 
 .description {
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.8);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
   line-height: 1.6;
   padding: 16px;
-  background: rgba(var(--rgb-fg), 0.03);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
 }
 
@@ -252,15 +252,15 @@ onMounted(() => {
 
 .submitter {
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .submission-content {
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.8);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
   line-height: 1.6;
   padding: 12px;
-  background: rgba(var(--rgb-fg), 0.03);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
   margin-bottom: 12px;
 }
@@ -269,7 +269,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
 .no-submission {
@@ -278,7 +278,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: rgba(var(--rgb-fg), 0.4);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }
 
 .no-submission p {

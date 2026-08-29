@@ -235,7 +235,7 @@ onMounted(async () => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .course-info-card {
@@ -253,15 +253,15 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .info-item svg {
-  color: rgba(var(--rgb-fg), 0.7);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
 }
 
 .info-item .value {
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
   font-weight: 500;
 }
 
@@ -276,12 +276,12 @@ onMounted(async () => {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: rgba(var(--rgb-fg), 0.8);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
 }
 
 .description-section p {
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.7);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
   line-height: 1.6;
 }
 
@@ -301,8 +301,8 @@ onMounted(async () => {
 }
 
 .work-item {
-  background: rgba(var(--rgb-fg), 0.03);
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 12px;
   padding: 16px;
   transition: all 0.3s;
@@ -310,7 +310,7 @@ onMounted(async () => {
 }
 
 .work-item:hover {
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   border-color: rgba(102, 126, 234, 0.3);
 }
 
@@ -366,7 +366,7 @@ onMounted(async () => {
 
 .work-info .info-item {
   font-size: 13px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .submission-status {
@@ -406,7 +406,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: rgba(var(--rgb-fg), 0.4);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }
 
 .empty-state p {

@@ -350,12 +350,12 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
 .subtitle {
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .header-right {
@@ -381,11 +381,11 @@ onMounted(async () => {
 }
 
 .info-item .label {
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
 
 .info-item .value {
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
   font-weight: 500;
 }
 
@@ -400,8 +400,8 @@ onMounted(async () => {
 }
 
 .submission-item {
-  background: rgba(var(--rgb-fg), 0.04);
-  border: 1px solid rgba(var(--rgb-fg), 0.08);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
   border-radius: 10px;
   padding: 18px 20px;
   transition: border-color 0.2s ease, background 0.2s ease;
@@ -409,7 +409,7 @@ onMounted(async () => {
 
 .submission-item:hover {
   border-color: rgba(102, 126, 234, 0.4);
-  background: rgba(var(--rgb-fg), 0.06);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06);
 }
 
 .submission-header {
@@ -440,13 +440,13 @@ onMounted(async () => {
 .student-info h4 {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.95);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
   margin-bottom: 2px;
 }
 
 .student-info p {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
 .submission-meta {
@@ -483,7 +483,7 @@ onMounted(async () => {
 .submission-content {
   margin-top: 12px;
   padding: 12px 14px;
-  background: rgba(var(--rgb-fg), 0.03);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
   border-left: 3px solid rgba(102, 126, 234, 0.5);
 }
@@ -493,13 +493,13 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
   margin-bottom: 6px;
 }
 
 .content-text {
   font-size: 14px;
-  color: rgba(var(--rgb-fg), 0.85);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -521,11 +521,11 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: rgba(var(--rgb-fg), 0.04);
-  border: 1px solid rgba(var(--rgb-fg), 0.08);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
   border-radius: 6px;
   font-size: 13px;
-  color: rgba(var(--rgb-fg), 0.85);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -545,7 +545,7 @@ onMounted(async () => {
 
 .att-size {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.4);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }
 
 .submission-grade {
@@ -569,7 +569,7 @@ onMounted(async () => {
 }
 
 .grade-row .label {
-  color: rgba(var(--rgb-fg), 0.6);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
   flex-shrink: 0;
 }
 
@@ -579,7 +579,7 @@ onMounted(async () => {
 }
 
 .grade-row .comment {
-  color: rgba(var(--rgb-fg), 0.85);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
 }
 
 .submission-footer {
@@ -588,13 +588,13 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.4);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }
 
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: rgba(var(--rgb-fg), 0.4);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }
 
 .empty-state p {
@@ -619,8 +619,8 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: rgba(var(--rgb-fg), 0.04);
-  border: 1px solid rgba(var(--rgb-fg), 0.08);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
   border-radius: 8px;
 }
 
@@ -632,12 +632,12 @@ onMounted(async () => {
 .unsubmitted-item .name {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(var(--rgb-fg), 0.9);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
 }
 
 .unsubmitted-item .user-no {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
 /* ================================================
@@ -645,7 +645,7 @@ onMounted(async () => {
    ================================================ */
 
 .submissions-tabs :deep(.el-tabs__item) {
-  color: rgba(var(--rgb-fg), 0.65) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.65) !important;
 }
 
 .submissions-tabs :deep(.el-tabs__item.is-active) {
@@ -658,7 +658,7 @@ onMounted(async () => {
 }
 
 .submissions-tabs :deep(.el-tabs__nav-wrap::after) {
-  background-color: rgba(var(--rgb-fg), 0.12) !important;
+  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.12) !important;
 }
 
 .submissions-tabs :deep(.el-tabs__active-bar) {
@@ -668,14 +668,14 @@ onMounted(async () => {
 
 /* 空状态字色 */
 .submissions-page :deep(.el-empty__description p) {
-  color: rgba(var(--rgb-fg), 0.4) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4) !important;
 }
 
 /* 分页深色适配 */
 .pagination-wrap :deep(.el-pagination .el-pager li) {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  color: rgba(var(--rgb-fg), 0.75) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .pagination-wrap :deep(.el-pagination .el-pager li:hover) {
@@ -690,9 +690,9 @@ onMounted(async () => {
 }
 
 .pagination-wrap :deep(.el-pagination button) {
-  background: rgba(var(--rgb-fg), 0.06) !important;
-  color: rgba(var(--rgb-fg), 0.75) !important;
-  border: 1px solid rgba(var(--rgb-fg), 0.08) !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
 .pagination-wrap :deep(.el-pagination button:hover:not(:disabled)) {
@@ -701,7 +701,7 @@ onMounted(async () => {
 }
 
 .pagination-wrap :deep(.el-pagination button:disabled) {
-  color: rgba(var(--rgb-fg), 0.25) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
   cursor: not-allowed !important;
 }
 
