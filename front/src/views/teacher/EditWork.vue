@@ -71,6 +71,7 @@
             :on-exceed="handleAttachmentExceed"
             :on-remove="handleAttachmentRemove"
             :on-change="handleAttachmentChange"
+            :on-preview="handleAttachmentPreview"
           >
             <el-button type="primary" plain size="default" class="upload-trigger-btn">
               <Upload :size="16" />
@@ -99,6 +100,7 @@ import { ElMessage } from 'element-plus'
 import type { UploadUserFile } from 'element-plus'
 import { Paperclip, Upload, ArrowLeft } from '@lucide/vue'
 import { get, putForm } from '@/utils/http'
+import { openAttachmentPreview } from '@/utils/attachment'
 
 const router = useRouter()
 const route = useRoute()
@@ -158,6 +160,14 @@ const handleAttachmentChange = (file: UploadUserFile, uploadFiles: UploadUserFil
   attachmentFiles.value = uploadFiles.filter(f => !f.size || f.size <= MAX_ATTACHMENT_SIZE)
 }
 
+const handleAttachmentPreview = (file: UploadUserFile) => {
+  if (file.url) {
+    openAttachmentPreview(file.url, file.name, true)
+  } else {
+    ElMessage.info('本地新文件尚未上传，保存后可点击查看')
+  }
+}
+
 const rules = {
   title: [
     { required: true, message: '请输入作业标题', trigger: 'blur' }
@@ -205,7 +215,8 @@ const loadWork = async () => {
             uid,
             name: att.fileName,
             size: att.fileSize,
-            status: 'success'
+            status: 'success',
+            url: att.filePath
           } as UploadUserFile
         })
       }

@@ -15,6 +15,26 @@
       <div v-if="work" class="work-info">
         <h3>{{ work.title }}</h3>
         <p>{{ work.description }}</p>
+        <div
+          class="work-attachments"
+          v-if="work.attachments && work.attachments.length > 0"
+        >
+          <div class="attachments-title">作业附件</div>
+          <div
+            v-for="att in work.attachments"
+            :key="att.id"
+            class="attachment-item"
+            title="点击查看"
+            @click="previewAttachment(att)"
+          >
+            <Paperclip :size="14" />
+            <span class="att-name">{{ att.fileName }}</span>
+            <span class="att-size" v-if="att.fileSize">
+              {{ formatFileSize(att.fileSize) }}
+            </span>
+            <Eye :size="13" class="att-eye" />
+          </div>
+        </div>
         <div class="work-meta">
           <span>截止时间：{{ formatDate(work.deadline) }}</span>
           <span>满分：{{ work.score }}分</span>
@@ -40,7 +60,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import { useSubmissionStore } from '@/stores/submission'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@lucide/vue'
+import { ArrowLeft, Paperclip, Eye } from '@lucide/vue'
+import { openAttachmentPreview, formatFileSize } from '@/utils/attachment'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +86,10 @@ const goBack = () => {
   } else {
     router.push('/submission')
   }
+}
+
+const previewAttachment = (att: { filePath: string; fileName: string }) => {
+  openAttachmentPreview(att.filePath, att.fileName, true)
 }
 
 const submitWork = async () => {
@@ -162,6 +187,58 @@ onMounted(() => {
   gap: 16px;
   font-size: 13px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
+}
+
+.work-attachments {
+  margin: 4px 0 12px;
+}
+
+.attachments-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75);
+  margin-bottom: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.attachment-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.attachment-item .att-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  word-break: break-all;
+}
+
+.attachment-item .att-size {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+  flex-shrink: 0;
+}
+
+.attachment-item .att-eye {
+  flex-shrink: 0;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35);
+}
+
+.attachment-item:hover .att-eye {
+  color: #667eea;
 }
 
 .submit-form {

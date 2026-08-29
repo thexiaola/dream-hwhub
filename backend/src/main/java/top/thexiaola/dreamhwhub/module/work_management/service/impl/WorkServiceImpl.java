@@ -44,8 +44,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkServiceImpl implements WorkService {
 
-    // 文件存储根目录（运行目录下的 upload/workfiles）
-    private static final String UPLOAD_DIR = "upload/workfiles/";
+    // 文件存储目录（运行目录下的 attachments/work，作业附件）
+    private static final String UPLOAD_DIR = "attachments/work/";
 
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;

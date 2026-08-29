@@ -44,6 +44,15 @@ export interface WorkInfo {
   isPinned: boolean
   createdAt: string
   updatedAt: string
+  attachments?: WorkAttachment[]
+}
+
+export interface WorkAttachment {
+  id: number
+  fileName: string
+  filePath: string
+  fileSize?: number
+  fileType?: string
 }
 
 export interface ClassInfo {
@@ -68,4 +77,5 @@ export interface WorkSubmission {
   gradedAt: string | null
   submittedAt: string
   status: 'submitted' | 'graded'
+  attachments?: WorkAttachment[]
 }

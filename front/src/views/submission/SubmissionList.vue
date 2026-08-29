@@ -51,6 +51,26 @@
     <el-dialog v-if="showGradeDialog" title="批改作业" @close="closeGradeDialog" class="dark-dialog">
       <div class="grade-form">
         <p class="submission-content">{{ currentSubmission?.content }}</p>
+        <div
+          class="submission-attachments"
+          v-if="currentSubmission?.attachments && currentSubmission.attachments.length > 0"
+        >
+          <div class="attachments-title">
+            <Paperclip :size="14" />
+            <span>提交附件 ({{ currentSubmission.attachments.length }})</span>
+          </div>
+          <div
+            v-for="att in currentSubmission.attachments"
+            :key="att.id"
+            class="attachment-item"
+            title="点击查看"
+            @click="openAttachmentPreview(att.filePath, att.fileName, true)"
+          >
+            <File :size="14" />
+            <span class="att-name">{{ att.fileName }}</span>
+            <span class="att-size" v-if="att.fileSize">{{ formatFileSize(att.fileSize) }}</span>
+          </div>
+        </div>
         <el-form-item label="成绩">
           <el-input-number
             v-model="grade"
@@ -72,13 +92,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSubmissionStore } from '@/stores/submission'
 import { useWorkStore } from '@/stores/work'
 import { ElMessage } from 'element-plus'
-import { FileText } from '@lucide/vue'
+import { FileText, Paperclip, File } from '@lucide/vue'
+import { openAttachmentPreview, formatFileSize } from '@/utils/attachment'
 
 const submissionStore = useSubmissionStore()
 const workStore = useWorkStore()
+const router = useRouter()
 
 const workFilter = ref('')
 const statusFilter = ref('')
@@ -106,7 +129,10 @@ const getStatusText = (status: string) => {
 }
 
 const viewSubmission = (id: number) => {
-  console.log('View submission:', id)
+  const sub = submissionStore.submissions.find(s => s.id === id)
+  if (sub) {
+    router.push(`/teacher/work/${sub.workId}/submissions`)
+  }
 }
 
 const gradeSubmission = (submission: any) => {
@@ -254,6 +280,52 @@ onMounted(() => {
   background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
   margin-bottom: 20px;
+}
+
+.submission-attachments {
+  margin-bottom: 20px;
+}
+
+.attachments-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75);
+  margin-bottom: 8px;
+}
+
+.submission-attachments .attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.submission-attachments .attachment-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.submission-attachments .att-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  word-break: break-all;
+}
+
+.submission-attachments .att-size {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+  flex-shrink: 0;
 }
 
 .filter-select :deep(.el-select__wrapper),

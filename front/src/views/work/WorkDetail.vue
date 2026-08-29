@@ -40,6 +40,28 @@
           <h3>作业描述</h3>
           <p class="description">{{ work.description }}</p>
         </div>
+        <div
+          class="detail-section"
+          v-if="work.attachments && work.attachments.length > 0"
+        >
+          <h3>作业附件</h3>
+          <div class="attachment-list">
+            <div
+              v-for="att in work.attachments"
+              :key="att.id"
+              class="attachment-item"
+              title="点击查看"
+              @click="previewAttachment(att)"
+            >
+              <Paperclip :size="15" />
+              <span class="att-name">{{ att.fileName }}</span>
+              <span class="att-size" v-if="att.fileSize">
+                {{ formatFileSize(att.fileSize) }}
+              </span>
+              <Eye :size="14" class="att-eye" />
+            </div>
+          </div>
+        </div>
       </el-card>
       <el-card class="submit-section">
         <template #header>
@@ -51,6 +73,29 @@
             <span :class="['status-badge', submission.status]">{{ getSubmissionStatus(submission.status) }}</span>
           </div>
           <p class="submission-content">{{ submission.content }}</p>
+          <div
+            class="submission-attachments"
+            v-if="submission.attachments && submission.attachments.length > 0"
+          >
+            <div class="attachments-title">
+              <Paperclip :size="14" />
+              <span>提交附件 ({{ submission.attachments.length }})</span>
+            </div>
+            <div
+              v-for="att in submission.attachments"
+              :key="att.id"
+              class="attachment-item"
+              title="点击查看"
+              @click="previewAttachment(att)"
+            >
+              <Paperclip :size="14" />
+              <span class="att-name">{{ att.fileName }}</span>
+              <span class="att-size" v-if="att.fileSize">
+                {{ formatFileSize(att.fileSize) }}
+              </span>
+              <Eye :size="13" class="att-eye" />
+            </div>
+          </div>
           <div class="submission-meta">
             <span>提交时间：{{ formatDate(submission.submittedAt) }}</span>
             <span v-if="submission.gradedAt">批改时间：{{ formatDate(submission.gradedAt) }}</span>
@@ -72,7 +117,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import { useSubmissionStore } from '@/stores/submission'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, FileText } from '@lucide/vue'
+import { ArrowLeft, FileText, Paperclip, Eye } from '@lucide/vue'
+import { openAttachmentPreview, formatFileSize } from '@/utils/attachment'
 
 const route = useRoute()
 const router = useRouter()
@@ -102,6 +148,10 @@ const getSubmissionStatus = (status: string) => {
 
 const goBack = () => {
   router.push('/work')
+}
+
+const previewAttachment = (att: { filePath: string; fileName: string }) => {
+  openAttachmentPreview(att.filePath, att.fileName, true)
 }
 
 const goToSubmit = () => {
@@ -239,6 +289,52 @@ onMounted(() => {
   border-radius: 8px;
 }
 
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.attachment-item .att-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  word-break: break-all;
+}
+
+.attachment-item .att-size {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+  flex-shrink: 0;
+}
+
+.attachment-item .att-eye {
+  flex-shrink: 0;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35);
+}
+
+.attachment-item:hover .att-eye {
+  color: #667eea;
+}
+
 .submission-info {
   padding: 16px;
 }
@@ -263,6 +359,61 @@ onMounted(() => {
   background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
   border-radius: 8px;
   margin-bottom: 12px;
+}
+
+.submission-attachments {
+  margin: 12px 0;
+}
+
+.attachments-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75);
+  margin-bottom: 8px;
+}
+
+.submission-attachments .attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.submission-attachments .attachment-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.submission-attachments .att-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  word-break: break-all;
+}
+
+.submission-attachments .att-size {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+  flex-shrink: 0;
+}
+
+.submission-attachments .att-eye {
+  flex-shrink: 0;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.35);
+}
+
+.submission-attachments .attachment-item:hover .att-eye {
+  color: #667eea;
 }
 
 .submission-meta {

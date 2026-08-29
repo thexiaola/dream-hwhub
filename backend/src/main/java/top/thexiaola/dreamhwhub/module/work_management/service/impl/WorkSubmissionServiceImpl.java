@@ -54,8 +54,8 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
-    // 文件存储根目录（运行目录下的 upload/submissionfiles）
-    private static final String UPLOAD_DIR = "upload/submissionfiles/";
+    // 文件存储目录（运行目录下的 attachments/submission，提交附件）
+    private static final String UPLOAD_DIR = "attachments/submission/";
 
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;

@@ -43,6 +43,36 @@
           <span class="value">{{ unsubmittedCount }} 人</span>
         </div>
       </div>
+
+      <div class="work-description" v-if="work && work.description">
+        <div class="content-label">
+          <FileText :size="14" />
+          <span>作业内容</span>
+        </div>
+        <p class="description-text">{{ work.description }}</p>
+      </div>
+
+      <div
+        class="work-attachments"
+        v-if="work && work.attachments && work.attachments.length > 0"
+      >
+        <div class="content-label">
+          <Paperclip :size="14" />
+          <span>作业附件 ({{ work.attachments.length }})</span>
+        </div>
+        <div class="attachment-list">
+          <div
+            v-for="att in work.attachments"
+            :key="att.id"
+            class="attachment-item"
+            @click="downloadAttachment(att)"
+          >
+            <File :size="14" />
+            <span class="att-name">{{ att.fileName }}</span>
+            <span class="att-size" v-if="att.fileSize">({{ formatFileSize(att.fileSize) }})</span>
+          </div>
+        </div>
+      </div>
     </el-card>
 
     <el-tabs v-model="activeTab" class="submissions-tabs" @tab-change="handleTabChange">
@@ -158,6 +188,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { get } from "@/utils/http";
+import { openAttachmentPreview } from "@/utils/attachment";
 import { ElMessage } from "element-plus";
 import {
   ArrowLeft,
@@ -179,6 +210,7 @@ interface WorkInfo {
   description: string;
   deadline: string;
   totalScore: number;
+  attachments?: AttachmentInfo[];
 }
 
 interface AttachmentInfo {
@@ -316,8 +348,7 @@ const handleTabChange = (tab: string) => {
 };
 
 const downloadAttachment = (att: AttachmentInfo) => {
-  const url = `/api/files/download?path=${encodeURIComponent(att.filePath)}&fileName=${encodeURIComponent(att.fileName)}`;
-  window.open(url, "_blank");
+  openAttachmentPreview(att.filePath, att.fileName, true)
 };
 
 onMounted(async () => {
@@ -501,6 +532,25 @@ onMounted(async () => {
   font-size: 14px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
   line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.work-attachments {
+  margin-top: 16px;
+}
+
+.work-description {
+  margin-top: 16px;
+}
+
+.description-text {
+  font-size: 14px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+  line-height: 1.7;
+  padding: 12px 14px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border-radius: 8px;
   white-space: pre-wrap;
   word-break: break-word;
 }

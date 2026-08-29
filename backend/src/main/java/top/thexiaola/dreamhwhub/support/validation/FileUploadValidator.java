@@ -97,9 +97,9 @@ public class FileUploadValidator {
     }
     
     /**
-     * 安全的上传目录（运行目录下的 upload 目录）
+     * 附件存储根目录（运行目录下的 attachments 目录）
      */
-    private static final String UPLOAD_BASE_DIR = "upload/";
+    private static final String UPLOAD_BASE_DIR = "attachments/";
     
     /**
      * 验证文件路径安全性
