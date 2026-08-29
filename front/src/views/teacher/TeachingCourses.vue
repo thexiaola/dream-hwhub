@@ -153,12 +153,12 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .course-grid {
@@ -168,8 +168,8 @@ onMounted(() => {
 }
 
 .course-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--rgb-fg), 0.03);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s;
@@ -177,7 +177,7 @@ onMounted(() => {
 }
 
 .course-card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--rgb-fg), 0.05);
   transform: translateY(-2px);
   border-color: rgba(118, 75, 162, 0.3);
 }
@@ -203,12 +203,12 @@ onMounted(() => {
 .card-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .description {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--rgb-fg), 0.7);
   margin-bottom: 16px;
   line-height: 1.5;
   display: -webkit-box;
@@ -228,11 +228,11 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .info-item svg {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--rgb-fg), 0.7);
 }
 
 .card-footer {
@@ -257,7 +257,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .empty-state p {

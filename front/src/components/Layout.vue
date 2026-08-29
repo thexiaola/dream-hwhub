@@ -35,6 +35,7 @@
         </div>
       </div>
       <div class="header-right">
+        <ThemeToggle />
         <el-dropdown @command="handleCommand">
           <div class="user-info">
             <User :size="18" />
@@ -103,6 +104,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield } from '@lucide/vue'
 
 const router = useRouter()
@@ -156,8 +158,8 @@ onMounted(() => {
   align-items: center;
   padding: 0 24px;
   height: 64px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--rgb-fg), 0.03);
+  border-bottom: 1px solid rgba(var(--rgb-fg), 0.1);
   flex-shrink: 0;
 }
 
@@ -198,17 +200,17 @@ onMounted(() => {
   gap: 8px;
   padding: 10px 20px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--rgb-fg), 0.7);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .nav-tab:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: rgba(var(--rgb-fg), 0.05);
+  color: var(--fg);
 }
 
 .nav-tab.active {
@@ -229,15 +231,15 @@ onMounted(() => {
   padding: 8px 16px;
   cursor: pointer;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(var(--rgb-fg), 0.88);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.3s;
 }
 
 .user-info:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: rgba(var(--rgb-fg), 0.08);
+  color: var(--fg);
 }
 
 .user-name {
@@ -265,8 +267,8 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 64px;
-  background: rgba(20, 20, 40, 0.98);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-elevated);
+  border-top: 1px solid rgba(var(--rgb-fg), 0.1);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 999;
@@ -282,7 +284,7 @@ onMounted(() => {
   gap: 3px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--rgb-fg), 0.5);
   font-size: 11px;
   cursor: pointer;
   transition: color 0.2s;

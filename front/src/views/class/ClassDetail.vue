@@ -136,7 +136,7 @@ onMounted(() => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .detail-card, .members-section {
@@ -168,27 +168,27 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--rgb-fg), 0.03);
   border-radius: 8px;
 }
 
 .info-item .label {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
   font-size: 14px;
 }
 
 .info-item .value {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .description {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
   line-height: 1.6;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--rgb-fg), 0.03);
   border-radius: 8px;
 }
 
@@ -203,7 +203,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--rgb-fg), 0.03);
   border-radius: 8px;
 }
 
@@ -226,7 +226,7 @@ onMounted(() => {
 
 .member-info p {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--rgb-fg), 0.5);
 }
 
 .empty-state {
@@ -235,7 +235,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .empty-state p {

@@ -231,12 +231,12 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .header-right {
@@ -259,8 +259,8 @@ onMounted(() => {
 .create-form :deep(.el-input__wrapper),
 .create-form :deep(.el-select__wrapper),
 .create-form :deep(.el-date-editor) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
 }
 
 .create-form :deep(.el-input__wrapper:focus-within),
@@ -273,23 +273,23 @@ onMounted(() => {
 .create-form :deep(.el-input__inner),
 .create-form :deep(.el-select__selected-item),
 .create-form :deep(.el-date-editor .el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
   background: transparent !important;
 }
 
 .create-form :deep(.el-input__inner::placeholder),
 .create-form :deep(.el-select__placeholder) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .create-form :deep(.el-textarea__inner) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 .create-form :deep(.el-textarea__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .create-form :deep(.el-textarea__inner:focus) {
@@ -298,7 +298,7 @@ onMounted(() => {
 }
 
 .create-form :deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
 }
 
 .el-form-item {
@@ -310,8 +310,8 @@ onMounted(() => {
 }
 
 .score-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
   box-shadow: none !important;
 }
 
@@ -321,15 +321,15 @@ onMounted(() => {
 }
 
 .score-input :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
   background: transparent !important;
 }
 
 .score-input :deep(.el-input-number__decrease),
 .score-input :deep(.el-input-number__increase) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(var(--rgb-fg), 0.04) !important;
+  border-color: rgba(var(--rgb-fg), 0.15) !important;
+  color: rgba(var(--rgb-fg), 0.7) !important;
   transition: all 0.2s ease;
 }
 
@@ -347,22 +347,22 @@ onMounted(() => {
 
 .score-input :deep(.is-disabled.el-input-number__decrease),
 .score-input :deep(.is-disabled.el-input-number__increase) {
-  background: rgba(255, 255, 255, 0.02) !important;
-  color: rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(var(--rgb-fg), 0.02) !important;
+  color: rgba(var(--rgb-fg), 0.3) !important;
+  border-color: rgba(var(--rgb-fg), 0.08) !important;
   cursor: not-allowed;
 }
 
 .score-input :deep(.el-input-number__decrease.is-disabled:hover),
 .score-input :deep(.el-input-number__increase.is-disabled:hover) {
-  color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.02) !important;
+  color: rgba(var(--rgb-fg), 0.3) !important;
+  background: rgba(var(--rgb-fg), 0.02) !important;
 }
 
 .create-form :deep(.el-upload .el-upload--text) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px dashed rgba(255, 255, 255, 0.2) !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border: 1px dashed rgba(var(--rgb-fg), 0.2) !important;
+  color: rgba(var(--rgb-fg), 0.7) !important;
   transition: all 0.2s ease;
 }
 
@@ -373,15 +373,15 @@ onMounted(() => {
 }
 
 .create-form :deep(.el-upload-list__item) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(var(--rgb-fg), 0.04) !important;
+  color: rgba(var(--rgb-fg), 0.85) !important;
   border-radius: 6px;
   padding: 6px 10px;
   margin-bottom: 6px;
 }
 
 .create-form :deep(.el-upload-list__item-name) {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: rgba(var(--rgb-fg), 0.85) !important;
 }
 
 .create-form :deep(.el-upload-list__item-name:hover) {
@@ -389,7 +389,7 @@ onMounted(() => {
 }
 
 .create-form :deep(.el-upload-list__item-delete) {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: rgba(var(--rgb-fg), 0.5) !important;
 }
 
 .create-form :deep(.el-upload-list__item-delete:hover) {
@@ -407,7 +407,7 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
   margin-top: 6px;
 }
 
@@ -433,7 +433,7 @@ onMounted(() => {
 
 .deadline-split-wrap :deep(.el-time-editor .el-input__inner),
 .deadline-split-wrap :deep(.el-time-editor .el-input__wrapper) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 /* 手机端适配 */

@@ -161,12 +161,12 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .filter-bar {
@@ -184,7 +184,7 @@ onMounted(() => {
 }
 
 .no-grade {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .status-badge {
@@ -206,10 +206,10 @@ onMounted(() => {
 
 .action-btn {
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--rgb-fg), 0.05);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 6px;
-  color: white;
+  color: var(--fg);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.3s;
@@ -235,7 +235,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .empty-state p {
@@ -248,18 +248,18 @@ onMounted(() => {
 
 .submission-content {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
   line-height: 1.6;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--rgb-fg), 0.03);
   border-radius: 8px;
   margin-bottom: 20px;
 }
 
 .filter-select :deep(.el-select__wrapper),
 .grade-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
   box-shadow: none !important;
 }
 
@@ -271,19 +271,19 @@ onMounted(() => {
 
 .filter-select :deep(.el-select__selected-item),
 .filter-select :deep(.el-select__placeholder) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 .grade-input :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
   background: transparent !important;
 }
 
 .grade-input :deep(.el-input-number__decrease),
 .grade-input :deep(.el-input-number__increase) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(var(--rgb-fg), 0.04) !important;
+  border-color: rgba(var(--rgb-fg), 0.15) !important;
+  color: rgba(var(--rgb-fg), 0.7) !important;
   transition: all 0.2s ease;
 }
 
@@ -301,31 +301,31 @@ onMounted(() => {
 
 .grade-input :deep(.is-disabled.el-input-number__decrease),
 .grade-input :deep(.is-disabled.el-input-number__increase) {
-  background: rgba(255, 255, 255, 0.02) !important;
-  color: rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(var(--rgb-fg), 0.02) !important;
+  color: rgba(var(--rgb-fg), 0.3) !important;
+  border-color: rgba(var(--rgb-fg), 0.08) !important;
   cursor: not-allowed;
 }
 
 .grade-input :deep(.el-input-number__decrease.is-disabled:hover),
 .grade-input :deep(.el-input-number__increase.is-disabled:hover) {
-  color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.02) !important;
+  color: rgba(var(--rgb-fg), 0.3) !important;
+  background: rgba(var(--rgb-fg), 0.02) !important;
 }
 
 .submission-table :deep(.el-table) {
   background: transparent;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(var(--rgb-fg), 0.85);
 }
 
 .submission-table :deep(.el-table th.el-table__cell) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  color: rgba(255, 255, 255, 0.7);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--rgb-fg), 0.04) !important;
+  color: rgba(var(--rgb-fg), 0.7);
+  border-bottom-color: rgba(var(--rgb-fg), 0.1);
 }
 
 .submission-table :deep(.el-table td.el-table__cell) {
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(var(--rgb-fg), 0.06);
 }
 
 .submission-table :deep(.el-table tr) {
@@ -333,11 +333,11 @@ onMounted(() => {
 }
 
 .submission-table :deep(.el-table__row:hover > td.el-table__cell) {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: rgba(var(--rgb-fg), 0.04) !important;
 }
 
 .submission-table :deep(.el-table__empty-text) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .grade-input {

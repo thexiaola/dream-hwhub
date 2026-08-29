@@ -182,7 +182,7 @@ const handleLogin = async () => {
   position: absolute;
   width: 2px;
   height: 2px;
-  background: white;
+  background: var(--fg);
   border-radius: 50%;
   animation: twinkle 3s ease-in-out infinite;
 }
@@ -201,9 +201,9 @@ const handleLogin = async () => {
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--rgb-fg), 0.05);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 24px;
   padding: 40px;
 }
@@ -229,7 +229,7 @@ const handleLogin = async () => {
 }
 
 .login-subtitle {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
   font-size: 14px;
 }
 
@@ -266,7 +266,7 @@ const handleLogin = async () => {
 
 .register-link {
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
   font-size: 14px;
 }
 

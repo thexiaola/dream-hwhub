@@ -123,9 +123,12 @@ class ClassControllerTest {
     @Test
     @DisplayName("测试解散班级 - 成功")
     void testDissolveClass_Success() throws Exception {
-        Mockito.doNothing().when(classService).dissolveClass(Mockito.anyInt());
+        Mockito.doNothing().when(classService).dissolveClass(
+                Mockito.anyInt(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 
-        mockMvc.perform(delete("/api/class/1"))
+        mockMvc.perform(delete("/api/class/1")
+                        .param("password", "test-password")
+                        .param("confirmText", "确认解散"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
@@ -177,18 +180,18 @@ class ClassControllerTest {
     }
 
     /**
-     * 测试生成邀请码 - 成功
+     * 测试重置邀请码 - 成功
      */
     @Test
-    @DisplayName("测试生成邀请码 - 成功")
-    void testGenerateInviteCode_Success() throws Exception {
-        Mockito.when(classService.generateOrRefreshInviteCode(Mockito.anyInt()))
+    @DisplayName("测试重置邀请码 - 成功")
+    void testResetInviteCode_Success() throws Exception {
+        Mockito.when(classService.resetInviteCode(Mockito.anyInt()))
                 .thenReturn("ABC123");
 
-        mockMvc.perform(post("/api/class/1/invite-code"))
+        mockMvc.perform(post("/api/class/1/invite-code/reset"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("邀请码生成成功"))
+                .andExpect(jsonPath("$.message").value("邀请码已重置，旧邀请码已失效"))
                 .andExpect(jsonPath("$.data").value("ABC123"));
     }
 

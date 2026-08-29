@@ -129,7 +129,7 @@ onMounted(() => {
 .header-left h2 {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .content-card {
@@ -138,7 +138,7 @@ onMounted(() => {
 
 .work-info {
   padding: 20px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--rgb-fg), 0.03);
   border-radius: 12px;
   margin-bottom: 24px;
 }
@@ -147,12 +147,12 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .work-info p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
   line-height: 1.6;
   margin-bottom: 12px;
 }
@@ -161,7 +161,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .submit-form {
@@ -169,13 +169,13 @@ onMounted(() => {
 }
 
 .submit-form :deep(.el-textarea__inner) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 .submit-form :deep(.el-textarea__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .submit-form :deep(.el-textarea__inner:focus) {
@@ -184,7 +184,7 @@ onMounted(() => {
 }
 
 .submit-form :deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
 }
 
 .form-input {

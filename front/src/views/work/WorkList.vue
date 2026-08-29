@@ -189,12 +189,12 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .header-right {
@@ -224,15 +224,15 @@ onMounted(() => {
 }
 
 .work-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--rgb-fg), 0.03);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s;
 }
 
 .work-card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--rgb-fg), 0.05);
   transform: translateY(-2px);
 }
 
@@ -252,7 +252,7 @@ onMounted(() => {
 .title-row h3 {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .pin-badge {
@@ -283,7 +283,7 @@ onMounted(() => {
 
 .description {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--rgb-fg), 0.7);
   margin-bottom: 16px;
   line-height: 1.5;
   display: -webkit-box;
@@ -303,11 +303,11 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .info-item svg {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--rgb-fg), 0.7);
 }
 
 .card-actions {
@@ -320,10 +320,10 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--rgb-fg), 0.05);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 8px;
-  color: white;
+  color: var(--fg);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
@@ -345,13 +345,13 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .search-input :deep(.el-input__wrapper),
 .filter-select :deep(.el-select__wrapper) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
 }
 
 .search-input :deep(.el-input__wrapper:focus-within),
@@ -361,16 +361,16 @@ onMounted(() => {
 }
 
 .search-input :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 .search-input :deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .filter-select :deep(.el-select__placeholder),
 .filter-select :deep(.el-select__selected-item) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 .empty-state p {

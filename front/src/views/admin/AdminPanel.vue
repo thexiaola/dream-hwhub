@@ -626,7 +626,7 @@ const batchKickFromAdmin = async (classId: number) => {
 .page-header h2 {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .filter-bar {
@@ -634,15 +634,15 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .admin-tabs :deep(.el-tabs__item) {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .admin-tabs :deep(.el-tabs__item.is-active) {
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .admin-tabs :deep(.el-tabs__item:hover) {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
 }
 
 .admin-tabs :deep(.el-tabs__active-bar) {
@@ -650,7 +650,7 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .admin-tabs :deep(.el-tabs__nav-wrap::after) {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(var(--rgb-fg), 0.1);
 }
 
 .application-list {
@@ -660,8 +660,8 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .application-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--rgb-fg), 0.03);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 12px;
   padding: 16px 20px;
   transition: border-color 0.3s;
@@ -687,12 +687,12 @@ const batchKickFromAdmin = async (classId: number) => {
 .app-title h4 {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .app-time {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .status-tag {
@@ -728,11 +728,11 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .app-info .label {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--rgb-fg), 0.5);
 }
 
 .app-info .value {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(var(--rgb-fg), 0.9);
 }
 
 .app-actions {
@@ -746,7 +746,7 @@ const batchKickFromAdmin = async (classId: number) => {
   flex-direction: column;
   align-items: center;
   padding: 40px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .empty-state p {
@@ -769,7 +769,7 @@ const batchKickFromAdmin = async (classId: number) => {
 .class-members {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(var(--rgb-fg), 0.1);
 }
 
 .members-header {
@@ -778,7 +778,7 @@ const batchKickFromAdmin = async (classId: number) => {
   align-items: center;
   margin-bottom: 12px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--rgb-fg), 0.7);
 }
 
 .member-row {
@@ -786,7 +786,7 @@ const batchKickFromAdmin = async (classId: number) => {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--rgb-fg), 0.03);
   border-radius: 8px;
   margin-bottom: 8px;
 }
@@ -794,13 +794,13 @@ const batchKickFromAdmin = async (classId: number) => {
 .member-name {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(var(--rgb-fg), 0.9);
   min-width: 100px;
 }
 
 .member-no {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--rgb-fg), 0.5);
 }
 
 .member-role {
@@ -821,14 +821,14 @@ const batchKickFromAdmin = async (classId: number) => {
 
 .empty-tip {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
   text-align: center;
   padding: 16px;
 }
 
 .filter-bar :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
 }
 
 .filter-bar :deep(.el-input__wrapper:focus-within) {
@@ -837,11 +837,11 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .filter-bar :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 .filter-bar :deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 /* el-radio-button 深色主题适配
@@ -849,15 +849,15 @@ const batchKickFromAdmin = async (classId: number) => {
    outline: var(--el-border)（即 1px solid var(--el-border-color)），
    不是 border！所以必须覆盖 outline / --el-border-color，覆盖 border-color 无效。 */
 .filter-bar :deep(.el-radio-group) {
-  --el-border-color: rgba(255, 255, 255, 0.2);
+  --el-border-color: rgba(var(--rgb-fg), 0.2);
 }
 
 .filter-bar :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.05) !important;
-  outline: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(var(--rgb-fg), 0.05) !important;
+  outline: 1px solid rgba(var(--rgb-fg), 0.2) !important;
   outline-offset: -1px;
-  color: rgba(255, 255, 255, 0.7) !important;
-  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.2) inset !important;
+  color: rgba(var(--rgb-fg), 0.7) !important;
+  box-shadow: -1px 0 0 0 rgba(var(--rgb-fg), 0.2) inset !important;
   transition: background-color 0.2s ease, color 0.2s ease, outline-color 0.2s ease;
 }
 
@@ -873,10 +873,10 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .filter-bar :deep(.el-radio-button:not(.is-active):hover .el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.09) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  outline-color: rgba(255, 255, 255, 0.32) !important;
-  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.32) inset !important;
+  background: rgba(var(--rgb-fg), 0.09) !important;
+  color: rgba(var(--rgb-fg), 0.9) !important;
+  outline-color: rgba(var(--rgb-fg), 0.32) !important;
+  box-shadow: -1px 0 0 0 rgba(var(--rgb-fg), 0.32) inset !important;
 }
 
 .filter-bar :deep(.el-radio-button:first-child:not(.is-active):hover .el-radio-button__inner) {
@@ -888,7 +888,7 @@ const batchKickFromAdmin = async (classId: number) => {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.85), rgba(118, 75, 162, 0.85)) !important;
   outline: 1px solid rgba(102, 126, 234, 0.8) !important;
   outline-offset: -1px;
-  color: #ffffff !important;
+  color: var(--fg-on-accent) !important;
   box-shadow: -1px 0 0 0 rgba(102, 126, 234, 0.8) inset !important;
   font-weight: 600;
 }
@@ -899,10 +899,10 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .filter-bar :deep(.el-radio-button.is-disabled .el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.02) !important;
-  outline: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(var(--rgb-fg), 0.02) !important;
+  outline: 1px solid rgba(var(--rgb-fg), 0.08) !important;
   outline-offset: -1px;
-  color: rgba(255, 255, 255, 0.25) !important;
+  color: rgba(var(--rgb-fg), 0.25) !important;
   cursor: not-allowed;
 }
 
@@ -911,7 +911,7 @@ const batchKickFromAdmin = async (classId: number) => {
 .admin-tabs :deep(.el-pagination .btn-prev),
 .admin-tabs :deep(.el-pagination .btn-next),
 .admin-tabs :deep(.el-pagination .el-pager li) {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
   background: transparent;
 }
 
@@ -920,12 +920,12 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .admin-tabs :deep(.el-checkbox__label) {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
 }
 
 .admin-tabs :deep(.el-checkbox__inner) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(var(--rgb-fg), 0.06);
+  border-color: rgba(var(--rgb-fg), 0.25);
 }
 
 .admin-tabs :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {

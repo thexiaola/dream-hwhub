@@ -256,9 +256,9 @@ const handleRegister = async () => {
 }
 
 .register-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--rgb-fg), 0.05);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
   border-radius: 24px;
   padding: 40px;
 }
@@ -284,7 +284,7 @@ const handleRegister = async () => {
 }
 
 .register-subtitle {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
   font-size: 14px;
 }
 
@@ -310,7 +310,7 @@ const handleRegister = async () => {
 
 .login-link {
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
   font-size: 14px;
 }
 

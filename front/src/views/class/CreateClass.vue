@@ -97,12 +97,12 @@ const submitForm = async () => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--rgb-fg), 0.95);
 }
 
 .subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--rgb-fg), 0.6);
 }
 
 .header-right {
@@ -123,8 +123,8 @@ const submitForm = async () => {
 }
 
 .create-form :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
 }
 
 .create-form :deep(.el-input__wrapper:focus-within) {
@@ -133,22 +133,22 @@ const submitForm = async () => {
 }
 
 .create-form :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
   background: transparent !important;
 }
 
 .create-form :deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .create-form :deep(.el-textarea__inner) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(var(--rgb-fg), 0.06) !important;
+  border-color: rgba(var(--rgb-fg), 0.25) !important;
+  color: rgba(var(--rgb-fg), 0.95) !important;
 }
 
 .create-form :deep(.el-textarea__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--rgb-fg), 0.4);
 }
 
 .create-form :deep(.el-textarea__inner:focus) {
@@ -157,7 +157,7 @@ const submitForm = async () => {
 }
 
 .create-form :deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--rgb-fg), 0.8);
 }
 
 .el-form-item {
