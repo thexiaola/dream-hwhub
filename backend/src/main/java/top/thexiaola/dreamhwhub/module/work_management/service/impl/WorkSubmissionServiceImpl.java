@@ -80,9 +80,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
 
-        // 检查权限（必须是班级学生才能提交作业）
-        if (!classService.isStudent(workInfo.getClassId(), currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级学生可以提交作业", null);
+        // 检查权限（班级学生或助理/协作老师可以提交作业，班主任不可提交）
+        if (!classService.canSubmitWork(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级学生或助理可以提交作业", null);
         }
 
         // 检查作业状态（必须是已发布状态才能提交）

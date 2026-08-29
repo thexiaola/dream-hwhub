@@ -340,12 +340,13 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否是班级内的学生
+        // 检查当前用户是否是班级内的成员（学生或助理/老师均可邀请）
         boolean isAdmin = isAdmin(currentUser);
-        boolean isClassStudent = isStudent(classId, currentUser.getId());
+        boolean isClassMember = isTeacher(classId, currentUser.getId())
+                || isStudent(classId, currentUser.getId());
         
-        if (!isAdmin && !isClassStudent) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级内的学生才能提交邀请申请", null);
+        if (!isAdmin && !isClassMember) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级内的成员才能提交邀请申请", null);
         }
 
         // 根据账号查询目标用户
@@ -747,6 +748,20 @@ public class ClassServiceImpl implements ClassService {
     public boolean isStudent(Integer classId, Integer userId) {
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("role", 0);
+        return classMemberMapper.selectCount(queryWrapper) > 0;
+    }
+
+    @Override
+    public boolean canSubmitWork(Integer classId, Integer userId) {
+        // 班主任（创建者）不能提交作业
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo != null && classInfo.getOwnerId().equals(userId)) {
+            return false;
+        }
+        // 学生（role=0）或助理/协作老师（role=1）可以提交
+        QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("class_id", classId).eq("user_id", userId)
+                .in("role", 0, 1);
         return classMemberMapper.selectCount(queryWrapper) > 0;
     }
 

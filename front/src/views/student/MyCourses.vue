@@ -102,9 +102,9 @@ const joinForm = ref({
 const loadStudentCourses = async () => {
   const result = await get<{ records: CourseInfo[] }>("/class/mine");
   if (result.code === 200) {
-    // 学生的课程
+    // 学生与助理（协作老师）的课程都在“我听的课”中显示
     studentCourses.value = result.data!.records.filter(
-      (course) => course.userRole === "学生",
+      (course) => course.userRole === "学生" || course.userRole === "老师",
     );
   }
 };

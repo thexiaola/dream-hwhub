@@ -96,6 +96,12 @@ public interface ClassService {
     boolean isStudent(Integer classId, Integer userId);
 
     /**
+     * 判断用户是否可以提交作业：
+     * 班级学生（role=0）或助理/协作老师（role=1）可以提交，班主任（创建者）不可提交
+     */
+    boolean canSubmitWork(Integer classId, Integer userId);
+
+    /**
      * 检查用户是否在指定班级中
      */
     boolean isClassMember(Integer classId, Integer userId);
