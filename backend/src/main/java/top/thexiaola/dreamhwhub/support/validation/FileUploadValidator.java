@@ -125,9 +125,9 @@ public class FileUploadValidator {
                     "文件名包含非法字符", null);
         }
         
-        // 确保文件在安全的上传目录内
-        String normalizedPath = Paths.get(filePath).normalize().toString();
-        String uploadDir = Paths.get(UPLOAD_BASE_DIR).normalize().toString();
+        // 确保文件在安全的上传目录内（统一按绝对路径比较）
+        Path normalizedPath = Paths.get(filePath).toAbsolutePath().normalize();
+        Path uploadDir = Paths.get(UPLOAD_BASE_DIR).toAbsolutePath().normalize();
         
         if (!normalizedPath.startsWith(uploadDir)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 

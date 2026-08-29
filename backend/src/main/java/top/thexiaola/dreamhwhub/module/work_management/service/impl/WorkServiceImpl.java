@@ -494,8 +494,8 @@ public class WorkServiceImpl implements WorkService {
             return;
         }
 
-        // 确保上传目录存在
-        Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+        // 确保上传目录存在（相对路径，基于运行目录）
+        Path uploadPath = Paths.get(UPLOAD_DIR).normalize();
         try {
             Files.createDirectories(uploadPath);
         } catch (Exception e) {
@@ -518,7 +518,7 @@ public class WorkServiceImpl implements WorkService {
 
                 savedFilePath = uploadPath.resolve(safeFileName);
 
-                // 3. 保存文件
+                // 3. 保存文件（相对路径，基于运行目录）
                 Files.copy(file.getInputStream(), savedFilePath);
 
                 // 4. 获取落盘后的实际文件信息
@@ -606,15 +606,17 @@ public class WorkServiceImpl implements WorkService {
             for (Integer attachmentId : removedAttachmentIds) {
                 WorkAttachment attachment = workAttachmentMapper.selectById(attachmentId);
                 if (attachment != null && attachment.getWorkId().equals(workId)) {
-                    // 物理删除文件
-                    try {
-                        Path filePath = Paths.get(attachment.getFilePath());
-                        if (Files.exists(filePath)) {
+                    // 物理删除文件；删除失败时抛出异常，回滚数据库记录删除，保证磁盘与数据库一致
+                    Path filePath = Paths.get(attachment.getFilePath());
+                    if (Files.exists(filePath)) {
+                        try {
                             Files.delete(filePath);
                             log.info("Deleted attachment file: {}", attachment.getFilePath());
+                        } catch (Exception e) {
+                            log.error("Failed to delete attachment file: {}", attachment.getFilePath(), e);
+                            throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED,
+                                    "附件文件删除失败：" + attachment.getFilePath(), null);
                         }
-                    } catch (Exception e) {
-                        log.warn("Failed to delete attachment file: {}", attachment.getFilePath(), e);
                     }
                     // 删除数据库记录
                     workAttachmentMapper.deleteById(attachmentId);

@@ -171,11 +171,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String safeFileName = tempSubmissionId + "_" + userId + "_" + timestamp + extension;
             
-            // 确保上传目录存在
-            Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+            // 确保上传目录存在（相对路径，基于运行目录）
+            Path uploadPath = Paths.get(UPLOAD_DIR).normalize();
             Files.createDirectories(uploadPath);
             
-            // 保存文件
+            // 保存文件（相对路径）
             Path filePath = uploadPath.resolve(safeFileName);
             Files.copy(file.getInputStream(), filePath);
             
@@ -701,11 +701,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
                 String safeFileName = submissionId + "_" + userId + "_" + timestamp + extension;
                 
-                // 3. 确保上传目录存在
-                Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+                // 3. 确保上传目录存在（相对路径，基于运行目录）
+                Path uploadPath = Paths.get(UPLOAD_DIR).normalize();
                 Files.createDirectories(uploadPath);
                 
-                // 4. 保存文件
+                // 4. 保存文件（相对路径）
                 Path filePath = uploadPath.resolve(safeFileName);
                 Files.copy(file.getInputStream(), filePath);
                 
