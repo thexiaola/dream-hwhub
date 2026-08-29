@@ -21,7 +21,7 @@ import java.util.Set;
  */
 @Slf4j
 public class FileUploadValidator {
-    
+
     /**
      * 允许的文件扩展名白名单
      */
@@ -40,14 +40,13 @@ public class FileUploadValidator {
             // 压缩类
             "zip", "rar", "7z", "tar", "gz",
             // 代码类
-            "java", "py", "c", "cpp", "h", "hpp", "js", "ts", "html", "css", "json", "xml"
-    );
-    
+            "java", "py", "c", "cpp", "h", "hpp", "js", "ts", "html", "css", "json", "xml");
+
     /**
      * 默认最大文件大小：50MB（仅作为参考，实际限制由业务层控制）
      */
     private static final long DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024;
-    
+
     /**
      * 禁止的 MIME 类型黑名单
      */
@@ -59,48 +58,47 @@ public class FileUploadValidator {
             "application/x-bat",
             "application/x-powershell",
             "application/javascript",
-            "application/x-apple-diskimage"
-    );
-    
+            "application/x-apple-diskimage");
+
     /**
      * 文件魔数映射表（用于深度检测文件真实类型）
      * 格式：扩展名 -> 魔数前缀字节数组
      */
     private static final Map<String, byte[]> FILE_MAGIC_NUMBERS = new HashMap<>();
-    
+
     static {
         // PDF文件
-        FILE_MAGIC_NUMBERS.put("pdf", new byte[]{0x25, 0x50, 0x44, 0x46});
+        FILE_MAGIC_NUMBERS.put("pdf", new byte[] { 0x25, 0x50, 0x44, 0x46 });
         // JPEG图片
-        FILE_MAGIC_NUMBERS.put("jpg", new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
-        FILE_MAGIC_NUMBERS.put("jpeg", new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+        FILE_MAGIC_NUMBERS.put("jpg", new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF });
+        FILE_MAGIC_NUMBERS.put("jpeg", new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF });
         // PNG图片
-        FILE_MAGIC_NUMBERS.put("png", new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47});
+        FILE_MAGIC_NUMBERS.put("png", new byte[] { (byte) 0x89, 0x50, 0x4E, 0x47 });
         // GIF图片
-        FILE_MAGIC_NUMBERS.put("gif", new byte[]{0x47, 0x49, 0x46, 0x38});
+        FILE_MAGIC_NUMBERS.put("gif", new byte[] { 0x47, 0x49, 0x46, 0x38 });
         // ZIP压缩文件
-        FILE_MAGIC_NUMBERS.put("zip", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        FILE_MAGIC_NUMBERS.put("zip", new byte[] { 0x50, 0x4B, 0x03, 0x04 });
         // RAR压缩文件
-        FILE_MAGIC_NUMBERS.put("rar", new byte[]{0x52, 0x61, 0x72, 0x21});
+        FILE_MAGIC_NUMBERS.put("rar", new byte[] { 0x52, 0x61, 0x72, 0x21 });
         // 7Z压缩文件
-        FILE_MAGIC_NUMBERS.put("7z", new byte[]{0x37, 0x7A, (byte) 0xBC, (byte) 0xAF});
+        FILE_MAGIC_NUMBERS.put("7z", new byte[] { 0x37, 0x7A, (byte) 0xBC, (byte) 0xAF });
         // Word文档(docx)
-        FILE_MAGIC_NUMBERS.put("docx", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        FILE_MAGIC_NUMBERS.put("docx", new byte[] { 0x50, 0x4B, 0x03, 0x04 });
         // Excel表格(xlsx)
-        FILE_MAGIC_NUMBERS.put("xlsx", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        FILE_MAGIC_NUMBERS.put("xlsx", new byte[] { 0x50, 0x4B, 0x03, 0x04 });
         // PowerPoint演示文稿(pptx)
-        FILE_MAGIC_NUMBERS.put("pptx", new byte[]{0x50, 0x4B, 0x03, 0x04});
+        FILE_MAGIC_NUMBERS.put("pptx", new byte[] { 0x50, 0x4B, 0x03, 0x04 });
         // MP4视频
-        FILE_MAGIC_NUMBERS.put("mp4", new byte[]{0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70});
+        FILE_MAGIC_NUMBERS.put("mp4", new byte[] { 0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70 });
         // MP3音频
-        FILE_MAGIC_NUMBERS.put("mp3", new byte[]{(byte) 0xFF, (byte) 0xFB});
+        FILE_MAGIC_NUMBERS.put("mp3", new byte[] { (byte) 0xFF, (byte) 0xFB });
     }
-    
+
     /**
      * 附件存储根目录（运行目录下的 attachments 目录）
      */
     private static final String UPLOAD_BASE_DIR = "attachments/";
-    
+
     /**
      * 验证文件路径安全性
      *
@@ -109,32 +107,32 @@ public class FileUploadValidator {
      */
     public static void validateFilePath(String filePath) {
         if (filePath == null || filePath.isEmpty()) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "文件路径不能为空", null);
         }
-        
+
         // 检查路径遍历攻击
         if (filePath.contains("..")) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "非法的文件路径", null);
         }
-        
+
         // 检查是否包含危险字符
         if (filePath.matches(".*[<>|\"?*].*")) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "文件名包含非法字符", null);
         }
-        
+
         // 确保文件在安全的上传目录内（统一按绝对路径比较）
         Path normalizedPath = Paths.get(filePath).toAbsolutePath().normalize();
         Path uploadDir = Paths.get(UPLOAD_BASE_DIR).toAbsolutePath().normalize();
-        
+
         if (!normalizedPath.startsWith(uploadDir)) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "文件必须存储在安全的上传目录内", null);
         }
     }
-    
+
     /**
      * 验证文件扩展名
      *
@@ -145,9 +143,9 @@ public class FileUploadValidator {
         String extension = getString(fileName);
 
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            log.warn("Blocked file with disallowed extension: {}, allowed extensions: {}", 
+            log.warn("Blocked file with disallowed extension: {}, allowed extensions: {}",
                     extension, String.join(", ", ALLOWED_EXTENSIONS));
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "不允许的文件类型：" + extension, null);
         }
     }
@@ -176,33 +174,33 @@ public class FileUploadValidator {
     public static void validateFileSize(Long fileSize) {
         validateFileSize(fileSize, DEFAULT_MAX_FILE_SIZE);
     }
-    
+
     /**
      * 验证文件大小（使用自定义限制）
      *
      * @param fileSize 文件大小（字节）
-     * @param maxSize 最大允许大小（字节）
+     * @param maxSize  最大允许大小（字节）
      * @throws BusinessException 如果文件超过大小限制
      */
     public static void validateFileSize(Long fileSize, long maxSize) {
         if (fileSize == null) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "文件大小不能为空", null);
         }
-        
+
         if (fileSize <= 0) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "文件大小必须大于 0", null);
         }
-        
+
         if (fileSize > maxSize) {
-            log.warn("Blocked oversized file: {} bytes, max allowed: {} bytes", 
+            log.warn("Blocked oversized file: {} bytes, max allowed: {} bytes",
                     fileSize, maxSize);
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     String.format("文件大小超过限制 (%.2f MB)", maxSize / 1024.0 / 1024.0), null);
         }
     }
-    
+
     /**
      * 验证文件是否存在且可读
      *
@@ -211,23 +209,23 @@ public class FileUploadValidator {
      */
     public static void validateFileExists(String filePath) {
         Path path = Paths.get(filePath);
-        
+
         if (!Files.exists(path)) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "文件不存在", null);
         }
-        
+
         if (!Files.isReadable(path)) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "文件不可读", null);
         }
-        
+
         if (!Files.isRegularFile(path)) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "必须是普通文件，不能是目录或符号链接", null);
         }
     }
-    
+
     /**
      * 检测文件真实类型（通过魔数）
      *
@@ -238,7 +236,7 @@ public class FileUploadValidator {
         try {
             Path path = Paths.get(filePath);
             String mimeType = Files.probeContentType(path);
-            
+
             if (mimeType == null) {
                 // 如果无法检测，使用扩展名判断
                 String fileName = path.getFileName().toString();
@@ -249,14 +247,14 @@ public class FileUploadValidator {
                 }
                 return "application/octet-stream";
             }
-            
+
             return mimeType;
         } catch (Exception e) {
             log.error("Failed to detect file type for: {}", filePath, e);
             return "application/octet-stream";
         }
     }
-    
+
     /**
      * 验证文件的 MIME 类型
      *
@@ -265,19 +263,19 @@ public class FileUploadValidator {
      */
     public static void validateMimeType(String mimeType) {
         if (mimeType == null) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "MIME 类型不能为空", null);
         }
-        
+
         String normalizedMimeType = mimeType.toLowerCase();
-        
+
         if (FORBIDDEN_MIME_TYPES.contains(normalizedMimeType)) {
             log.warn("Blocked dangerous MIME type: {}", mimeType);
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, 
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                     "不允许的文件类型", null);
         }
     }
-    
+
     /**
      * 执行完整的文件安全检查（使用默认50MB限制）
      *
@@ -288,40 +286,40 @@ public class FileUploadValidator {
     public static void performFullSecurityCheck(String filePath, Long fileSize) {
         performFullSecurityCheck(filePath, fileSize, DEFAULT_MAX_FILE_SIZE);
     }
-    
+
     /**
      * 执行完整的文件安全检查（使用自定义大小限制）
      *
      * @param filePath 文件路径
      * @param fileSize 文件大小
-     * @param maxSize 最大允许大小（字节）
+     * @param maxSize  最大允许大小（字节）
      * @throws BusinessException 如果任何检查失败
      */
     public static void performFullSecurityCheck(String filePath, Long fileSize, long maxSize) {
         // 1. 验证文件路径
         validateFilePath(filePath);
-        
+
         // 2. 验证文件扩展名
         String fileName = Paths.get(filePath).getFileName().toString();
         validateFileExtension(fileName);
-        
+
         // 3. 验证文件大小（使用自定义限制）
         validateFileSize(fileSize, maxSize);
-        
+
         // 4. 验证文件存在
         validateFileExists(filePath);
-        
+
         // 5. 检测并验证 MIME 类型
         String mimeType = detectFileType(filePath);
         validateMimeType(mimeType);
-        
+
         // 6. 验证文件魔数（防止扩展名欺骗）
         validateFileMagicNumber(filePath, fileName);
-        
-        log.info("File security check passed: {}, size: {}, type: {}", 
+
+        log.info("File security check passed: {}, size: {}, type: {}",
                 fileName, fileSize, mimeType);
     }
-    
+
     /**
      * 根据扩展名获取 MIME 类型
      *
@@ -392,7 +390,7 @@ public class FileUploadValidator {
             default -> "application/octet-stream";
         };
     }
-    
+
     /**
      * 获取安全的上传目录路径
      *
@@ -401,25 +399,25 @@ public class FileUploadValidator {
      */
     public static String getSecureUploadPath(String subDirectory) {
         ensureUploadDirectoryExists();
-        
+
         if (subDirectory != null && !subDirectory.isEmpty()) {
             // 清理子目录名称中的危险字符
             String safeSubDir = subDirectory.replaceAll("[^a-zA-Z0-9_-]", "_");
             Path uploadPath = Paths.get(UPLOAD_BASE_DIR, safeSubDir);
-            
+
             try {
                 Files.createDirectories(uploadPath);
                 return uploadPath.normalize().toString();
             } catch (Exception e) {
                 log.error("Failed to create upload directory: {}", uploadPath, e);
-                throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, 
+                throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR,
                         "无法创建上传目录", null);
             }
         }
-        
+
         return Paths.get(UPLOAD_BASE_DIR).normalize().toString();
     }
-    
+
     /**
      * 确保上传目录存在
      */
@@ -432,11 +430,11 @@ public class FileUploadValidator {
             }
         } catch (Exception e) {
             log.error("Failed to create upload directory: {}", UPLOAD_BASE_DIR, e);
-            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, 
+            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR,
                     "无法初始化上传目录", null);
         }
     }
-    
+
     /**
      * 获取允许的文件扩展名列表
      *
@@ -445,7 +443,7 @@ public class FileUploadValidator {
     public static Set<String> getAllowedExtensions() {
         return ALLOWED_EXTENSIONS;
     }
-    
+
     /**
      * 获取默认的最大文件大小限制
      *
@@ -454,7 +452,7 @@ public class FileUploadValidator {
     public static long getDefaultMaxFileSize() {
         return DEFAULT_MAX_FILE_SIZE;
     }
-    
+
     /**
      * 验证文件魔数（防止扩展名欺骗攻击）
      * 通过读取文件头部字节来验证文件真实类型是否与扩展名匹配
@@ -470,16 +468,16 @@ public class FileUploadValidator {
             if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
                 return; // 无扩展名，跳过魔数验证
             }
-            
+
             String extension = StrUtil.subSuf(fileName, lastDotIndex + 1).toLowerCase();
-            
+
             // 查找对应的魔数定义
             byte[] expectedMagic = FILE_MAGIC_NUMBERS.get(extension);
             if (expectedMagic == null) {
                 // 该扩展名没有魔数定义，跳过验证
                 return;
             }
-            
+
             // 读取文件头部字节
             Path path = Paths.get(filePath);
             long fileLength = Files.size(path);
@@ -487,16 +485,16 @@ public class FileUploadValidator {
                 throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                         "文件损坏或格式不正确", null);
             }
-            
+
             try (InputStream inputStream = Files.newInputStream(path)) {
                 byte[] actualMagic = new byte[expectedMagic.length];
                 int bytesRead = inputStream.read(actualMagic);
-                
+
                 if (bytesRead != expectedMagic.length) {
                     throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED,
                             "文件读取失败", null);
                 }
-                
+
                 // 比较魔数
                 if (!java.util.Arrays.equals(expectedMagic, actualMagic)) {
                     log.warn("File magic number mismatch for {}: expected={}, actual={}",
@@ -511,7 +509,7 @@ public class FileUploadValidator {
                     "文件验证失败", null);
         }
     }
-    
+
     /**
      * 将字节数组转换为十六进制字符串（用于日志记录）
      *
