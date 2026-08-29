@@ -80,7 +80,7 @@
               class="profile-alert"
             />
             <el-form-item label="当前邮箱">
-              <el-input v-model="maskedCurrentEmail" disabled />
+              <el-input v-model="currentEmail" disabled />
             </el-form-item>
             <el-form-item label="旧邮箱验证码" prop="beforeCode">
               <div class="code-row">
@@ -352,20 +352,6 @@ const roleTagType = computed(() => {
   if (userStore.userInfo && userStore.userInfo.permission >= 9) return 'danger'
   return 'info'
 })
-
-const maskEmail = (email: string): string => {
-  if (!email) return ''
-  const at = email.indexOf('@')
-  if (at <= 1) return email
-  const name = email.slice(0, at)
-  const tail = email.slice(at)
-  const first = name[0]
-  const last = name[name.length - 1]
-  const stars = '*'.repeat(Math.max(1, name.length - 2))
-  return `${first}${stars}${last}${tail}`
-}
-
-const maskedCurrentEmail = computed(() => maskEmail(currentEmail.value))
 
 // 倒计时
 let beforeTimer: number | null = null

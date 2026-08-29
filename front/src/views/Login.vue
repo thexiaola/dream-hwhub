@@ -8,6 +8,9 @@
         <span v-for="n in 50" :key="n" class="star" :style="getStarStyle()"></span>
       </div>
     </div>
+    <div class="login-theme-toggle">
+      <ThemeToggle />
+    </div>
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
@@ -57,6 +60,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { BookOpen, User, Lock } from '@lucide/vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -115,12 +119,19 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
-  justify-content: center;
   align-items: center;
-  position: relative;
+  justify-content: center;
   overflow: hidden;
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 10;
 }
 
 .background-effects {
