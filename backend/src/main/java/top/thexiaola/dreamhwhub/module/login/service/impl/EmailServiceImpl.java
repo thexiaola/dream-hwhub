@@ -165,20 +165,22 @@ public class EmailServiceImpl implements EmailService {
 
         // 异步发送邮件，SMTP 耗时可能较长，避免阻塞接口响应
         if (isRetrieve) {
-            mailExecutor.execute(() -> sendCodeEmailQuietly(() -> sendRetrievePasswordCodeEmail(email, code), email));
+            mailExecutor.execute(() -> sendCodeEmailQuietly(code, () -> sendRetrievePasswordCodeEmail(email, code), email));
         } else if (isModify) {
-            mailExecutor.execute(() -> sendCodeEmailQuietly(() -> sendModifyCodeEmail(email, code), email));
+            mailExecutor.execute(() -> sendCodeEmailQuietly(code, () -> sendModifyCodeEmail(email, code), email));
         } else {
-            mailExecutor.execute(() -> sendCodeEmailQuietly(() -> sendVerificationCodeEmail(email, code), email));
+            mailExecutor.execute(() -> sendCodeEmailQuietly(code, () -> sendVerificationCodeEmail(email, code), email));
         }
     }
 
     /**
-     * 静默兜底包装：sendEmail 内部已记录详细错误日志，这里仅避免未捕获异常进入线程默认处理器
+     * 静默兜底包装：sendEmail 内部已记录详细错误日志，这里仅避免未捕获异常进入线程默认处理器；
+     * 发送成功后在后台日志显示验证码
      */
-    private void sendCodeEmailQuietly(Runnable sender, String email) {
+    private void sendCodeEmailQuietly(String code, Runnable sender, String email) {
         try {
             sender.run();
+            log.info("Verification code sent successfully to email: {}, code: {}", email, code);
         } catch (Exception e) {
             log.warn("Failed to send verification code email to {} in background: {}", email, e.getMessage());
         }

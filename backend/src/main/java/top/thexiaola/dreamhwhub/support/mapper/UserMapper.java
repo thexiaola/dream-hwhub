@@ -2,6 +2,7 @@ package top.thexiaola.dreamhwhub.support.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import top.thexiaola.dreamhwhub.module.login.dto.UserInfoResponse;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 
@@ -10,7 +11,7 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
  */
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    
+
     /**
      * User 实体转换为 UserResponse DTO
      * @param user 用户实体
@@ -18,4 +19,11 @@ public interface UserMapper {
      */
     @Mapping(target = "token", ignore = true)
     UserResponse toUserResponse(User user);
+
+    /**
+     * User 实体转换为 UserInfoResponse DTO（无 token 字段）
+     * @param user 用户实体
+     * @return 用户信息响应 DTO
+     */
+    UserInfoResponse toUserInfoResponse(User user);
 }

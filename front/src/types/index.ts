@@ -29,7 +29,7 @@ export interface RegisterRequest {
   userNo: string
   email: string
   password: string
-  code: string
+  emailCode: string
 }
 
 export interface WorkInfo {

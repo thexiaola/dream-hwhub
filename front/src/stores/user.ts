@@ -26,14 +26,18 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('token')
   }
 
-  // 主动退出：先通知后端（保留 token 供接口鉴权），无论成败均清除本地状态
-  const logout = async (): Promise<void> => {
+  // 主动退出：后端登出成功后清除本地状态并返回后端提示内容，失败返回 null；401 由响应拦截器统一处理会话过期
+  const logout = async (): Promise<string | null> => {
     try {
-      await post('/users/logout')
+      const res = await post('/users/logout')
+      if (res.code === 200) {
+        clearLocal()
+        return res.message
+      }
+      return null
     } catch {
-      /* ignore */
+      return null
     }
-    clearLocal()
   }
 
   const register = async (data: RegisterRequest): Promise<{ code: number; message: string }> => {

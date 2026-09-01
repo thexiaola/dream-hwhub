@@ -39,6 +39,6 @@ public class RegisterRequest {
     // 密码
     @NotBlank(message = "密码不能为空")
     @Pattern(regexp = "^[0-9a-zA-Z!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]+$", message = "密码只能包含字母、数字和特殊字符")
-    @Size(min = 6, max = 48, message = "密码长度必须在 6-48 位之间")
+    @Size(min = 4, max = 48, message = "密码长度必须在 4-48 位之间")
     private String password;
 }

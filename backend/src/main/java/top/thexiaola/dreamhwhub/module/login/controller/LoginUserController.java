@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.UserInfoResponse;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
@@ -96,7 +97,7 @@ public class LoginUserController {
      * 获取当前登录用户信息
      */
     @GetMapping("/info")
-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUserInfo() {
+    public ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUserInfo() {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             return ResponseEntity.status(401).body(ApiResponse.error(401, "未登录"));
@@ -109,9 +110,8 @@ public class LoginUserController {
         if (fullUser == null) {
             return ResponseEntity.status(404).body(ApiResponse.error(404, "用户不存在"));
         }
-        fullUser.setPassword(null);
-        UserResponse userResponse = userResponseMapper.toUserResponse(fullUser);
-        return ResponseEntity.ok(ApiResponse.success(userResponse, "获取用户信息成功"));
+        UserInfoResponse userInfoResponse = userResponseMapper.toUserInfoResponse(fullUser);
+        return ResponseEntity.ok(ApiResponse.success(userInfoResponse, "获取用户信息成功"));
     }
 
 }

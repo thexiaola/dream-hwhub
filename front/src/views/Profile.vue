@@ -613,7 +613,7 @@ const pwdForm = reactive({
 
 const validateNewPwd = (_rule: unknown, value: string, callback: (err?: Error) => void) => {
   if (!value) return callback(new Error('请输入新密码'))
-  if (value.length < 6 || value.length > 48) return callback(new Error('新密码长度需在 6-48 位之间'))
+  if (value.length < 4 || value.length > 48) return callback(new Error('新密码长度需在 4-48 位之间'))
   const pattern = /^[0-9a-zA-Z!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/
   if (!pattern.test(value)) return callback(new Error('新密码只能包含字母、数字和常用特殊字符'))
   if (value === pwdForm.oldPassword) return callback(new Error('新密码不能与旧密码相同'))
@@ -664,9 +664,12 @@ const submitPassword = async () => {
     if (res.code === 200) {
       ElMessage.success(res.message || '密码修改成功，请重新登录')
       resetPwdForm()
-      setTimeout(() => {
-        userStore.logout()
-        router.push('/login')
+      setTimeout(async () => {
+        const msg = await userStore.logout()
+        if (msg) {
+          ElMessage.success(msg)
+          router.push('/login')
+        }
       }, 800)
     } else {
       ElMessage.error(res.message || '密码修改失败')
@@ -689,8 +692,13 @@ const handleLogout = async () => {
   } catch {
     return
   }
-  await userStore.logout()
-  router.push('/login')
+  const msg = await userStore.logout()
+  if (msg) {
+    ElMessage.success(msg)
+    router.push('/login')
+  } else {
+    ElMessage.error('登出失败，请重试')
+  }
 }
 </script>
 

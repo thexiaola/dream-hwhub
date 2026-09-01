@@ -103,6 +103,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield } from '@lucide/vue'
@@ -129,8 +130,13 @@ const handleCommand = async (command: string) => {
   if (command === 'profile') {
     router.push('/profile')
   } else if (command === 'logout') {
-    await userStore.logout()
-    router.push('/login')
+    const msg = await userStore.logout()
+    if (msg) {
+      ElMessage.success(msg)
+      router.push('/login')
+    } else {
+      ElMessage.error('登出失败，请重试')
+    }
   }
 }
 

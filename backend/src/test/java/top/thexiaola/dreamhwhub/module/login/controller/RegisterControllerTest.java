@@ -175,7 +175,7 @@ class RegisterControllerTest {
         registerRequest.setUsername("张三");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
-        registerRequest.setPassword("12345"); // 少于 6 位
+        registerRequest.setPassword("123"); // 少于 4 位
 
         // 执行测试并验证
         mockMvc.perform(post("/api/users/register")
@@ -320,17 +320,17 @@ class RegisterControllerTest {
     }
 
     /**
-     * 边界测试 - 密码最小长度6位
+     * 边界测试 - 密码最小长度4位
      */
     @Test
-    @DisplayName("边界测试 - 密码最小长度6位")
+    @DisplayName("边界测试 - 密码最小长度4位")
     void testRegister_PasswordMinLength() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
         registerRequest.setUsername("张三");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
-        registerRequest.setPassword("abc123"); // 6位
+        registerRequest.setPassword("abc1"); // 4位
 
         User mockUser = new User();
         mockUser.setId(1);

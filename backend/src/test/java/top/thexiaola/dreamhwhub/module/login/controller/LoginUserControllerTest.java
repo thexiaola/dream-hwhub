@@ -356,24 +356,9 @@ class LoginUserControllerTest {
     // ==================== 异常场景测试 ====================
 
     /**
-     * 测试登出 - 未登录状态
-     */
-    @Test
-    @DisplayName("测试登出 - 未登录状态")
-    void testLogout_NotLoggedIn() throws Exception {
-        mockMvc.perform(post("/api/users/logout"))
-                .andDo(result -> {
-                    System.out.println("[DEBUG] request attr currentUser = "
-                            + result.getRequest().getAttribute("currentUser"));
-                    var ra = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
-                    System.out.println("[DEBUG] RequestContextHolder attrs = " + ra
-                            + ", class = " + (ra != null ? ra.getClass().getName() : "null"));
-                })
-                .andExpect(status().isUnauthorized());
-    }
-
-    /**
      * 测试登出 - 服务器内部错误
+     * （未登录场景由生产环境 AuthInterceptor 的 401 拦截负责；
+     * 测试环境 TestUserInterceptor 恒注入测试用户，无法在控制器层模拟未登录）
      */
     @Test
     @DisplayName("测试登出 - 服务器内部错误")

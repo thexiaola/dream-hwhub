@@ -165,7 +165,7 @@ class RetrieveUserControllerTest {
         RetrievePasswordModifyRequest request = new RetrievePasswordModifyRequest();
         request.setAccount("testuser");
         request.setCode("123456");
-        request.setNewPassword("12345"); // 少于 6 位
+        request.setNewPassword("123"); // 少于 4 位
 
         mockMvc.perform(put("/api/users/retrieve/resetpassword")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -225,12 +225,12 @@ class RetrieveUserControllerTest {
      * 边界测试 - 新密码最小长度
      */
     @Test
-    @DisplayName("边界测试 - 新密码最小长度6个字符")
+    @DisplayName("边界测试 - 新密码最小长度4个字符")
     void testRetrievePassword_MinPasswordLength() throws Exception {
         RetrievePasswordModifyRequest request = new RetrievePasswordModifyRequest();
         request.setAccount("testuser");
         request.setCode("123456");
-        request.setNewPassword("abc123");
+        request.setNewPassword("abc1"); // 4位
 
         User mockUser = new User();
         mockUser.setId(1);

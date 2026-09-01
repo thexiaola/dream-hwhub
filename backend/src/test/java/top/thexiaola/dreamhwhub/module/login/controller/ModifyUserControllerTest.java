@@ -241,11 +241,11 @@ class ModifyUserControllerTest {
      * 边界测试 - 密码最小长度
      */
     @Test
-    @DisplayName("边界测试 - 密码最小长度6个字符")
+    @DisplayName("边界测试 - 密码最小长度4个字符")
     void testModifyPassword_MinPasswordLength() throws Exception {
         ModifyPasswordRequest request = new ModifyPasswordRequest();
         request.setOldPassword("oldpass");
-        request.setNewPassword("abc123");
+        request.setNewPassword("abc1"); // 4位
 
         Mockito.doNothing().when(modifyUserService).modifyUserPassword(Mockito.any(ModifyPasswordRequest.class));
 
