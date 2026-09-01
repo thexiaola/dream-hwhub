@@ -1,5 +1,5 @@
 <template>
-  <div class="teacher-course-detail">
+  <div v-if="course" class="teacher-course-detail">
     <div class="page-header">
       <div class="header-left">
         <el-button @click="goBack" class="page-back-btn" text>
@@ -601,14 +601,20 @@ const loadCourse = async () => {
   const result = await get<CourseInfo>(`/class/${route.params.id}`);
   if (result.code === 200) {
     const info = result.data!;
-    // 非班级教师（创建者/老师）禁止进入教师管理视图
-    if (info.userRole !== "创建者" && info.userRole !== "老师") {
+    // 管理员可查看任意班级；非班级教师（创建者/老师）禁止进入教师管理视图
+    const isAdmin = (userStore.userInfo?.permission ?? 0) >= 100;
+    if (!isAdmin && info.userRole !== "创建者" && info.userRole !== "老师") {
       ElMessage.warning("您不是该班级的老师，无权访问教师管理页面");
-      router.push(`/student/course/${route.params.id}`);
+      router.push("/teacher/courses");
       return;
     }
     course.value = info;
+    return true;
   }
+  // 无权访问（非班级成员返回 403）或班级不存在（404）：提示并返回课程列表
+  ElMessage.error(result.message || "无法访问该课程");
+  router.push("/teacher/courses");
+  return false;
 };
 
 const loadWorks = async () => {
@@ -987,9 +993,11 @@ const dissolveClassAction = async () => {
 };
 
 onMounted(async () => {
-  await loadCourse();
-  await loadWorks();
-  await loadMembers();
+  const loaded = await loadCourse();
+  if (loaded) {
+    await loadWorks();
+    await loadMembers();
+  }
 });
 </script>
 

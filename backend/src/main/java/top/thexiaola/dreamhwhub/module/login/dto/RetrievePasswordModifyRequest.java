@@ -25,6 +25,6 @@ public class RetrievePasswordModifyRequest {
     // 新密码
     @NotBlank(message = "新密码不符合预期")
     @Pattern(regexp = "^[0-9a-zA-Z!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]+$", message = "新密码不符合预期")
-    @Size(min = 4, max = 50, message = "新密码不符合预期")
+    @Size(min = 4, max = 48, message = "新密码不符合预期")
     private String newPassword;
 }

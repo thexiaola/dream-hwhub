@@ -95,6 +95,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { get } from '@/utils/http'
+import { ElMessage } from 'element-plus'
 import { ArrowLeft, User, Users, Calendar, Clock, FileText, Star } from '@lucide/vue'
 
 interface CourseInfo {
@@ -142,7 +143,12 @@ const loadCourse = async () => {
   const result = await get<CourseInfo>(`/class/${route.params.id}`)
   if (result.code === 200) {
     course.value = result.data!
+    return true
   }
+  // 无权访问（非班级成员）或班级不存在时提示并返回课程列表
+  ElMessage.error(result.message || '无法访问该课程')
+  router.push('/student/courses')
+  return false
 }
 
 const loadWorks = async () => {
@@ -204,9 +210,11 @@ const goToWork = (workId: number) => {
 }
 
 onMounted(async () => {
-  await loadCourse()
-  await loadWorks()
-  await loadSubmissions()
+  const loaded = await loadCourse()
+  if (loaded) {
+    await loadWorks()
+    await loadSubmissions()
+  }
 })
 </script>
 

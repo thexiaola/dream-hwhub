@@ -91,6 +91,13 @@ public interface ClassService {
     List<Integer> getTeacherClassIds(Integer userId);
 
     /**
+     * 获取用户作为班级成员（学生或老师）加入的所有班级 ID
+     * @param userId 用户 ID
+     * @return 班级 ID 列表
+     */
+    List<Integer> getMemberClassIds(Integer userId);
+
+    /**
      * 检查用户在指定班级是否是学生
      */
     boolean isStudent(Integer classId, Integer userId);

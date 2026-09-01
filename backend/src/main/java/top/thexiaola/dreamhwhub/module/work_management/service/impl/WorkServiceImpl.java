@@ -31,9 +31,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -207,74 +210,81 @@ public class WorkServiceImpl implements WorkService {
     public Page<WorkResponse> getWorkList(String publisherUserNo, Integer status, Integer pageNum, Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         LocalDateTime now = LocalDateTime.now();
-        
+
+        // 可见班级范围：管理员为全部班级，普通用户为任教与所在班级的并集，未登录为空
+        List<Integer> visibleClassIds;
+        if (currentUser == null) {
+            visibleClassIds = Collections.emptyList();
+        } else {
+            Set<Integer> mergedClassIds = new LinkedHashSet<>(classService.getTeacherClassIds(currentUser.getId()));
+            mergedClassIds.addAll(classService.getMemberClassIds(currentUser.getId()));
+            visibleClassIds = new ArrayList<>(mergedClassIds);
+        }
+
         // 构建查询条件
         QueryWrapper<WorkInfo> queryWrapper = new QueryWrapper<>();
-        
+
         // 按状态筛选
         if (status != null && status == 0) {
             // 未发布：只有班级老师可以看到自己管理的班级的未发布作业
             if (currentUser == null) {
-                return new Page<>(pageNum, pageSize, 0);
+                throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "用户未登录", null);
             }
-            
+
             List<Integer> teacherClassIds = classService.getTeacherClassIds(currentUser.getId());
             if (teacherClassIds.isEmpty()) {
-                return new Page<>(pageNum, pageSize, 0);
+                throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看未发布作业", null);
             }
-            
+
             queryWrapper.gt("publish_time", now)
                        .in("class_id", teacherClassIds);
         } else if (status != null && status == 1) {
-            // 已发布：发布时间 <= 当前时间 AND (截止时间为空 OR 截止时间 > 当前时间)
-            queryWrapper.le("publish_time", now)
+            // 已发布：仅可见班级范围内的作业
+            if (visibleClassIds.isEmpty()) {
+                throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "您尚未加入任何班级，无法查看作业列表", null);
+            }
+            queryWrapper.in("class_id", visibleClassIds)
+                       .le("publish_time", now)
                        .and(wrapper -> wrapper.isNull("deadline").or().gt("deadline", now));
         } else if (status != null && status == 2) {
-            // 已结束：截止时间不为空 AND 截止时间 <= 当前时间
-            queryWrapper.isNotNull("deadline")
+            // 已结束：仅可见班级范围内的作业
+            if (visibleClassIds.isEmpty()) {
+                throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "您尚未加入任何班级，无法查看作业列表", null);
+            }
+            queryWrapper.in("class_id", visibleClassIds)
+                       .isNotNull("deadline")
                        .le("deadline", now);
         } else {
-            // status=null: 返回所有可见作业（已发布 + 已结束 + 用户有权限的未发布）
-            if (currentUser != null) {
-                List<Integer> teacherClassIds = classService.getTeacherClassIds(currentUser.getId());
-                
-                if (!teacherClassIds.isEmpty()) {
-                    // 用户是某些班级的老师：可以看到这些班级的未发布作业 + 所有已发布和已结束作业
-                    queryWrapper.and(wrapper -> wrapper
-                        // 未发布作业（仅限老师管理的班级）
-                        .gt("publish_time", now)
-                        .in("class_id", teacherClassIds)
-                        .or()
-                        // 已发布作业
-                        .le("publish_time", now)
-                        .and(w -> w.isNull("deadline").or().gt("deadline", now))
-                        .or()
-                        // 已结束作业
-                        .isNotNull("deadline")
-                        .le("deadline", now)
-                    );
-                } else {
-                    // 用户不是任何班级的老师：只能看到已发布和已结束作业
-                    queryWrapper.and(wrapper -> wrapper
-                        // 已发布作业
-                        .le("publish_time", now)
-                        .and(w -> w.isNull("deadline").or().gt("deadline", now))
-                        .or()
-                        // 已结束作业
-                        .isNotNull("deadline")
-                        .le("deadline", now)
-                    );
-                }
-            } else {
-                // 未登录用户：只能看到已发布和已结束作业
+            // status=null: 返回可见班级范围内的作业（已发布 + 已结束 + 任教班级的未发布）
+            if (visibleClassIds.isEmpty()) {
+                throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "您尚未加入任何班级，无法查看作业列表", null);
+            }
+
+            List<Integer> teacherClassIds = currentUser != null
+                    ? classService.getTeacherClassIds(currentUser.getId()) : Collections.emptyList();
+
+            if (!teacherClassIds.isEmpty()) {
+                // 任教班级：可看到任教的未发布作业 + 可见范围内的已发布和已结束作业
                 queryWrapper.and(wrapper -> wrapper
-                    // 已发布作业
-                    .le("publish_time", now)
-                    .and(w -> w.isNull("deadline").or().gt("deadline", now))
+                    // 未发布作业（仅限老师管理的班级）
+                    .and(w -> w.gt("publish_time", now).in("class_id", teacherClassIds))
                     .or()
-                    // 已结束作业
-                    .isNotNull("deadline")
-                    .le("deadline", now)
+                    // 已发布作业（限可见班级范围）
+                    .and(w -> w.le("publish_time", now).in("class_id", visibleClassIds)
+                               .and(x -> x.isNull("deadline").or().gt("deadline", now)))
+                    .or()
+                    // 已结束作业（限可见班级范围）
+                    .and(w -> w.isNotNull("deadline").le("deadline", now).in("class_id", visibleClassIds))
+                );
+            } else {
+                // 纯学生：仅可见所在班级的已发布和已结束作业
+                queryWrapper.and(wrapper -> wrapper
+                    // 已发布作业（限所在班级）
+                    .and(w -> w.le("publish_time", now).in("class_id", visibleClassIds)
+                               .and(x -> x.isNull("deadline").or().gt("deadline", now)))
+                    .or()
+                    // 已结束作业（限所在班级）
+                    .and(w -> w.isNotNull("deadline").le("deadline", now).in("class_id", visibleClassIds))
                 );
             }
         }

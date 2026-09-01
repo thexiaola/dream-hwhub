@@ -229,6 +229,17 @@ const resetPassword = async () => {
     ElMessage.error('两次输入的密码不一致')
     return
   }
+
+  if (step3Form.value.password.length < 4 || step3Form.value.password.length > 48) {
+    ElMessage.error('新密码长度需在 4-48 位之间')
+    return
+  }
+
+  const pattern = /^[0-9a-zA-Z!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/
+  if (!pattern.test(step3Form.value.password)) {
+    ElMessage.error('新密码只能包含字母、数字和常用特殊字符')
+    return
+  }
   
   loading.value = true
   

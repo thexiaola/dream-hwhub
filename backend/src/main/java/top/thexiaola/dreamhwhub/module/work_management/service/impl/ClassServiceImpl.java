@@ -712,6 +712,21 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
+    public List<Integer> getMemberClassIds(Integer userId) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+
+        // 查询用户以任何角色加入的班级
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("user_id", userId).select("class_id");
+        List<ClassMember> memberClasses = classMemberMapper.selectList(memberQuery);
+        return memberClasses.stream()
+                .map(ClassMember::getClassId)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public boolean isStudent(Integer classId, Integer userId) {
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("role", 0);
