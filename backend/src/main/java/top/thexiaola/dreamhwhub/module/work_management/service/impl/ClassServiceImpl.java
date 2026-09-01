@@ -810,6 +810,13 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
+        // 权限校验：管理员可查看任意班级，普通用户仅可查看自己所在的班级
+        User currentUser = getCurrentUserOrThrow();
+        boolean isAdmin = isAdmin(currentUser);
+        if (!isAdmin && !isClassMember(classId, currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级成员或管理员可以查看班级详情", null);
+        }
+
         // 查询创建者信息
         User owner = userMapper.selectById(classInfo.getOwnerId());
         String ownerName = owner != null ? owner.getUsername() : "未知";
@@ -827,15 +834,11 @@ public class ClassServiceImpl implements ClassService {
         studentQuery.eq("class_id", classId).eq("role", 0);
         long studentCount = classMemberMapper.selectCount(studentQuery);
 
-        // 查询当前用户在该班级的角色
-        User currentUser = UserUtils.getCurrentUser();
-        String userRole = null;
-        if (currentUser != null) {
-            QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
-            memberQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
-            ClassMember member = classMemberMapper.selectOne(memberQuery);
-            userRole = getUserRole(classInfo, member);
-        }
+        // 查询当前用户在该班级的角色（前面权限校验已确保 currentUser 非空）
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
+        ClassMember member = classMemberMapper.selectOne(memberQuery);
+        String userRole = getUserRole(classInfo, member);
 
         return new ClassDetailResponse(
                 classInfo.getId(),

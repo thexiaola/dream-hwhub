@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
+import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
@@ -46,7 +47,7 @@ public class WorkController {
             return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
             log.warn("User create work failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         } catch (Exception e) {
             log.error("User create work error", e);
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "请求参数错误: " + e.getMessage()));
@@ -74,7 +75,7 @@ public class WorkController {
             return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
             log.warn("User update work failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         } catch (Exception e) {
             log.error("User update work error", e);
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "请求参数错误: " + e.getMessage()));
@@ -96,7 +97,7 @@ public class WorkController {
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (BusinessException e) {
             log.warn("User delete work failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -115,7 +116,7 @@ public class WorkController {
             return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
             log.warn("User query work detail failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -136,7 +137,7 @@ public class WorkController {
             return ResponseEntity.ok(ApiResponse.success(works));
         } catch (BusinessException e) {
             log.warn("User query work list failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -160,7 +161,7 @@ public class WorkController {
             return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
             log.warn("User pin work failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 }

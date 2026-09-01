@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
+import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
@@ -70,7 +71,7 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (BusinessException e) {
             log.warn("User submit work failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -93,7 +94,7 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (BusinessException e) {
             log.warn("User update submission failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -112,7 +113,7 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (BusinessException e) {
             log.warn("User delete submission failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -149,7 +150,7 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {
             log.warn("User query student submissions failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -169,7 +170,7 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {
             log.warn("User query work submissions failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -189,7 +190,7 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(submitted));
         } catch (BusinessException e) {
             log.warn("User query submitted students failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -209,7 +210,7 @@ public class WorkSubmissionController {
             return ResponseEntity.ok(ApiResponse.success(unsubmitted));
         } catch (BusinessException e) {
             log.warn("User query unsubmitted students failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
+import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
@@ -86,7 +87,7 @@ public class LoginUserController {
             return ResponseEntity.ok(ApiResponse.success(null, "登出成功"));
         } catch (BusinessException e) {
             log.warn("User logout failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         } catch (Exception e) {
             log.error("User logout failed", e);
             return ResponseEntity.status(500).body(ApiResponse.error(500, "登出失败"));

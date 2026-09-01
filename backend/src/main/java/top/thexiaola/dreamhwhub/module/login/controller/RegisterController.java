@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
+import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.EmailCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
@@ -18,7 +19,6 @@ import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
-
 
 /**
  * 用户注册控制器
@@ -40,11 +40,11 @@ public class RegisterController {
         try {
             User user = registerUserService.register(registerRequest);
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
-        
+
             String ip = LogUtil.getCurrentClientIp();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) registration successful", userInfo);
-            
+
             return ResponseEntity.ok(ApiResponse.success(userResponse, "注册成功"));
         } catch (BusinessException e) {
             String errorMessage = e.getMessage();
@@ -56,13 +56,13 @@ public class RegisterController {
      * 发送注册验证码
      */
     @PostMapping("/getregcode")
-    public ResponseEntity<ApiResponse<?>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
+    public ResponseEntity<ApiResponse<Object>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
         try {
-            registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
+            registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(),
+                    emailCodeRequest.getUsername());
             return ResponseEntity.ok(ApiResponse.success(emailService.getCooldownSeconds(), "验证码发送成功"));
         } catch (BusinessException e) {
-            String errorMessage = e.getMessage();
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, errorMessage, e.getExtraData()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 }

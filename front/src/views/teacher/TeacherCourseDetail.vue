@@ -600,7 +600,14 @@ const inviteForm = ref({
 const loadCourse = async () => {
   const result = await get<CourseInfo>(`/class/${route.params.id}`);
   if (result.code === 200) {
-    course.value = result.data!;
+    const info = result.data!;
+    // 非班级教师（创建者/老师）禁止进入教师管理视图
+    if (info.userRole !== "创建者" && info.userRole !== "老师") {
+      ElMessage.warning("您不是该班级的老师，无权访问教师管理页面");
+      router.push(`/student/course/${route.params.id}`);
+      return;
+    }
+    course.value = info;
   }
 };
 

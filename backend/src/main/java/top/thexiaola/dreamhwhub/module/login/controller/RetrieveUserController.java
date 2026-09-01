@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
+import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
@@ -26,7 +27,7 @@ public class RetrieveUserController {
      * 发送找回密码验证码
      */
     @PostMapping("/sendcode")
-    public ResponseEntity<ApiResponse<?>> sendRetrievePasswordCode(
+    public ResponseEntity<ApiResponse<Object>> sendRetrievePasswordCode(
             @Valid @RequestBody RetrievePasswordCodeRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
@@ -37,7 +38,7 @@ public class RetrieveUserController {
         } catch (BusinessException e) {
             String userInfo = String.format("ip: %s, account: %s", ip, request.getAccount());
             log.warn("User ({}) failed to send retrieve password verification code: {}", userInfo, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage(), e.getExtraData()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 
@@ -56,7 +57,7 @@ public class RetrieveUserController {
         } catch (BusinessException e) {
             String userInfo = String.format("ip: %s, account: %s", ip, request.getAccount());
             log.warn("User ({}) failed to retrieve password: {}", userInfo, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 }

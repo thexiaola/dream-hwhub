@@ -30,15 +30,27 @@ public class GlobalExceptionHandler {
      * 处理业务逻辑异常 (BusinessException)
      */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<?>> handleBusinessException(BusinessException e) {
+    public ResponseEntity<ApiResponse<Object>> handleBusinessException(BusinessException e) {
+        log.info("Business exception occurred: code={}, message={}", e.getErrorCodeValue(), e.getMessage());
+        return buildBusinessErrorResponse(e);
+    }
+
+    /**
+     * 按错误码映射业务异常的 HTTP 状态码并构造标准响应（供控制器 catch 块复用，保证状态码语义一致）
+     * 
+     * @param e   业务异常
+     * @param <T> 响应数据类型
+     * @return 带正确 HTTP 状态码的标准化响应
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> ResponseEntity<ApiResponse<T>> buildBusinessErrorResponse(BusinessException e) {
         int code = e.getErrorCodeValue();
         String message = e.getMessage();
-        log.info("Business exception occurred: code={}, message={}", code, message);
-        
+
         // 根据错误码设置合适的 HTTP 状态码和返回码
         HttpStatus httpStatus;
         int returnCode;
-        
+
         if (code == 9001 || code == 8504) {
             // 权限不足或不是班级成员返回 403
             httpStatus = HttpStatus.FORBIDDEN;
@@ -56,14 +68,14 @@ public class GlobalExceptionHandler {
             httpStatus = HttpStatus.BAD_REQUEST;
             returnCode = code;
         }
-        
-        return ResponseEntity.status(httpStatus).body(ApiResponse.error(returnCode, message, e.getExtraData()));
+
+        return ResponseEntity.status(httpStatus).body(ApiResponse.error(returnCode, message, (T) e.getExtraData()));
     }
 
     /**
      * 处理参数校验异常 (JSR-303)
      */
-    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class })
     public ResponseEntity<ApiResponse<Void>> handleValidationException(Exception e) {
         String message = "请求参数校验失败";
         if (e instanceof MethodArgumentNotValidException validException) {
@@ -88,9 +100,11 @@ public class GlobalExceptionHandler {
      * 处理请求方法不支持的异常
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+    public ResponseEntity<ApiResponse<Void>> handleHttpRequestMethodNotSupportedException(
+            HttpRequestMethodNotSupportedException e) {
         log.info("Request method not supported: {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ApiResponse.error(405, "请求方法不支持，请使用 " + e.getSupportedHttpMethods()));
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiResponse.error(405, "请求方法不支持，请使用 " + e.getSupportedHttpMethods()));
     }
 
     /**
@@ -106,7 +120,8 @@ public class GlobalExceptionHandler {
      * 处理请求参数缺失异常
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException e) {
         log.info("Missing request parameter: {}", e.getParameterName());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, "缺少必需的请求参数"));
     }
@@ -115,7 +130,8 @@ public class GlobalExceptionHandler {
      * 处理参数类型转换异常（如日期格式不正确）
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
         String message = String.format("参数 '%s' 格式错误", e.getName());
         log.warn("Type mismatch for parameter: {}, value: {}, error: {}", e.getName(), e.getValue(), e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, message));

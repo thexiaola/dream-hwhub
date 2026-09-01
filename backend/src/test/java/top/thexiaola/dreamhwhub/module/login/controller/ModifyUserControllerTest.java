@@ -184,7 +184,7 @@ class ModifyUserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.code").value(6004))
                 .andExpect(jsonPath("$.message").value("原密码错误"));
     }
 
@@ -495,7 +495,7 @@ class ModifyUserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400));
+                .andExpect(jsonPath("$.code").value(1001));
     }
 
     /**
@@ -516,6 +516,6 @@ class ModifyUserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400));
+                .andExpect(jsonPath("$.code").value(1001));
     }
 }

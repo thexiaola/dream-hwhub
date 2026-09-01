@@ -114,8 +114,8 @@ class RetrieveUserControllerTest {
         mockMvc.perform(post("/api/users/retrieve/sendcode")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
                 .andExpect(jsonPath("$.message").value("用户不存在"));
     }
 
@@ -137,7 +137,7 @@ class RetrieveUserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.code").value(1001))
                 .andExpect(jsonPath("$.message").value("验证码无效"));
     }
 
@@ -306,7 +306,7 @@ class RetrieveUserControllerTest {
         mockMvc.perform(post("/api/users/retrieve/sendcode")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
     }
 
     /**

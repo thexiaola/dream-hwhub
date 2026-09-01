@@ -477,8 +477,8 @@ class WorkControllerTest {
                 .thenThrow(new BusinessException(BusinessErrorCode.WORK_NOT_FOUND));
 
         mockMvc.perform(get("/api/works/999"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(404))
                 .andExpect(jsonPath("$.message").value("作业不存在"));
     }
 

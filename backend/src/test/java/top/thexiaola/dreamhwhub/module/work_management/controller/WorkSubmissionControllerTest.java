@@ -497,8 +497,8 @@ class WorkSubmissionControllerTest {
                         .param("workId", "999")
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(404))
                 .andExpect(jsonPath("$.message").value("作业不存在"));
     }
 
@@ -515,8 +515,8 @@ class WorkSubmissionControllerTest {
                         .param("workId", "1")
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403))
                 .andExpect(jsonPath("$.message").value("你不是该班级的成员"));
     }
 
@@ -534,7 +534,7 @@ class WorkSubmissionControllerTest {
                         .param("submissionContent", "作业内容")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.code").value(7002))
                 .andExpect(jsonPath("$.message").value("作业状态错误"));
     }
 
