@@ -66,19 +66,20 @@ public class LoginUserController {
     }
 
     /**
-     * 用户登出
+     * 用户登出（需携带有效JWT Token，用户由AuthInterceptor解析）
      */
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout() {
         String ip = LogUtil.getCurrentClientIp();
 
         try {
-            // 获取当前用户
-            User currentUser = loginUserService.getCurrentUser(request);
+            User currentUser = UserUtils.getCurrentUser();
+            if (currentUser == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error(401, "用户未登录"));
+            }
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
 
-            // 登出
-            loginUserService.logout(currentUser.getId(), request);
+            loginUserService.logout(currentUser.getId());
 
             log.info("User ({}) logout successful", userInfo);
             return ResponseEntity.ok(ApiResponse.success(null, "登出成功"));

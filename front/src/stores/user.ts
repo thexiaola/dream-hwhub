@@ -19,10 +19,21 @@ export const useUserStore = defineStore('user', () => {
     return { code: result.code, message: result.message }
   }
 
-  const logout = () => {
+  // 仅清除本地会话状态（用于 token 失效等被动场景，不请求后端）
+  const clearLocal = () => {
     token.value = ''
     userInfo.value = null
     localStorage.removeItem('token')
+  }
+
+  // 主动退出：先通知后端（保留 token 供接口鉴权），无论成败均清除本地状态
+  const logout = async (): Promise<void> => {
+    try {
+      await post('/users/logout')
+    } catch {
+      /* ignore */
+    }
+    clearLocal()
   }
 
   const register = async (data: RegisterRequest): Promise<{ code: number; message: string }> => {
@@ -79,6 +90,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn,
     login,
     logout,
+    clearLocal,
     register,
     getUserInfo,
     setUserInfo,

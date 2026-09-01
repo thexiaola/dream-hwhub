@@ -190,11 +190,9 @@ class LoginUserControllerTest {
         mockUser.setId(1);
         mockUser.setUsername("testuser");
 
-        Mockito.when(loginUserService.getCurrentUser(Mockito.any()))
-                .thenReturn(mockUser);
-        Mockito.doNothing().when(loginUserService).logout(Mockito.anyInt(), Mockito.any());
+        Mockito.doNothing().when(loginUserService).logout(Mockito.anyInt());
 
-        mockMvc.perform(post("/api/users/logout"))
+        mockMvc.perform(post("/api/users/logout").requestAttr("currentUser", mockUser))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("登出成功"));
@@ -363,11 +361,15 @@ class LoginUserControllerTest {
     @Test
     @DisplayName("测试登出 - 未登录状态")
     void testLogout_NotLoggedIn() throws Exception {
-        Mockito.when(loginUserService.getCurrentUser(Mockito.any()))
-                .thenThrow(new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
-
         mockMvc.perform(post("/api/users/logout"))
-                .andExpect(status().isBadRequest());
+                .andDo(result -> {
+                    System.out.println("[DEBUG] request attr currentUser = "
+                            + result.getRequest().getAttribute("currentUser"));
+                    var ra = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+                    System.out.println("[DEBUG] RequestContextHolder attrs = " + ra
+                            + ", class = " + (ra != null ? ra.getClass().getName() : "null"));
+                })
+                .andExpect(status().isUnauthorized());
     }
 
     /**
@@ -380,12 +382,10 @@ class LoginUserControllerTest {
         mockUser.setId(1);
         mockUser.setUsername("testuser");
 
-        Mockito.when(loginUserService.getCurrentUser(Mockito.any()))
-                .thenReturn(mockUser);
         Mockito.doThrow(new RuntimeException("Database error"))
-                .when(loginUserService).logout(Mockito.anyInt(), Mockito.any());
+                .when(loginUserService).logout(Mockito.anyInt());
 
-        mockMvc.perform(post("/api/users/logout"))
+        mockMvc.perform(post("/api/users/logout").requestAttr("currentUser", mockUser))
                 .andExpect(status().isInternalServerError());
     }
 }

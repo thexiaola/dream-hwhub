@@ -87,25 +87,15 @@ public class LoginUserServiceImpl implements LoginUserService {
     }
 
     @Override
-    public void logout(Integer userId, HttpServletRequest request) {
+    public void logout(Integer userId) {
         String operation = "User logout";
-        
+
         if (userId == null) {
             log.warn(LogUtil.getFailureLog(operation, "user ID is null", null));
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
         }
-        
+
         // JWT是无状态的，客户端只需删除Token即可
         // 服务端无需额外操作，Token会在过期后自动失效
-    }
-    
-    @Override
-    public User getCurrentUser(HttpServletRequest request) {
-        User currentUser = (User) request.getSession().getAttribute("user");
-        if (currentUser == null) {
-            log.warn(LogUtil.getFailureLog("Get current user", "user not logged in", null));
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
-        return currentUser;
     }
 }

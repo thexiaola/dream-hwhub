@@ -26,7 +26,6 @@ public class AuthInterceptor implements HandlerInterceptor {
     // 不需要认证的公开接口白名单
     private static final Set<String> PUBLIC_PATHS = new HashSet<>(Arrays.asList(
             "/api/users/login",
-            "/api/users/logout",
             "/api/users/register",
             "/api/users/getregcode",
             "/api/users/send-code",

@@ -178,15 +178,12 @@ const sendVerifyCode = async () => {
     }
     if (result.code === 200) {
       ElMessage.success('验证码已发送')
-      // 优先使用后端返回的冷却秒数，保持与后端配置一致
-      const cooldown = typeof result.data === 'number' && result.data > 0 ? result.data : 60
-      startCountdown(cooldown)
     } else {
       ElMessage.error(result.message)
-      // 冷却期内重复发送：后端会返回剩余秒数，用其启动倒计时
-      if (typeof result.data === 'number' && result.data > 0) {
-        startCountdown(result.data)
-      }
+    }
+    // 冷却时长由后端返回：成功时为配置值，冷却期内为剩余秒数
+    if (typeof result.data === 'number' && result.data > 0) {
+      startCountdown(result.data)
     }
   } finally {
     sending.value = false

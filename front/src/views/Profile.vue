@@ -362,7 +362,7 @@ const beforeCountdown = ref(0)
 const afterCountdown = ref(0)
 const sendingCode = ref(false)
 
-const startCountdown = (target: 'before' | 'after', seconds = 60) => {
+const startCountdown = (target: 'before' | 'after', seconds: number) => {
   const ref_ = target === 'before' ? beforeCountdown : afterCountdown
   const timer_ = target === 'before' ? (t: number | null) => { beforeTimer = t } : (t: number | null) => { afterTimer = t }
   const clear_ = target === 'before' ? () => beforeTimer && clearInterval(beforeTimer) : () => afterTimer && clearInterval(afterTimer)
@@ -520,15 +520,12 @@ const sendBeforeCode = async () => {
     }
     if (res.code === 200) {
       ElMessage.success(res.message || '验证码已发送至旧邮箱')
-      // 优先使用后端返回的冷却秒数，保持与后端配置一致
-      const cooldown = typeof res.data === 'number' && res.data > 0 ? res.data : 60
-      startCountdown('before', cooldown)
     } else {
       ElMessage.error(res.message || '验证码发送失败')
-      // 冷却期内重复发送：后端会返回剩余秒数，用其启动倒计时
-      if (typeof res.data === 'number' && res.data > 0) {
-        startCountdown('before', res.data)
-      }
+    }
+    // 冷却时长由后端返回：成功时为配置值，冷却期内为剩余秒数
+    if (typeof res.data === 'number' && res.data > 0) {
+      startCountdown('before', res.data)
     }
   } catch {
     ElMessage.error('验证码发送失败，请稍后再试')
@@ -561,15 +558,12 @@ const sendAfterCode = async () => {
     }
     if (res.code === 200) {
       ElMessage.success(res.message || '验证码已发送至新邮箱')
-      // 优先使用后端返回的冷却秒数，保持与后端配置一致
-      const cooldown = typeof res.data === 'number' && res.data > 0 ? res.data : 60
-      startCountdown('after', cooldown)
     } else {
       ElMessage.error(res.message || '验证码发送失败')
-      // 冷却期内重复发送：后端会返回剩余秒数，用其启动倒计时
-      if (typeof res.data === 'number' && res.data > 0) {
-        startCountdown('after', res.data)
-      }
+    }
+    // 冷却时长由后端返回：成功时为配置值，冷却期内为剩余秒数
+    if (typeof res.data === 'number' && res.data > 0) {
+      startCountdown('after', res.data)
     }
   } catch {
     ElMessage.error('验证码发送失败，请稍后再试')
@@ -695,12 +689,7 @@ const handleLogout = async () => {
   } catch {
     return
   }
-  try {
-    await post<void>('/users/logout')
-  } catch {
-    /* ignore */
-  }
-  userStore.logout()
+  await userStore.logout()
   router.push('/login')
 }
 </script>

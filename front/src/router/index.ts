@@ -95,7 +95,7 @@ router.beforeEach(async (to, _from, next) => {
       try {
         await userStore.getUserInfo()
       } catch {
-        userStore.logout()
+        userStore.clearLocal()
         next('/login')
         return
       }

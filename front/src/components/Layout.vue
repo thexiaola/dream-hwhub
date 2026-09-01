@@ -125,11 +125,11 @@ const switchTab = (tab: 'student' | 'teacher' | 'admin') => {
   }
 }
 
-const handleCommand = (command: string) => {
+const handleCommand = async (command: string) => {
   if (command === 'profile') {
     router.push('/profile')
   } else if (command === 'logout') {
-    userStore.logout()
+    await userStore.logout()
     router.push('/login')
   }
 }

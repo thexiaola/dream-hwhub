@@ -1,6 +1,5 @@
 package top.thexiaola.dreamhwhub.module.login.service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 
@@ -22,18 +21,10 @@ public interface LoginUserService {
      * @return 用户信息
      */
     User findByAccount(String account);
-    
+
     /**
      * 用户登出
      * @param userId 用户 ID
-     * @param request HTTP 请求
      */
-    void logout(Integer userId, HttpServletRequest request);
-    
-    /**
-     * 获取当前登录用户
-     * @param request HTTP 请求
-     * @return 当前登录用户
-     */
-    User getCurrentUser(HttpServletRequest request);
+    void logout(Integer userId);
 }
