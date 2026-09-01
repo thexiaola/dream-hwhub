@@ -88,7 +88,8 @@
                 <el-button
                   type="primary"
                   plain
-                  :disabled="beforeCountdown > 0 || emailSubmitting"
+                  :disabled="beforeCountdown > 0 || emailSubmitting || sendingCode"
+                  :loading="sendingCode"
                   @click="sendBeforeCode"
                 >
                   {{ beforeCountdown > 0 ? `${beforeCountdown}s 后重发` : '发送验证码至旧邮箱' }}
@@ -105,7 +106,8 @@
                 <el-button
                   type="primary"
                   plain
-                  :disabled="afterCountdown > 0 || emailSubmitting || !emailForm.newEmail"
+                  :disabled="afterCountdown > 0 || emailSubmitting || !emailForm.newEmail || sendingCode"
+                  :loading="sendingCode"
                   @click="sendAfterCode"
                 >
                   {{ afterCountdown > 0 ? `${afterCountdown}s 后重发` : '发送验证码至新邮箱' }}
@@ -358,9 +360,9 @@ let beforeTimer: number | null = null
 let afterTimer: number | null = null
 const beforeCountdown = ref(0)
 const afterCountdown = ref(0)
+const sendingCode = ref(false)
 
-const startCountdown = (target: 'before' | 'after') => {
-  const seconds = 60
+const startCountdown = (target: 'before' | 'after', seconds = 60) => {
   const ref_ = target === 'before' ? beforeCountdown : afterCountdown
   const timer_ = target === 'before' ? (t: number | null) => { beforeTimer = t } : (t: number | null) => { afterTimer = t }
   const clear_ = target === 'before' ? () => beforeTimer && clearInterval(beforeTimer) : () => afterTimer && clearInterval(afterTimer)
@@ -499,16 +501,39 @@ const resetEmailForm = () => {
 }
 
 const sendBeforeCode = async () => {
+  if (sendingCode.value || beforeCountdown.value > 0) {
+    return
+  }
+  sendingCode.value = true
   try {
-    const res = await post<void>('/users/modify/getmodifycode/before')
+    const res = await Promise.race([
+      post<number | null>('/users/modify/getmodifycode/before')
+        .catch(() => ({ code: -1, message: '网络请求失败', data: null })),
+      // 10 秒内未收到后端回复则自动释放等待状态
+      new Promise<{ code: number; message: string; data: null }>((resolve) =>
+        setTimeout(() => resolve({ code: -1, message: '请求超时，请稍后重试', data: null }), 10000)
+      )
+    ])
+    if (res.code === -1) {
+      ElMessage.error(res.message)
+      return
+    }
     if (res.code === 200) {
       ElMessage.success(res.message || '验证码已发送至旧邮箱')
-      startCountdown('before')
+      // 优先使用后端返回的冷却秒数，保持与后端配置一致
+      const cooldown = typeof res.data === 'number' && res.data > 0 ? res.data : 60
+      startCountdown('before', cooldown)
     } else {
       ElMessage.error(res.message || '验证码发送失败')
+      // 冷却期内重复发送：后端会返回剩余秒数，用其启动倒计时
+      if (typeof res.data === 'number' && res.data > 0) {
+        startCountdown('before', res.data)
+      }
     }
   } catch {
     ElMessage.error('验证码发送失败，请稍后再试')
+  } finally {
+    sendingCode.value = false
   }
 }
 
@@ -517,16 +542,39 @@ const sendAfterCode = async () => {
     ElMessage.warning('请先填写新邮箱')
     return
   }
+  if (sendingCode.value || afterCountdown.value > 0) {
+    return
+  }
+  sendingCode.value = true
   try {
-    const res = await post<void>('/users/modify/getmodifycode/after', { newEmail: emailForm.newEmail })
+    const res = await Promise.race([
+      post<number | null>('/users/modify/getmodifycode/after', { newEmail: emailForm.newEmail })
+        .catch(() => ({ code: -1, message: '网络请求失败', data: null })),
+      // 10 秒内未收到后端回复则自动释放等待状态
+      new Promise<{ code: number; message: string; data: null }>((resolve) =>
+        setTimeout(() => resolve({ code: -1, message: '请求超时，请稍后重试', data: null }), 10000)
+      )
+    ])
+    if (res.code === -1) {
+      ElMessage.error(res.message)
+      return
+    }
     if (res.code === 200) {
       ElMessage.success(res.message || '验证码已发送至新邮箱')
-      startCountdown('after')
+      // 优先使用后端返回的冷却秒数，保持与后端配置一致
+      const cooldown = typeof res.data === 'number' && res.data > 0 ? res.data : 60
+      startCountdown('after', cooldown)
     } else {
       ElMessage.error(res.message || '验证码发送失败')
+      // 冷却期内重复发送：后端会返回剩余秒数，用其启动倒计时
+      if (typeof res.data === 'number' && res.data > 0) {
+        startCountdown('after', res.data)
+      }
     }
   } catch {
     ElMessage.error('验证码发送失败，请稍后再试')
+  } finally {
+    sendingCode.value = false
   }
 }
 

@@ -48,26 +48,23 @@
             />
           </el-form-item>
           <el-form-item prop="code">
-            <el-row :gutter="12">
-              <el-col :span="16">
-                <el-input 
-                  v-model="form.code" 
-                  placeholder="验证码"
-                  :prefix-icon="KeyIcon"
-                  class="input-field"
-                />
-              </el-col>
-              <el-col :span="8">
-                <el-button 
-                  type="primary" 
-                  class="code-btn"
-                  :disabled="countdown > 0"
-                  @click="sendVerifyCode"
-                >
-                  {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
-                </el-button>
-              </el-col>
-            </el-row>
+            <div class="code-row">
+              <el-input 
+                v-model="form.code" 
+                placeholder="验证码"
+                :prefix-icon="KeyIcon"
+                class="input-field"
+              />
+              <el-button 
+                type="primary" 
+                class="code-btn"
+                :disabled="countdown > 0 || sending"
+                :loading="sending"
+                @click="sendVerifyCode"
+              >
+                {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+              </el-button>
+            </div>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" class="register-btn" @click="handleRegister" :loading="loading">
@@ -103,7 +100,23 @@ const form = ref({
 })
 
 const loading = ref(false)
+const sending = ref(false)
 const countdown = ref(0)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+const startCountdown = (seconds: number) => {
+  countdown.value = seconds
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+  }
+  countdownTimer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer!)
+      countdownTimer = null
+    }
+  }, 1000)
+}
 
 const rules = {
   username: [
@@ -133,6 +146,9 @@ const LockIcon = () => h(Lock, { size: 18 })
 const KeyIcon = () => h(Key, { size: 18 })
 
 const sendVerifyCode = async () => {
+  if (sending.value || countdown.value > 0) {
+    return
+  }
   if (!form.value.email) {
     ElMessage.error('请先输入邮箱')
     return
@@ -146,18 +162,34 @@ const sendVerifyCode = async () => {
     return
   }
   
-  const result = await userStore.sendCode(form.value.email, form.value.userNo, form.value.username)
-  if (result.code === 200) {
-    ElMessage.success('验证码已发送')
-    countdown.value = 60
-    const timer = setInterval(() => {
-      countdown.value--
-      if (countdown.value <= 0) {
-        clearInterval(timer)
+  sending.value = true
+  try {
+    const result = await Promise.race([
+      userStore.sendCode(form.value.email, form.value.userNo, form.value.username)
+        .catch(() => ({ code: -1, message: '网络请求失败', data: null })),
+      // 10 秒内未收到后端回复则自动释放等待状态
+      new Promise<{ code: number; message: string; data: unknown }>((resolve) =>
+        setTimeout(() => resolve({ code: -1, message: '请求超时，请稍后重试', data: null }), 10000)
+      )
+    ])
+    if (result.code === -1) {
+      ElMessage.error(result.message)
+      return
+    }
+    if (result.code === 200) {
+      ElMessage.success('验证码已发送')
+      // 优先使用后端返回的冷却秒数，保持与后端配置一致
+      const cooldown = typeof result.data === 'number' && result.data > 0 ? result.data : 60
+      startCountdown(cooldown)
+    } else {
+      ElMessage.error(result.message)
+      // 冷却期内重复发送：后端会返回剩余秒数，用其启动倒计时
+      if (typeof result.data === 'number' && result.data > 0) {
+        startCountdown(result.data)
       }
-    }, 1000)
-  } else {
-    ElMessage.error(result.message)
+    }
+  } finally {
+    sending.value = false
   }
 }
 
@@ -296,8 +328,19 @@ const handleRegister = async () => {
   width: 100%;
 }
 
-.code-btn {
+.code-row {
+  display: flex;
+  gap: 12px;
   width: 100%;
+}
+
+.code-row > :deep(.el-input) {
+  flex: 1;
+}
+
+.code-btn {
+  width: 120px;
+  flex-shrink: 0;
   height: 40px;
 }
 

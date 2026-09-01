@@ -10,20 +10,23 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 public class BusinessException extends RuntimeException {
     
     private final BusinessErrorCode errorCode;
-    
+
+    private final Object extraData;
+
     public BusinessException(BusinessErrorCode errorCode, String message, Object extraData) {
         super(message);
         this.errorCode = errorCode;
+        this.extraData = extraData;
+    }
+
+    public BusinessException(BusinessErrorCode errorCode, String message) {
+        this(errorCode, message, null);
     }
 
     public BusinessException(BusinessErrorCode errorCode) {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
-    }
-    
-    public BusinessException(BusinessErrorCode errorCode, String message) {
-        super(message);
-        this.errorCode = errorCode;
+        this.extraData = null;
     }
 
     public int getErrorCodeValue() {

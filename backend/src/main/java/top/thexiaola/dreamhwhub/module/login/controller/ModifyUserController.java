@@ -9,6 +9,7 @@ import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.*;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
@@ -22,6 +23,7 @@ import top.thexiaola.dreamhwhub.support.session.UserUtils;
 public class ModifyUserController {
     private final ModifyUserService modifyUserService;
     private final UserMapper userResponseMapper;
+    private final EmailService emailService;
 
     @PutMapping("/info")
     public ResponseEntity<ApiResponse<UserResponse>> modifyUserInfo(@Valid @RequestBody ModifyUserInfoRequest modifyUserInfoRequest) {
@@ -57,18 +59,18 @@ public class ModifyUserController {
      * 为换绑前的邮箱发送换绑验证码
      */
     @PostMapping("/getmodifycode/before")
-    public ResponseEntity<ApiResponse<Void>> sendModifyEmailCodeBefore() {
+    public ResponseEntity<ApiResponse<?>> sendModifyEmailCodeBefore() {
         String ip = LogUtil.getCurrentClientIp();
         try {
             modifyUserService.sendModifyCodeToOldEmail();
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             log.info("User ({}) sent modify verification code successfully", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(null, "验证码已发送"));
+            return ResponseEntity.ok(ApiResponse.success(emailService.getCooldownSeconds(), "验证码已发送"));
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to send modify verification code: {}", userInfo, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage(), e.getExtraData()));
         }
     }
 
@@ -76,18 +78,18 @@ public class ModifyUserController {
      * 为换绑的目标邮箱发送换绑验证码
      */
     @PostMapping("/getmodifycode/after")
-    public ResponseEntity<ApiResponse<Void>> sendModifyEmailCodeAfter(@Valid @RequestBody SendModifyCodeRequest request) {
+    public ResponseEntity<ApiResponse<?>> sendModifyEmailCodeAfter(@Valid @RequestBody SendModifyCodeRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             modifyUserService.sendModifyCodeToNewEmail(request.getNewEmail());
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
             log.info("User ({}) sent modify verification code to new email: {} successfully", userInfo, request.getNewEmail());
-            return ResponseEntity.ok(ApiResponse.success(null, "验证码已发送"));
+            return ResponseEntity.ok(ApiResponse.success(emailService.getCooldownSeconds(), "验证码已发送"));
         } catch (BusinessException e) {
             String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
             log.warn("User ({}) failed to send modify verification code to new email: {}", userInfo, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage(), e.getExtraData()));
         }
     }
 

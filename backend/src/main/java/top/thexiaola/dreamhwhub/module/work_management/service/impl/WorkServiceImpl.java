@@ -179,7 +179,6 @@ public class WorkServiceImpl implements WorkService {
         // 级联删除所有关联数据
         cascadeDeleteWork(workId);
         
-        log.info("User {} deleted work {}, status was: {}", currentUser.getId(), workId, currentStatus);
     }
 
     @Override
@@ -513,8 +512,6 @@ public class WorkServiceImpl implements WorkService {
                 attachment.setUploadTime(LocalDateTime.now());
                 workAttachmentMapper.insert(attachment);
 
-                log.info("Saved work attachment directly: {}, size: {}, type: {}",
-                        originalFilename, fileSize, fileType);
 
             } catch (BusinessException e) {
                 // 任意校验失败：如果文件已经落盘，立刻物理删除后再抛异常
@@ -522,7 +519,6 @@ public class WorkServiceImpl implements WorkService {
                     try {
                         if (Files.exists(savedFilePath)) {
                             Files.delete(savedFilePath);
-                            log.info("Rollback: deleted invalid attachment file: {}", savedFilePath);
                         }
                     } catch (Exception delEx) {
                         log.warn("Failed to rollback invalid attachment file: {}", savedFilePath, delEx);
@@ -585,7 +581,6 @@ public class WorkServiceImpl implements WorkService {
                     if (Files.exists(filePath)) {
                         try {
                             Files.delete(filePath);
-                            log.info("Deleted attachment file: {}", attachment.getFilePath());
                         } catch (Exception e) {
                             log.error("Failed to delete attachment file: {}", attachment.getFilePath(), e);
                             throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED,
@@ -594,7 +589,6 @@ public class WorkServiceImpl implements WorkService {
                     }
                     // 删除数据库记录
                     workAttachmentMapper.deleteById(attachmentId);
-                    log.info("Deleted attachment record: id={}", attachmentId);
                 }
             }
         }
@@ -630,14 +624,12 @@ public class WorkServiceImpl implements WorkService {
             for (WorkSubmissionAttachment attachment : attachments) {
                 attachment.setIsDeleted(true);
                 workSubmissionAttachmentMapper.updateById(attachment);
-                log.info("Soft deleted submission attachment record: id={}", attachment.getId());
             }
             
             // 软删除提交记录
             submission.setIsDeleted(true);
             workSubmissionMapper.updateById(submission);
         }
-        log.info("Soft deleted {} submission records for work {}", submissions.size(), workId);
         
         // 3. 软删除作业本身的附件记录
         QueryWrapper<WorkAttachment> workAttQuery = new QueryWrapper<>();
@@ -649,7 +641,6 @@ public class WorkServiceImpl implements WorkService {
                 Path filePath = Paths.get(attachment.getFilePath());
                 if (Files.exists(filePath)) {
                     Files.delete(filePath);
-                    log.info("Deleted work attachment file: {}", attachment.getFilePath());
                 }
             } catch (Exception e) {
                 log.warn("Failed to delete work attachment file: {}", attachment.getFilePath(), e);
@@ -659,7 +650,6 @@ public class WorkServiceImpl implements WorkService {
         
         // 4. 最后删除作业本身
         workMapper.deleteById(workId);
-        log.info("Deleted work {} and soft deleted all related data", workId);
     }
 
     @Override
@@ -691,9 +681,6 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新作业置顶状态失败", null);
         }
 
-        String action = isPinned ? "pinned" : "unpinned";
-        log.info("User {} {} work {} successfully", currentUser.getId(), action, workId);
-        
         return workInfo;
     }
 }

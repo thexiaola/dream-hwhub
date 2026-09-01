@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
+import jakarta.annotation.PreDestroy;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 邮件服务实现类
@@ -64,6 +67,18 @@ public class EmailServiceImpl implements EmailService {
     
     @Value("${spring.mail.properties.mail.from.nickname:系统管理员}")
     private String senderNickname;
+
+    // 异步发送邮件的线程池，避免 SMTP 耗时阻塞接口响应
+    private final ExecutorService mailExecutor = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "mail-sender");
+        t.setDaemon(false);
+        return t;
+    });
+
+    @PreDestroy
+    public void shutdownMailExecutor() {
+        mailExecutor.shutdown();
+    }
 
     /**
      * ISO-8859-1 编码转换 UTF-8 编码
@@ -147,20 +162,31 @@ public class EmailServiceImpl implements EmailService {
     
         // 记录发送时间
         emailLastSendTime.put(email, LocalDateTime.now());
-    
-        // 记录验证码生成日志
-        String codeType = isRetrieve ? "retrieve password" : (isModify ? "modify" : "registration");
-        log.info("Generated {} verification code {} for email: {}, userNo: {}, username: {}", 
-                codeType, code, email, userNo, username);
-    
-        // 发送邮件
+
+        // 异步发送邮件，SMTP 耗时可能较长，避免阻塞接口响应
         if (isRetrieve) {
-            sendRetrievePasswordCodeEmail(email, code);
+            mailExecutor.execute(() -> sendCodeEmailQuietly(() -> sendRetrievePasswordCodeEmail(email, code), email));
         } else if (isModify) {
-            sendModifyCodeEmail(email, code);
+            mailExecutor.execute(() -> sendCodeEmailQuietly(() -> sendModifyCodeEmail(email, code), email));
         } else {
-            sendVerificationCodeEmail(email, code);
+            mailExecutor.execute(() -> sendCodeEmailQuietly(() -> sendVerificationCodeEmail(email, code), email));
         }
+    }
+
+    /**
+     * 静默兜底包装：sendEmail 内部已记录详细错误日志，这里仅避免未捕获异常进入线程默认处理器
+     */
+    private void sendCodeEmailQuietly(Runnable sender, String email) {
+        try {
+            sender.run();
+        } catch (Exception e) {
+            log.warn("Failed to send verification code email to {} in background: {}", email, e.getMessage());
+        }
+    }
+
+    @Override
+    public int getCooldownSeconds() {
+        return cooldownSeconds;
     }
 
     /**

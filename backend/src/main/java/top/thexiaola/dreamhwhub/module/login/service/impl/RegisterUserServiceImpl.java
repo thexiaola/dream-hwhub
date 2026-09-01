@@ -41,7 +41,6 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         checkEmailExists(email);
 
         if (!verifyEmailCode(registerRequest.getEmail(), registerRequest.getEmailCode(), userNo, username)) {
-            log.info(LogUtil.getFailureLog(operation, "invalid or expired email verification code", null));
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "验证码无效或已过期", null);
         }
 
@@ -59,7 +58,6 @@ public class RegisterUserServiceImpl implements RegisterUserService {
 
         try {
             userMapper.insert(user);
-            log.info(LogUtil.getSuccessLog(operation + " - user created in database", user));
             return user;
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "database insert failed: " + e.getMessage(), user), e);
@@ -77,7 +75,8 @@ public class RegisterUserServiceImpl implements RegisterUserService {
             
         try {
             emailService.sendVerificationCode(email, userNo, username);
-            log.info(LogUtil.getSuccessLog(operation + " - verification code sent to email: " + email, null));
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "failed to send verification code: " + e.getMessage(), null), e);
             throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败：" + e.getMessage());

@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
      * 处理业务逻辑异常 (BusinessException)
      */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
+    public ResponseEntity<ApiResponse<?>> handleBusinessException(BusinessException e) {
         int code = e.getErrorCodeValue();
         String message = e.getMessage();
         log.info("Business exception occurred: code={}, message={}", code, message);
@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
             returnCode = code;
         }
         
-        return ResponseEntity.status(httpStatus).body(ApiResponse.error(returnCode, message));
+        return ResponseEntity.status(httpStatus).body(ApiResponse.error(returnCode, message, e.getExtraData()));
     }
 
     /**

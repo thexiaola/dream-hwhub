@@ -16,7 +16,6 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
-import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.time.LocalDateTime;
@@ -113,7 +112,6 @@ public class ClassServiceImpl implements ClassService {
             // 如果已经是成员，更新为老师
             existingMember.setRole(1);
             classMemberMapper.updateById(existingMember);
-            log.info("User {} updated user {} to TEACHER in class {}", currentUser.getId(), userAccount, classId);
             return existingMember;
         }
 
@@ -126,7 +124,6 @@ public class ClassServiceImpl implements ClassService {
 
         classMemberMapper.insert(member);
 
-        log.info("User {} added user {} as TEACHER to class {}", currentUser.getId(), userAccount, classId);
         return member;
     }
 
@@ -168,8 +165,6 @@ public class ClassServiceImpl implements ClassService {
         studentMember.setRole(1);
         classMemberMapper.updateById(studentMember);
 
-        log.info("User {} set student {} as assistant teacher in class {}", 
-                currentUser.getId(), studentUserId, classId);
     }
 
     @Override
@@ -218,8 +213,6 @@ public class ClassServiceImpl implements ClassService {
         // 硬删除学生成员记录（从班级中移除）
         classMemberMapper.deleteById(studentMember.getId());
 
-        log.info("User {} kicked student {} from class {}", 
-                currentUser.getId(), studentUserId, classId);
     }
 
     @Override
@@ -264,7 +257,6 @@ public class ClassServiceImpl implements ClassService {
             kickedCount++;
         }
 
-        log.info("User {} batch kicked {} students from class {}", currentUser.getId(), kickedCount, classId);
     }
 
     @Override
@@ -309,8 +301,6 @@ public class ClassServiceImpl implements ClassService {
         teacherMember.setRole(0);
         classMemberMapper.updateById(teacherMember);
 
-        log.info("User {} demoted user {} from assistant teacher to student in class {}", 
-                currentUser.getId(), teacherUserId, classId);
     }
 
     @Override
@@ -378,8 +368,6 @@ public class ClassServiceImpl implements ClassService {
                 // 再删除用户邀请记录
                 classUserInvitationMapper.deleteById(invitation.getId());
                 
-                log.info("Deleted old pending invitation id={} and related approvals for user {} to class {}", 
-                        invitation.getId(), targetUser.getId(), classId);
             }
         }
 
@@ -393,8 +381,6 @@ public class ClassServiceImpl implements ClassService {
 
         classUserInvitationMapper.insert(invitation);
 
-        log.info("Student {} sent new invitation to user {} for class {} (waiting for user confirmation)", 
-                currentUser.getId(), targetUser.getId(), classId);
     }
 
     @Override
@@ -432,12 +418,6 @@ public class ClassServiceImpl implements ClassService {
             approval.setCreateTime(LocalDateTime.now());
             
             classTeacherApprovalMapper.insert(approval);
-            
-            log.info("User {} accepted invitation from user {} for class {}, teacher approval created", 
-                    currentUser.getId(), invitation.getInviterId(), invitation.getClassId());
-        } else {
-            log.info("User {} rejected invitation from user {} for class {}", 
-                    currentUser.getId(), invitation.getInviterId(), invitation.getClassId());
         }
     }
 
@@ -491,13 +471,9 @@ public class ClassServiceImpl implements ClassService {
                 
                 classMemberMapper.insert(member);
                 
-                log.info("Teacher approval passed, user {} joined class {} as STUDENT", 
-                        approval.getInviteeId(), approval.getClassId());
             }
         }
 
-        log.info("User {} approved teacher approval: id={}, classId={}, approved={}", 
-                currentUser.getId(), approvalId, approval.getClassId(), approved);
     }
 
     @Override
@@ -555,7 +531,6 @@ public class ClassServiceImpl implements ClassService {
         // 硬删除学生成员记录（从班级中移除）
         classMemberMapper.deleteById(member.getId());
 
-        log.info("User {} left class {}", currentUser.getId(), classId);
         return classInfo.getClassName();
     }
 
@@ -612,35 +587,29 @@ public class ClassServiceImpl implements ClassService {
             QueryWrapper<WorkAttachment> attQuery = new QueryWrapper<>();
             attQuery.in("work_id", workIds);
             int attachmentCount = workAttachmentMapper.delete(attQuery);
-            log.info("Hard deleted {} work attachment records in class {}", attachmentCount, classId);
             
             // 删除作业信息
             int workCount = workMapper.delete(workQuery);
-            log.info("Hard deleted {} work records in class {}", workCount, classId);
         }
 
         // 3. 删除班级成员记录
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("class_id", classId);
         int memberCount = classMemberMapper.delete(memberQuery);
-        log.info("Deleted {} class member records in class {}", memberCount, classId);
 
         // 4. 删除班级用户邀请记录
         QueryWrapper<ClassUserInvitation> userInvitationQuery = new QueryWrapper<>();
         userInvitationQuery.eq("class_id", classId);
         int userInvitationCount = classUserInvitationMapper.delete(userInvitationQuery);
-        log.info("Deleted {} user invitation records in class {}", userInvitationCount, classId);
 
         // 5. 删除教师审核邀请记录
         QueryWrapper<ClassTeacherApproval> teacherApprovalQuery = new QueryWrapper<>();
         teacherApprovalQuery.eq("class_id", classId);
         int teacherApprovalCount = classTeacherApprovalMapper.delete(teacherApprovalQuery);
-        log.info("Deleted {} teacher approval records in class {}", teacherApprovalCount, classId);
 
         // 6. 最后删除班级信息
         classInfoMapper.deleteById(classId);
 
-        log.info("User {} dissolved class {} completely with all related data", currentUser.getId(), classId);
     }
 
     @Override
@@ -671,8 +640,6 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新班级信息失败", null);
         }
 
-        log.info("User {} updated class info for class {}: name={}, description={}", 
-                currentUser.getId(), classId, className, description);
         
         return classInfo;
     }
@@ -1063,8 +1030,6 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize) {
         User currentUser = getCurrentUserOrThrow();
-        String userInfo = LogUtil.getUserInfo(currentUser);
-        log.info("User {} querying class members, class ID: {}, page={}, size={}", userInfo, classId, pageNum, pageSize);
 
         // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
@@ -1140,7 +1105,6 @@ public class ClassServiceImpl implements ClassService {
         // 构建分页结果
         Page<ClassMemberResponse> page = new Page<>(pageNum, pageSize, pagedResult.getTotal());
         page.setRecords(responses);
-        log.info("User {} queried {} members from class {}", userInfo, pagedResult.getTotal(), classId);
         return page;
     }
 
@@ -1195,10 +1159,6 @@ public class ClassServiceImpl implements ClassService {
 
         member.setRole(role);
         classMemberMapper.updateById(member);
-
-        String roleName = role == 1 ? "老师" : "学生";
-        log.info("User {} updated user {} role to {} in class {}", 
-                currentUser.getId(), userId, roleName, classId);
     }
 
     @Override
@@ -1215,7 +1175,6 @@ public class ClassServiceImpl implements ClassService {
 
         classCreateApplicationMapper.insert(application);
 
-        log.info("User {} submitted create class request: {}", currentUser.getId(), className);
         
         // 构建响应对象
         return new CreateClassApplicationResponse(
@@ -1297,12 +1256,8 @@ public class ClassServiceImpl implements ClassService {
             member.setJoinTime(LocalDateTime.now());
             classMemberMapper.insert(member);
 
-            log.info("Create class application approved, class created: id={}, name={}", 
-                    classInfo.getId(), classInfo.getClassName());
         }
 
-        log.info("User {} approved create class application: id={}, approved={}", 
-                currentUser.getId(), applicationId, approved);
     }
 
     @Override
@@ -1340,8 +1295,6 @@ public class ClassServiceImpl implements ClassService {
 
         classJoinApplicationMapper.insert(application);
 
-        log.info("User {} submitted join class request: classId={}", 
-                currentUser.getId(), classId);
         
         // 构建响应对象
         JoinClassApplicationResponse response = new JoinClassApplicationResponse();
@@ -1459,12 +1412,8 @@ public class ClassServiceImpl implements ClassService {
             member.setJoinTime(LocalDateTime.now());
             classMemberMapper.insert(member);
 
-            log.info("Join class application approved, user {} joined class {} as STUDENT", 
-                    application.getApplicantId(), application.getClassId());
         }
 
-        log.info("User {} approved join class application: id={}, approved={}", 
-                currentUser.getId(), applicationId, approved);
     }
 
     @Override
@@ -1501,11 +1450,7 @@ public class ClassServiceImpl implements ClassService {
         oldInvitationQuery.eq("class_id", classId)
                 .eq("invitee_user_id", targetUser.getId())
                 .eq("status", 0);  // 待处理
-        int deletedCount = classInvitationMapper.delete(oldInvitationQuery);
-        if (deletedCount > 0) {
-            log.info("Deleted {} old pending invitation(s) for user {} to class {}", 
-                    deletedCount, targetUser.getId(), classId);
-        }
+        classInvitationMapper.delete(oldInvitationQuery);
 
         // 创建新的邀请记录
         ClassInvitation invitation = new ClassInvitation();
@@ -1516,8 +1461,6 @@ public class ClassServiceImpl implements ClassService {
 
         classInvitationMapper.insert(invitation);
 
-        log.info("User {} sent invitation to user {} for class {}", 
-                currentUser.getId(), userAccount, classId);
         return invitation;
     }
 
@@ -1607,13 +1550,7 @@ public class ClassServiceImpl implements ClassService {
                 member.setJoinTime(LocalDateTime.now());
                 member.setInviteBy(invitation.getInviterId());
                 classMemberMapper.insert(member);
-
-                log.info("User {} accepted invitation and joined class {} as STUDENT", 
-                        currentUser.getId(), invitation.getClassId());
             }
-        } else {
-            log.info("User {} rejected invitation to class {}", 
-                    currentUser.getId(), invitation.getClassId());
         }
     }
 
@@ -1643,7 +1580,6 @@ public class ClassServiceImpl implements ClassService {
         classInfo.setInviteCode(newCode);
         classInfoMapper.updateById(classInfo);
 
-        log.info("User {} generated invite code for class {} (first time)", currentUser.getId(), classId);
         return newCode;
     }
 
@@ -1668,7 +1604,6 @@ public class ClassServiceImpl implements ClassService {
         classInfo.setInviteCode(newCode);
         classInfoMapper.updateById(classInfo);
 
-        log.info("User {} reset invite code for class {} (old code invalidated)", currentUser.getId(), classId);
         return newCode;
     }
 
@@ -1705,8 +1640,6 @@ public class ClassServiceImpl implements ClassService {
         member.setJoinTime(LocalDateTime.now());
         classMemberMapper.insert(member);
 
-        log.info("User {} joined class {} directly via invite code {}", 
-                currentUser.getId(), classInfo.getId(), inviteCode);
         
         // 为了保持接口一致性，返回一个“已通过”的申请记录（虚拟）
         ClassJoinApplication application = new ClassJoinApplication();
@@ -1767,8 +1700,6 @@ public class ClassServiceImpl implements ClassService {
             classMemberMapper.updateById(oldOwnerMember);
         }
 
-        log.info("User {} transferred ownership of class {} to user {}", 
-                currentUser.getId(), classId, newOwnerId);
     }
 
     /**
@@ -1807,7 +1738,6 @@ public class ClassServiceImpl implements ClassService {
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
         if (submissions.isEmpty()) {
-            log.info("No submissions found for user {} in class {}", userId, classId);
             return;
         }
 
@@ -1826,7 +1756,6 @@ public class ClassServiceImpl implements ClassService {
                 attachment.setIsDeleted(true);
             }
             workSubmissionAttachmentMapper.update(null, attQuery);
-            log.info("Soft deleted {} student submission attachment records", attachments.size());
         }
         
         // 3. 批量软删除提交记录
@@ -1836,8 +1765,6 @@ public class ClassServiceImpl implements ClassService {
         updateEntity.setIsDeleted(true);
         workSubmissionMapper.update(updateEntity, updateQuery);
         
-        log.info("Soft deleted {} submission records for user {} in class {} (files preserved)", 
-                submissions.size(), userId, classId);
     }
 
     /**
@@ -1851,7 +1778,6 @@ public class ClassServiceImpl implements ClassService {
         List<WorkInfo> works = workMapper.selectList(workQuery);
         
         if (works.isEmpty()) {
-            log.info("No works found in class {}", classId);
             return;
         }
 
@@ -1865,7 +1791,6 @@ public class ClassServiceImpl implements ClassService {
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
         
         if (submissions.isEmpty()) {
-            log.info("No submissions found in class {}", classId);
             return;
         }
 
@@ -1877,11 +1802,9 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
         attQuery.in("submission_id", submissionIds);
         int attachmentCount = workSubmissionAttachmentMapper.delete(attQuery);
-        log.info("Hard deleted {} submission attachment records in class {}", attachmentCount, classId);
 
         // 4. 硬删除所有提交记录
         int submissionCount = workSubmissionMapper.delete(submissionQuery);
-        log.info("Hard deleted {} submission records in class {}", submissionCount, classId);
     }
 
     /**

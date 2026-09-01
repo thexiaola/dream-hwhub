@@ -263,7 +263,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 Path filePath = Paths.get(attachment.getFilePath());
                 if (Files.exists(filePath)) {
                     Files.delete(filePath);
-                    log.info("Cleaned up orphaned file: {}", attachment.getFilePath());
                 }
             } catch (Exception e) {
                 log.error("Failed to cleanup file: {}", attachment.getFilePath(), e);
@@ -316,14 +315,12 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                         Path filePath = Paths.get(attachment.getFilePath());
                         if (Files.exists(filePath)) {
                             Files.delete(filePath);
-                            log.info("Deleted submission attachment file: {}", attachment.getFilePath());
                         }
                     } catch (Exception e) {
                         log.warn("Failed to delete submission attachment file: {}", attachment.getFilePath(), e);
                     }
                     // 删除数据库记录
                     workSubmissionAttachmentMapper.deleteById(attachmentId);
-                    log.info("Deleted submission attachment record: id={}", attachmentId);
                 }
             }
         }
@@ -382,7 +379,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         // 软删除提交记录
         submission.setIsDeleted(true);
         workSubmissionMapper.updateById(submission);
-        log.info("Soft deleted submission: id={}", submissionId);
     }
 
     @Override
@@ -737,8 +733,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 );
                 attachmentInfos.add(info);
                 
-                log.info("Saved submission attachment directly: {}, size: {}, type: {}", 
-                        originalFilename, fileSize, fileType);
                         
             } catch (BusinessException e) {
                 throw e;
@@ -952,7 +946,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             }
 
             zipOut.finish();
-            log.info("Batch download completed: {} files added to zip", fileCount);
 
         } catch (IOException e) {
             log.error("Failed to create zip file", e);

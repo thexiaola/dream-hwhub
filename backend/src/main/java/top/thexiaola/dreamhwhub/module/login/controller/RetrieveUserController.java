@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 
@@ -19,23 +20,24 @@ import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 @RequiredArgsConstructor
 public class RetrieveUserController {
     private final ModifyUserService modifyUserService;
+    private final EmailService emailService;
 
     /**
      * 发送找回密码验证码
      */
     @PostMapping("/sendcode")
-    public ResponseEntity<ApiResponse<Void>> sendRetrievePasswordCode(
+    public ResponseEntity<ApiResponse<?>> sendRetrievePasswordCode(
             @Valid @RequestBody RetrievePasswordCodeRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = modifyUserService.sendRetrievePasswordCode(request.getAccount());
             String userInfo = LogUtil.getUserInfoString(ip, user);
             log.info("User ({}) send retrieve password verification code successful", userInfo);
-            return ResponseEntity.ok(ApiResponse.success(null, "验证码已发送"));
+            return ResponseEntity.ok(ApiResponse.success(emailService.getCooldownSeconds(), "验证码已发送"));
         } catch (BusinessException e) {
             String userInfo = String.format("ip: %s, account: %s", ip, request.getAccount());
             log.warn("User ({}) failed to send retrieve password verification code: {}", userInfo, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage(), e.getExtraData()));
         }
     }
 

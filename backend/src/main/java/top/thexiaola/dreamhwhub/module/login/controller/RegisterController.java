@@ -14,6 +14,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.EmailCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
@@ -29,6 +30,7 @@ import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 public class RegisterController {
     private final RegisterUserService registerUserService;
     private final UserMapper userResponseMapper;
+    private final EmailService emailService;
 
     /**
      * 用户注册
@@ -54,13 +56,13 @@ public class RegisterController {
      * 发送注册验证码
      */
     @PostMapping("/getregcode")
-    public ResponseEntity<ApiResponse<Void>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
+    public ResponseEntity<ApiResponse<?>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
         try {
             registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(), emailCodeRequest.getUsername());
-            return ResponseEntity.ok(ApiResponse.success(null, "验证码发送成功"));
+            return ResponseEntity.ok(ApiResponse.success(emailService.getCooldownSeconds(), "验证码发送成功"));
         } catch (BusinessException e) {
             String errorMessage = e.getMessage();
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, errorMessage));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, errorMessage, e.getExtraData()));
         }
     }
 }

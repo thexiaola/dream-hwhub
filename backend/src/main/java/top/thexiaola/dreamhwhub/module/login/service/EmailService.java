@@ -67,4 +67,10 @@ public interface EmailService {
      * @return 验证是否成功
      */
     boolean verifyRetrievePasswordCode(String email, String code, String userNo, String username);
+
+    /**
+     * 获取验证码发送冷却时间（秒），前端用于展示倒计时
+     * @return 冷却秒数
+     */
+    int getCooldownSeconds();
 }

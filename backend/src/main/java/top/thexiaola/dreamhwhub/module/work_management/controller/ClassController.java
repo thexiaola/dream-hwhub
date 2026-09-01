@@ -131,9 +131,8 @@ public class ClassController {
                         @PathVariable(value = "classId") Integer classId) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying class detail, ID: {}", userInfo, classId);
                 ClassDetailResponse detail = classService.getClassDetail(classId);
-                log.info("User {} queried class detail successfully", userInfo);
+                log.info("User {} queried class detail, ID: {}", userInfo, classId);
                 return ApiResponse.success(detail);
         }
 
@@ -145,15 +144,14 @@ public class ClassController {
                         @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying my classes list, page={}, size={}", userInfo, pageRequest.getPageNum(),
-                                pageRequest.getPageSize());
                 if (currentUser == null) {
                         return ApiResponse.error(401, "用户未登录");
                 }
                 Page<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId(),
                                 pageRequest.getPageNum(),
                                 pageRequest.getPageSize());
-                log.info("User {} queried {} classes", userInfo, classes.getTotal());
+                log.info("User {} queried {} classes, page={}, size={}", userInfo, classes.getTotal(),
+                                pageRequest.getPageNum(), pageRequest.getPageSize());
                 return ApiResponse.success(classes);
         }
 
@@ -165,8 +163,6 @@ public class ClassController {
                         @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying all classes for management, page={}, size={}", userInfo,
-                                pageRequest.getPageNum(), pageRequest.getPageSize());
                 if (currentUser == null) {
                         return ApiResponse.error(401, "用户未登录");
                 }
@@ -174,7 +170,9 @@ public class ClassController {
                                 pageRequest.getPageNum(),
                                 pageRequest.getPageSize(),
                                 pageRequest.getKeyword());
-                log.info("User {} queried {} classes for management", userInfo, classes.getTotal());
+                log.info("User {} queried {} classes for management, page={}, size={}, keyword={}", userInfo,
+                                classes.getTotal(), pageRequest.getPageNum(), pageRequest.getPageSize(),
+                                pageRequest.getKeyword());
                 return ApiResponse.success(classes);
         }
 
@@ -187,11 +185,10 @@ public class ClassController {
                         @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying class members, class ID: {}, page={}, size={}", userInfo, classId,
-                                pageRequest.getPageNum(), pageRequest.getPageSize());
                 Page<ClassMemberResponse> members = classService.getClassMembers(classId, pageRequest.getPageNum(),
                                 pageRequest.getPageSize());
-                log.info("User {} queried {} members", userInfo, members.getTotal());
+                log.info("User {} queried {} members, class ID: {}, page={}, size={}", userInfo, members.getTotal(),
+                                classId, pageRequest.getPageNum(), pageRequest.getPageSize());
                 return ApiResponse.success(members);
         }
 
@@ -229,13 +226,11 @@ public class ClassController {
                         @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying create class applications with filter: status={}, page={}, size={}",
-                                userInfo, status, pageRequest.getPageNum(), pageRequest.getPageSize());
                 Page<ClassCreateApplication> applications = classService.getCreateApplications(status,
                                 pageRequest.getPageNum(),
                                 pageRequest.getPageSize());
-                log.info("User {} queried {} create class applications (total: {})",
-                                userInfo, applications.getRecords().size(), applications.getTotal());
+                log.info("User {} queried {} create class applications, status={}, total: {}", userInfo,
+                                applications.getRecords().size(), status, applications.getTotal());
                 return ApiResponse.success(applications, "查询创建申请列表成功");
         }
 
@@ -268,12 +263,10 @@ public class ClassController {
                         @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying join class applications with filters: classId={}, status={}, page={}, size={}",
-                                userInfo, classId, status, pageRequest.getPageNum(), pageRequest.getPageSize());
                 Page<ClassJoinApplication> applications = classService.getJoinApplications(classId, status,
                                 pageRequest.getPageNum(), pageRequest.getPageSize());
-                log.info("User {} queried {} join class applications (total: {})",
-                                userInfo, applications.getRecords().size(), applications.getTotal());
+                log.info("User {} queried {} join class applications, classId={}, status={}, total: {}", userInfo,
+                                applications.getRecords().size(), classId, status, applications.getTotal());
                 return ApiResponse.success(applications, "查询加入申请列表成功");
         }
 
@@ -418,9 +411,8 @@ public class ClassController {
                         @PathVariable(value = "classId") Integer classId) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying pending teacher approvals for class {}", userInfo, classId);
                 List<TeacherApprovalResponse> approvals = classService.getPendingTeacherApprovals(classId);
-                log.info("User {} queried {} pending teacher approvals", userInfo, approvals.size());
+                log.info("User {} queried {} pending teacher approvals, class {}", userInfo, approvals.size(), classId);
                 return ApiResponse.success(approvals);
         }
 
@@ -450,12 +442,11 @@ public class ClassController {
                         @RequestParam(value = "status", required = false) Integer status) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying my invitations with filter: status={}", userInfo, status);
                 if (currentUser == null) {
                         return ApiResponse.error(401, "用户未登录");
                 }
                 List<InvitationResponse> invitations = classService.getMyInvitations(currentUser.getId(), status);
-                log.info("User {} queried {} invitations", userInfo, invitations.size());
+                log.info("User {} queried {} invitations, status={}", userInfo, invitations.size(), status);
                 return ApiResponse.success(invitations);
         }
 
@@ -483,9 +474,8 @@ public class ClassController {
                         @PathVariable(value = "classId") Integer classId) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} querying invite code for class {}", userInfo, classId);
                 String inviteCode = classService.getInviteCode(classId);
-                log.info("User ({}) queried invite code successfully", userInfo);
+                log.info("User {} queried invite code, class {}", userInfo, classId);
                 return ApiResponse.success(inviteCode, "邀请码获取成功");
         }
 

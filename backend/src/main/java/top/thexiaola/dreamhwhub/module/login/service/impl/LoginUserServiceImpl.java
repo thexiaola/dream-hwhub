@@ -46,8 +46,6 @@ public class LoginUserServiceImpl implements LoginUserService {
         
         // 使用BCrypt验证密码
         if (passwordUtil.matches(loginRequest.getPassword(), user.getPassword())) {
-            log.info(LogUtil.getSuccessLog(operation + " - password verified", user));
-            
             LocalDateTime now = LocalDateTime.now();
             // 更新最后登录时间；若注册时间为空（历史数据），一并补全为首次登录时间
             user.setLastLoginTime(now);
@@ -99,7 +97,6 @@ public class LoginUserServiceImpl implements LoginUserService {
         
         // JWT是无状态的，客户端只需删除Token即可
         // 服务端无需额外操作，Token会在过期后自动失效
-        log.info(LogUtil.getSuccessLog(operation, null));
     }
     
     @Override
