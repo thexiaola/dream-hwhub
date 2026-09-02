@@ -468,7 +468,8 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         List<ClassMemberResponse> allMembers = classService.getAllClassMembers(workInfo.getClassId());
         
         Set<Integer> allStudentIds = allMembers.stream()
-            .filter(m -> "STUDENT".equals(m.getRole()))
+            // getUserRole 返回的中文角色名（创建者/老师/学生），此处只取学生
+            .filter(m -> "学生".equals(m.getRole()))
             .map(ClassMemberResponse::getUserId)
             .collect(Collectors.toSet());
 

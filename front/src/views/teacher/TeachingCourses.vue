@@ -104,7 +104,7 @@ const createForm = ref({
 })
 
 const loadTeacherCourses = async () => {
-  const result = await get<{ records: CourseInfo[] }>('/class/mine')
+  const result = await get<{ records: CourseInfo[] }>('/class/mine', { pageSize: 300 })
   if (result.code === 200) {
     teacherCourses.value = result.data!.records.filter(
       course => course.userRole === '创建者' || course.userRole === '老师'

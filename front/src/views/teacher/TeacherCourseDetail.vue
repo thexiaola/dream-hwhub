@@ -110,6 +110,18 @@
           <p>暂无作业</p>
           <p class="empty-tip">点击"发布作业"按钮创建作业</p>
         </div>
+        <div v-if="worksTotal > 0" class="works-pagination">
+          <el-pagination
+            v-model:current-page="worksPage"
+            v-model:page-size="worksPageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="worksTotal"
+            layout="total, sizes, prev, pager, next"
+            background
+            @current-change="onWorksPageChange"
+            @size-change="onWorksSizeChange"
+          />
+        </div>
       </el-tab-pane>
 
       <el-tab-pane name="students">
@@ -611,6 +623,9 @@ const userStore = useUserStore();
 
 const course = ref<CourseInfo | null>(null);
 const works = ref<WorkInfo[]>([]);
+const worksPage = ref(1);
+const worksPageSize = ref(10);
+const worksTotal = ref(0);
 const members = ref<MemberInfo[]>([]);
 const memberTeacherCount = ref<number | null>(null);
 const activeTab = ref("works");
@@ -773,18 +788,31 @@ const handleApproval = async (item: TeacherApprovalInfo, approved: boolean) => {
 };
 
 const loadWorks = async () => {
-  const result = await get<{ records: WorkInfo[] }>("/works");
-  if (result.code === 200) {
-    const classId = Number(route.params.id);
-    works.value = result.data!.records.filter(
-      (work) => work.classId === classId,
-    );
+  const classId = Number(route.params.id);
+  const result = await get<{ records: WorkInfo[]; total: number }>("/works", {
+    classId,
+    pageNum: worksPage.value,
+    pageSize: worksPageSize.value,
+  });
+  if (result.code === 200 && result.data) {
+    works.value = result.data.records || [];
+    worksTotal.value = result.data.total || 0;
   }
+};
+
+const onWorksPageChange = () => {
+  loadWorks();
+};
+
+const onWorksSizeChange = () => {
+  worksPage.value = 1;
+  loadWorks();
 };
 
 const loadMembers = async () => {
   const result = await get<{ records: MemberInfo[] }>(
     `/class/${route.params.id}/members`,
+    { pageSize: 300 },
   );
   if (result.code === 200) {
     members.value = result.data!.records;
@@ -838,6 +866,7 @@ const togglePin = async (work: WorkInfo) => {
   });
   if (result.code === 200) {
     ElMessage.success(work.isPinned ? "已取消置顶" : "已置顶");
+    worksPage.value = 1;
     loadWorks();
   } else {
     ElMessage.error(result.message);
@@ -853,6 +882,10 @@ const deleteWork = async (workId: number) => {
     const result = await del(`/works/${workId}`);
     if (result.code === 200) {
       ElMessage.success("删除成功");
+      // 若删除的是当前页最后一条，回退一页
+      if (works.value.length === 1 && worksPage.value > 1) {
+        worksPage.value -= 1;
+      }
       loadWorks();
     } else {
       ElMessage.error(result.message);
@@ -898,6 +931,7 @@ const createWork = async () => {
       ElMessage.success("作业发布成功");
       showCreateWorkDialog.value = false;
       resetCreateWorkForm();
+      worksPage.value = 1; // 回到第一页以展示最新发布的作业
       loadWorks();
     } else {
       ElMessage.error(result.message);
@@ -1514,6 +1548,12 @@ onMounted(async () => {
 .empty-tip {
   font-size: 12px;
   margin-top: 8px;
+}
+
+.works-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
 
 .invite-code-content {

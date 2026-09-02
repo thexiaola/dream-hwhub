@@ -126,12 +126,13 @@ public class WorkController {
     @GetMapping(value = "")
     public ResponseEntity<ApiResponse<Page<WorkResponse>>> getWorkList(
             @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "classId", required = false) Integer classId,
             @Validated @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            Page<WorkResponse> works = workService.getWorkList(status, pageRequest.getPageNum(), pageRequest.getPageSize());
+            Page<WorkResponse> works = workService.getWorkList(status, classId, pageRequest.getPageNum(), pageRequest.getPageSize());
             log.info("User ({}) queried work list, total: {}", userInfo, works.getTotal());
             return ResponseEntity.ok(ApiResponse.success(works));
         } catch (BusinessException e) {

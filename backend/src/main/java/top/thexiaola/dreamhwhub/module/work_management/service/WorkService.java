@@ -45,12 +45,13 @@ public interface WorkService {
     /**
      * 查询作业列表（分页）
      *
-     * @param status 作业状态（可选）
+     * @param status 作业状态（可选：0-未发布，1-已发布，2-已结束；null-全部可见）
+     * @param classId 班级ID（可选：指定后仅查询该班作业，且调用者须为该班成员）
      * @param pageNum 页码
      * @param pageSize 每页大小
      * @return 作业分页结果
      */
-    Page<WorkResponse> getWorkList(Integer status, Integer pageNum, Integer pageSize);
+    Page<WorkResponse> getWorkList(Integer status, Integer classId, Integer pageNum, Integer pageSize);
 
     /**
      * 置顶/取消置顶作业

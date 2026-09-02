@@ -103,6 +103,18 @@
         <FileText :size="32" />
         <p>暂无作业</p>
       </div>
+      <div v-if="worksTotal > 0" class="works-pagination">
+        <el-pagination
+          v-model:current-page="worksPage"
+          v-model:page-size="worksPageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="worksTotal"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="onWorksPageChange"
+          @size-change="onWorksSizeChange"
+        />
+      </div>
     </el-card>
 
     <el-dialog
@@ -182,6 +194,9 @@ const router = useRouter()
 
 const course = ref<CourseInfo | null>(null)
 const works = ref<WorkInfo[]>([])
+const worksPage = ref(1)
+const worksPageSize = ref(10)
+const worksTotal = ref(0)
 const submissions = ref<SubmissionInfo[]>([])
 
 const showInviteDialog = ref(false)
@@ -249,11 +264,25 @@ const loadCourse = async () => {
 }
 
 const loadWorks = async () => {
-  const result = await get<{ records: WorkInfo[] }>('/works')
-  if (result.code === 200) {
-    const classId = Number(route.params.id)
-    works.value = result.data!.records.filter(work => work.classId === classId)
+  const classId = Number(route.params.id)
+  const result = await get<{ records: WorkInfo[]; total: number }>('/works', {
+    classId,
+    pageNum: worksPage.value,
+    pageSize: worksPageSize.value,
+  })
+  if (result.code === 200 && result.data) {
+    works.value = result.data.records || []
+    worksTotal.value = result.data.total || 0
   }
+}
+
+const onWorksPageChange = () => {
+  loadWorks()
+}
+
+const onWorksSizeChange = () => {
+  worksPage.value = 1
+  loadWorks()
 }
 
 const loadSubmissions = async () => {
@@ -517,6 +546,12 @@ onMounted(async () => {
 .empty-state p {
   margin-top: 12px;
   font-size: 14px;
+}
+
+.works-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
 
 .invite-flow-tip {

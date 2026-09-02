@@ -217,7 +217,7 @@ const joinForm = ref({
 });
 
 const loadStudentCourses = async () => {
-  const result = await get<{ records: CourseInfo[] }>("/class/mine");
+  const result = await get<{ records: CourseInfo[] }>("/class/mine", { pageSize: 300 });
   if (result.code === 200) {
     // 学生与助理（协作老师）的课程都在“我听的课”中显示
     studentCourses.value = result.data!.records.filter(

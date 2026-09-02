@@ -506,7 +506,7 @@ const toggleClassDetail = async (classId: number) => {
   }
   expandedClassId.value = classId
   selectedAdminKickIds.value = []
-  const result = await get<{ records: ClassMemberInfo[] }>(`/class/${classId}/members`)
+  const result = await get<{ records: ClassMemberInfo[] }>(`/class/${classId}/members`, { pageSize: 300 })
   if (result.code === 200) {
     classMembers.value = result.data!.records
   }
