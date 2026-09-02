@@ -73,12 +73,21 @@ instance.interceptors.response.use(
       const data = error.response.data
       
       if (status === 401 || (data && data.code === 401)) {
-        localStorage.removeItem('token')
-        window.dispatchEvent(new CustomEvent('auth-expired'))
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
+        // 请求携带了登录凭证时才视为会话过期：清 token 并跳转登录页。
+        // 未携带凭证的请求属于公开接口（登录 / 找回密码 / 注册等），
+        // 此时后端的 401 其实是“账号不存在 / 账号或密码错误”等业务失败，
+        // 需要原样返回给页面展示真实提示，而不是当作登录过期跳走。
+        const authHeader = error.config?.headers?.Authorization
+        const withToken = typeof authHeader === 'string' && authHeader.trim().length > 0
+
+        if (withToken) {
+          localStorage.removeItem('token')
+          window.dispatchEvent(new CustomEvent('auth-expired'))
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login'
+          }
+          return { data: { code: 401, message: '登录已过期，请重新登录', data: null } } as AxiosResponse<ApiResponse>
         }
-        return { data: { code: 401, message: '登录已过期，请重新登录', data: null } } as AxiosResponse<ApiResponse>
       }
       
       if (data) {

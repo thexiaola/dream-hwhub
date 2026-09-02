@@ -69,14 +69,12 @@ public class LoginUserServiceImpl implements LoginUserService {
         return getUser(account, userMapper);
     }
 
+    /**
+     * 根据账号查找用户（账号 = 用户名或邮箱，学号不作为账号；用户名不区分大小写）
+     */
     static User getUser(String account, UserMapper userMapper) {
         User user = userMapper.selectOne(
-                new QueryWrapper<User>().eq("user_no", account)
-        );
-        if (user != null) return user;
-
-        user = userMapper.selectOne(
-                new QueryWrapper<User>().eq("username", account)
+                new QueryWrapper<User>().apply("LOWER(username) = LOWER({0})", account)
         );
         if (user != null) return user;
 

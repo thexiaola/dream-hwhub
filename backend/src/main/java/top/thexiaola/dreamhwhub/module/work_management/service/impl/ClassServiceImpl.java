@@ -57,18 +57,18 @@ public class ClassServiceImpl implements ClassService {
     }
 
     /**
-     * 根据账号查询用户，如果不存在则抛出异常
-     * @param userAccount 用户账号（学号）
+     * 根据用户名或邮箱查询用户，如果不存在则抛出异常
+     * @param userAccount 用户名或邮箱（学号不作为账号，允许重复）
      * @return 用户对象
      */
     private User getUserByAccountOrThrow(String userAccount) {
         QueryWrapper<User> userQuery = new QueryWrapper<>();
-        userQuery.eq("user_no", userAccount);
+        userQuery.and(q -> q.apply("LOWER(username) = LOWER({0})", userAccount).or().eq("email", userAccount));
         User targetUser = userMapper.selectOne(userQuery);
         
         if (targetUser == null) {
             // 目标账号不存在属于业务失败（而非当前登录用户认证失效），返回 400 避免误触发前端登出
-            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "邀请的用户不存在，请确认账号是否正确", null);
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "邀请的用户不存在，请确认用户名或邮箱是否正确", null);
         }
         return targetUser;
     }
@@ -523,7 +523,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号和密码不能为空", null);
         }
         QueryWrapper<User> accQuery = new QueryWrapper<>();
-        accQuery.and(q -> q.eq("user_no", account).or().eq("email", account).or().eq("username", account));
+        accQuery.and(q -> q.eq("email", account).or().apply("LOWER(username) = LOWER({0})", account));
         User checkUser = userMapper.selectOne(accQuery);
         if (checkUser == null || !checkUser.getId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号不属于当前登录用户", null);

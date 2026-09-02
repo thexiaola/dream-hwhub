@@ -10,7 +10,7 @@
         <div class="retrieve-header">
           <BookOpen :size="48" class="retrieve-icon" />
           <h1 class="retrieve-title">找回密码</h1>
-          <p class="retrieve-subtitle">请按照提示步骤操作</p>
+          <p class="retrieve-subtitle">请输入用户名或邮箱，验证码将自动发送至绑定的邮箱</p>
         </div>
         <div class="steps">
           <div :class="['step', { active: currentStep === 1 }, { completed: currentStep > 1 }]">
@@ -18,72 +18,57 @@
             <span class="step-text">输入账号</span>
           </div>
           <div class="step-line"></div>
-          <div :class="['step', { active: currentStep === 2 }, { completed: currentStep > 2 }]">
+          <div :class="['step', { active: currentStep === 2 }]">
             <span class="step-number">2</span>
-            <span class="step-text">验证身份</span>
-          </div>
-          <div class="step-line"></div>
-          <div :class="['step', { active: currentStep === 3 }]">
-            <span class="step-number">3</span>
             <span class="step-text">重置密码</span>
           </div>
         </div>
-        <el-form v-if="currentStep === 1" :model="step1Form" class="retrieve-form" @submit.prevent="goToStep2">
+        <el-form v-if="currentStep === 1" class="retrieve-form" @submit.prevent="sendCode">
           <el-form-item>
-            <el-input 
-              v-model="step1Form.account" 
-              placeholder="请输入账号"
+            <el-input
+              v-model="account"
+              placeholder="请输入用户名或邮箱"
               :prefix-icon="UserIcon"
               class="input-field"
-              @keyup.enter="goToStep2"
+              @keyup.enter="sendCode"
             />
           </el-form-item>
+          <p class="form-hint">验证码将自动发送至该账号绑定的邮箱，请先登录邮箱查收</p>
           <el-form-item>
-            <el-button type="primary" class="retrieve-btn" @click="goToStep2" :loading="loading">
-              下一步
+            <el-button type="primary" class="retrieve-btn" :loading="sending" @click="sendCode">
+              {{ countdown > 0 ? `验证码已发送，${countdown}s` : '获取验证码' }}
             </el-button>
           </el-form-item>
         </el-form>
-        <el-form v-if="currentStep === 2" :model="step2Form" class="retrieve-form" @submit.prevent="goToStep3">
-          <el-form-item>
-            <el-input 
-              v-model="step2Form.email" 
-              placeholder="请输入绑定的邮箱"
-              :prefix-icon="MailIcon"
-              class="input-field"
-              @keyup.enter="sendVerifyCode"
-            />
-          </el-form-item>
+        <el-form v-else class="retrieve-form" @submit.prevent="resetPassword">
+          <p class="form-hint">
+            <Mail :size="14" class="form-hint-icon" />
+            验证码已发送至账号「{{ account }}」绑定的邮箱
+          </p>
           <el-form-item>
             <div class="code-row">
-              <el-input 
-                v-model="step2Form.verifyCode" 
-                placeholder="验证码"
+              <el-input
+                v-model="code"
+                placeholder="请输入邮箱中的验证码"
                 :prefix-icon="KeyIcon"
                 class="input-field"
-                @keyup.enter="goToStep3"
+                @keyup.enter="resetPassword"
               />
-              <el-button 
-                type="primary" 
+              <el-button
+                type="primary"
                 class="code-btn"
                 :disabled="countdown > 0 || sending"
                 :loading="sending"
-                @click="sendVerifyCode"
+                @click="sendCode"
               >
-                {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+                {{ countdown > 0 ? `${countdown}s` : '重新发送' }}
               </el-button>
             </div>
           </el-form-item>
-          <el-form-item class="form-actions">
-            <el-button @click="goToStep1">上一步</el-button>
-            <el-button type="primary" @click="goToStep3" :loading="loading">下一步</el-button>
-          </el-form-item>
-        </el-form>
-        <el-form v-if="currentStep === 3" :model="step3Form" class="retrieve-form" @submit.prevent="resetPassword">
           <el-form-item>
-            <el-input 
-              v-model="step3Form.password" 
-              type="password" 
+            <el-input
+              v-model="password"
+              type="password"
               placeholder="请输入新密码"
               :prefix-icon="LockIcon"
               class="input-field"
@@ -91,9 +76,9 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-input 
-              v-model="step3Form.confirmPassword" 
-              type="password" 
+            <el-input
+              v-model="confirmPassword"
+              type="password"
               placeholder="请确认新密码"
               :prefix-icon="LockIcon"
               class="input-field"
@@ -101,7 +86,7 @@
             />
           </el-form-item>
           <el-form-item class="form-actions">
-            <el-button @click="goToStep2">上一步</el-button>
+            <el-button @click="goToStep1">上一步</el-button>
             <el-button type="primary" @click="resetPassword" :loading="loading">确认重置</el-button>
           </el-form-item>
         </el-form>
@@ -142,22 +127,12 @@ const startCountdown = (seconds: number) => {
   }, 1000)
 }
 
-const step1Form = ref({
-  account: ''
-})
-
-const step2Form = ref({
-  email: '',
-  verifyCode: ''
-})
-
-const step3Form = ref({
-  password: '',
-  confirmPassword: ''
-})
+const account = ref('')
+const code = ref('')
+const password = ref('')
+const confirmPassword = ref('')
 
 const UserIcon = () => h(User, { size: 18 })
-const MailIcon = () => h(Mail, { size: 18 })
 const KeyIcon = () => h(Key, { size: 18 })
 const LockIcon = () => h(Lock, { size: 18 })
 
@@ -165,96 +140,84 @@ const goToStep1 = () => {
   currentStep.value = 1
 }
 
-const goToStep2 = () => {
-  if (!step1Form.value.account) {
-    ElMessage.error('请输入账号')
-    return
-  }
-  currentStep.value = 2
-}
-
-const goToStep3 = () => {
-  if (!step2Form.value.email || !step2Form.value.verifyCode) {
-    ElMessage.error('请填写完整信息')
-    return
-  }
-  currentStep.value = 3
-}
-
-const sendVerifyCode = async () => {
+/**
+ * 向该账号绑定的邮箱发送验证码（首次发送成功后进入重置密码步骤）
+ */
+const sendCode = async () => {
   if (sending.value || countdown.value > 0) {
     return
   }
-  if (!step2Form.value.email) {
-    ElMessage.error('请先输入邮箱')
+  if (!account.value.trim()) {
+    ElMessage.error('请输入用户名或邮箱')
     return
   }
-  
+
   sending.value = true
   try {
     const result = await Promise.race([
-      post('/users/retrieve/sendcode', { 
-        account: step1Form.value.account
+      post('/users/retrieve/sendcode', {
+        account: account.value.trim()
       }).catch(() => ({ code: -1, message: '网络请求失败', data: null })),
       // 10 秒内未收到后端回复则自动释放等待状态
       new Promise<{ code: number; message: string; data: null }>((resolve) =>
         setTimeout(() => resolve({ code: -1, message: '请求超时，请稍后重试', data: null }), 10000)
       )
     ])
-    if (result.code === -1) {
-      ElMessage.error(result.message)
-      return
-    }
-    if (result.code === 200) {
-      ElMessage.success('验证码已发送')
-    } else {
-      ElMessage.error(result.message)
-    }
     // 冷却时长由后端返回：成功时为配置值，冷却期内为剩余秒数
     if (typeof result.data === 'number' && result.data > 0) {
       startCountdown(result.data)
     }
+    if (result.code === 200) {
+      ElMessage.success(result.message || '验证码已发送')
+      if (currentStep.value === 1) {
+        currentStep.value = 2
+      }
+    } else {
+      ElMessage.error(result.message || '发送失败，请稍后重试')
+    }
+  } catch (error) {
+    ElMessage.error('发送失败，请检查网络后重试')
   } finally {
     sending.value = false
   }
 }
 
 const resetPassword = async () => {
-  if (!step3Form.value.password || !step3Form.value.confirmPassword) {
+  if (!code.value || !password.value || !confirmPassword.value) {
     ElMessage.error('请填写完整信息')
     return
   }
-  
-  if (step3Form.value.password !== step3Form.value.confirmPassword) {
+
+  if (password.value !== confirmPassword.value) {
     ElMessage.error('两次输入的密码不一致')
     return
   }
 
-  if (step3Form.value.password.length < 4 || step3Form.value.password.length > 48) {
+  if (password.value.length < 4 || password.value.length > 48) {
     ElMessage.error('新密码长度需在 4-48 位之间')
     return
   }
 
   const pattern = /^[0-9a-zA-Z!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/
-  if (!pattern.test(step3Form.value.password)) {
+  if (!pattern.test(password.value)) {
     ElMessage.error('新密码只能包含字母、数字和常用特殊字符')
     return
   }
-  
+
   loading.value = true
-  
+
   try {
     const result = await put('/users/retrieve/resetpassword', {
-      account: step1Form.value.account,
-      code: step2Form.value.verifyCode,
-      newPassword: step3Form.value.password
+      account: account.value.trim(),
+      code: code.value,
+      newPassword: password.value
     })
-    
+
     if (result.code === 200) {
       ElMessage.success('密码重置成功')
       router.push('/login')
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error(result.message || '密码重置失败')
     }
   } catch (error) {
     ElMessage.error('密码重置失败')
@@ -283,7 +246,7 @@ const resetPassword = async () => {
 .grid-bg {
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(102, 126, 234, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(102, 126, 234, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -418,6 +381,22 @@ const resetPassword = async () => {
 
 .input-field {
   width: 100%;
+}
+
+.form-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: -8px 0 16px;
+  text-align: center;
+}
+
+.form-hint-icon {
+  flex-shrink: 0;
 }
 
 .code-row {

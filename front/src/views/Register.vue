@@ -16,8 +16,9 @@
           <el-form-item prop="username">
             <el-input 
               v-model="form.username" 
-              placeholder="姓名"
+              placeholder="用户名"
               :prefix-icon="UserIcon"
+              maxlength="16"
               class="input-field"
             />
           </el-form-item>
@@ -120,7 +121,10 @@ const startCountdown = (seconds: number) => {
 
 const rules = {
   username: [
-    { required: true, message: '请输入姓名', trigger: 'blur' }
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 16, message: '用户名长度需为 3-16 位', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9].*[A-Za-z0-9]$/, message: '用户名不能以下划线开头或结尾', trigger: 'blur' }
   ],
   userNo: [
     { required: true, message: '请输入学号/工号', trigger: 'blur' }
@@ -158,7 +162,7 @@ const sendVerifyCode = async () => {
     return
   }
   if (!form.value.username) {
-    ElMessage.error('请先输入姓名')
+    ElMessage.error('请先输入用户名')
     return
   }
   

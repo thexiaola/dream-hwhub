@@ -35,8 +35,8 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         String userNo = registerRequest.getUserNo();
         String username = registerRequest.getUsername();
         String email = registerRequest.getEmail();
-        
-        checkUserNoExists(userNo);
+
+        // 学号允许重复，仅校验用户名与邮箱唯一
         checkUsernameExists(username);
         checkEmailExists(email);
 
@@ -68,8 +68,8 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     @Override
     public void sendEmailCode(String email, String userNo, String username) {
         String operation = "Send registration verification code";
-        
-        checkUserNoExists(userNo);
+
+        // 学号允许重复，仅校验用户名与邮箱唯一
         checkUsernameExists(username);
         checkEmailExists(email);
             
@@ -80,12 +80,6 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "failed to send verification code: " + e.getMessage(), null), e);
             throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码发送失败：" + e.getMessage());
-        }
-    }
-
-    private void checkUserNoExists(String userNo) {
-        if (isUserNoExists(userNo)) {
-            throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
         }
     }
 
@@ -110,16 +104,10 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     }
 
     @Override
-    public boolean isUserNoExists(String userNo) {
-        return userMapper.selectCount(
-                new QueryWrapper<User>().eq("user_no", userNo)
-        ) > 0;
-    }
-
-    @Override
     public boolean isUsernameExists(String username) {
+        // 用户名不区分大小写唯一：TheXiaoLa 占用后，thexiaola/Thexiaola 等均视为重复
         return userMapper.selectCount(
-                new QueryWrapper<User>().eq("username", username)
+                new QueryWrapper<User>().apply("LOWER(username) = LOWER({0})", username)
         ) > 0;
     }
 

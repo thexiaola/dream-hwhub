@@ -16,7 +16,6 @@ public enum BusinessErrorCode {
     VERIFICATION_CODE_NOT_FOUND(1003, "验证码不存在"),
     
     // 注册相关错误
-    USER_NO_EXISTS(2001, "学号已被占用"),
     USERNAME_EXISTS(2002, "用户名已被占用"),
     EMAIL_EXISTS(2003, "邮箱已被占用"),
     REGISTRATION_FAILED(2004, "注册失败"),
@@ -100,14 +99,5 @@ public enum BusinessErrorCode {
         return errorCode == VERIFICATION_CODE_INVALID || 
                errorCode == VERIFICATION_CODE_EXPIRED || 
                errorCode == VERIFICATION_CODE_NOT_FOUND;
-    }
-
-    /**
-     * 判断是否为重复注册错误
-     */
-    public static boolean isDuplicateRegistrationError(BusinessErrorCode errorCode) {
-        return errorCode == USER_NO_EXISTS || 
-               errorCode == USERNAME_EXISTS || 
-               errorCode == EMAIL_EXISTS;
     }
 }

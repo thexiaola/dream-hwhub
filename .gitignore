@@ -51,6 +51,7 @@ pnpm-debug.log*
 .settings
 .springBeans
 .sts4-cache
+.pwtest
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/

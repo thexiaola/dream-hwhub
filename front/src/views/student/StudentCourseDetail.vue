@@ -113,10 +113,10 @@
       @close="inviteForm.account = ''"
     >
       <el-form :model="inviteForm" label-width="80px">
-        <el-form-item label="同学账号">
+        <el-form-item label="用户名/邮箱">
           <el-input
             v-model="inviteForm.account"
-            placeholder="请输入同学的账号"
+            placeholder="请输入同学的用户名或邮箱"
             maxlength="64"
           />
         </el-form-item>
@@ -190,7 +190,7 @@ const inviteForm = ref({ account: '' })
 
 const inviteClassmate = async () => {
   if (!inviteForm.value.account.trim()) {
-    ElMessage.warning('请输入同学的账号')
+    ElMessage.warning('请输入同学的用户名或邮箱')
     return
   }
   inviting.value = true

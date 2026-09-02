@@ -45,13 +45,12 @@ public interface WorkService {
     /**
      * 查询作业列表（分页）
      *
-     * @param teacherNo 教师工号（可选）
      * @param status 作业状态（可选）
      * @param pageNum 页码
      * @param pageSize 每页大小
      * @return 作业分页结果
      */
-    Page<WorkResponse> getWorkList(String teacherNo, Integer status, Integer pageNum, Integer pageSize);
+    Page<WorkResponse> getWorkList(Integer status, Integer pageNum, Integer pageSize);
 
     /**
      * 置顶/取消置顶作业

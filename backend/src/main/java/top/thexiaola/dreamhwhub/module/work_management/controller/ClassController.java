@@ -91,8 +91,8 @@ public class ClassController {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfoString(ip, currentUser);
                 log.info("User ({}) requesting to dissolve class, ID: {}", userInfo, classId);
-                // 账号直接取当前用户，用 userNo / username / email 任一唯一标识回填
-                String account = (currentUser != null) ? (currentUser.getUserNo() != null ? currentUser.getUserNo() : currentUser.getUsername()) : null;
+                // 账号直接用当前用户的用户名（唯一标识）回填，学号允许重复不可作为账号
+                String account = (currentUser != null) ? currentUser.getUsername() : null;
                 classService.dissolveClass(classId, account, password, confirmText);
                 log.info("User ({}) dissolved class successfully, class ID: {}", userInfo, classId);
                 return ApiResponse.success(null);

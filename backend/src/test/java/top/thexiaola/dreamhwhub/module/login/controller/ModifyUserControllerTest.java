@@ -59,15 +59,16 @@ class ModifyUserControllerTest {
     @DisplayName("测试修改用户信息 - 成功")
     void testModifyUserInfo_Success() throws Exception {
         ModifyUserInfoRequest request = new ModifyUserInfoRequest();
-        request.setUsername("新用户名");
+        request.setUserNo("20240001");
+        request.setUsername("NewName01");
 
         User mockUser = new User();
         mockUser.setId(1);
-        mockUser.setUsername("新用户名");
+        mockUser.setUsername("NewName01");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
-        userResponse.setUsername("新用户名");
+        userResponse.setUsername("NewName01");
 
         Mockito.when(modifyUserService.modifyUserInfo(Mockito.any(ModifyUserInfoRequest.class)))
                 .thenReturn(mockUser);
@@ -211,19 +212,20 @@ class ModifyUserControllerTest {
      * 边界测试 - 用户名最大长度
      */
     @Test
-    @DisplayName("边界测试 - 用户名最大长度64个字符")
+    @DisplayName("边界测试 - 用户名最大长度16个字符")
     void testModifyUserInfo_MaxUsernameLength() throws Exception {
-        String longUsername = "张".repeat(64);
+        String maxUsername = "Z".repeat(16);
         ModifyUserInfoRequest request = new ModifyUserInfoRequest();
-        request.setUsername(longUsername);
+        request.setUserNo("20240002");
+        request.setUsername(maxUsername);
 
         User mockUser = new User();
         mockUser.setId(1);
-        mockUser.setUsername(longUsername);
+        mockUser.setUsername(maxUsername);
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
-        userResponse.setUsername(longUsername);
+        userResponse.setUsername(maxUsername);
 
         Mockito.when(modifyUserService.modifyUserInfo(Mockito.any(ModifyUserInfoRequest.class)))
                 .thenReturn(mockUser);
@@ -431,32 +433,20 @@ class ModifyUserControllerTest {
     }
 
     /**
-     * 极限数据测试 - 特殊Unicode字符
+     * 极限数据测试 - 用户名包含中文与Emoji（应被拒绝）
      */
     @Test
-    @DisplayName("极限数据测试 - 用户名包含Emoji字符")
+    @DisplayName("极限数据测试 - 用户名包含中文与Emoji")
     void testModifyUserInfo_UsernameWithEmoji() throws Exception {
         ModifyUserInfoRequest request = new ModifyUserInfoRequest();
-        request.setUsername("张😀🎉三");
+        request.setUserNo("20240003");
+        request.setUsername("张😀🎉三"); // 不符合 Minecraft 用户名规则
 
-        User mockUser = new User();
-        mockUser.setId(1);
-        mockUser.setUsername("张😀🎉三");
-
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(1);
-        userResponse.setUsername("张😀🎉三");
-
-        Mockito.when(modifyUserService.modifyUserInfo(Mockito.any(ModifyUserInfoRequest.class)))
-                .thenReturn(mockUser);
-        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
-                .thenReturn(userResponse);
-
+        // 中文与 emoji 超出允许字符集，应被参数校验拒绝
         mockMvc.perform(put("/api/users/modify/info")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(status().isBadRequest());
     }
 
     /**

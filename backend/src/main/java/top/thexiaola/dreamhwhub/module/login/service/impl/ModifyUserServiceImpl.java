@@ -41,19 +41,10 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         String newIdName = modifyUserInfoRequest.getIdName();
         String newPhone = modifyUserInfoRequest.getPhone();
         
-        // 验证学号唯一性（排除自己）
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_no", newUserNo);
-        queryWrapper.ne("id", user.getId());
-        User existingUser = userMapper.selectOne(queryWrapper);
-        if (existingUser != null) {
-            throw new BusinessException(BusinessErrorCode.USER_NO_EXISTS, "学号已存在", null);
-        }
-        
-        // 验证用户名唯一性（排除自己）
+        // 学号允许重复（仅校验非空），用户名不区分大小写唯一（排除自己）
         QueryWrapper<User> usernameQueryWrapper = new QueryWrapper<>();
-        usernameQueryWrapper.eq("username", newUsername);
         usernameQueryWrapper.ne("id", user.getId());
+        usernameQueryWrapper.apply("LOWER(username) = LOWER({0})", newUsername);
         User existingUsernameUser = userMapper.selectOne(usernameQueryWrapper);
         if (existingUsernameUser != null) {
             throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);

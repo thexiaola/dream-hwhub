@@ -131,7 +131,7 @@ class WorkControllerTest {
         page.setRecords(Collections.emptyList());
         page.setTotal(0);
 
-        Mockito.when(workService.getWorkList(Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
+        Mockito.when(workService.getWorkList(Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/works")

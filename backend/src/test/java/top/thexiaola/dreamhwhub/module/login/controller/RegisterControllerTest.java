@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.EmailCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
@@ -65,7 +64,7 @@ class RegisterControllerTest {
         // 准备测试数据
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -73,13 +72,13 @@ class RegisterControllerTest {
         User mockUser = new User();
         mockUser.setId(1);
         mockUser.setUserNo("123456");
-        mockUser.setUsername("张三");
+        mockUser.setUsername("Zhangsan01");
         mockUser.setEmail("zhangsan@example.com");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
         userResponse.setUserNo("123456");
-        userResponse.setUsername("张三");
+        userResponse.setUsername("Zhangsan01");
         userResponse.setEmail("zhangsan@example.com");
 
         // Mock 行为
@@ -95,33 +94,7 @@ class RegisterControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("注册成功"))
-                .andExpect(jsonPath("$.data.username").value("张三"));
-    }
-
-    /**
-     * 测试注册失败 - 学号已存在
-     */
-    @Test
-    @DisplayName("测试注册失败 - 学号已存在")
-    void testRegister_UserNoExists() throws Exception {
-        RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
-        registerRequest.setEmail("zhangsan@example.com");
-        registerRequest.setEmailCode("123456");
-        registerRequest.setPassword("password123");
-
-        // Mock 抛出业务异常
-        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
-                .thenThrow(new BusinessException(BusinessErrorCode.USER_NO_EXISTS));
-
-        // 执行测试并验证
-        mockMvc.perform(post("/api/users/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("学号已被占用"));
+                .andExpect(jsonPath("$.data.username").value("Zhangsan01"));
     }
 
     /**
@@ -132,7 +105,7 @@ class RegisterControllerTest {
     void testRegister_UserNoEmpty() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -152,7 +125,7 @@ class RegisterControllerTest {
     void testRegister_InvalidEmail() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("invalid-email");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -172,7 +145,7 @@ class RegisterControllerTest {
     void testRegister_PasswordTooShort() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("123"); // 少于 4 位
@@ -193,7 +166,7 @@ class RegisterControllerTest {
         EmailCodeRequest emailCodeRequest = new EmailCodeRequest();
         emailCodeRequest.setEmail("zhangsan@example.com");
         emailCodeRequest.setUserNo("123456");
-        emailCodeRequest.setUsername("张三");
+        emailCodeRequest.setUsername("Zhangsan01");
 
         Mockito.doNothing().when(registerUserService).sendEmailCode(
                 Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
@@ -215,7 +188,7 @@ class RegisterControllerTest {
         EmailCodeRequest emailCodeRequest = new EmailCodeRequest();
         emailCodeRequest.setEmail("");
         emailCodeRequest.setUserNo("123456");
-        emailCodeRequest.setUsername("张三");
+        emailCodeRequest.setUsername("Zhangsan01");
 
         mockMvc.perform(post("/api/users/getregcode")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -233,7 +206,7 @@ class RegisterControllerTest {
     void testRegister_UserNoMaxLength() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456789012345678901234"); // 24位
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -241,13 +214,13 @@ class RegisterControllerTest {
         User mockUser = new User();
         mockUser.setId(1);
         mockUser.setUserNo("123456789012345678901234");
-        mockUser.setUsername("张三");
+        mockUser.setUsername("Zhangsan01");
         mockUser.setEmail("zhangsan@example.com");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
         userResponse.setUserNo("123456789012345678901234");
-        userResponse.setUsername("张三");
+        userResponse.setUsername("Zhangsan01");
         userResponse.setEmail("zhangsan@example.com");
 
         Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
@@ -270,7 +243,7 @@ class RegisterControllerTest {
     void testRegister_UserNoTooLong() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("1234567890123456789012345"); // 25位
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -282,15 +255,15 @@ class RegisterControllerTest {
     }
 
     /**
-     * 边界测试 - 用户名达到最大长度64位
+     * 边界测试 - 用户名达到最大长度16位
      */
     @Test
-    @DisplayName("边界测试 - 用户名达到最大长度64位")
+    @DisplayName("边界测试 - 用户名达到最大长度16位")
     void testRegister_UsernameMaxLength() throws Exception {
-        String longUsername = "张".repeat(64);
+        String maxUsername = "Z".repeat(16);
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername(longUsername);
+        registerRequest.setUsername(maxUsername);
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -298,13 +271,13 @@ class RegisterControllerTest {
         User mockUser = new User();
         mockUser.setId(1);
         mockUser.setUserNo("123456");
-        mockUser.setUsername(longUsername);
+        mockUser.setUsername(maxUsername);
         mockUser.setEmail("zhangsan@example.com");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
         userResponse.setUserNo("123456");
-        userResponse.setUsername(longUsername);
+        userResponse.setUsername(maxUsername);
         userResponse.setEmail("zhangsan@example.com");
 
         Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
@@ -327,7 +300,7 @@ class RegisterControllerTest {
     void testRegister_PasswordMinLength() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("abc1"); // 4位
@@ -335,13 +308,13 @@ class RegisterControllerTest {
         User mockUser = new User();
         mockUser.setId(1);
         mockUser.setUserNo("123456");
-        mockUser.setUsername("张三");
+        mockUser.setUsername("Zhangsan01");
         mockUser.setEmail("zhangsan@example.com");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
         userResponse.setUserNo("123456");
-        userResponse.setUsername("张三");
+        userResponse.setUsername("Zhangsan01");
         userResponse.setEmail("zhangsan@example.com");
 
         Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
@@ -365,7 +338,7 @@ class RegisterControllerTest {
         String longPassword = "a".repeat(48);
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword(longPassword);
@@ -373,13 +346,13 @@ class RegisterControllerTest {
         User mockUser = new User();
         mockUser.setId(1);
         mockUser.setUserNo("123456");
-        mockUser.setUsername("张三");
+        mockUser.setUsername("Zhangsan01");
         mockUser.setEmail("zhangsan@example.com");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
         userResponse.setUserNo("123456");
-        userResponse.setUsername("张三");
+        userResponse.setUsername("Zhangsan01");
         userResponse.setEmail("zhangsan@example.com");
 
         Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
@@ -404,7 +377,7 @@ class RegisterControllerTest {
     void testRegister_UserNoWithLetters() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("abc123"); // 包含字母
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -423,7 +396,7 @@ class RegisterControllerTest {
     void testRegister_UserNoWithSpecialChars() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123#456"); // 包含特殊字符
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -480,7 +453,7 @@ class RegisterControllerTest {
     void testRegister_PasswordWithChinese() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("密码123456"); // 包含中文
@@ -499,7 +472,7 @@ class RegisterControllerTest {
     void testRegister_EmailMissingAt() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsanexample.com"); // 缺少@
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -518,7 +491,7 @@ class RegisterControllerTest {
     void testRegister_EmailMissingDomain() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@"); // 缺少域名
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
@@ -537,7 +510,7 @@ class RegisterControllerTest {
     void testRegister_CodeTooShort() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("12345"); // 5位
         registerRequest.setPassword("password123");
@@ -556,7 +529,7 @@ class RegisterControllerTest {
     void testRegister_CodeTooLong() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("1234567"); // 7位
         registerRequest.setPassword("password123");
@@ -575,7 +548,7 @@ class RegisterControllerTest {
     void testRegister_CodeWithLetters() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
-        registerRequest.setUsername("张三");
+        registerRequest.setUsername("Zhangsan01");
         registerRequest.setEmail("zhangsan@example.com");
         registerRequest.setEmailCode("a12345"); // 包含字母
         registerRequest.setPassword("password123");
@@ -609,10 +582,10 @@ class RegisterControllerTest {
     }
 
     /**
-     * 极限数据测试 - 特殊Unicode字符
+     * 极限数据测试 - 用户名包含中文与Emoji（应被拒绝）
      */
     @Test
-    @DisplayName("极限数据测试 - 特殊Unicode字符")
+    @DisplayName("极限数据测试 - 用户名包含中文与Emoji")
     void testRegister_SpecialUnicodeChars() throws Exception {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setUserNo("123456");
@@ -621,28 +594,10 @@ class RegisterControllerTest {
         registerRequest.setEmailCode("123456");
         registerRequest.setPassword("password123");
 
-        // emoji应该被允许（只要不包含控制字符）
-        User mockUser = new User();
-        mockUser.setId(1);
-        mockUser.setUserNo("123456");
-        mockUser.setUsername("张三😀🎉🌍");
-        mockUser.setEmail("zhangsan@example.com");
-
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(1);
-        userResponse.setUserNo("123456");
-        userResponse.setUsername("张三😀🎉🌍");
-        userResponse.setEmail("zhangsan@example.com");
-
-        Mockito.when(registerUserService.register(Mockito.any(RegisterRequest.class)))
-                .thenReturn(mockUser);
-        Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
-                .thenReturn(userResponse);
-
+        // 中文与 emoji 不符合 Minecraft 用户名规则，应被参数校验拒绝
         mockMvc.perform(post("/api/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(registerRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(status().isBadRequest());
     }
 }

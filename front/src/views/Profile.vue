@@ -36,7 +36,7 @@
             class="profile-form"
           >
             <el-form-item label="用户昵称" prop="username">
-              <el-input v-model="infoForm.username" placeholder="请输入用户昵称" maxlength="64" show-word-limit />
+              <el-input v-model="infoForm.username" placeholder="请输入用户昵称" maxlength="16" show-word-limit />
             </el-form-item>
             <el-form-item label="学号/工号" prop="userNo">
               <el-input v-model="infoForm.userNo" placeholder="只允许数字" maxlength="24" show-word-limit />
@@ -408,8 +408,9 @@ fillInfoForm()
 const infoRules: FormRules = {
   username: [
     { required: true, message: '请输入用户昵称', trigger: 'blur' },
-    { max: 64, message: '昵称长度不能超过 64 位', trigger: 'blur' },
-    { pattern: /^[^\r\n\t\f\v]+$/, message: '昵称不能包含换行符、制表符等特殊字符', trigger: 'blur' },
+    { min: 3, max: 16, message: '昵称长度需为 3-16 位', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9_]+$/, message: '昵称只能包含字母、数字和下划线', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9].*[A-Za-z0-9]$/, message: '昵称不能以下划线开头或结尾', trigger: 'blur' },
   ],
   userNo: [
     { required: true, message: '请输入学号/工号', trigger: 'blur' },

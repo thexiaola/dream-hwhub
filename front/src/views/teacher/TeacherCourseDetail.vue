@@ -365,10 +365,10 @@
       class="dark-dialog invite-student-dialog"
     >
       <el-form :model="inviteForm" label-width="80px">
-        <el-form-item label="学生账号">
+        <el-form-item label="用户名/邮箱">
           <el-input
             v-model="inviteForm.userAccount"
-            placeholder="请输入学生学号/工号或邮箱"
+            placeholder="请输入学生的用户名或邮箱"
           />
         </el-form-item>
       </el-form>
@@ -1034,7 +1034,7 @@ const copyInviteCode = () => {
 
 const inviteStudent = async () => {
   if (!inviteForm.value.userAccount) {
-    ElMessage.warning("请输入学生账号");
+    ElMessage.warning("请输入学生的用户名或邮箱");
     return;
   }
   const result = await post(`/class/${route.params.id}/invitations/teacher`, {

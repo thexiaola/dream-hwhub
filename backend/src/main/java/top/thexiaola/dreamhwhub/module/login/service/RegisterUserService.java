@@ -34,14 +34,7 @@ public interface RegisterUserService {
     boolean verifyEmailCode(String email, String code, String userNo, String username);
 
     /**
-     * 检查学号是否已存在
-     * @param userNo 学号/工号
-     * @return 是否存在
-     */
-    boolean isUserNoExists(String userNo);
-
-    /**
-     * 检查用户名是否已存在
+     * 检查用户名是否已存在（用户名唯一，学号允许重复）
      * @param username 用户名
      * @return 是否存在
      */

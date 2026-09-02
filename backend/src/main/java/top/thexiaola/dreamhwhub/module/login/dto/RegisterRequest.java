@@ -18,10 +18,11 @@ public class RegisterRequest {
     @Pattern(regexp = "^[0-9]+$", message = "学号/工号只能包含数字")
     private String userNo;
 
-    // 用户名（允许字母、汉字和常用特殊字符，不允许换行符、制表符等不常见字符）
+    // 用户名（参考 Minecraft 命名规则：3-16 位字母/数字/下划线，不能以下划线开头或结尾）
     @NotBlank(message = "用户名不能为空")
-    @Size(max = 64, message = "用户名长度不能超过 64 位")
-    @Pattern(regexp = "^[^\\r\\n\\t\\f\\v]+$", message = "用户名不能包含特殊字符（换行符、制表符等）")
+    @Size(min = 3, max = 16, message = "用户名长度需为 3-16 位")
+    @Pattern(regexp = "^[A-Za-z0-9_]+$", message = "用户名只能包含字母、数字和下划线")
+    @Pattern(regexp = "^[A-Za-z0-9].*[A-Za-z0-9]$", message = "用户名不能以下划线开头或结尾")
     private String username;
 
     // 邮箱

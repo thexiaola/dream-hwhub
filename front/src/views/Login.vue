@@ -22,7 +22,7 @@
           <el-form-item prop="account">
             <el-input 
               v-model="form.account" 
-              placeholder="账号"
+              placeholder="用户名/邮箱"
               :prefix-icon="UserIcon"
               class="input-field"
             />
@@ -74,7 +74,7 @@ const loading = ref(false)
 
 const rules = {
   account: [
-    { required: true, message: '请输入账号', trigger: 'blur' }
+    { required: true, message: '请输入用户名或邮箱', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' }

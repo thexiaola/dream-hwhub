@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS user (
     register_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     last_login_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '最后登录时间',
     PRIMARY KEY (id) USING BTREE,
-    UNIQUE INDEX uk_user_no(user_no ASC) USING BTREE COMMENT '学号唯一索引',
     UNIQUE INDEX uk_username(username ASC) USING BTREE COMMENT '用户名唯一索引',
     UNIQUE INDEX uk_email(email ASC) USING BTREE COMMENT '邮箱唯一索引'
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;

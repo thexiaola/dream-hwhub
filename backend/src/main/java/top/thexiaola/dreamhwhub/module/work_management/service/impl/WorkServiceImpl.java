@@ -207,7 +207,7 @@ public class WorkServiceImpl implements WorkService {
     }
 
     @Override
-    public Page<WorkResponse> getWorkList(String publisherUserNo, Integer status, Integer pageNum, Integer pageSize) {
+    public Page<WorkResponse> getWorkList(Integer status, Integer pageNum, Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
         LocalDateTime now = LocalDateTime.now();
 
@@ -289,14 +289,6 @@ public class WorkServiceImpl implements WorkService {
             }
         }
         
-        // 按发布人筛选
-        if (publisherUserNo != null && !publisherUserNo.isEmpty()) {
-            Integer publisherId = getUserIdByUserNo(publisherUserNo);
-            if (publisherId == null) {
-                return new Page<>(pageNum, pageSize, 0);
-            }
-            queryWrapper.eq("publisher_id", publisherId);
-        }
         
         // 排序：置顶的作业在前，然后按创建时间倒序
         queryWrapper.orderByDesc("is_pinned")
@@ -409,21 +401,6 @@ public class WorkServiceImpl implements WorkService {
         Page<WorkResponse> page = new Page<>(pageNum, pageSize, pagedResult.getTotal());
         page.setRecords(responses);
         return page;
-    }
-    
-    /**
-     * 通过用户号获取用户 ID
-     */
-    private Integer getUserIdByUserNo(String userNo) {
-        if (StrUtil.isBlank(userNo)) {
-            return null;
-        }
-        
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_no", userNo);
-        User user = userMapper.selectOne(queryWrapper);
-        
-        return user != null ? user.getId() : null;
     }
     
     /**
