@@ -278,35 +278,18 @@ public class ClassController {
         }
 
         /**
-         * 设置学生为班级助理（老师专用）
+         * 批量设置学生为班级助理（老师专用）
          */
-        @PutMapping("/{classId}/assistants")
-        public ApiResponse<Void> setAssistantTeacher(
+        @PutMapping("/{classId}/assistants/batch")
+        public ApiResponse<Void> batchSetAssistantTeachers(
                         @PathVariable(value = "classId") Integer classId,
-                        @Valid @RequestBody SetAssistantRequest request) {
+                        @Valid @RequestBody BatchSetAssistantsRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} setting student {} as assistant teacher in class {}",
-                                userInfo, request.getStudentUserId(), classId);
-                classService.setStudentAsAssistantTeacher(classId, request.getStudentUserId());
-                log.info("User {} set student {} as assistant teacher successfully", userInfo, request.getStudentUserId());
-                return ApiResponse.success(null);
-        }
-
-        /**
-         * 将学生踢出班级（老师/班级助理专用）
-         */
-        @DeleteMapping("/{classId}/members/{studentUserId}")
-        public ApiResponse<Void> kickStudent(
-                        @PathVariable(value = "classId") Integer classId,
-                        @PathVariable(value = "studentUserId") Integer studentUserId) {
-                User currentUser = UserUtils.getCurrentUser();
-                String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} kicking student {} from class {}",
-                                userInfo, studentUserId, classId);
-                classService.kickStudentFromClass(classId, studentUserId);
-                log.info("User {} kicked student {} from class {} successfully",
-                                userInfo, studentUserId, classId);
+                log.info("User {} batch setting students {} as assistant teachers in class {}",
+                                userInfo, request.getStudentUserIds(), classId);
+                classService.batchSetAssistantTeachers(classId, request.getStudentUserIds());
+                log.info("User {} batch set students as assistant teachers in class {} successfully", userInfo, classId);
                 return ApiResponse.success(null);
         }
 
@@ -342,6 +325,22 @@ public class ClassController {
                 log.info("User {} demoted assistant teacher {} to student in class {} successfully",
                                 userInfo, teacherUserId, classId);
                 return ApiResponse.success(null);
+        }
+
+        /**
+         * 更新学生邀请设置（班级老师或助理）
+         */
+        @PutMapping("/{classId}/invite-settings")
+        public ApiResponse<Void> setStudentInviteAllowed(
+                        @PathVariable(value = "classId") Integer classId,
+                        @Valid @RequestBody InviteSettingsRequest request) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                log.info("User {} updating student invite setting, class {}, allowed: {}",
+                                userInfo, classId, request.getAllowStudentInvite());
+                classService.setStudentInviteAllowed(classId, request.getAllowStudentInvite());
+                log.info("User {} updated student invite setting successfully", userInfo);
+                return ApiResponse.success(null, "邀请设置已更新");
         }
 
         /**
@@ -438,6 +437,18 @@ public class ClassController {
                 }
                 List<InvitationResponse> invitations = classService.getMyInvitations(currentUser.getId(), status);
                 log.info("User {} queried {} invitations, status={}", userInfo, invitations.size(), status);
+                return ApiResponse.success(invitations);
+        }
+
+        /**
+         * 获取待当前用户确认的学生邀请列表
+         */
+        @GetMapping("/my-user-invitations")
+        public ApiResponse<List<InvitationResponse>> getMyUserInvitations() {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                List<InvitationResponse> invitations = classService.getMyUserInvitations(currentUser.getId());
+                log.info("User {} queried {} pending user invitations", userInfo, invitations.size());
                 return ApiResponse.success(invitations);
         }
 

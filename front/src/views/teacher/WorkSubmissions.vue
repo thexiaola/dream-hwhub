@@ -11,6 +11,14 @@
         </div>
       </div>
       <div class="header-right">
+        <el-button
+          type="primary"
+          :loading="downloadingZip"
+          @click="batchDownload"
+        >
+          <Download :size="16" />
+          打包下载附件
+        </el-button>
         <el-button @click="goBack" class="page-cancel-btn">返回</el-button>
       </div>
     </div>
@@ -90,8 +98,11 @@
                 </div>
               </div>
               <div class="submission-meta">
-                <span class="status-tag" :class="sub.status === 2 ? 'graded' : 'pending'">
-                  {{ sub.status === 2 ? "已批改" : "待批改" }}
+                <span
+                  class="status-tag"
+                  :class="sub.status === 2 ? 'graded' : sub.status === 3 ? 'returned' : 'pending'"
+                >
+                  {{ sub.status === 2 ? "已批改" : sub.status === 3 ? "已打回" : "待批改" }}
                 </span>
                 <span v-if="sub.isLate" class="late-tag">逾期提交</span>
               </div>
@@ -145,6 +156,14 @@
             <div class="submission-footer">
               <Clock :size="12" />
               <span>提交时间：{{ formatDate(sub.createTime) }}</span>
+              <el-button
+                type="primary"
+                size="small"
+                class="grade-btn"
+                @click="openGradeDialog(sub)"
+              >
+                {{ sub.status === 2 ? "重新批改" : "批改" }}
+              </el-button>
             </div>
           </div>
         </div>
@@ -181,13 +200,59 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+
+    <el-dialog
+      v-model="gradeDialogVisible"
+      title="批改作业"
+      width="480px"
+      class="dark-dialog"
+      :close-on-click-modal="false"
+    >
+      <div v-if="gradingSubmission" class="grade-form-wrap">
+        <p class="grade-student">
+          {{ gradingSubmission.submitterName }}（{{ gradingSubmission.submitterUserNo }}）的提交
+        </p>
+        <el-form label-width="90px">
+          <el-form-item label="分数">
+            <el-input-number
+              v-model="gradeForm.score"
+              :min="0"
+              :max="work?.totalScore ?? 100"
+              :precision="1"
+              style="width: 100%"
+            />
+          </el-form-item>
+          <el-form-item label="评语">
+            <el-input
+              v-model="gradeForm.comment"
+              type="textarea"
+              :rows="3"
+              maxlength="512"
+              show-word-limit
+              placeholder="请输入评语（必填）"
+            />
+          </el-form-item>
+          <el-form-item label="打回重做">
+            <el-switch v-model="gradeForm.isReturned" />
+            <span class="return-tip">开启后学生可重新提交该作业</span>
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <el-button @click="gradeDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="grading" @click="submitGrade">
+          {{ gradeForm.isReturned ? "确认打回" : "确认批改" }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { get } from "@/utils/http";
+import { get, put } from "@/utils/http";
+import instance from "@/utils/http";
 import { openAttachmentPreview } from "@/utils/attachment";
 import { ElMessage } from "element-plus";
 import {
@@ -202,6 +267,7 @@ import {
   File,
   MessageSquare,
   CheckCircle,
+  Download,
 } from "@lucide/vue";
 
 interface WorkInfo {
@@ -347,8 +413,77 @@ const handleTabChange = (tab: string) => {
   }
 };
 
+const gradeDialogVisible = ref(false);
+const grading = ref(false);
+const gradingSubmission = ref<SubmissionInfo | null>(null);
+const gradeForm = ref({ score: 0, comment: "", isReturned: false });
+
+const openGradeDialog = (sub: SubmissionInfo) => {
+  gradingSubmission.value = sub;
+  gradeForm.value = {
+    score: sub.score ?? 0,
+    comment: sub.comment ?? "",
+    isReturned: false,
+  };
+  gradeDialogVisible.value = true;
+};
+
+const submitGrade = async () => {
+  if (!gradingSubmission.value) return;
+  if (!gradeForm.value.comment.trim()) {
+    ElMessage.warning("评语不能为空");
+    return;
+  }
+  grading.value = true;
+  const result = await put("/submissions/grade", {
+    submissionId: gradingSubmission.value.id,
+    score: gradeForm.value.score,
+    comment: gradeForm.value.comment.trim(),
+    isReturned: gradeForm.value.isReturned,
+  });
+  grading.value = false;
+  if (result.code === 200) {
+    ElMessage.success(gradeForm.value.isReturned ? "已打回，学生可重新提交" : "批改成功");
+    gradeDialogVisible.value = false;
+    loadSubmissions();
+  } else {
+    ElMessage.error(result.message || "批改失败");
+  }
+};
+
 const downloadAttachment = (att: AttachmentInfo) => {
   openAttachmentPreview(att.filePath, att.fileName, true)
+};
+
+const downloadingZip = ref(false);
+
+const batchDownload = async () => {
+  if (!work.value) return;
+  downloadingZip.value = true;
+  try {
+    const response = await instance.post(
+      "/submissions/batch-download",
+      { workId: Number(route.params.id) },
+      { responseType: "blob" },
+    );
+    if (response.status === 200) {
+      const blob = response.data as Blob;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${work.value.title}-提交附件.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      ElMessage.error("打包下载失败，可能暂无符合条件的提交附件");
+    }
+  } catch {
+    ElMessage.error("打包下载失败，请稍后重试");
+  } finally {
+    downloadingZip.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -503,6 +638,11 @@ onMounted(async () => {
   color: #f59e0b;
 }
 
+.status-tag.returned {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
 .late-tag {
   padding: 2px 10px;
   border-radius: 12px;
@@ -639,6 +779,23 @@ onMounted(async () => {
   gap: 6px;
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
+}
+
+.submission-footer .grade-btn {
+  margin-left: auto;
+}
+
+.grade-form-wrap .grade-student {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+}
+
+.grade-form-wrap .return-tip {
+  margin-left: 10px;
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
 }
 
 .empty-state {

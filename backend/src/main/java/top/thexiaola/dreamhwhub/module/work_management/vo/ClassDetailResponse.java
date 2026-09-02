@@ -59,6 +59,9 @@ public class ClassDetailResponse {
      */
     private String description;
 
+    /** 是否允许学生邀请同学加入 */
+    private Boolean allowStudentInvite;
+
     /**
      * 创建时间
      */

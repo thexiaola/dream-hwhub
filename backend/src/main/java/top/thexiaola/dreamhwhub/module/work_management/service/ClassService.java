@@ -17,19 +17,14 @@ public interface ClassService {
     ClassMember addTeacherToClass(Integer classId, String userAccount);
 
     /**
-     * 设置学生为班级助理（老师专用）
+     * 批量设置学生为班级助理（老师专用）
      */
-    void setStudentAsAssistantTeacher(Integer classId, Integer studentUserId);
+    void batchSetAssistantTeachers(Integer classId, List<Integer> studentUserIds);
 
     /**
      * 检查用户是否是普通老师（非创建者）
      */
     boolean isOrdinaryTeacher(Integer classId, Integer userId);
-
-    /**
-     * 将学生踢出班级（老师/班级助理专用）
-     */
-    void kickStudentFromClass(Integer classId, Integer studentUserId);
 
     /**
      * 批量将学生踢出班级（老师/班级助理/管理员专用）
@@ -230,6 +225,22 @@ public interface ClassService {
      * @return 更新后的班级信息
      */
     ClassInfo updateClassInfo(Integer classId, String className, String description);
+
+    /**
+     * 更新学生邀请设置（班级老师或助理）
+     *
+     * @param classId 班级 ID
+     * @param allowStudentInvite 是否允许学生邀请同学加入
+     */
+    void setStudentInviteAllowed(Integer classId, Boolean allowStudentInvite);
+
+    /**
+     * 获取待当前用户确认的学生邀请列表
+     *
+     * @param userId 当前用户 ID
+     * @return 待确认的学生邀请列表
+     */
+    List<InvitationResponse> getMyUserInvitations(Integer userId);
 
     /**
      * 教师邀请用户加入班级（需用户同意）

@@ -52,15 +52,27 @@
       <template #header>
         <div class="card-header">
           <h3>我的提交</h3>
-          <el-button
-            v-if="mySubmission && mySubmission.status !== 2 && !editing && canEdit"
-            type="primary"
-            plain
-            @click="startEditing"
-          >
-            <PenLine :size="16" />
-            <span>修改提交</span>
-          </el-button>
+          <div class="header-actions">
+            <el-button
+              v-if="mySubmission && mySubmission.status !== 2 && canEdit"
+              type="danger"
+              plain
+              :loading="withdrawing"
+              @click="withdrawSubmission"
+            >
+              <Undo2 :size="16" />
+              <span>撤回提交</span>
+            </el-button>
+            <el-button
+              v-if="mySubmission && mySubmission.status !== 2 && !editing && canEdit"
+              type="primary"
+              plain
+              @click="startEditing"
+            >
+              <PenLine :size="16" />
+              <span>修改提交</span>
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -227,9 +239,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { get, postForm, putForm } from '@/utils/http'
+import { get, postForm, putForm, del } from '@/utils/http'
 import instance from '@/utils/http'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadFile, UploadUserFile } from 'element-plus'
 import {
   ArrowLeft,
@@ -242,6 +254,7 @@ import {
   Paperclip,
   PenLine,
   RotateCcw,
+  Undo2,
   Upload,
   X,
   XCircle,
@@ -343,6 +356,36 @@ const loadSubmission = async () => {
   })
   if (result.code === 200) {
     mySubmission.value = result.data?.[0] ?? null
+  }
+}
+
+const withdrawing = ref(false)
+
+const withdrawSubmission = async () => {
+  if (!mySubmission.value) return
+  try {
+    await ElMessageBox.confirm(
+      '撤回后本次提交内容与附件将被删除，需要重新提交。确认撤回？',
+      '撤回提交',
+      {
+        confirmButtonText: '确认撤回',
+        cancelButtonText: '取消',
+        type: 'warning',
+        customClass: 'danger-warning-message-box',
+      },
+    )
+  } catch {
+    return
+  }
+  withdrawing.value = true
+  const result = await del<void>(`/submissions/${mySubmission.value.id}`)
+  withdrawing.value = false
+  if (result.code === 200) {
+    ElMessage.success('已撤回提交')
+    if (editing.value) cancelEditing()
+    await loadSubmission()
+  } else {
+    ElMessage.error(result.message || '撤回失败')
   }
 }
 
@@ -618,6 +661,12 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .card-header h3 {

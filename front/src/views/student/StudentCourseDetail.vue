@@ -7,6 +7,22 @@
         </el-button>
         <h2>{{ course?.className }}</h2>
       </div>
+      <div class="header-right">
+        <el-button type="primary" @click="showInviteDialog = true">
+          <UserPlus :size="16" />
+          邀请同学
+        </el-button>
+        <el-button
+          v-if="course && course.userRole !== '创建者'"
+          type="danger"
+          plain
+          :loading="leaving"
+          @click="leaveClassAction"
+        >
+          <LogOut :size="16" />
+          退出班级
+        </el-button>
+      </div>
     </div>
 
     <el-card class="course-info-card">
@@ -88,15 +104,44 @@
         <p>暂无作业</p>
       </div>
     </el-card>
+
+    <el-dialog
+      v-model="showInviteDialog"
+      title="邀请同学加入班级"
+      width="460px"
+      class="dark-dialog student-invite-dialog"
+      @close="inviteForm.account = ''"
+    >
+      <el-form :model="inviteForm" label-width="80px">
+        <el-form-item label="同学账号">
+          <el-input
+            v-model="inviteForm.account"
+            placeholder="请输入同学的账号"
+            maxlength="64"
+          />
+        </el-form-item>
+      </el-form>
+      <p class="invite-flow-tip">
+        对方确认接受后，还需老师审核通过才能加入班级
+      </p>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showInviteDialog = false">取消</el-button>
+          <el-button type="primary" :loading="inviting" @click="inviteClassmate">
+            发送邀请
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { get } from '@/utils/http'
-import { ElMessage } from 'element-plus'
-import { ArrowLeft, User, Users, Calendar, Clock, FileText, Star } from '@lucide/vue'
+import { get, post, del } from '@/utils/http'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowLeft, User, Users, Calendar, Clock, FileText, Star, UserPlus, LogOut } from '@lucide/vue'
 
 interface CourseInfo {
   id: number
@@ -138,6 +183,58 @@ const router = useRouter()
 const course = ref<CourseInfo | null>(null)
 const works = ref<WorkInfo[]>([])
 const submissions = ref<SubmissionInfo[]>([])
+
+const showInviteDialog = ref(false)
+const inviting = ref(false)
+const inviteForm = ref({ account: '' })
+
+const inviteClassmate = async () => {
+  if (!inviteForm.value.account.trim()) {
+    ElMessage.warning('请输入同学的账号')
+    return
+  }
+  inviting.value = true
+  const result = await post(`/class/${route.params.id}/invitations`, {
+    userAccount: inviteForm.value.account.trim(),
+  })
+  inviting.value = false
+  if (result.code === 200) {
+    ElMessage.success(result.message || '邀请已发送，待对方确认')
+    showInviteDialog.value = false
+    inviteForm.value.account = ''
+  } else {
+    ElMessage.error(result.message || '邀请发送失败')
+  }
+}
+
+const leaving = ref(false)
+
+const leaveClassAction = async () => {
+  if (!course.value) return
+  try {
+    await ElMessageBox.confirm(
+      `确定退出班级"${course.value.className}"吗？退出后你在该班级的所有作业提交和附件将被删除，且无法恢复。`,
+      '退出班级',
+      {
+        confirmButtonText: '确认退出',
+        cancelButtonText: '取消',
+        type: 'warning',
+        customClass: 'danger-warning-message-box',
+      },
+    )
+  } catch {
+    return
+  }
+  leaving.value = true
+  const result = await del<void>(`/class/${route.params.id}/members/me`)
+  leaving.value = false
+  if (result.code === 200) {
+    ElMessage.success(result.message || '已退出班级')
+    router.push('/student/courses')
+  } else {
+    ElMessage.error(result.message || '退出失败')
+  }
+}
 
 const loadCourse = async () => {
   const result = await get<CourseInfo>(`/class/${route.params.id}`)
@@ -420,5 +517,35 @@ onMounted(async () => {
 .empty-state p {
   margin-top: 12px;
   font-size: 14px;
+}
+
+.invite-flow-tip {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+  line-height: 1.5;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header .header-right {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .page-header .header-right .el-button {
+    width: 100%;
+    min-height: 42px;
+  }
 }
 </style>

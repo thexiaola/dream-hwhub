@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `class_info` (
     `description` VARCHAR(500) DEFAULT NULL COMMENT '班级描述',
     `owner_id` INT NOT NULL COMMENT '班级所有者ID',
     `invite_code` CHAR(25) DEFAULT NULL COMMENT '班级邀请码（25位随机码）',
+    `allow_student_invite` TINYINT NOT NULL DEFAULT 1 COMMENT '是否允许学生邀请同学加入（1-允许，0-不允许）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_class_name (`class_name`),
@@ -30,6 +31,22 @@ CREATE TABLE IF NOT EXISTS `class_member` (
     INDEX idx_class_role (`class_id`, `role`),
     UNIQUE KEY uk_class_user (`class_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级成员表';
+
+-- 教师邀请表（教师或助理邀请用户加入班级，等待被邀请用户确认）
+CREATE TABLE IF NOT EXISTS `class_invitation` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '邀请ID',
+    `class_id` INT NOT NULL COMMENT '班级ID',
+    `inviter_id` INT NOT NULL COMMENT '邀请人ID（教师或助理）',
+    `invitee_user_id` INT NOT NULL COMMENT '被邀请人ID',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '用户确认状态：0-待处理，1-已同意，2-已拒绝',
+    `response_time` DATETIME DEFAULT NULL COMMENT '用户响应时间',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '邀请时间',
+    INDEX idx_class_id (`class_id`),
+    INDEX idx_inviter_id (`inviter_id`),
+    INDEX idx_invitee_user_id (`invitee_user_id`),
+    INDEX idx_status (`status`),
+    UNIQUE KEY uk_class_inviter_invitee (`class_id`, `inviter_id`, `invitee_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='教师邀请表';
 
 -- 用户邀请申请表（用户发起邀请，等待被邀请用户确认）
 CREATE TABLE IF NOT EXISTS `class_user_invitation` (

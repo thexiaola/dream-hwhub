@@ -592,7 +592,7 @@ const kickStudentFromAdmin = async (classId: number, userId: number) => {
       confirmButtonText: '确认',
       cancelButtonText: '取消'
     })
-    const result = await del(`/class/${classId}/members/${userId}`)
+    const result = await del(`/class/${classId}/members/batch`, [userId])
     if (result.code === 200) {
       ElMessage.success('已踢出')
       toggleClassDetail(classId)

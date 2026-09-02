@@ -27,6 +27,9 @@ public class ClassInfo {
     @TableField("invite_code")
     private String inviteCode;  // 班级邀请码（25位随机码）
 
+    @TableField("allow_student_invite")
+    private Boolean allowStudentInvite;  // 是否允许学生邀请同学加入
+
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

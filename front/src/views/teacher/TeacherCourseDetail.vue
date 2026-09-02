@@ -52,7 +52,11 @@
       </div>
     </el-card>
 
-    <el-tabs v-model="activeTab" class="course-tabs">
+    <el-tabs
+      v-model="activeTab"
+      class="course-tabs"
+      @tab-change="handleTabChange"
+    >
       <el-tab-pane label="作业管理" name="works">
         <div class="work-list">
           <div v-for="work in works" :key="work.id" class="work-item">
@@ -108,7 +112,16 @@
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="学生管理" name="students">
+      <el-tab-pane name="students">
+        <template #label>
+          <el-badge
+            :value="pendingApprovals.length"
+            :hidden="pendingApprovals.length === 0"
+            class="students-tab-badge"
+          >
+            学生管理
+          </el-badge>
+        </template>
         <div class="student-header">
           <el-button @click="showInviteDialog = true" class="toolbar-btn">
             <UserPlus :size="18" />
@@ -117,6 +130,14 @@
           <el-button @click="generateInviteCode" class="toolbar-btn">
             <Key :size="18" />
             查看邀请码
+          </el-button>
+          <el-button
+            v-if="selectedStudentIds.length > 0"
+            type="primary"
+            @click="batchSetAssistantAction"
+            class="toolbar-btn"
+          >
+            批量设为助理 ({{ selectedStudentIds.length }})
           </el-button>
           <el-button
             v-if="selectedStudentIds.length > 0"
@@ -134,11 +155,54 @@
             取消选择
           </el-button>
         </div>
+        <div v-if="pendingApprovals.length > 0" class="approval-section">
+          <h4 class="approval-title">
+            <Bell :size="16" />
+            学生邀请审核（{{ pendingApprovals.length }}）
+          </h4>
+          <div
+            v-for="item in pendingApprovals"
+            :key="item.id"
+            class="approval-item"
+          >
+            <div class="approval-info">
+              <div class="approval-icon">
+                <UserPlus :size="15" />
+              </div>
+              <div class="approval-text">
+                <p>
+                  <strong>{{ item.inviteeUsername }}</strong>
+                  接受了学生邀请，等待你的确认
+                </p>
+                <span>{{ formatDate(item.createTime) }}</span>
+              </div>
+            </div>
+            <div class="approval-actions">
+              <el-button
+                type="primary"
+                size="small"
+                :loading="approvingId === item.id"
+                @click="handleApproval(item, true)"
+              >
+                同意
+              </el-button>
+              <el-button
+                type="danger"
+                plain
+                size="small"
+                :loading="approvingId === item.id"
+                @click="handleApproval(item, false)"
+              >
+                拒绝
+              </el-button>
+            </div>
+          </div>
+        </div>
         <div class="student-list">
           <div v-for="member in members" :key="member.id" class="student-item">
             <div class="student-info">
               <el-checkbox
-                v-if="member.role === '学生'"
+                v-if="member.role !== '创建者' && member.userId !== course?.ownerId"
                 v-model="selectedStudentIds"
                 :label="member.userId"
                 @change="handleStudentSelect"
@@ -172,17 +236,24 @@
                 class="action-btn"
                 @click="setAssistant(member.userId)"
               >
-                设为老师
+                设为助理
               </button>
               <button
                 v-if="member.role === '老师' && course?.userRole === '创建者'"
                 class="action-btn"
                 @click="removeAssistant(member.userId)"
               >
-                取消老师
+                取消助理
               </button>
               <button
-                v-if="member.role === '学生'"
+                v-if="member.role !== '创建者' && member.userId !== course?.ownerId"
+                class="action-btn warning"
+                @click="transferOwnershipAction(member.userId, member.userName)"
+              >
+                转让班级
+              </button>
+              <button
+                v-if="member.role !== '创建者' && member.userId !== course?.ownerId"
                 class="action-btn danger"
                 @click="kickStudent(member.userId)"
               >
@@ -334,6 +405,20 @@
         </div>
         <p class="invite-tip">学生可使用此邀请码直接加入课程</p>
         <p class="invite-warning">重置后旧邀请码立即失效，需重新分享新码</p>
+        <el-divider class="invite-divider" />
+        <div class="invite-setting-row">
+          <div class="invite-setting-text">
+            <span class="invite-setting-title">允许学生邀请同学加入</span>
+            <span class="invite-setting-desc">
+              开启后班级学生可发起邀请，经被邀请人确认和你审核后加入
+            </span>
+          </div>
+          <el-switch
+            v-model="allowStudentInvite"
+            :loading="savingInviteSetting"
+            @change="onAllowStudentInviteChange"
+          />
+        </div>
       </div>
     </el-dialog>
 
@@ -465,6 +550,7 @@ import {
   RefreshCw,
   AlertTriangle,
   ShieldAlert,
+  Bell,
 } from "@lucide/vue";
 
 interface CourseInfo {
@@ -477,6 +563,22 @@ interface CourseInfo {
   memberCount: number;
   teacherCount: number;
   studentCount: number;
+  allowStudentInvite?: boolean;
+}
+
+interface TeacherApprovalInfo {
+  id: number;
+  classId: number;
+  className: string;
+  invitationId: number;
+  inviteeId: number;
+  inviteeUsername: string;
+  status: number;
+  reviewerId?: number;
+  reviewerUsername?: string;
+  reviewTime?: string;
+  reviewComment?: string;
+  createTime: string;
 }
 
 interface WorkInfo {
@@ -597,6 +699,11 @@ const inviteForm = ref({
   userAccount: "",
 });
 
+const allowStudentInvite = ref(true);
+const savingInviteSetting = ref(false);
+const pendingApprovals = ref<TeacherApprovalInfo[]>([]);
+const approvingId = ref<number | null>(null);
+
 const loadCourse = async () => {
   const result = await get<CourseInfo>(`/class/${route.params.id}`);
   if (result.code === 200) {
@@ -609,12 +716,60 @@ const loadCourse = async () => {
       return;
     }
     course.value = info;
+    allowStudentInvite.value = info.allowStudentInvite !== false;
     return true;
   }
   // 无权访问（非班级成员返回 403）或班级不存在（404）：提示并返回课程列表
   ElMessage.error(result.message || "无法访问该课程");
   router.push("/teacher/courses");
   return false;
+};
+
+const loadPendingApprovals = async () => {
+  const result = await get<TeacherApprovalInfo[]>(
+    `/class/${route.params.id}/invitations/pending`,
+  );
+  if (result.code === 200) {
+    pendingApprovals.value = result.data || [];
+  }
+};
+
+const handleTabChange = (tab: string | number) => {
+  if (tab === "students") {
+    loadPendingApprovals();
+    loadMembers();
+  }
+};
+
+const onAllowStudentInviteChange = async (val: boolean | string | number) => {
+  if (!course.value) return;
+  savingInviteSetting.value = true;
+  const result = await put(`/class/${course.value.id}/invite-settings`, {
+    allowStudentInvite: Boolean(val),
+  });
+  savingInviteSetting.value = false;
+  if (result.code === 200) {
+    ElMessage.success(result.message || "邀请设置已更新");
+  } else {
+    allowStudentInvite.value = !Boolean(val);
+    ElMessage.error(result.message || "邀请设置更新失败");
+  }
+};
+
+const handleApproval = async (item: TeacherApprovalInfo, approved: boolean) => {
+  approvingId.value = item.id;
+  const result = await put(`/class/invitations/${item.id}/approval`, {
+    applicationId: item.id,
+    approved,
+  });
+  approvingId.value = null;
+  if (result.code === 200) {
+    ElMessage.success(approved ? "已同意，学生已加入班级" : "已拒绝该申请");
+    loadPendingApprovals();
+    loadMembers();
+  } else {
+    ElMessage.error(result.message || "操作失败");
+  }
 };
 
 const loadWorks = async () => {
@@ -895,14 +1050,41 @@ const inviteStudent = async () => {
 };
 
 const setAssistant = async (userId: number) => {
-  const result = await put(`/class/${route.params.id}/assistants`, {
-    studentUserId: userId,
+  const result = await put(`/class/${route.params.id}/assistants/batch`, {
+    studentUserIds: [userId],
   });
   if (result.code === 200) {
     ElMessage.success("已设置为班级助理");
     loadMembers();
   } else {
     ElMessage.error(result.message);
+  }
+};
+
+const batchSetAssistantAction = async () => {
+  if (selectedStudentIds.value.length === 0) {
+    ElMessage.warning("请选择要设为助理的成员");
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认将 ${selectedStudentIds.value.length} 名成员批量设为班级助理？`,
+      "批量设为助理",
+      { confirmButtonText: "确认", cancelButtonText: "取消" },
+    );
+    const result = await put(
+      `/class/${route.params.id}/assistants/batch`,
+      { studentUserIds: selectedStudentIds.value },
+    );
+    if (result.code === 200) {
+      ElMessage.success(`已将 ${selectedStudentIds.value.length} 名成员设为助理`);
+      selectedStudentIds.value = [];
+      loadMembers();
+    } else {
+      ElMessage.error(result.message);
+    }
+  } catch {
+    // 用户取消
   }
 };
 
@@ -916,13 +1098,47 @@ const removeAssistant = async (userId: number) => {
   }
 };
 
+const transferring = ref(false);
+
+const transferOwnershipAction = async (userId: number, userName: string) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定将班级"${course.value?.className ?? ""}"转让给 ${userName} 吗？转让后你将降级为学生，且无法撤销。`,
+      "转让班级",
+      {
+        confirmButtonText: "确认转让",
+        cancelButtonText: "取消",
+        type: "warning",
+        customClass: "danger-warning-message-box",
+      },
+    );
+  } catch {
+    return;
+  }
+  transferring.value = true;
+  const result = await put(`/class/${route.params.id}/owner`, {
+    newOwnerId: userId,
+  });
+  transferring.value = false;
+  if (result.code === 200) {
+    ElMessage.success(result.message || "班级所有权转让成功");
+    loadCourse();
+    loadMembers();
+  } else {
+    ElMessage.error(result.message || "转让失败");
+  }
+};
+
 const kickStudent = async (userId: number) => {
   try {
-    await ElMessageBox.confirm("确认踢出此学生？", "提示", {
+    await ElMessageBox.confirm("确认踢出该成员？", "踢出成员", {
       confirmButtonText: "确认",
       cancelButtonText: "取消",
     });
-    const result = await del(`/class/${route.params.id}/members/${userId}`);
+    const result = await del(
+      `/class/${route.params.id}/members/batch`,
+      [userId],
+    );
     if (result.code === 200) {
       ElMessage.success("已踢出");
       loadMembers();
@@ -937,7 +1153,7 @@ const kickStudent = async (userId: number) => {
 const handleStudentSelect = () => {
   selectedStudentIds.value = selectedStudentIds.value.filter((id) => {
     const member = members.value.find((m) => m.userId === id);
-    return member && member.role === "学生";
+    return member && member.role !== "创建者" && member.userId !== course.value?.ownerId;
   });
 };
 
@@ -952,8 +1168,8 @@ const batchKickStudentsAction = async () => {
   }
   try {
     await ElMessageBox.confirm(
-      `确认批量踢出 ${selectedStudentIds.value.length} 名学生？`,
-      "提示",
+      `确认批量踢出 ${selectedStudentIds.value.length} 名成员？`,
+      "批量踢出",
       { confirmButtonText: "确认", cancelButtonText: "取消" },
     );
     const result = await del(
@@ -961,7 +1177,7 @@ const batchKickStudentsAction = async () => {
       selectedStudentIds.value,
     );
     if (result.code === 200) {
-      ElMessage.success(`已踢出 ${selectedStudentIds.value.length} 名学生`);
+      ElMessage.success(`已踢出 ${selectedStudentIds.value.length} 名成员`);
       selectedStudentIds.value = [];
       loadMembers();
     } else {
@@ -997,6 +1213,7 @@ onMounted(async () => {
   if (loaded) {
     await loadWorks();
     await loadMembers();
+    loadPendingApprovals();
   }
 });
 </script>
@@ -1080,6 +1297,14 @@ onMounted(async () => {
 
 .course-tabs {
   margin-bottom: 20px;
+}
+
+.students-tab-badge {
+  line-height: normal;
+}
+
+.students-tab-badge :deep(.el-badge__content) {
+  z-index: auto;
 }
 
 .course-tabs :deep(.el-tabs__item) {
@@ -1199,6 +1424,11 @@ onMounted(async () => {
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+.action-btn.warning:hover {
+  background: rgba(230, 162, 60, 0.2);
+  border-color: rgba(230, 162, 60, 0.3);
+}
+
 .student-header {
   display: flex;
   gap: 12px;
@@ -1219,12 +1449,16 @@ onMounted(async () => {
   border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 12px;
   padding: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .student-info {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 180px;
 }
 
 .student-icon {
@@ -1252,11 +1486,15 @@ onMounted(async () => {
 .student-role {
   display: flex;
   align-items: center;
+  width: 80px;
+  flex-shrink: 0;
 }
 
 .student-actions {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .empty-state {
@@ -1379,6 +1617,120 @@ onMounted(async () => {
   margin-top: 10px;
   font-size: 12px;
   color: rgba(239, 68, 68, 0.7);
+}
+
+.invite-divider {
+  margin: 16px 0 14px;
+}
+
+.invite-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.invite-setting-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.invite-setting-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--rgb-fg), 0.92);
+}
+
+.invite-setting-desc {
+  font-size: 12px;
+  color: rgba(var(--rgb-fg), 0.55);
+  line-height: 1.5;
+}
+
+/* ========== 学生邀请审核区块 ========== */
+.approval-section {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  border-radius: 10px;
+  background: rgba(var(--rgb-fg), 0.04);
+}
+
+.approval-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--rgb-fg), 0.92);
+}
+
+.approval-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(var(--rgb-fg), 0.05);
+}
+
+.approval-item + .approval-item {
+  margin-top: 8px;
+}
+
+.approval-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.approval-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.85),
+    rgba(118, 75, 162, 0.85)
+  );
+  color: var(--fg-on-accent);
+}
+
+.approval-text {
+  min-width: 0;
+}
+
+.approval-text p {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(var(--rgb-fg), 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.approval-text p strong {
+  color: rgba(var(--rgb-fg), 1);
+}
+
+.approval-text span {
+  font-size: 12px;
+  color: rgba(var(--rgb-fg), 0.5);
+}
+
+.approval-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
 }
 
 /* ========== 学生管理工具栏按钮深色适配 ========== */

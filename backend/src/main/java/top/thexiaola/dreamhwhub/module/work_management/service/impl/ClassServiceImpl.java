@@ -67,7 +67,8 @@ public class ClassServiceImpl implements ClassService {
         User targetUser = userMapper.selectOne(userQuery);
         
         if (targetUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
+            // 目标账号不存在属于业务失败（而非当前登录用户认证失效），返回 400 避免误触发前端登出
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "邀请的用户不存在，请确认账号是否正确", null);
         }
         return targetUser;
     }
@@ -129,89 +130,45 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void setStudentAsAssistantTeacher(Integer classId, Integer studentUserId) {
+    public void batchSetAssistantTeachers(Integer classId, List<Integer> studentUserIds) {
         User currentUser = getCurrentUserOrThrow();
 
-        // 验证班级是否存在
         ClassInfo classInfo = classInfoMapper.selectById(classId);
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否是老师（包括创建者和班级助理）
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
-        
+
         if (!isAdmin && !isClassTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以设置班级助理", null);
         }
 
-        // 班级助理不能设置其他学生为班级助理
         boolean isOrdinaryTeacher = isOrdinaryTeacher(classId, currentUser.getId());
         if (isOrdinaryTeacher && !isAdmin) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "班级助理不能设置其他学生为班级助理", null);
         }
 
-        // 检查目标用户是否是学生
-        QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-        studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
-        ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
-        
-        if (studentMember == null) {
-            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "该用户不是班级学生或不在该班级中", null);
+        int successCount = 0;
+        for (Integer studentUserId : studentUserIds) {
+            if (studentUserId.equals(currentUser.getId())) {
+                continue;
+            }
+            QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
+            studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
+            ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
+            if (studentMember == null) {
+                continue;
+            }
+            studentMember.setRole(1);
+            classMemberMapper.updateById(studentMember);
+            successCount++;
         }
 
-        // 更新为老师
-        studentMember.setRole(1);
-        classMemberMapper.updateById(studentMember);
-
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void kickStudentFromClass(Integer classId, Integer studentUserId) {
-        User currentUser = getCurrentUserOrThrow();
-
-        // 验证班级是否存在
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
-            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        if (successCount == 0) {
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "没有符合条件的学员可以被设置为助理", null);
         }
-
-        // 检查当前用户是否是老师（包括创建者和班级助理）或管理员
-        boolean isAdmin = isAdmin(currentUser);
-        boolean isClassTeacher = isTeacher(classId, currentUser.getId());
-        
-        if (!isAdmin && !isClassTeacher) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或管理员可以踢出学生", null);
-        }
-
-        // 不能踢出自己
-        if (studentUserId.equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能踢出自己，请使用退出班级功能", null);
-        }
-
-        // 不能踢出其他老师（包括创建者和班级助理）
-        QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
-        teacherQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 1);
-        if (classMemberMapper.selectCount(teacherQuery) > 0) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能踢出老师", null);
-        }
-
-        // 检查目标用户是否是学生
-        QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-        studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
-        ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
-        
-        if (studentMember == null) {
-            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "该用户不是班级学生或不在该班级中", null);
-        }
-
-        // 软删除该学生在该班级的所有作业提交和附件
-        cleanupStudentSubmissions(classId, studentUserId);
-
-        // 硬删除学生成员记录（从班级中移除）
-        classMemberMapper.deleteById(studentMember.getId());
 
     }
 
@@ -233,27 +190,31 @@ public class ClassServiceImpl implements ClassService {
         }
 
         int kickedCount = 0;
+        boolean isOrdinaryTeacher = isOrdinaryTeacher(classId, currentUser.getId());
         for (Integer studentUserId : studentUserIds) {
             if (studentUserId.equals(currentUser.getId())) {
                 continue;
             }
 
-            QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
-            teacherQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 1);
-            if (classMemberMapper.selectCount(teacherQuery) > 0) {
+            // 不能踢出班级创建者
+            if (classInfo.getOwnerId().equals(studentUserId)) {
                 continue;
             }
 
-            QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-            studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
-            ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
+            QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+            memberQuery.eq("class_id", classId).eq("user_id", studentUserId);
+            ClassMember member = classMemberMapper.selectOne(memberQuery);
+            if (member == null) {
+                continue;
+            }
 
-            if (studentMember == null) {
+            // 普通助理不能踢出其他助理
+            if (isOrdinaryTeacher && !isAdmin && member.getRole() == 1) {
                 continue;
             }
 
             cleanupStudentSubmissions(classId, studentUserId);
-            classMemberMapper.deleteById(studentMember.getId());
+            classMemberMapper.deleteById(member.getId());
             kickedCount++;
         }
 
@@ -337,6 +298,12 @@ public class ClassServiceImpl implements ClassService {
         
         if (!isAdmin && !isClassMember) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级内的成员才能提交邀请申请", null);
+        }
+
+        // 班级关闭学生邀请时，仅老师（创建者/助理）和管理员可发起邀请
+        boolean isTeacherRole = isAdmin || isTeacher(classId, currentUser.getId());
+        if (!isTeacherRole && !Boolean.TRUE.equals(classInfo.getAllowStudentInvite())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "该班级不允许学生邀请同学加入", null);
         }
 
         // 根据账号查询目标用户
@@ -551,18 +518,18 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者或管理员可以解散班级", null);
         }
 
-        // 账号密码二次校验
+        // 账号密码二次校验（校验失败属于用户输入错误而非登录失效，返回 400 避免误触发前端登出）
         if (StrUtil.isBlank(account) || StrUtil.isBlank(password)) {
-            throw new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS, "账号和密码不能为空", null);
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号和密码不能为空", null);
         }
         QueryWrapper<User> accQuery = new QueryWrapper<>();
         accQuery.and(q -> q.eq("user_no", account).or().eq("email", account).or().eq("username", account));
         User checkUser = userMapper.selectOne(accQuery);
         if (checkUser == null || !checkUser.getId().equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS, "账号不属于当前登录用户", null);
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号不属于当前登录用户", null);
         }
         if (!passwordUtil.matches(password, checkUser.getPassword())) {
-            throw new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS, "密码错误", null);
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "密码错误", null);
         }
 
         // 确认文案校验：我已确认要删除{className}课堂
@@ -640,8 +607,30 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新班级信息失败", null);
         }
 
-        
+
         return classInfo;
+    }
+
+    @Override
+    public void setStudentInviteAllowed(Integer classId, Boolean allowStudentInvite) {
+        User currentUser = getCurrentUserOrThrow();
+
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null) {
+            throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
+        }
+
+        // 只有老师（创建者/助理）可以修改学生邀请设置
+        if (!isTeacher(classId, currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或助理可以修改邀请设置", null);
+        }
+
+        classInfo.setAllowStudentInvite(allowStudentInvite);
+        classInfo.setUpdateTime(LocalDateTime.now());
+        int updated = classInfoMapper.updateById(classInfo);
+        if (updated <= 0) {
+            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新邀请设置失败", null);
+        }
     }
 
     @Override
@@ -865,6 +854,7 @@ public class ClassServiceImpl implements ClassService {
                 teacherCount,
                 studentCount,
                 classInfo.getDescription(),
+                classInfo.getAllowStudentInvite(),
                 classInfo.getCreateTime()
         );
     }
@@ -991,6 +981,7 @@ public class ClassServiceImpl implements ClassService {
                             teacherCount,
                             studentCount,
                             classInfo.getDescription(),
+                            classInfo.getAllowStudentInvite(),
                             classInfo.getCreateTime()
                     );
                 })
@@ -1512,6 +1503,47 @@ public class ClassServiceImpl implements ClassService {
             response.setInviteeUserId(invitation.getInviteeUserId());
             response.setStatus(invitation.getStatus());
             response.setResponseTime(invitation.getResponseTime());
+            response.setCreateTime(invitation.getCreateTime());
+
+            // 获取班级名称
+            ClassInfo classInfo = classInfoMapper.selectById(invitation.getClassId());
+            if (classInfo != null) {
+                response.setClassName(classInfo.getClassName());
+            }
+
+            // 获取邀请人姓名
+            User inviter = userMapper.selectById(invitation.getInviterId());
+            if (inviter != null) {
+                response.setInviterName(inviter.getUsername());
+            }
+
+            return response;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<InvitationResponse> getMyUserInvitations(Integer userId) {
+        User currentUser = getCurrentUserOrThrow();
+
+        // 只能查看发给自己的学生邀请
+        if (!userId.equals(currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只能查看自己的邀请", null);
+        }
+
+        // 待当前用户确认的学生邀请
+        QueryWrapper<ClassUserInvitation> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("invitee_id", userId)
+                .eq("status", 0)
+                .orderByDesc("create_time");
+        List<ClassUserInvitation> invitations = classUserInvitationMapper.selectList(queryWrapper);
+
+        return invitations.stream().map(invitation -> {
+            InvitationResponse response = new InvitationResponse();
+            response.setId(invitation.getId());
+            response.setClassId(invitation.getClassId());
+            response.setInviterId(invitation.getInviterId());
+            response.setInviteeUserId(invitation.getInviteeId());
+            response.setStatus(invitation.getStatus());
             response.setCreateTime(invitation.getCreateTime());
 
             // 获取班级名称
