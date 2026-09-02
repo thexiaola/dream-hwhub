@@ -1103,7 +1103,7 @@ const transferring = ref(false);
 const transferOwnershipAction = async (userId: number, userName: string) => {
   try {
     await ElMessageBox.confirm(
-      `确定将班级"${course.value?.className ?? ""}"转让给 ${userName} 吗？转让后你将降级为学生，且无法撤销。`,
+      `确定将班级"${course.value?.className ?? ""}"转让给 ${userName} 吗？转让后你将降级为班级助理，且无法撤销。`,
       "转让班级",
       {
         confirmButtonText: "确认转让",

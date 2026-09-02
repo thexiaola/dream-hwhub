@@ -63,7 +63,7 @@ public class ClassServiceImpl implements ClassService {
      */
     private User getUserByAccountOrThrow(String userAccount) {
         QueryWrapper<User> userQuery = new QueryWrapper<>();
-        userQuery.and(q -> q.apply("LOWER(username) = LOWER({0})", userAccount).or().eq("email", userAccount));
+        userQuery.and(q -> q.apply("BINARY username = BINARY {0}", userAccount).or().eq("email", userAccount));
         User targetUser = userMapper.selectOne(userQuery);
         
         if (targetUser == null) {
@@ -523,7 +523,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号和密码不能为空", null);
         }
         QueryWrapper<User> accQuery = new QueryWrapper<>();
-        accQuery.and(q -> q.eq("email", account).or().apply("LOWER(username) = LOWER({0})", account));
+        accQuery.and(q -> q.eq("email", account).or().apply("BINARY username = BINARY {0}", account));
         User checkUser = userMapper.selectOne(accQuery);
         if (checkUser == null || !checkUser.getId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号不属于当前登录用户", null);
@@ -1741,12 +1741,12 @@ public class ClassServiceImpl implements ClassService {
         newOwnerMember.setRole(1);
         classMemberMapper.updateById(newOwnerMember);
 
-        // 将原所有者降级为学生（保留在班级中）
+        // 将原所有者降级为班级助理（保留在班级中，不再拥有创建者权限）
         QueryWrapper<ClassMember> oldOwnerQuery = new QueryWrapper<>();
         oldOwnerQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
         ClassMember oldOwnerMember = classMemberMapper.selectOne(oldOwnerQuery);
         if (oldOwnerMember != null) {
-            oldOwnerMember.setRole(0);  // 降级为学生
+            oldOwnerMember.setRole(1);  // 降级为班级助理
             classMemberMapper.updateById(oldOwnerMember);
         }
 

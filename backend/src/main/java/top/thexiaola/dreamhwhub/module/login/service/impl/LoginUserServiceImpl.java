@@ -70,11 +70,13 @@ public class LoginUserServiceImpl implements LoginUserService {
     }
 
     /**
-     * 根据账号查找用户（账号 = 用户名或邮箱，学号不作为账号；用户名不区分大小写）
+     * 根据账号查找用户（账号 = 用户名或邮箱，学号不作为账号；用户名匹配区分大小写，
+     * 即输入大小写与库中记录不一致时视为找不到该用户）
      */
     static User getUser(String account, UserMapper userMapper) {
         User user = userMapper.selectOne(
-                new QueryWrapper<User>().apply("LOWER(username) = LOWER({0})", account)
+                // 用户名列 collation 为 utf8mb4_unicode_ci（大小写不敏感），须用 BINARY 强制精确匹配
+                new QueryWrapper<User>().apply("BINARY username = BINARY {0}", account)
         );
         if (user != null) return user;
 

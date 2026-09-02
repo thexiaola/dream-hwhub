@@ -412,7 +412,6 @@ const resetPassword = async () => {
 .code-btn {
   width: 120px;
   flex-shrink: 0;
-  height: 40px;
 }
 
 .retrieve-btn {
@@ -423,8 +422,17 @@ const resetPassword = async () => {
 }
 
 .form-actions {
+  margin-bottom: 0;
+}
+
+.form-actions :deep(.el-form-item__content) {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 32px;
+}
+
+.form-actions :deep(.el-button) {
+  margin-left: 0;
 }
 
 .login-link {
