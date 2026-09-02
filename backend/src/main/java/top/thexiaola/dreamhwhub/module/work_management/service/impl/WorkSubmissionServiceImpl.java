@@ -26,6 +26,7 @@ import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapp
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionResponseMapper;
@@ -445,7 +446,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
 
     @Override
-    public List<User> getUnsubmittedStudents(Integer workId) {
+    public List<UnsubmittedStudentResponse> getUnsubmittedStudents(Integer workId) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -494,12 +495,21 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             return java.util.Collections.emptyList();
         }
 
-        // 4. 查询未交学生详情
-        QueryWrapper<User> userQuery =
-            new QueryWrapper<>();
-        userQuery.in("id", allStudentIds);
-        
-        return userMapper.selectList(userQuery);
+        // 4. 查询未交学生详情（只取展示字段，绝不查询/返回 password 等敏感列）
+        QueryWrapper<User> userQuery = new QueryWrapper<>();
+        userQuery.select("id", "username", "email", "id_name", "user_no")
+                 .in("id", allStudentIds);
+        List<User> users = userMapper.selectList(userQuery);
+
+        return users.stream().map(u -> {
+            UnsubmittedStudentResponse resp = new UnsubmittedStudentResponse();
+            resp.setId(u.getId());
+            resp.setUsername(u.getUsername());
+            resp.setEmail(u.getEmail());
+            resp.setIdName(u.getIdName());
+            resp.setUserNo(u.getUserNo());
+            return resp;
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -650,6 +660,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         User submitter = userMap.get(submission.getSubmitterId());
         if (submitter != null) {
             response.setSubmitterName(submitter.getUsername());
+            response.setSubmitterUsername(submitter.getUsername());
+            response.setSubmitterEmail(submitter.getEmail());
+            response.setSubmitterIdName(submitter.getIdName());
             response.setSubmitterUserNo(submitter.getUserNo());
         }
         

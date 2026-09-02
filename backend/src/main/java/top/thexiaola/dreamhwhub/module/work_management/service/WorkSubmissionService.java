@@ -2,11 +2,11 @@ package top.thexiaola.dreamhwhub.module.work_management.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletResponse;
-import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
+import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 
@@ -92,9 +92,9 @@ public interface WorkSubmissionService {
      * 查询某次作业的未交名单
      *
      * @param workId 作业 ID
-     * @return 未交学生列表（仅包含学生基本信息）
+     * @return 未交学生列表（仅含用户名/邮箱/姓名/学号等展示信息，不含密码等敏感字段）
      */
-    List<User> getUnsubmittedStudents(Integer workId);
+    List<UnsubmittedStudentResponse> getUnsubmittedStudents(Integer workId);
 
     /**
      * 批量下载作业附件（打包成ZIP）

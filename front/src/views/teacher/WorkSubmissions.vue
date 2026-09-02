@@ -92,9 +92,12 @@
                 <div class="student-avatar">
                   <User :size="18" />
                 </div>
-                <div>
-                  <h4>{{ sub.submitterName }}</h4>
-                  <p>{{ sub.submitterUserNo }}</p>
+                <div class="student-details">
+                  <h4>{{ sub.submitterUsername || sub.submitterName }}</h4>
+                  <p class="student-email">{{ sub.submitterEmail }}</p>
+                  <p class="student-meta">
+                    <template v-if="sub.submitterIdName">{{ sub.submitterIdName }} · </template>{{ sub.submitterUserNo }}
+                  </p>
                 </div>
               </div>
               <div class="submission-meta">
@@ -190,7 +193,10 @@
             </div>
             <div class="student-details">
               <span class="name">{{ stu.username }}</span>
-              <span class="user-no">{{ stu.userNo }}</span>
+              <span class="email">{{ stu.email }}</span>
+              <span class="user-no">
+                <template v-if="stu.idName">{{ stu.idName }} · </template>{{ stu.userNo }}
+              </span>
             </div>
           </div>
         </div>
@@ -293,6 +299,9 @@ interface SubmissionInfo {
   workId: number;
   submitterId: number;
   submitterName: string;
+  submitterUsername?: string;
+  submitterEmail?: string;
+  submitterIdName?: string;
   submitterUserNo: string;
   submissionContent: string;
   score: number | null;
@@ -308,6 +317,8 @@ interface SubmissionInfo {
 interface UnsubmittedStudent {
   id: number;
   username: string;
+  email?: string;
+  idName?: string;
   userNo: string;
 }
 
@@ -615,6 +626,15 @@ onMounted(async () => {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
+.submission-header .student-details .student-email {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.65);
+}
+
+.submission-header .student-details .student-meta {
+  margin-top: 2px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.42);
+}
+
 .submission-meta {
   display: flex;
   align-items: center;
@@ -845,6 +865,11 @@ onMounted(async () => {
 .unsubmitted-item .user-no {
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.unsubmitted-item .email {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.65);
 }
 
 /* ================================================

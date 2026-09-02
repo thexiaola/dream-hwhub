@@ -67,9 +67,24 @@ public class WorkSubmissionResponse {
     private String graderName;
 
     /**
-     * 提交人姓名
+     * 提交人姓名（兼容历史字段，实际为用户名 username）
      */
     private String submitterName;
+
+    /**
+     * 提交人用户名
+     */
+    private String submitterUsername;
+
+    /**
+     * 提交人邮箱
+     */
+    private String submitterEmail;
+
+    /**
+     * 提交人姓名（id_name，可能为空）
+     */
+    private String submitterIdName;
 
     /**
      * 提交人学号

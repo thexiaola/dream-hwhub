@@ -17,6 +17,7 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
+import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
@@ -198,14 +199,14 @@ public class WorkSubmissionController {
      * 查询某次作业的未交名单（教师专用）
      */
     @GetMapping(value = "/work/unsubmitted")
-    public ResponseEntity<ApiResponse<List<User>>> getUnsubmittedStudents(
+    public ResponseEntity<ApiResponse<List<UnsubmittedStudentResponse>>> getUnsubmittedStudents(
             @RequestParam(value = "workId") Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             
-            List<User> unsubmitted = workSubmissionService.getUnsubmittedStudents(workId);
+            List<UnsubmittedStudentResponse> unsubmitted = workSubmissionService.getUnsubmittedStudents(workId);
             log.info("User ({}) queried unsubmitted students, workId: {}, size: {}", userInfo, workId, unsubmitted.size());
             return ResponseEntity.ok(ApiResponse.success(unsubmitted));
         } catch (BusinessException e) {
