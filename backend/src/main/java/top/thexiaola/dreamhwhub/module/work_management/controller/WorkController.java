@@ -50,7 +50,7 @@ public class WorkController {
             return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         } catch (Exception e) {
             log.error("User create work error", e);
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, "请求参数错误: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "请求处理失败，请稍后重试"));
         }
     }
 
@@ -78,7 +78,7 @@ public class WorkController {
             return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         } catch (Exception e) {
             log.error("User update work error", e);
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, "请求参数错误: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "请求处理失败，请稍后重试"));
         }
     }
 

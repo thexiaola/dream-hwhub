@@ -567,7 +567,8 @@ const passwordDialogConfirm = async () => {
       password: dangerPassword.value,
       confirmText,
     }
-    const result = await del(`/class/${classId}`, undefined, params)
+    // 密码走请求体（DELETE body），避免出现在 URL/访问日志中
+    const result = await del(`/class/${classId}`, params)
     if (result.code === 200) {
       ElMessage.success('课堂已解散')
       if (expandedClassId.value === classId) {

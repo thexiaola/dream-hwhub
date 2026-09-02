@@ -35,11 +35,11 @@
       <div v-if="work?.attachments?.length" class="attachments-section">
         <h4>作业附件</h4>
         <div class="attachment-list">
-          <div v-for="att in work.attachments" :key="att.id" class="attachment-item">
-            <Paperclip :size="14" />
-            <span class="att-name">{{ att.fileName }}</span>
+          <div v-for="att in work.attachments" :key="att.id" class="attachment-card">
+            <Paperclip :size="14" class="att-icon" />
+            <span class="att-name" :title="att.fileName">{{ att.fileName }}</span>
             <span class="att-size">{{ formatSize(att.fileSize) }}</span>
-            <el-button link type="primary" @click="downloadFile(att)">
+            <el-button size="small" type="primary" plain class="att-download" @click="downloadFile(att)">
               <Download :size="14" />
               <span>下载</span>
             </el-button>
@@ -99,11 +99,11 @@
         <div v-if="mySubmission.attachments?.length" class="attachments-section">
           <h4>提交附件</h4>
           <div class="attachment-list">
-            <div v-for="att in mySubmission.attachments" :key="att.id" class="attachment-item">
-              <Paperclip :size="14" />
-              <span class="att-name">{{ att.fileName }}</span>
+            <div v-for="att in mySubmission.attachments" :key="att.id" class="attachment-card">
+              <Paperclip :size="14" class="att-icon" />
+              <span class="att-name" :title="att.fileName">{{ att.fileName }}</span>
               <span class="att-size">{{ formatSize(att.fileSize) }}</span>
-              <el-button link type="primary" @click="downloadFile(att)">
+              <el-button size="small" type="primary" plain class="att-download" @click="downloadFile(att)">
                 <Download :size="14" />
                 <span>下载</span>
               </el-button>
@@ -129,11 +129,11 @@
         <div v-if="mySubmission.attachments?.length" class="attachments-section">
           <h4>提交附件</h4>
           <div class="attachment-list">
-            <div v-for="att in mySubmission.attachments" :key="att.id" class="attachment-item">
-              <Paperclip :size="14" />
-              <span class="att-name">{{ att.fileName }}</span>
+            <div v-for="att in mySubmission.attachments" :key="att.id" class="attachment-card">
+              <Paperclip :size="14" class="att-icon" />
+              <span class="att-name" :title="att.fileName">{{ att.fileName }}</span>
               <span class="att-size">{{ formatSize(att.fileSize) }}</span>
-              <el-button link type="primary" @click="downloadFile(att)">
+              <el-button size="small" type="primary" plain class="att-download" @click="downloadFile(att)">
                 <Download :size="14" />
                 <span>下载</span>
               </el-button>
@@ -173,7 +173,9 @@
           </el-form-item>
           <el-form-item label="新增附件">
             <el-upload
+              ref="newUploadRef"
               v-model:file-list="newFiles"
+              class="new-upload"
               :auto-upload="false"
               multiple
               :limit="20"
@@ -190,6 +192,22 @@
                   <span>支持多文件上传，单个文件不超过 50MB</span>
                 </div>
               </template>
+              <template #file="{ file }">
+                <div class="attachment-card new-file-item">
+                  <Paperclip :size="14" class="att-icon" />
+                  <span class="att-name" :title="file.name">{{ file.name }}</span>
+                  <span class="att-size">{{ formatSize(file.size) }}</span>
+                  <el-button
+                    link
+                    type="danger"
+                    class="att-action"
+                    @click="removeNewFile(file)"
+                  >
+                    <X :size="14" />
+                    <span>移除</span>
+                  </el-button>
+                </div>
+              </template>
             </el-upload>
           </el-form-item>
           <el-form-item v-if="editing && existingAttachments.length" label="已上传附件">
@@ -197,21 +215,22 @@
               <div
                 v-for="att in existingAttachments"
                 :key="att.id"
-                :class="['existing-attachment-item', { removed: removedIds.includes(att.id) }]"
+                :class="['attachment-card', 'existing-attachment-item', { removed: removedIds.includes(att.id) }]"
               >
-                <Paperclip :size="14" />
-                <span class="att-name">{{ att.fileName }}</span>
+                <Paperclip :size="14" class="att-icon" />
+                <span class="att-name" :title="att.fileName">{{ att.fileName }}</span>
                 <span class="att-size">{{ formatSize(att.fileSize) }}</span>
                 <el-button
                   v-if="!removedIds.includes(att.id)"
                   link
                   type="danger"
+                  class="att-action"
                   @click="markRemove(att.id)"
                 >
                   <X :size="14" />
                   <span>移除</span>
                 </el-button>
-                <el-button v-else link type="primary" @click="unmarkRemove(att.id)">
+                <el-button v-else link type="primary" class="att-action" @click="unmarkRemove(att.id)">
                   <RotateCcw :size="14" />
                   <span>恢复</span>
                 </el-button>
@@ -242,7 +261,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { get, postForm, putForm, del } from '@/utils/http'
 import instance from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { UploadFile, UploadUserFile } from 'element-plus'
+import type { UploadFile, UploadInstance, UploadUserFile } from 'element-plus'
 import {
   ArrowLeft,
   Award,
@@ -309,6 +328,7 @@ const editing = ref(false)
 const submitting = ref(false)
 const content = ref('')
 const newFiles = ref<UploadUserFile[]>([])
+const newUploadRef = ref<UploadInstance>()
 const existingAttachments = ref<AttachmentInfo[]>([])
 const removedIds = ref<number[]>([])
 
@@ -411,6 +431,10 @@ const handleFileChange = (file: UploadFile) => {
     const idx = newFiles.value.findIndex((f) => f.uid === file.uid)
     if (idx > -1) newFiles.value.splice(idx, 1)
   }
+}
+
+const removeNewFile = (file: UploadFile) => {
+  newFiles.value = newFiles.value.filter((f) => f.uid !== file.uid)
 }
 
 const markRemove = (id: number) => {
@@ -629,18 +653,6 @@ onMounted(async () => {
   gap: 8px;
 }
 
-.attachment-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
-  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-
 .att-name {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
   font-weight: 500;
@@ -652,11 +664,6 @@ onMounted(async () => {
   font-size: 12px;
   white-space: nowrap;
 }
-
-.attachment-item .el-button {
-  margin-left: auto;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -774,10 +781,57 @@ onMounted(async () => {
   gap: 8px;
   font-size: 13px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+}
+
+/* 统一的附件条目卡片（已上传附件与新选文件共用） */
+.attachment-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
   border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 8px;
   padding: 8px 12px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.attachment-card:hover {
+  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.22);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06);
+}
+
+.attachment-card .att-icon {
+  flex-shrink: 0;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+}
+
+.attachment-card .att-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: keep-all;
+  font-weight: 500;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+}
+
+.attachment-card .att-size {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.attachment-card .att-action {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.attachment-card .att-download {
+  flex-shrink: 0;
 }
 
 .existing-attachment-item.removed {
@@ -785,14 +839,37 @@ onMounted(async () => {
   text-decoration: line-through;
 }
 
-.existing-attachment-item .el-button {
-  margin-left: auto;
+/* Element Plus 上传组件：新选文件也按卡片展示，去掉默认列表观感 */
+:deep(.new-upload) {
+  width: 100%;
+}
+
+:deep(.new-upload .el-upload-list) {
+  margin-top: 8px;
+  padding: 0;
+}
+
+:deep(.new-upload .el-upload-list__item) {
+  margin-bottom: 8px;
+  background: transparent;
+}
+
+:deep(.new-upload .el-upload-list__item:hover) {
+  background: transparent;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
+}
+
+/* 统一“取消 / 提交作业”按钮高度，避免任何全局样式继承导致的不齐 */
+.form-actions .el-button {
+  height: 32px;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .locked-state {

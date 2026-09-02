@@ -95,6 +95,11 @@ public class WorkResponse {
      */
     private List<AttachmentInfo> attachments;
 
+    /**
+     * 已交人数（去重提交人，不含软删除）
+     */
+    private Integer submittedCount;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

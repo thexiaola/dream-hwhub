@@ -123,7 +123,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             } catch (Exception e) {
                 log.error("Failed to save submission attachments", e);
                 throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, 
-                        "文件上传失败：" + e.getMessage(), null);
+                        "文件上传失败，请稍后重试", null);
             }
         } else {
             submissionId = null;
@@ -377,16 +377,52 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             }
         }
 
-        // 软删除提交记录
+        // 清理附件：物理删除服务器文件 + 删除附件数据库记录（撤回后附件不应继续占用存储）
+        QueryWrapper<WorkSubmissionAttachment> attachmentQuery = new QueryWrapper<>();
+        attachmentQuery.eq("submission_id", submissionId);
+        List<WorkSubmissionAttachment> submissionAttachments = workSubmissionAttachmentMapper.selectList(attachmentQuery);
+
+        // 先在事务内删除附件记录并软删提交记录（保证 DB 原子性）
+        if (CollUtil.isNotEmpty(submissionAttachments)) {
+            workSubmissionAttachmentMapper.delete(attachmentQuery);
+        }
         submission.setIsDeleted(true);
         workSubmissionMapper.updateById(submission);
+
+        // 事务主体完成后物理删除服务器文件（异常仅记日志，最坏残留无引用的垃圾文件，
+        // 避免反过来出现“提交记录还在、附件文件已丢”的不一致）
+        if (CollUtil.isNotEmpty(submissionAttachments)) {
+            for (WorkSubmissionAttachment attachment : submissionAttachments) {
+                try {
+                    Path filePath = Paths.get(attachment.getFilePath());
+                    if (Files.exists(filePath)) {
+                        Files.delete(filePath);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to delete submission attachment file on withdraw: {}", attachment.getFilePath(), e);
+                }
+            }
+        }
     }
 
     @Override
     public WorkSubmission getSubmissionById(Integer submissionId) {
+        User currentUser = UserUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
         WorkSubmission submission = workSubmissionMapper.selectById(submissionId);
         if (submission == null || Boolean.TRUE.equals(submission.getIsDeleted())) {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
+        }
+
+        // 越权防护：仅提交人本人、该班老师/管理员可查看（该班老师对管理员返回 true）
+        boolean isOwner = submission.getSubmitterId() != null
+                && submission.getSubmitterId().equals(currentUser.getId());
+        boolean isClassTeacher = classService.isTeacher(submission.getClassId(), currentUser.getId());
+        if (!isOwner && !isClassTeacher) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "无权查看该提交记录", null);
         }
         return submission;
     }
@@ -753,7 +789,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             } catch (Exception e) {
                 log.error("Failed to save submission attachment", e);
                 throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, 
-                        "文件上传失败：" + e.getMessage(), null);
+                        "文件上传失败，请稍后重试", null);
             }
         }
         

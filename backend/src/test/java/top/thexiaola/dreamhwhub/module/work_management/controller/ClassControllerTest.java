@@ -123,8 +123,8 @@ class ClassControllerTest {
                 Mockito.anyInt(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 
         mockMvc.perform(delete("/api/class/1")
-                        .param("password", "test-password")
-                        .param("confirmText", "确认解散"))
+                        .contentType("application/json")
+                        .content("{\"password\":\"test-password\",\"confirmText\":\"确认解散\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

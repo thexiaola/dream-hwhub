@@ -85,15 +85,14 @@ public class ClassController {
         @DeleteMapping("/{classId}")
         public ApiResponse<Void> dissolveClass(
                         @PathVariable(value = "classId") Integer classId,
-                        @RequestParam(value = "password") String password,
-                        @RequestParam(value = "confirmText") String confirmText) {
+                        @Valid @RequestBody DissolveClassRequest request) {
                 String ip = LogUtil.getCurrentClientIp();
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfoString(ip, currentUser);
                 log.info("User ({}) requesting to dissolve class, ID: {}", userInfo, classId);
                 // 账号直接用当前用户的用户名（唯一标识）回填，学号允许重复不可作为账号
                 String account = (currentUser != null) ? currentUser.getUsername() : null;
-                classService.dissolveClass(classId, account, password, confirmText);
+                classService.dissolveClass(classId, account, request.getPassword(), request.getConfirmText());
                 log.info("User ({}) dissolved class successfully, class ID: {}", userInfo, classId);
                 return ApiResponse.success(null);
         }
@@ -110,6 +109,10 @@ public class ClassController {
                 log.info("User {} requesting to update class info, ID: {}", userInfo, request.getClassId());
                 ClassInfo updatedClass = classService.updateClassInfo(classId, request.getClassName(),
                                 request.getDescription());
+                // 邀请码仅通过专门的邀请码接口返回，避免在编辑班级响应中扩散
+                if (updatedClass != null) {
+                        updatedClass.setInviteCode(null);
+                }
                 log.info("User {} updated class info successfully", userInfo);
                 return ApiResponse.success(updatedClass, "班级信息更新成功");
         }
@@ -503,7 +506,7 @@ public class ClassController {
                         @Valid @RequestBody JoinByInviteCodeRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} joining class by invite code: {}", userInfo, request.getInviteCode());
+                log.info("User {} joining class by invite code", userInfo);
                 ClassJoinApplication application = classService.joinClassByInviteCode(request.getInviteCode());
                 log.info("User {} submitted join application via invite code, id: {}", userInfo, application.getId());
                 return ApiResponse.success(application, "加入申请已提交，待审核");

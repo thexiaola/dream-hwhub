@@ -120,10 +120,10 @@ public class EmailServiceImpl implements EmailService {
                 throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮箱地址不存在或无效，请检查后重新输入");
             }
             log.error("Failed to send email: {}, recipient: {}, subject: {}", errorMessage, to, subject);
-            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + errorMessage);
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败，请稍后重试");
         } catch (Exception e) {
             log.error("Failed to send email: {}, recipient: {}, subject: {}", e.getMessage(), to, subject, e);
-            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败：" + e.getMessage());
+            throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "邮件发送失败，请稍后重试");
         }
     }
 
@@ -175,12 +175,12 @@ public class EmailServiceImpl implements EmailService {
 
     /**
      * 静默兜底包装：sendEmail 内部已记录详细错误日志，这里仅避免未捕获异常进入线程默认处理器；
-     * 发送成功后在后台日志显示验证码
+     * 注意：日志中严禁打印验证码等敏感内容
      */
     private void sendCodeEmailQuietly(String code, Runnable sender, String email) {
         try {
             sender.run();
-            log.info("Verification code sent successfully to email: {}, code: {}", email, code);
+            log.info("Verification code sent successfully to email: {}", email);
         } catch (Exception e) {
             log.warn("Failed to send verification code email to {} in background: {}", email, e.getMessage());
         }

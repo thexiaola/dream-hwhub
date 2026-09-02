@@ -1018,7 +1018,8 @@ const passwordDialogConfirm = async () => {
       password: dangerPassword.value,
       confirmText: dangerConfirmText.value,
     };
-    const result = await del(`/class/${route.params.id}`, undefined, params);
+    // 密码走请求体（DELETE body），避免出现在 URL/访问日志中
+    const result = await del(`/class/${route.params.id}`, params);
     if (result.code === 200) {
       ElMessage.success("课堂已解散");
       clearDangerInputs();

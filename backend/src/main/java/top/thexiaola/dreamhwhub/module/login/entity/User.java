@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.ToString;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -46,7 +48,10 @@ public class User implements Serializable {
     private String phone;
 
     //密码(BCrypt哈希值)
+    // 密码（BCrypt 哈希）：仅允许反序列化接收，禁止序列化输出到任何响应；也禁止进入 toString
     @TableField("password")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @ToString.Exclude
     private String password;
 
     // 权限级别

@@ -191,11 +191,16 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
         }
 
-        // 检查权限：未发布的作业只有老师可以查看
+        // 检查权限：仅本班成员（老师/助理/学生）或管理员可查看
         User currentUser = UserUtils.getCurrentUser();
         Integer status = calculateWorkStatus(workInfo);
-        if (status == 0) { // 0-未发布
-            if (currentUser == null || !classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+        if (currentUser == null
+                || !classService.isClassMember(workInfo.getClassId(), currentUser.getId())
+                   && !classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "无权查看该作业", null);
+        }
+        if (status == 0) { // 0-未发布：只有老师可以查看
+            if (!classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
                 throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "该作业尚未发布，无法查看", null);
             }
         }
@@ -351,6 +356,26 @@ public class WorkServiceImpl implements WorkService {
             classMap = new HashMap<>();
         }
         
+        // 批量查询已交人数（每个作业按去重的提交人统计，排除软删除）
+        final Map<Integer, Integer> submittedCountMap;
+        if (!workIds.isEmpty()) {
+            QueryWrapper<WorkSubmission> submitCntQuery = new QueryWrapper<>();
+            submitCntQuery.in("work_id", workIds)
+                         .eq("is_deleted", false)
+                         .select("work_id", "submitter_id");
+            List<WorkSubmission> submittedRows = workSubmissionMapper.selectList(submitCntQuery);
+            submittedCountMap = submittedRows.stream()
+                    .collect(Collectors.groupingBy(
+                        WorkSubmission::getWorkId,
+                        Collectors.collectingAndThen(
+                            Collectors.mapping(WorkSubmission::getSubmitterId, Collectors.toSet()),
+                            Set::size
+                        )
+                    ));
+        } else {
+            submittedCountMap = new HashMap<>();
+        }
+        
         // 批量查询附件
         final Map<Integer, List<WorkResponse.AttachmentInfo>> attachmentMap;
         if (!workIds.isEmpty()) {
@@ -401,6 +426,7 @@ public class WorkServiceImpl implements WorkService {
                     response.setIsPinned(work.getIsPinned());
                     response.setCreateTime(work.getCreateTime());
                     response.setUpdateTime(work.getUpdateTime());
+                    response.setSubmittedCount(submittedCountMap.getOrDefault(work.getId(), 0));
                     
                     // 从缓存中获取附件列表
                     response.setAttachments(attachmentMap.getOrDefault(work.getId(), new ArrayList<>()));
@@ -537,7 +563,7 @@ public class WorkServiceImpl implements WorkService {
                 }
                 log.error("Failed to save work attachment", e);
                 throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED,
-                        "文件上传失败：" + e.getMessage(), null);
+                        "文件上传失败，请稍后重试", null);
             }
         }
     }

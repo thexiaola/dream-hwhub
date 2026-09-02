@@ -2957,3 +2957,26 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
     padding: 12px 14px !important;
   }
 }
+
+/* =========================================================
+   分页 "每页条数" 下拉 (el-pagination sizes) 主题适配
+   EP 2.14 select 用 box-shadow-inset 画边框，颜色取亮色
+   --el-border-color、背景取 --el-fill-color-blank(白)，
+   在深色卡片上会呈现"白块+亮灰硬边"。此处限定在分页内修正。
+   ========================================================= */
+.el-pagination .el-select__wrapper {
+  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) inset;
+}
+
+.el-pagination .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.38) inset;
+}
+
+.el-pagination .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--primary-color) inset;
+}
+
+.el-pagination .el-select__selected-item {
+  color: var(--text-primary);
+}
