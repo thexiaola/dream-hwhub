@@ -342,7 +342,6 @@ const handleRegister = async () => {
 .code-btn {
   width: 120px;
   flex-shrink: 0;
-  height: 40px;
 }
 
 .register-btn {
