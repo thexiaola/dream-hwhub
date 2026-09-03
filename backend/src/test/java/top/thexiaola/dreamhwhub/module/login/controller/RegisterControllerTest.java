@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.EmailCodeRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RegisterRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;

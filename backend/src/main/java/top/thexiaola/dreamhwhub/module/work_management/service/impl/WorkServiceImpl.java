@@ -1,7 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -59,7 +52,7 @@ public class WorkServiceImpl implements WorkService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkInfo createWork(CreateWorkRequest request) {
+    public WorkResponse createWork(CreateWorkRequest request) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -91,12 +84,13 @@ public class WorkServiceImpl implements WorkService {
             saveWorkAttachmentsDirectly(currentUser.getId(), workInfo.getId(), request.getAttachments());
         }
         
-        return workInfo;
+        // 转换为WorkResponse
+        return convertToWorkResponse(workInfo);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkInfo updateWork(UpdateWorkRequest request) {
+    public WorkResponse updateWork(UpdateWorkRequest request) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -153,7 +147,8 @@ public class WorkServiceImpl implements WorkService {
         // 处理附件更新（直接上传）
         handleAttachmentUpdates(workInfo.getId(), request.getRemovedAttachmentIds(), request.getAttachments());
         
-        return workInfo;
+        // 转换为WorkResponse
+        return convertToWorkResponse(workInfo);
     }
 
     @Override
@@ -185,7 +180,7 @@ public class WorkServiceImpl implements WorkService {
     }
 
     @Override
-    public WorkInfo getWorkById(Integer workId) {
+    public WorkResponse getWorkById(Integer workId) {
         WorkInfo workInfo = workMapper.selectById(workId);
         if (workInfo == null) {
             throw new BusinessException(BusinessErrorCode.WORK_NOT_FOUND, "作业不存在", null);
@@ -208,7 +203,8 @@ public class WorkServiceImpl implements WorkService {
         // 填充附件列表
         workInfo.setAttachments(getWorkAttachments(workId));
 
-        return workInfo;
+        // 转换为WorkResponse
+        return convertToWorkResponse(workInfo);
     }
 
     @Override
@@ -464,6 +460,33 @@ public class WorkServiceImpl implements WorkService {
     }
     
     /**
+     * 将WorkInfo转换为WorkResponse
+     * @param workInfo 作业信息
+     * @return 作业响应对象
+     */
+    private WorkResponse convertToWorkResponse(WorkInfo workInfo) {
+        WorkResponse response = new WorkResponse();
+        response.setId(workInfo.getId());
+        response.setTitle(workInfo.getTitle());
+        response.setDescription(workInfo.getDescription());
+        response.setPublisherId(workInfo.getPublisherId());
+        response.setClassId(workInfo.getClassId());
+        response.setDeadline(workInfo.getDeadline());
+        response.setTotalScore(workInfo.getTotalScore());
+        response.setPublishTime(workInfo.getPublishTime());
+        response.setStatus(calculateWorkStatus(workInfo));
+        response.setIsOverdue(workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline()));
+        response.setIsPinned(workInfo.getIsPinned());
+        response.setCreateTime(workInfo.getCreateTime());
+        response.setUpdateTime(workInfo.getUpdateTime());
+        
+        // 填充附件列表
+        response.setAttachments(getWorkAttachments(workInfo.getId()));
+        
+        return response;
+    }
+    
+    /**
      * 保存作业附件（直接上传的文件）
      */
     private void saveWorkAttachmentsDirectly(Integer userId, Integer workId, List<MultipartFile> files) {
@@ -679,7 +702,7 @@ public class WorkServiceImpl implements WorkService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkInfo pinWork(Integer workId, Boolean isPinned) {
+    public WorkResponse pinWork(Integer workId, Boolean isPinned) {
         // 1. 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -706,6 +729,7 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新作业置顶状态失败", null);
         }
 
-        return workInfo;
+        // 转换为WorkResponse
+        return convertToWorkResponse(workInfo);
     }
 }

@@ -3,7 +3,6 @@ package top.thexiaola.dreamhwhub.module.work_management.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 
 /**
@@ -17,7 +16,7 @@ public interface WorkService {
      * @param request 创建作业请求
      * @return 创建的作业
      */
-    WorkInfo createWork(CreateWorkRequest request);
+    WorkResponse createWork(CreateWorkRequest request);
 
     /**
      * 更新作业
@@ -25,7 +24,7 @@ public interface WorkService {
      * @param request 更新作业请求
      * @return 更新后的作业
      */
-    WorkInfo updateWork(UpdateWorkRequest request);
+    WorkResponse updateWork(UpdateWorkRequest request);
 
     /**
      * 删除作业
@@ -40,7 +39,7 @@ public interface WorkService {
      * @param workId 作业 ID
      * @return 作业信息
      */
-    WorkInfo getWorkById(Integer workId);
+    WorkResponse getWorkById(Integer workId);
 
     /**
      * 查询作业列表（分页）
@@ -60,5 +59,5 @@ public interface WorkService {
      * @param isPinned 是否置顶
      * @return 更新后的作业信息
      */
-    WorkInfo pinWork(Integer workId, Boolean isPinned);
+    WorkResponse pinWork(Integer workId, Boolean isPinned);
 }

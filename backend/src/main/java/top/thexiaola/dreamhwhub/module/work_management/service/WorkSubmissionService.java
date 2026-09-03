@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
@@ -51,7 +50,7 @@ public interface WorkSubmissionService {
      * @param submissionId 提交 ID
      * @return 提交信息
      */
-    WorkSubmission getSubmissionById(Integer submissionId);
+    WorkSubmissionResponse getSubmissionById(Integer submissionId);
 
     /**
      * 查询学生的提交列表
@@ -78,7 +77,7 @@ public interface WorkSubmissionService {
      * @param request 批改作业请求
      * @return 批改后的提交
      */
-    WorkSubmission gradeWork(GradeWorkRequest request);
+    WorkSubmissionResponse gradeWork(GradeWorkRequest request);
 
     /**
      * 查询某次作业的已交名单

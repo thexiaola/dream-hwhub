@@ -406,7 +406,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
 
     @Override
-    public WorkSubmission getSubmissionById(Integer submissionId) {
+    public WorkSubmissionResponse getSubmissionById(Integer submissionId) {
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
@@ -424,7 +424,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         if (!isOwner && !isClassTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "无权查看该提交记录", null);
         }
-        return submission;
+        
+        // 转换为WorkSubmissionResponse
+        return convertToResponse(submission);
     }
 
     @Override
@@ -635,7 +637,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkSubmission gradeWork(GradeWorkRequest request) {
+    public WorkSubmissionResponse gradeWork(GradeWorkRequest request) {
         // 获取当前用户
         User currentUser = UserUtils.getCurrentUser();
         if (currentUser == null) {
@@ -675,7 +677,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         submission.setUpdateTime(LocalDateTime.now());
 
         workSubmissionMapper.updateById(submission);
-        return submission;
+        
+        // 转换为WorkSubmissionResponse
+        return convertToResponse(submission);
     }
 
     /**

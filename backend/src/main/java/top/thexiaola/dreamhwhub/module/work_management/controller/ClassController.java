@@ -10,10 +10,6 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.*;
-import top.thexiaola.dreamhwhub.module.work_management.entity.ClassCreateApplication;
-import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
-import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInvitation;
-import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
@@ -101,18 +97,14 @@ public class ClassController {
          * 更新班级信息（老师或班级助理）
          */
         @PutMapping("/{classId}")
-        public ApiResponse<ClassInfo> updateClassInfo(
+        public ApiResponse<ClassDetailResponse> updateClassInfo(
                         @PathVariable(value = "classId") Integer classId,
                         @Valid @RequestBody UpdateClassRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} requesting to update class info, ID: {}", userInfo, request.getClassId());
-                ClassInfo updatedClass = classService.updateClassInfo(classId, request.getClassName(),
+                ClassDetailResponse updatedClass = classService.updateClassInfo(classId, request.getClassName(),
                                 request.getDescription());
-                // 邀请码仅通过专门的邀请码接口返回，避免在编辑班级响应中扩散
-                if (updatedClass != null) {
-                        updatedClass.setInviteCode(null);
-                }
                 log.info("User {} updated class info successfully", userInfo);
                 return ApiResponse.success(updatedClass, "班级信息更新成功");
         }
@@ -215,12 +207,12 @@ public class ClassController {
          * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
          */
         @GetMapping("/applications/create/list")
-        public ApiResponse<Page<ClassCreateApplication>> getCreateApplications(
+        public ApiResponse<Page<CreateClassApplicationResponse>> getCreateApplications(
                         @RequestParam(value = "status", required = false) Integer status,
                         @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                Page<ClassCreateApplication> applications = classService.getCreateApplications(status,
+                Page<CreateClassApplicationResponse> applications = classService.getCreateApplications(status,
                                 pageRequest.getPageNum(),
                                 pageRequest.getPageSize());
                 log.info("User {} queried {} create class applications, status={}, total: {}", userInfo,
@@ -251,13 +243,13 @@ public class ClassController {
          * @param status  状态筛选（0-待审核，1-已通过，2-已拒绝），可选
          */
         @GetMapping("/applications/join/list")
-        public ApiResponse<Page<ClassJoinApplication>> getJoinApplications(
+        public ApiResponse<Page<JoinClassApplicationResponse>> getJoinApplications(
                         @RequestParam(value = "classId", required = false) Integer classId,
                         @RequestParam(value = "status", required = false) Integer status,
                         @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                Page<ClassJoinApplication> applications = classService.getJoinApplications(classId, status,
+                Page<JoinClassApplicationResponse> applications = classService.getJoinApplications(classId, status,
                                 pageRequest.getPageNum(), pageRequest.getPageSize());
                 log.info("User {} queried {} join class applications, classId={}, status={}, total: {}", userInfo,
                                 applications.getRecords().size(), classId, status, applications.getTotal());
@@ -413,14 +405,14 @@ public class ClassController {
          * 教师邀请用户加入班级（需用户同意）
          */
         @PostMapping("/{classId}/invitations/teacher")
-        public ApiResponse<ClassInvitation> inviteUserWithApproval(
+        public ApiResponse<InvitationResponse> inviteUserWithApproval(
                         @PathVariable(value = "classId") Integer classId,
                         @Valid @RequestBody InviteUserRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} sending invitation to user {} for class {} (requires approval)",
                                 userInfo, request.getUserAccount(), classId);
-                ClassInvitation invitation = classService.inviteUserToClassWithApproval(classId, request.getUserAccount());
+                InvitationResponse invitation = classService.inviteUserToClassWithApproval(classId, request.getUserAccount());
                 log.info("User {} sent invitation, id: {}", userInfo, invitation.getId());
                 return ApiResponse.success(invitation, "邀请已发送，等待用户响应");
         }
@@ -502,12 +494,12 @@ public class ClassController {
          * 通过邀请码加入班级
          */
         @PostMapping("/join-by-code")
-        public ApiResponse<ClassJoinApplication> joinByInviteCode(
+        public ApiResponse<JoinClassApplicationResponse> joinByInviteCode(
                         @Valid @RequestBody JoinByInviteCodeRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} joining class by invite code", userInfo);
-                ClassJoinApplication application = classService.joinClassByInviteCode(request.getInviteCode());
+                JoinClassApplicationResponse application = classService.joinClassByInviteCode(request.getInviteCode());
                 log.info("User {} submitted join application via invite code, id: {}", userInfo, application.getId());
                 return ApiResponse.success(application, "加入申请已提交，待审核");
         }

@@ -15,7 +15,6 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachme
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
@@ -122,12 +121,12 @@ public class WorkSubmissionController {
      * 查询提交详情
      */
     @GetMapping(value = "/{submissionId}")
-    public ResponseEntity<ApiResponse<WorkSubmission>> getSubmissionDetail(@PathVariable(value = "submissionId") Integer submissionId) {
+    public ResponseEntity<ApiResponse<WorkSubmissionResponse>> getSubmissionDetail(@PathVariable(value = "submissionId") Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         User user = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfoString(ip, user);
         
-        WorkSubmission submission = workSubmissionService.getSubmissionById(submissionId);
+        WorkSubmissionResponse submission = workSubmissionService.getSubmissionById(submissionId);
         log.info("User ({}) queried submission detail, id: {}", userInfo, submissionId);
         return ResponseEntity.ok(ApiResponse.success(submission));
     }
@@ -219,12 +218,12 @@ public class WorkSubmissionController {
      * 批改作业（教师专用）
      */
     @PutMapping(value = "/grade")
-    public ResponseEntity<ApiResponse<WorkSubmission>> gradeWork(@Valid @RequestBody GradeWorkRequest request) {
+    public ResponseEntity<ApiResponse<WorkSubmissionResponse>> gradeWork(@Valid @RequestBody GradeWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         User user = UserUtils.getCurrentUser();
         String userInfo = LogUtil.getUserInfoString(ip, user);
         
-        WorkSubmission submission = workSubmissionService.gradeWork(request);
+        WorkSubmissionResponse submission = workSubmissionService.gradeWork(request);
         log.info("User ({}) graded submission, id: {}, score: {}", userInfo, submission.getId(), submission.getScore());
         return ResponseEntity.ok(ApiResponse.success(submission));
     }

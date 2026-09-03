@@ -45,6 +45,31 @@ class WorkControllerTest {
 
     private ObjectMapper objectMapper;
 
+    /**
+     * 将WorkInfo转换为WorkResponse（用于测试）
+     */
+    private WorkResponse convertToWorkResponse(WorkInfo workInfo) {
+        return new WorkResponse(
+                workInfo.getId(),
+                workInfo.getTitle(),
+                workInfo.getDescription(),
+                workInfo.getPublisherId(),
+                "测试用户", // publisherName - 简化处理
+                workInfo.getClassId(),
+                "测试班级", // className - 简化处理
+                workInfo.getDeadline(),
+                workInfo.getTotalScore(),
+                workInfo.getPublishTime(),
+                1, // status - 简化处理
+                false, // isOverdue - 简化处理
+                workInfo.getIsPinned(),
+                workInfo.getCreateTime(),
+                workInfo.getUpdateTime(),
+                null, // attachments - 简化处理
+                0 // submittedCount - 简化处理
+        );
+    }
+
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
@@ -75,7 +100,7 @@ class WorkControllerTest {
         workInfo.setTitle("测试作业");
 
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(multipart("/api/works")
                         .file(file)
@@ -100,7 +125,7 @@ class WorkControllerTest {
         workInfo.setTitle("测试作业");
 
         Mockito.when(workService.getWorkById(Mockito.anyInt()))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(get("/api/works/1"))
                 .andExpect(status().isOk())
@@ -156,7 +181,7 @@ class WorkControllerTest {
         workInfo.setIsPinned(true);
 
         Mockito.when(workService.pinWork(Mockito.anyInt(), Mockito.anyBoolean()))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(patch("/api/works/1/pin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -180,7 +205,7 @@ class WorkControllerTest {
         workInfo.setIsPinned(false);
 
         Mockito.when(workService.pinWork(Mockito.anyInt(), Mockito.anyBoolean()))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(patch("/api/works/1/pin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -207,7 +232,7 @@ class WorkControllerTest {
         workInfo.setTitle("更新后的作业");
 
         Mockito.when(workService.updateWork(Mockito.any()))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(multipart("/api/works/1")
                         .file(file)
@@ -240,7 +265,7 @@ class WorkControllerTest {
         workInfo.setTitle(longTitle);
 
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(multipart("/api/works")
                         .param("title", longTitle)
@@ -264,7 +289,7 @@ class WorkControllerTest {
         workInfo.setTitle("测试作业");
 
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")
@@ -289,7 +314,7 @@ class WorkControllerTest {
         workInfo.setTitle("测试作业");
 
         Mockito.when(workService.createWork(Mockito.any(CreateWorkRequest.class)))
-                .thenReturn(workInfo);
+                .thenReturn(convertToWorkResponse(workInfo));
 
         mockMvc.perform(multipart("/api/works")
                         .param("title", "测试作业")

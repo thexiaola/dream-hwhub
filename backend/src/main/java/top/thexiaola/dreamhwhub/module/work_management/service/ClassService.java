@@ -1,7 +1,8 @@
 package top.thexiaola.dreamhwhub.module.work_management.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.thexiaola.dreamhwhub.module.work_management.entity.*;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
 
 import java.util.List;
@@ -188,7 +189,7 @@ public interface ClassService {
      * @param pageSize 每页大小
      * @return 按创建时间倒序排列的申请分页结果
      */
-    Page<ClassCreateApplication> getCreateApplications(Integer status, Integer pageNum, Integer pageSize);
+    Page<CreateClassApplicationResponse> getCreateApplications(Integer status, Integer pageNum, Integer pageSize);
 
     /**
      * 审核创建班级申请
@@ -209,7 +210,7 @@ public interface ClassService {
      * @param pageSize 每页大小
      * @return 按创建时间倒序排列的申请分页结果
      */
-    Page<ClassJoinApplication> getJoinApplications(Integer classId, Integer status, Integer pageNum, Integer pageSize);
+    Page<JoinClassApplicationResponse> getJoinApplications(Integer classId, Integer status, Integer pageNum, Integer pageSize);
 
     /**
      * 审核加入班级申请
@@ -224,7 +225,7 @@ public interface ClassService {
      * @param description 班级描述
      * @return 更新后的班级信息
      */
-    ClassInfo updateClassInfo(Integer classId, String className, String description);
+    ClassDetailResponse updateClassInfo(Integer classId, String className, String description);
 
     /**
      * 更新学生邀请设置（班级老师或助理）
@@ -245,7 +246,7 @@ public interface ClassService {
     /**
      * 教师邀请用户加入班级（需用户同意）
      */
-    ClassInvitation inviteUserToClassWithApproval(Integer classId, String userAccount);
+    InvitationResponse inviteUserToClassWithApproval(Integer classId, String userAccount);
 
     /**
      * 获取用户收到的邀请列表
@@ -270,7 +271,7 @@ public interface ClassService {
     /**
      * 通过邀请码加入班级
      */
-    ClassJoinApplication joinClassByInviteCode(String inviteCode);
+    JoinClassApplicationResponse joinClassByInviteCode(String inviteCode);
 
     /**
      * 转让班级所有权

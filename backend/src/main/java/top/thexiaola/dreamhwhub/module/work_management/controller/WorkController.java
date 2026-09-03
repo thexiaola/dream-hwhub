@@ -14,7 +14,6 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PinWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
-import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
@@ -34,15 +33,15 @@ public class WorkController {
      * 创建作业
      */
     @PostMapping(value = "", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<WorkInfo>> createWork(@Validated CreateWorkRequest request) {
+    public ResponseEntity<ApiResponse<WorkResponse>> createWork(@Validated CreateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             request.validate();
-            
+
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
-            WorkInfo workInfo = workService.createWork(request);
+
+            WorkResponse workInfo = workService.createWork(request);
             log.info("User ({}) created work: {}", userInfo, workInfo.getTitle());
             return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
@@ -58,19 +57,19 @@ public class WorkController {
      * 更新作业
      */
     @PutMapping(value = "/{workId}", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<WorkInfo>> updateWork(
-            @PathVariable(value = "workId") Integer workId, 
+    public ResponseEntity<ApiResponse<WorkResponse>> updateWork(
+            @PathVariable(value = "workId") Integer workId,
             @Validated UpdateWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             request.validate();
-            
+
             request.setId(workId);
-            
+
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
-            WorkInfo workInfo = workService.updateWork(request);
+
+            WorkResponse workInfo = workService.updateWork(request);
             log.info("User ({}) updated work: {}", userInfo, workInfo.getTitle());
             return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
@@ -91,7 +90,7 @@ public class WorkController {
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
+
             workService.deleteWork(workId);
             log.info("User ({}) deleted work, id: {}", userInfo, workId);
             return ResponseEntity.ok(ApiResponse.success(null));
@@ -105,13 +104,13 @@ public class WorkController {
      * 查询作业详情
      */
     @GetMapping(value = "/{workId}")
-    public ResponseEntity<ApiResponse<WorkInfo>> getWorkDetail(@PathVariable(value = "workId") Integer workId) {
+    public ResponseEntity<ApiResponse<WorkResponse>> getWorkDetail(@PathVariable(value = "workId") Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
-            WorkInfo workInfo = workService.getWorkById(workId);
+
+            WorkResponse workInfo = workService.getWorkById(workId);
             log.info("User ({}) queried work detail, id: {}", userInfo, workId);
             return ResponseEntity.ok(ApiResponse.success(workInfo));
         } catch (BusinessException e) {
@@ -132,7 +131,8 @@ public class WorkController {
         try {
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            Page<WorkResponse> works = workService.getWorkList(status, classId, pageRequest.getPageNum(), pageRequest.getPageSize());
+            Page<WorkResponse> works = workService.getWorkList(status, classId, pageRequest.getPageNum(),
+                    pageRequest.getPageSize());
             log.info("User ({}) queried work list, total: {}", userInfo, works.getTotal());
             return ResponseEntity.ok(ApiResponse.success(works));
         } catch (BusinessException e) {
@@ -145,17 +145,17 @@ public class WorkController {
      * 置顶/取消置顶作业
      */
     @PatchMapping(value = "/{workId}/pin")
-    public ResponseEntity<ApiResponse<WorkInfo>> pinWork(
-            @PathVariable(value = "workId") Integer workId, 
+    public ResponseEntity<ApiResponse<WorkResponse>> pinWork(
+            @PathVariable(value = "workId") Integer workId,
             @Validated @RequestBody PinWorkRequest request) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             request.setWorkId(workId);
-            
+
             User currentUser = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, currentUser);
-            
-            WorkInfo workInfo = workService.pinWork(request.getWorkId(), request.getIsPinned());
+
+            WorkResponse workInfo = workService.pinWork(request.getWorkId(), request.getIsPinned());
             String action = request.getIsPinned() ? "pinned" : "unpinned";
             log.info("User ({}) {} work, id: {}", userInfo, action, request.getWorkId());
             return ResponseEntity.ok(ApiResponse.success(workInfo));

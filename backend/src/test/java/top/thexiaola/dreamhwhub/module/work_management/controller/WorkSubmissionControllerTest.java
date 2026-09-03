@@ -45,6 +45,34 @@ class WorkSubmissionControllerTest {
 
     private ObjectMapper objectMapper;
 
+    /**
+     * 将WorkSubmission转换为WorkSubmissionResponse（用于测试）
+     */
+    private WorkSubmissionResponse convertToWorkSubmissionResponse(WorkSubmission submission) {
+        return new WorkSubmissionResponse(
+                submission.getId(),
+                submission.getWorkId(),
+                "测试作业", // workTitle - 简化处理
+                submission.getSubmitterId(),
+                submission.getSubmissionContent(),
+                submission.getScore(),
+                submission.getComment(),
+                submission.getGradeTime(),
+                1, // graderId - 简化处理
+                "测试批改人", // graderName - 简化处理
+                "测试用户", // submitterName - 简化处理
+                "testuser", // submitterUsername - 简化处理
+                "test@example.com", // submitterEmail - 简化处理
+                "测试学号", // submitterIdName - 简化处理
+                "20230001", // submitterUserNo - 简化处理
+                submission.getStatus(),
+                submission.getIsLate(),
+                submission.getCreateTime(),
+                submission.getUpdateTime(),
+                null // attachments - 简化处理
+        );
+    }
+
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
@@ -96,7 +124,7 @@ class WorkSubmissionControllerTest {
         submission.setSubmissionContent("作业内容");
 
         Mockito.when(workSubmissionService.getSubmissionById(Mockito.anyInt()))
-                .thenReturn(submission);
+                .thenReturn(convertToWorkSubmissionResponse(submission));
 
         mockMvc.perform(get("/api/submissions/1"))
                 .andExpect(status().isOk())
@@ -198,7 +226,7 @@ class WorkSubmissionControllerTest {
         submission.setScore(new BigDecimal("95.0"));
 
         Mockito.when(workSubmissionService.gradeWork(Mockito.any(GradeWorkRequest.class)))
-                .thenReturn(submission);
+                .thenReturn(convertToWorkSubmissionResponse(submission));
 
         mockMvc.perform(put("/api/submissions/grade")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -280,7 +308,7 @@ class WorkSubmissionControllerTest {
         submission.setScore(new BigDecimal("100.0"));
 
         Mockito.when(workSubmissionService.gradeWork(Mockito.any(GradeWorkRequest.class)))
-                .thenReturn(submission);
+                .thenReturn(convertToWorkSubmissionResponse(submission));
 
         mockMvc.perform(put("/api/submissions/grade")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -305,7 +333,7 @@ class WorkSubmissionControllerTest {
         submission.setScore(new BigDecimal("0.0"));
 
         Mockito.when(workSubmissionService.gradeWork(Mockito.any(GradeWorkRequest.class)))
-                .thenReturn(submission);
+                .thenReturn(convertToWorkSubmissionResponse(submission));
 
         mockMvc.perform(put("/api/submissions/grade")
                         .contentType(MediaType.APPLICATION_JSON)

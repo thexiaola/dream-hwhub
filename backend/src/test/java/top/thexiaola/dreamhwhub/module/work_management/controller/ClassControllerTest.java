@@ -17,9 +17,11 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.work_management.dto.*;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.CreateClassApplicationResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.JoinClassApplicationResponse;
 
 import java.util.Collections;
 
@@ -42,6 +44,40 @@ class ClassControllerTest {
     private ClassService classService;
 
     private ObjectMapper objectMapper;
+
+    /**
+     * 将ClassInfo转换为ClassDetailResponse（用于测试）
+     */
+    private ClassDetailResponse convertToClassDetailResponse(ClassInfo classInfo) {
+        return new ClassDetailResponse(
+                classInfo.getId(),
+                classInfo.getClassName(),
+                classInfo.getOwnerId(),
+                "测试用户", // ownerName - 简化处理
+                "MEMBER", // userRole - 简化处理
+                1L, // memberCount - 简化处理
+                1L, // teacherCount - 简化处理
+                0L, // studentCount - 简化处理
+                classInfo.getDescription(),
+                classInfo.getAllowStudentInvite(),
+                classInfo.getCreateTime()
+        );
+    }
+
+    /**
+     * 将ClassJoinApplication转换为JoinClassApplicationResponse（用于测试）
+     */
+    private JoinClassApplicationResponse convertToJoinClassApplicationResponse(ClassJoinApplication application) {
+        return new JoinClassApplicationResponse(
+                application.getId(),
+                application.getClassId(),
+                application.getApplicantId(),
+                application.getStatus(),
+                application.getCreateTime(),
+                "测试班级", // className - 简化处理
+                "测试用户" // applicantName - 简化处理
+        );
+    }
 
     @BeforeEach
     void setUp() {
@@ -145,7 +181,7 @@ class ClassControllerTest {
         updatedClass.setClassName("新班级名");
 
         Mockito.when(classService.updateClassInfo(Mockito.anyInt(), Mockito.anyString(), Mockito.anyString()))
-                .thenReturn(updatedClass);
+                .thenReturn(convertToClassDetailResponse(updatedClass));
 
         mockMvc.perform(put("/api/class/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -202,7 +238,7 @@ class ClassControllerTest {
         application.setId(1);
 
         Mockito.when(classService.joinClassByInviteCode(Mockito.anyString()))
-                .thenReturn(application);
+                .thenReturn(convertToJoinClassApplicationResponse(application));
 
         JoinByInviteCodeRequest request = new JoinByInviteCodeRequest();
         request.setInviteCode("ABC123");

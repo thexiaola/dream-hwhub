@@ -37,7 +37,7 @@ public class ClassServiceImpl implements ClassService {
     private final ClassJoinApplicationMapper classJoinApplicationMapper;
     private final ClassUserInvitationMapper classUserInvitationMapper;
     private final ClassTeacherApprovalMapper classTeacherApprovalMapper;
-    private final ClassInvitationMapper classInvitationMapper;  // 保留用于教师邀请功能
+    private final ClassInvitationMapper classInvitationMapper; // 保留用于教师邀请功能
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final WorkMapper workMapper;
@@ -46,6 +46,7 @@ public class ClassServiceImpl implements ClassService {
 
     /**
      * 获取当前登录用户，如果未登录则抛出异常
+     * 
      * @return 当前用户对象
      */
     private User getCurrentUserOrThrow() {
@@ -58,6 +59,7 @@ public class ClassServiceImpl implements ClassService {
 
     /**
      * 根据用户名或邮箱查询用户，如果不存在则抛出异常
+     * 
      * @param userAccount 用户名或邮箱（学号不作为账号，允许重复）
      * @return 用户对象
      */
@@ -65,7 +67,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<User> userQuery = new QueryWrapper<>();
         userQuery.and(q -> q.apply("BINARY username = BINARY {0}", userAccount).or().eq("email", userAccount));
         User targetUser = userMapper.selectOne(userQuery);
-        
+
         if (targetUser == null) {
             // 目标账号不存在属于业务失败（而非当前登录用户认证失效），返回 400 避免误触发前端登出
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "邀请的用户不存在，请确认用户名或邮箱是否正确", null);
@@ -75,6 +77,7 @@ public class ClassServiceImpl implements ClassService {
 
     /**
      * 判断用户是否为管理员
+     * 
      * @param user 用户对象
      * @return true-是管理员，false-不是管理员
      */
@@ -88,15 +91,15 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
         // 检查当前用户是否有权限添加老师（需要是老师或管理员）
         boolean isAdmin = isAdmin(currentUser);
         boolean isTeacher = isTeacher(classId, currentUser.getId());
-        
+
         if (!isAdmin && !isTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师或管理员可以添加其他老师到班级", null);
         }
@@ -108,7 +111,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("class_id", classId).eq("user_id", targetUser.getId());
         ClassMember existingMember = classMemberMapper.selectOne(memberQuery);
-        
+
         if (existingMember != null) {
             // 如果已经是成员，更新为老师
             existingMember.setRole(1);
@@ -119,7 +122,7 @@ public class ClassServiceImpl implements ClassService {
         ClassMember member = new ClassMember();
         member.setClassId(classId);
         member.setUserId(targetUser.getId());
-        member.setRole(1);  // 设置为老师
+        member.setRole(1); // 设置为老师
         member.setJoinTime(LocalDateTime.now());
         member.setInviteBy(currentUser.getId());
 
@@ -133,8 +136,8 @@ public class ClassServiceImpl implements ClassService {
     public void batchSetAssistantTeachers(Integer classId, List<Integer> studentUserIds) {
         User currentUser = getCurrentUserOrThrow();
 
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
@@ -177,8 +180,8 @@ public class ClassServiceImpl implements ClassService {
     public void batchKickStudentsFromClass(Integer classId, List<Integer> studentUserIds) {
         User currentUser = getCurrentUserOrThrow();
 
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
@@ -197,7 +200,7 @@ public class ClassServiceImpl implements ClassService {
             }
 
             // 不能踢出班级创建者
-            if (classInfo.getOwnerId().equals(studentUserId)) {
+            if (classEntity.getOwnerId().equals(studentUserId)) {
                 continue;
             }
 
@@ -226,15 +229,15 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
         // 检查当前用户是否是创建者或管理员
         boolean isAdmin = isAdmin(currentUser);
-        boolean isCreator = classInfo.getOwnerId().equals(currentUser.getId());
-        
+        boolean isCreator = classEntity.getOwnerId().equals(currentUser.getId());
+
         if (!isAdmin && !isCreator) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级创建者或管理员可以取消班级助理权限", null);
         }
@@ -248,13 +251,13 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
         teacherQuery.eq("class_id", classId).eq("user_id", teacherUserId).eq("role", 1);
         ClassMember teacherMember = classMemberMapper.selectOne(teacherQuery);
-        
+
         if (teacherMember == null) {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "该用户不是班级老师或不在该班级中", null);
         }
 
         // 不能取消创建者的权限（虽然创建者不会是班级助理，但为了安全还是检查一下）
-        if (classInfo.getOwnerId().equals(teacherUserId)) {
+        if (classEntity.getOwnerId().equals(teacherUserId)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "不能取消创建者的权限", null);
         }
 
@@ -270,14 +273,14 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("role", 1);
         ClassMember member = classMemberMapper.selectOne(queryWrapper);
-        
+
         if (member == null) {
             return false;
         }
 
         // 检查是否是创建者
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        return classInfo == null || !classInfo.getOwnerId().equals(userId);  // 创建者不是普通老师
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        return classEntity == null || !classEntity.getOwnerId().equals(userId); // 创建者不是普通老师
     }
 
     @Override
@@ -286,8 +289,8 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
@@ -295,14 +298,14 @@ public class ClassServiceImpl implements ClassService {
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassMember = isTeacher(classId, currentUser.getId())
                 || isStudent(classId, currentUser.getId());
-        
+
         if (!isAdmin && !isClassMember) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级内的成员才能提交邀请申请", null);
         }
 
         // 班级关闭学生邀请时，仅老师（创建者/助理）和管理员可发起邀请
         boolean isTeacherRole = isAdmin || isTeacher(classId, currentUser.getId());
-        if (!isTeacherRole && !Boolean.TRUE.equals(classInfo.getAllowStudentInvite())) {
+        if (!isTeacherRole && !Boolean.TRUE.equals(classEntity.getAllowStudentInvite())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "该班级不允许学生邀请同学加入", null);
         }
 
@@ -321,9 +324,9 @@ public class ClassServiceImpl implements ClassService {
         pendingInvitationQuery.eq("class_id", classId)
                 .eq("inviter_id", currentUser.getId())
                 .eq("invitee_id", targetUser.getId())
-                .eq("status", 0);  // 待确认
+                .eq("status", 0); // 待确认
         List<ClassUserInvitation> pendingInvitations = classUserInvitationMapper.selectList(pendingInvitationQuery);
-        
+
         if (!pendingInvitations.isEmpty()) {
             // 删除所有待确认的用户邀请记录
             for (ClassUserInvitation invitation : pendingInvitations) {
@@ -331,10 +334,10 @@ public class ClassServiceImpl implements ClassService {
                 QueryWrapper<ClassTeacherApproval> approvalQuery = new QueryWrapper<>();
                 approvalQuery.eq("invitation_id", invitation.getId());
                 classTeacherApprovalMapper.delete(approvalQuery);
-                
+
                 // 再删除用户邀请记录
                 classUserInvitationMapper.deleteById(invitation.getId());
-                
+
             }
         }
 
@@ -343,7 +346,7 @@ public class ClassServiceImpl implements ClassService {
         invitation.setClassId(classId);
         invitation.setInviterId(currentUser.getId());
         invitation.setInviteeId(targetUser.getId());
-        invitation.setStatus(0);  // 待用户确认
+        invitation.setStatus(0); // 待用户确认
         invitation.setCreateTime(LocalDateTime.now());
 
         classUserInvitationMapper.insert(invitation);
@@ -371,7 +374,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 更新邀请状态
-        invitation.setStatus(accepted ? 1 : 2);  // 1-已同意，2-已拒绝
+        invitation.setStatus(accepted ? 1 : 2); // 1-已同意，2-已拒绝
         invitation.setResponseTime(LocalDateTime.now());
         classUserInvitationMapper.updateById(invitation);
 
@@ -381,9 +384,9 @@ public class ClassServiceImpl implements ClassService {
             approval.setClassId(invitation.getClassId());
             approval.setInvitationId(invitation.getId());
             approval.setInviteeId(invitation.getInviteeId());
-            approval.setStatus(0);  // 待教师审核
+            approval.setStatus(0); // 待教师审核
             approval.setCreateTime(LocalDateTime.now());
-            
+
             classTeacherApprovalMapper.insert(approval);
         }
     }
@@ -405,13 +408,13 @@ public class ClassServiceImpl implements ClassService {
         // 检查审核人是否是老师或助理
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(approval.getClassId(), currentUser.getId());
-        
+
         if (!isAdmin && !isClassTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或助理可以审核邀请申请", null);
         }
 
         // 更新审核状态
-        approval.setStatus(approved ? 1 : 2);  // 1-已通过，2-已拒绝
+        approval.setStatus(approved ? 1 : 2); // 1-已通过，2-已拒绝
         approval.setReviewerId(currentUser.getId());
         approval.setReviewTime(LocalDateTime.now());
         approval.setReviewComment(comment);
@@ -422,22 +425,22 @@ public class ClassServiceImpl implements ClassService {
             // 检查是否已经是成员（双重检查）
             QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
             memberQuery.eq("class_id", approval.getClassId())
-                      .eq("user_id", approval.getInviteeId());
+                    .eq("user_id", approval.getInviteeId());
             if (classMemberMapper.selectCount(memberQuery) == 0) {
                 ClassMember member = new ClassMember();
                 member.setClassId(approval.getClassId());
                 member.setUserId(approval.getInviteeId());
-                member.setRole(0);  // 固定为学生
+                member.setRole(0); // 固定为学生
                 member.setJoinTime(LocalDateTime.now());
-                
+
                 // 获取邀请记录中的邀请人 ID
                 ClassUserInvitation invitation = classUserInvitationMapper.selectById(approval.getInvitationId());
                 if (invitation != null) {
                     member.setInviteBy(invitation.getInviterId());
                 }
-                
+
                 classMemberMapper.insert(member);
-                
+
             }
         }
 
@@ -450,17 +453,17 @@ public class ClassServiceImpl implements ClassService {
         // 检查是否是班级内的老师或助理
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
-        
+
         if (!isAdmin && !isClassTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或助理可以查看待审核邀请", null);
         }
 
         QueryWrapper<ClassTeacherApproval> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId)
-                   .eq("status", 0)  // 待审核
-                   .orderByDesc("create_time");
+                .eq("status", 0) // 待审核
+                .orderByDesc("create_time");
         List<ClassTeacherApproval> approvals = classTeacherApprovalMapper.selectList(queryWrapper);
-        
+
         // 转换为 VO 列表
         return approvals.stream()
                 .map(this::convertToTeacherApprovalResponse)
@@ -476,19 +479,19 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId).eq("user_id", currentUser.getId());
         ClassMember member = classMemberMapper.selectOne(queryWrapper);
-        
+
         if (member == null) {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "你不是该班级的成员", null);
         }
 
         // 获取班级名称
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
         // 如果是创建者，不能退出（需要先转让或解散班级）
-        if (classInfo.getOwnerId().equals(currentUser.getId())) {
+        if (classEntity.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.CREATOR_CANNOT_LEAVE, "创建者不能退出班级", null);
         }
 
@@ -498,7 +501,7 @@ public class ClassServiceImpl implements ClassService {
         // 硬删除学生成员记录（从班级中移除）
         classMemberMapper.deleteById(member.getId());
 
-        return classInfo.getClassName();
+        return classEntity.getClassName();
     }
 
     @Override
@@ -506,14 +509,14 @@ public class ClassServiceImpl implements ClassService {
     public void dissolveClass(Integer classId, String account, String password, String confirmText) {
         User currentUser = getCurrentUserOrThrow();
 
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
         // 创建者或管理员可以解散班级
         boolean isAdmin = isAdmin(currentUser);
-        boolean isOwner = classInfo.getOwnerId().equals(currentUser.getId());
+        boolean isOwner = classEntity.getOwnerId().equals(currentUser.getId());
         if (!isAdmin && !isOwner) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者或管理员可以解散班级", null);
         }
@@ -533,7 +536,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 确认文案校验：我已确认要删除{className}课堂
-        String className = classInfo.getClassName();
+        String className = classEntity.getClassName();
         String expected = "我已确认要删除" + (className == null ? "" : className) + "课堂";
         if (StrUtil.isBlank(confirmText) || !confirmText.equals(expected)) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "确认文案不匹配，请完整输入：" + expected, null);
@@ -546,15 +549,15 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<WorkInfo> workQuery = new QueryWrapper<>();
         workQuery.eq("class_id", classId);
         List<WorkInfo> works = workMapper.selectList(workQuery);
-        
+
         if (!works.isEmpty()) {
             List<Integer> workIds = works.stream().map(WorkInfo::getId).toList();
-            
+
             // 删除作业附件
             QueryWrapper<WorkAttachment> attQuery = new QueryWrapper<>();
             attQuery.in("work_id", workIds);
             int attachmentCount = workAttachmentMapper.delete(attQuery);
-            
+
             // 删除作业信息
             int workCount = workMapper.delete(workQuery);
         }
@@ -581,13 +584,13 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassInfo updateClassInfo(Integer classId, String className, String description) {
+    public ClassDetailResponse updateClassInfo(Integer classId, String className, String description) {
         // 1. 获取当前用户
         User currentUser = getCurrentUserOrThrow();
 
         // 2. 查询班级信息
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
@@ -598,25 +601,58 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 4. 更新班级信息
-        classInfo.setClassName(className);
-        classInfo.setDescription(description);
-        classInfo.setUpdateTime(LocalDateTime.now());
-        
-        int updated = classInfoMapper.updateById(classInfo);
+        classEntity.setClassName(className);
+        classEntity.setDescription(description);
+        classEntity.setUpdateTime(LocalDateTime.now());
+
+        int updated = classInfoMapper.updateById(classEntity);
         if (updated <= 0) {
             throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新班级信息失败", null);
         }
 
+        // 5. 转换为VO返回
+        User owner = userMapper.selectById(classEntity.getOwnerId());
+        String ownerName = owner != null ? owner.getUsername() : "未知";
 
-        return classInfo;
+        // 查询成员统计
+        QueryWrapper<ClassMember> countQuery = new QueryWrapper<>();
+        countQuery.eq("class_id", classEntity.getId());
+        long memberCount = classMemberMapper.selectCount(countQuery);
+
+        QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
+        teacherQuery.eq("class_id", classEntity.getId()).eq("role", 1);
+        long teacherCount = classMemberMapper.selectCount(teacherQuery);
+
+        QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
+        studentQuery.eq("class_id", classEntity.getId()).eq("role", 0);
+        long studentCount = classMemberMapper.selectCount(studentQuery);
+
+        // 查询当前用户在该班级的角色
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classEntity.getId()).eq("user_id", currentUser.getId());
+        ClassMember member = classMemberMapper.selectOne(memberQuery);
+        String userRole = getUserRole(classEntity, member);
+
+        return new ClassDetailResponse(
+                classEntity.getId(),
+                classEntity.getClassName(),
+                classEntity.getOwnerId(),
+                ownerName,
+                userRole,
+                memberCount,
+                teacherCount,
+                studentCount,
+                classEntity.getDescription(),
+                classEntity.getAllowStudentInvite(),
+                classEntity.getCreateTime());
     }
 
     @Override
     public void setStudentInviteAllowed(Integer classId, Boolean allowStudentInvite) {
         User currentUser = getCurrentUserOrThrow();
 
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null) {
+        ClassInfo classEntity = classInfoMapper.selectById(classId);
+        if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
@@ -625,9 +661,9 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或助理可以修改邀请设置", null);
         }
 
-        classInfo.setAllowStudentInvite(allowStudentInvite);
-        classInfo.setUpdateTime(LocalDateTime.now());
-        int updated = classInfoMapper.updateById(classInfo);
+        classEntity.setAllowStudentInvite(allowStudentInvite);
+        classEntity.setUpdateTime(LocalDateTime.now());
+        int updated = classInfoMapper.updateById(classEntity);
         if (updated <= 0) {
             throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR, "更新邀请设置失败", null);
         }
@@ -662,7 +698,7 @@ public class ClassServiceImpl implements ClassService {
         queryWrapper.eq("class_id", classId).eq("user_id", userId).eq("role", 1);
         return classMemberMapper.selectCount(queryWrapper) > 0;
     }
-    
+
     @Override
     public List<Integer> getTeacherClassIds(Integer userId) {
         if (userId == null) {
@@ -686,17 +722,17 @@ public class ClassServiceImpl implements ClassService {
         List<Integer> result = ownerClasses.stream()
                 .map(ClassInfo::getId)
                 .collect(Collectors.toList());
-        
+
         // 查询自己是老师的班级
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("user_id", userId)
-                   .eq("role", 1)
-                   .select("class_id");
+                .eq("role", 1)
+                .select("class_id");
         List<ClassMember> teacherClasses = classMemberMapper.selectList(memberQuery);
         result.addAll(teacherClasses.stream()
                 .map(ClassMember::getClassId)
                 .collect(Collectors.toList()));
-        
+
         return result;
     }
 
@@ -749,7 +785,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("class_id", classId).eq("user_id", userId);
         ClassMember member = classMemberMapper.selectOne(memberQuery);
-        
+
         if (member == null) {
             return null;
         }
@@ -765,7 +801,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("class_id", classId).eq("user_id", userId);
         ClassMember member = classMemberMapper.selectOne(memberQuery);
-        
+
         if (member == null) {
             return null;
         }
@@ -781,7 +817,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("class_id", classId).eq("user_id", userId);
         ClassMember member = classMemberMapper.selectOne(memberQuery);
-        
+
         if (member == null) {
             return null;
         }
@@ -795,7 +831,7 @@ public class ClassServiceImpl implements ClassService {
     public ClassInfo getClassById(Integer classId) {
         return classInfoMapper.selectById(classId);
     }
-    
+
     @Override
     public List<ClassInfo> getClassByIds(List<Integer> classIds) {
         if (classIds == null || classIds.isEmpty()) {
@@ -855,8 +891,7 @@ public class ClassServiceImpl implements ClassService {
                 studentCount,
                 classInfo.getDescription(),
                 classInfo.getAllowStudentInvite(),
-                classInfo.getCreateTime()
-        );
+                classInfo.getCreateTime());
     }
 
     @Override
@@ -884,7 +919,8 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize, String keyword) {
+    public Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize,
+            String keyword) {
         // 仅管理员可管理全部班级
         User currentUser = userMapper.selectById(userId);
         if (!isAdmin(currentUser)) {
@@ -982,8 +1018,7 @@ public class ClassServiceImpl implements ClassService {
                             studentCount,
                             classInfo.getDescription(),
                             classInfo.getAllowStudentInvite(),
-                            classInfo.getCreateTime()
-                    );
+                            classInfo.getCreateTime());
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();
@@ -991,20 +1026,21 @@ public class ClassServiceImpl implements ClassService {
 
     /**
      * 获取用户在班级中的角色
+     * 
      * @param classInfo 班级信息
-     * @param member 班级成员信息
+     * @param member    班级成员信息
      * @return 角色字符串（创建者/班级助理/学生）
      */
     private String getUserRole(ClassInfo classInfo, ClassMember member) {
         if (classInfo == null || member == null) {
             return null;
         }
-        
+
         // 如果是班级创建者
         if (classInfo.getOwnerId().equals(member.getUserId())) {
             return "创建者";
         }
-        
+
         Integer role = member.getRole();
         if (role == null) {
             return "学生";
@@ -1019,20 +1055,21 @@ public class ClassServiceImpl implements ClassService {
 
     /**
      * 获取用户在班级中的角色代码
+     * 
      * @param classInfo 班级信息
-     * @param member 班级成员信息
+     * @param member    班级成员信息
      * @return 角色代码：1-老师，0-学生，null-非成员
      */
     private Integer getUserRoleCode(ClassInfo classInfo, ClassMember member) {
         if (classInfo == null || member == null) {
             return null;
         }
-        
+
         // 如果是班级创建者，返回特殊标记
         if (classInfo.getOwnerId().equals(member.getUserId())) {
-            return 1;  // 创建者也算老师
+            return 1; // 创建者也算老师
         }
-        
+
         return member.getRole();
     }
 
@@ -1049,14 +1086,14 @@ public class ClassServiceImpl implements ClassService {
         // 权限校验：管理员不受限制，普通用户只能查询自己创建或加入的班级
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassMember = isClassMember(classId, currentUser.getId());
-        
+
         if (!isAdmin && !isClassMember) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "你无权查看该班级的成员列表", null);
         }
 
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId);
-        
+
         // 使用MyBatisPlus分页
         Page<ClassMember> memberPage = new Page<>(pageNum, pageSize);
         Page<ClassMember> pagedResult = classMemberMapper.selectPage(memberPage, queryWrapper);
@@ -1106,8 +1143,7 @@ public class ClassServiceImpl implements ClassService {
                             userNo,
                             role,
                             member.getJoinTime(),
-                            teacherCount
-                    );
+                            teacherCount);
                 })
                 .toList();
 
@@ -1121,7 +1157,7 @@ public class ClassServiceImpl implements ClassService {
     public List<ClassMemberResponse> getAllClassMembers(Integer classId) {
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId);
-        
+
         // 不分页，查询所有成员
         List<ClassMember> members = classMemberMapper.selectList(queryWrapper);
 
@@ -1130,7 +1166,7 @@ public class ClassServiceImpl implements ClassService {
                     User user = userMapper.selectById(member.getUserId());
                     String userName = user != null ? user.getUsername() : "未知";
                     String userNo = user != null ? user.getUserNo() : "未知";
-                    
+
                     // 确定角色
                     ClassInfo classInfo = classInfoMapper.selectById(classId);
                     String role = getUserRole(classInfo, member);
@@ -1142,8 +1178,7 @@ public class ClassServiceImpl implements ClassService {
                             userNo,
                             role,
                             member.getJoinTime(),
-                            null
-                    );
+                            null);
                 })
                 .toList();
     }
@@ -1161,7 +1196,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("class_id", classId).eq("user_id", userId);
         ClassMember member = classMemberMapper.selectOne(queryWrapper);
-        
+
         if (member == null) {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "用户不在该班级中", null);
         }
@@ -1180,11 +1215,10 @@ public class ClassServiceImpl implements ClassService {
         application.setApplicantId(currentUser.getId());
         application.setClassName(className);
         application.setDescription(description);
-        application.setStatus(0);  // 待审核
+        application.setStatus(0); // 待审核
 
         classCreateApplicationMapper.insert(application);
 
-        
         // 构建响应对象
         return new CreateClassApplicationResponse(
                 application.getId(),
@@ -1192,12 +1226,12 @@ public class ClassServiceImpl implements ClassService {
                 application.getClassName(),
                 application.getDescription(),
                 application.getStatus(),
-                application.getCreateTime()
-        );
+                application.getCreateTime());
     }
 
     @Override
-    public Page<ClassCreateApplication> getCreateApplications(Integer status, Integer pageNum, Integer pageSize) {
+    public Page<CreateClassApplicationResponse> getCreateApplications(Integer status, Integer pageNum,
+            Integer pageSize) {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是管理员（permission >= 100）
@@ -1206,17 +1240,43 @@ public class ClassServiceImpl implements ClassService {
         }
 
         QueryWrapper<ClassCreateApplication> queryWrapper = new QueryWrapper<>();
-        
+
         if (status != null) {
             queryWrapper.eq("status", status);
         }
-        
+
         // 按创建时间倒序排列
         queryWrapper.orderByDesc("create_time");
-        
+
         // 使用MyBatisPlus分页
         Page<ClassCreateApplication> appPage = new Page<>(pageNum, pageSize);
-        return classCreateApplicationMapper.selectPage(appPage, queryWrapper);
+        Page<ClassCreateApplication> resultPage = classCreateApplicationMapper.selectPage(appPage, queryWrapper);
+
+        // 转换为VO列表
+        List<CreateClassApplicationResponse> voList = resultPage.getRecords().stream()
+                .map(this::convertToCreateClassApplicationResponse)
+                .toList();
+
+        // 构建新的分页结果
+        Page<CreateClassApplicationResponse> voPage = new Page<>(pageNum, pageSize, resultPage.getTotal());
+        voPage.setRecords(voList);
+        return voPage;
+    }
+
+    /**
+     * 将 ClassCreateApplication 实体转换为 CreateClassApplicationResponse VO
+     */
+    private CreateClassApplicationResponse convertToCreateClassApplicationResponse(ClassCreateApplication application) {
+        User applicant = userMapper.selectById(application.getApplicantId());
+        String applicantName = applicant != null ? applicant.getUsername() : "未知";
+
+        return new CreateClassApplicationResponse(
+                application.getId(),
+                application.getApplicantId(),
+                application.getClassName(),
+                application.getDescription(),
+                application.getStatus(),
+                application.getCreateTime());
     }
 
     @Override
@@ -1300,11 +1360,10 @@ public class ClassServiceImpl implements ClassService {
         ClassJoinApplication application = new ClassJoinApplication();
         application.setClassId(classId);
         application.setApplicantId(currentUser.getId());
-        application.setStatus(0);  // 待审核
+        application.setStatus(0); // 待审核
 
         classJoinApplicationMapper.insert(application);
 
-        
         // 构建响应对象
         JoinClassApplicationResponse response = new JoinClassApplicationResponse();
         response.setId(application.getId());
@@ -1314,17 +1373,18 @@ public class ClassServiceImpl implements ClassService {
         response.setCreateTime(application.getCreateTime());
         response.setClassName(classInfo.getClassName());
         response.setApplicantName(currentUser.getUsername());
-        
+
         return response;
     }
 
     @Override
-    public Page<ClassJoinApplication> getJoinApplications(Integer classId, Integer status, Integer pageNum, Integer pageSize) {
+    public Page<JoinClassApplicationResponse> getJoinApplications(Integer classId, Integer status, Integer pageNum,
+            Integer pageSize) {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查权限：管理员或班级老师
         boolean isAdmin = isAdmin(currentUser);
-        
+
         if (!isAdmin && classId != null) {
             // 如果不是管理员，必须是该班级的老师
             if (!isTeacher(classId, currentUser.getId())) {
@@ -1334,53 +1394,93 @@ public class ClassServiceImpl implements ClassService {
             // 非管理员且classId为空：查询自己担任老师的所有班级的申请
             QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
             teacherQuery.eq("user_id", currentUser.getId())
-                       .eq("role", 1)
-                       .select("class_id");
+                    .eq("role", 1)
+                    .select("class_id");
             List<ClassMember> teacherMembers = classMemberMapper.selectList(teacherQuery);
-            
+
             if (teacherMembers.isEmpty()) {
                 // 没有担任老师的班级，返回空分页结果
-                Page<ClassJoinApplication> emptyPage = new Page<>(pageNum, pageSize, 0);
+                Page<JoinClassApplicationResponse> emptyPage = new Page<>(pageNum, pageSize, 0);
                 emptyPage.setRecords(Collections.emptyList());
                 return emptyPage;
             }
-            
+
             // 构建classId列表
             List<Integer> classIds = teacherMembers.stream()
                     .map(ClassMember::getClassId)
                     .toList();
-            
+
             // 查询这些班级的申请
             QueryWrapper<ClassJoinApplication> queryWrapper = new QueryWrapper<>();
             queryWrapper.in("class_id", classIds);
-            
+
             if (status != null) {
                 queryWrapper.eq("status", status);
             }
-            
+
             // 按创建时间倒序排列
             queryWrapper.orderByDesc("create_time");
-            
+
             // 使用MyBatisPlus分页
             Page<ClassJoinApplication> appPage = new Page<>(pageNum, pageSize);
-            return classJoinApplicationMapper.selectPage(appPage, queryWrapper);
+            Page<ClassJoinApplication> resultPage = classJoinApplicationMapper.selectPage(appPage, queryWrapper);
+
+            // 转换为VO列表
+            List<JoinClassApplicationResponse> voList = resultPage.getRecords().stream()
+                    .map(this::convertToJoinClassApplicationResponse)
+                    .toList();
+
+            // 构建新的分页结果
+            Page<JoinClassApplicationResponse> voPage = new Page<>(pageNum, pageSize, resultPage.getTotal());
+            voPage.setRecords(voList);
+            return voPage;
         }
 
         QueryWrapper<ClassJoinApplication> queryWrapper = new QueryWrapper<>();
-        
+
         if (classId != null) {
             queryWrapper.eq("class_id", classId);
         }
         if (status != null) {
             queryWrapper.eq("status", status);
         }
-        
+
         // 按创建时间倒序排列
         queryWrapper.orderByDesc("create_time");
-        
+
         // 使用MyBatisPlus分页
         Page<ClassJoinApplication> appPage = new Page<>(pageNum, pageSize);
-        return classJoinApplicationMapper.selectPage(appPage, queryWrapper);
+        Page<ClassJoinApplication> resultPage = classJoinApplicationMapper.selectPage(appPage, queryWrapper);
+
+        // 转换为VO列表
+        List<JoinClassApplicationResponse> voList = resultPage.getRecords().stream()
+                .map(this::convertToJoinClassApplicationResponse)
+                .toList();
+
+        // 构建新的分页结果
+        Page<JoinClassApplicationResponse> voPage = new Page<>(pageNum, pageSize, resultPage.getTotal());
+        voPage.setRecords(voList);
+        return voPage;
+    }
+
+    /**
+     * 将 ClassJoinApplication 实体转换为 JoinClassApplicationResponse VO
+     */
+    private JoinClassApplicationResponse convertToJoinClassApplicationResponse(ClassJoinApplication application) {
+        User applicant = userMapper.selectById(application.getApplicantId());
+        String applicantName = applicant != null ? applicant.getUsername() : "未知";
+
+        ClassInfo classInfo = classInfoMapper.selectById(application.getClassId());
+        String className = classInfo != null ? classInfo.getClassName() : "未知";
+
+        return new JoinClassApplicationResponse(
+                application.getId(),
+                application.getClassId(),
+                application.getApplicantId(),
+                application.getStatus(),
+                application.getCreateTime(),
+                className,
+                applicantName);
     }
 
     @Override
@@ -1400,7 +1500,7 @@ public class ClassServiceImpl implements ClassService {
         // 检查权限：管理员或班级老师
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(application.getClassId(), currentUser.getId());
-        
+
         if (!isAdmin && !isClassTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员或班级老师可以审核加入申请", null);
         }
@@ -1417,7 +1517,7 @@ public class ClassServiceImpl implements ClassService {
             ClassMember member = new ClassMember();
             member.setClassId(application.getClassId());
             member.setUserId(application.getApplicantId());
-            member.setRole(3);  // 固定为学生
+            member.setRole(3); // 固定为学生
             member.setJoinTime(LocalDateTime.now());
             classMemberMapper.insert(member);
 
@@ -1427,7 +1527,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassInvitation inviteUserToClassWithApproval(Integer classId, String userAccount) {
+    public InvitationResponse inviteUserToClassWithApproval(Integer classId, String userAccount) {
         User currentUser = getCurrentUserOrThrow();
 
         // 验证班级是否存在
@@ -1439,7 +1539,7 @@ public class ClassServiceImpl implements ClassService {
         // 检查当前用户是否有权限邀请（必须是老师或管理员）
         boolean isAdmin = isAdmin(currentUser);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
-        
+
         if (!isAdmin && !isClassTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师或管理员可以邀请用户加入班级", null);
         }
@@ -1458,7 +1558,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassInvitation> oldInvitationQuery = new QueryWrapper<>();
         oldInvitationQuery.eq("class_id", classId)
                 .eq("invitee_user_id", targetUser.getId())
-                .eq("status", 0);  // 待处理
+                .eq("status", 0); // 待处理
         classInvitationMapper.delete(oldInvitationQuery);
 
         // 创建新的邀请记录
@@ -1466,11 +1566,30 @@ public class ClassServiceImpl implements ClassService {
         invitation.setClassId(classId);
         invitation.setInviterId(currentUser.getId());
         invitation.setInviteeUserId(targetUser.getId());
-        invitation.setStatus(0);  // 待处理
+        invitation.setStatus(0); // 待处理
 
         classInvitationMapper.insert(invitation);
 
-        return invitation;
+        // 转换为VO返回
+        User inviter = userMapper.selectById(currentUser.getId());
+        String inviterName = inviter != null ? inviter.getUsername() : "未知";
+
+        User invitee = userMapper.selectById(targetUser.getId());
+        String inviteeName = invitee != null ? invitee.getUsername() : "未知";
+
+        // ClassInfo classInfo already defined above
+        String className = classInfo != null ? classInfo.getClassName() : "未知";
+
+        return new InvitationResponse(
+                invitation.getId(),
+                invitation.getClassId(),
+                className,
+                invitation.getInviterId(),
+                inviterName,
+                invitation.getInviteeUserId(),
+                invitation.getStatus(),
+                invitation.getResponseTime(),
+                invitation.getCreateTime());
     }
 
     @Override
@@ -1484,16 +1603,16 @@ public class ClassServiceImpl implements ClassService {
 
         QueryWrapper<ClassInvitation> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("invitee_user_id", userId);
-        
+
         if (status != null) {
             queryWrapper.eq("status", status);
         }
-        
+
         // 按创建时间倒序排列
         queryWrapper.orderByDesc("create_time");
-        
+
         List<ClassInvitation> invitations = classInvitationMapper.selectList(queryWrapper);
-        
+
         // 转换为响应对象
         return invitations.stream().map(invitation -> {
             InvitationResponse response = new InvitationResponse();
@@ -1583,7 +1702,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 更新邀请状态
-        invitation.setStatus(accepted ? 1 : 2);  // 1-已同意，2-已拒绝
+        invitation.setStatus(accepted ? 1 : 2); // 1-已同意，2-已拒绝
         invitation.setResponseTime(LocalDateTime.now());
         classInvitationMapper.updateById(invitation);
 
@@ -1596,7 +1715,7 @@ public class ClassServiceImpl implements ClassService {
                 ClassMember member = new ClassMember();
                 member.setClassId(invitation.getClassId());
                 member.setUserId(currentUser.getId());
-                member.setRole(0);  // 固定为学生
+                member.setRole(0); // 固定为学生
                 member.setJoinTime(LocalDateTime.now());
                 member.setInviteBy(invitation.getInviterId());
                 classMemberMapper.insert(member);
@@ -1659,7 +1778,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ClassJoinApplication joinClassByInviteCode(String inviteCode) {
+    public JoinClassApplicationResponse joinClassByInviteCode(String inviteCode) {
         User currentUser = getCurrentUserOrThrow();
 
         if (StrUtil.isBlank(inviteCode)) {
@@ -1670,7 +1789,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
         classQuery.eq("invite_code", StrUtil.trim(inviteCode));
         ClassInfo classInfo = classInfoMapper.selectOne(classQuery);
-        
+
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "邀请码失效", null);
         }
@@ -1686,21 +1805,32 @@ public class ClassServiceImpl implements ClassService {
         ClassMember member = new ClassMember();
         member.setClassId(classInfo.getId());
         member.setUserId(currentUser.getId());
-        member.setRole(0);  // 以学生身份加入
+        member.setRole(0); // 以学生身份加入
         member.setJoinTime(LocalDateTime.now());
         classMemberMapper.insert(member);
 
-        
         // 为了保持接口一致性，返回一个“已通过”的申请记录（虚拟）
         ClassJoinApplication application = new ClassJoinApplication();
         application.setClassId(classInfo.getId());
         application.setApplicantId(currentUser.getId());
-        application.setStatus(1);  // 直接设置为已通过
-        application.setReviewerId(currentUser.getId());  // 自动审核
+        application.setStatus(1); // 直接设置为已通过
+        application.setReviewerId(currentUser.getId()); // 自动审核
         application.setReviewTime(LocalDateTime.now());
         application.setCreateTime(LocalDateTime.now());
-        
-        return application;
+
+        // 获取申请人姓名
+        User applicant = userMapper.selectById(application.getApplicantId());
+        String applicantName = applicant != null ? applicant.getUsername() : "未知";
+
+        // 转换为VO返回
+        return new JoinClassApplicationResponse(
+                application.getId(),
+                application.getClassId(),
+                application.getApplicantId(),
+                application.getStatus(),
+                application.getCreateTime(),
+                classInfo.getClassName(),
+                applicantName);
     }
 
     @Override
@@ -1723,7 +1853,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("class_id", classId).eq("user_id", newOwnerId);
         ClassMember newOwnerMember = classMemberMapper.selectOne(memberQuery);
-        
+
         if (newOwnerMember == null) {
             throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "新所有者必须是班级成员", null);
         }
@@ -1746,7 +1876,7 @@ public class ClassServiceImpl implements ClassService {
         oldOwnerQuery.eq("class_id", classId).eq("user_id", currentUser.getId());
         ClassMember oldOwnerMember = classMemberMapper.selectOne(oldOwnerQuery);
         if (oldOwnerMember != null) {
-            oldOwnerMember.setRole(1);  // 降级为班级助理
+            oldOwnerMember.setRole(1); // 降级为班级助理
             classMemberMapper.updateById(oldOwnerMember);
         }
 
@@ -1761,8 +1891,9 @@ public class ClassServiceImpl implements ClassService {
 
     /**
      * 清理学生在该班级的所有作业提交和附件（软删除）
+     * 
      * @param classId 班级ID
-     * @param userId 学生用户ID
+     * @param userId  学生用户ID
      */
     private void cleanupStudentSubmissions(Integer classId, Integer userId) {
         // 1. 先查询该班级的所有作业ID（避免SQL注入）
@@ -1770,23 +1901,23 @@ public class ClassServiceImpl implements ClassService {
         workQuery.eq("class_id", classId)
                 .select("id");
         List<WorkInfo> worksInClass = workMapper.selectList(workQuery);
-        
+
         if (worksInClass.isEmpty()) {
             log.warn("No works found in class {} for user {}", classId, userId);
             return;
         }
-        
+
         List<Integer> workIds = worksInClass.stream()
                 .map(WorkInfo::getId)
                 .collect(Collectors.toList());
-        
+
         // 2. 查询该学生在这些作业中的提交记录
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
         submissionQuery.eq("submitter_id", userId)
-                      .eq("is_deleted", false)
-                      .in("work_id", workIds);
+                .eq("is_deleted", false)
+                .in("work_id", workIds);
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
-        
+
         if (submissions.isEmpty()) {
             return;
         }
@@ -1798,27 +1929,28 @@ public class ClassServiceImpl implements ClassService {
         // 2. 批量软删除附件记录
         QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
         attQuery.in("submission_id", submissionIds)
-               .eq("is_deleted", false);
+                .eq("is_deleted", false);
         List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
-        
+
         if (!attachments.isEmpty()) {
             for (WorkSubmissionAttachment attachment : attachments) {
                 attachment.setIsDeleted(true);
             }
             workSubmissionAttachmentMapper.update(null, attQuery);
         }
-        
+
         // 3. 批量软删除提交记录
         QueryWrapper<WorkSubmission> updateQuery = new QueryWrapper<>();
         updateQuery.in("id", submissionIds);
         WorkSubmission updateEntity = new WorkSubmission();
         updateEntity.setIsDeleted(true);
         workSubmissionMapper.update(updateEntity, updateQuery);
-        
+
     }
 
     /**
      * 硬删除班级下的所有作业提交记录和附件
+     * 
      * @param classId 班级 ID
      */
     private void hardDeleteAllSubmissionsInClass(Integer classId) {
@@ -1826,7 +1958,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<WorkInfo> workQuery = new QueryWrapper<>();
         workQuery.eq("class_id", classId);
         List<WorkInfo> works = workMapper.selectList(workQuery);
-        
+
         if (works.isEmpty()) {
             return;
         }
@@ -1839,7 +1971,7 @@ public class ClassServiceImpl implements ClassService {
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
         submissionQuery.in("work_id", workIds);
         List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
-        
+
         if (submissions.isEmpty()) {
             return;
         }
