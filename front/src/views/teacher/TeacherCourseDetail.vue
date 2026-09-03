@@ -1557,6 +1557,45 @@ onMounted(async () => {
   margin-top: 20px;
 }
 
+/* 分页按钮暗色适配（EP 默认白底，在暗色页面上会形成白块） */
+.works-pagination :deep(.el-pagination .el-pagination__total) {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6) !important;
+}
+
+.works-pagination :deep(.el-pagination .el-pager li) {
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
+}
+
+.works-pagination :deep(.el-pagination .el-pager li:hover) {
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.4) !important;
+}
+
+.works-pagination :deep(.el-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: var(--fg-on-accent) !important;
+  border-color: transparent !important;
+}
+
+.works-pagination :deep(.el-pagination button) {
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
+}
+
+.works-pagination :deep(.el-pagination button:hover:not(:disabled)) {
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.4) !important;
+}
+
+.works-pagination :deep(.el-pagination button:disabled) {
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
+  cursor: not-allowed !important;
+}
+
 .invite-code-content {
   text-align: center;
 }

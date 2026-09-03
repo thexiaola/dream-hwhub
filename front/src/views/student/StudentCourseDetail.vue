@@ -88,7 +88,10 @@
               已提交
             </span>
             <span v-else-if="getSubmissionStatus(work) === 'graded'" class="graded">
-              已批改 - {{ work.myScore }}分
+              已批改 - {{ getSubmissionScore(work) ?? '—' }}分
+            </span>
+            <span v-else-if="getSubmissionStatus(work) === 'returned'" class="returned">
+              已打回{{ getSubmissionScore(work) != null ? ` - ${getSubmissionScore(work)}分` : '' }}
             </span>
             <span v-else-if="getSubmissionStatus(work) === 'late'" class="late">
               未提交（已逾期）
@@ -178,8 +181,6 @@ interface WorkInfo {
   isPinned: boolean
   status: number
   publishTime: string
-  myScore?: number
-  mySubmissionStatus?: number
 }
 
 interface SubmissionInfo {
@@ -315,14 +316,20 @@ const getWorkStatusText = (work: WorkInfo) => {
   return map[status] || status
 }
 
+const getSubmissionOf = (work: WorkInfo) =>
+  submissions.value.find(s => s.workId === work.id) ?? null
+
+const getSubmissionScore = (work: WorkInfo) => getSubmissionOf(work)?.score ?? null
+
 const getSubmissionStatus = (work: WorkInfo) => {
-  const submission = submissions.value.find(s => s.workId === work.id)
+  const submission = getSubmissionOf(work)
   if (!submission) {
     const now = new Date()
     const deadline = new Date(work.deadline)
     return now > deadline ? 'late' : 'pending'
   }
   if (submission.status === 2) return 'graded'
+  if (submission.status === 3) return 'returned'
   if (submission.status === 1) return 'submitted'
   return 'pending'
 }
@@ -524,6 +531,11 @@ onMounted(async () => {
   color: #3b82f6;
 }
 
+.returned {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
 .late {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
@@ -552,6 +564,45 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+/* 分页按钮暗色适配（EP 默认白底，在暗色页面上会形成白块） */
+.works-pagination :deep(.el-pagination .el-pagination__total) {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6) !important;
+}
+
+.works-pagination :deep(.el-pagination .el-pager li) {
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
+}
+
+.works-pagination :deep(.el-pagination .el-pager li:hover) {
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.4) !important;
+}
+
+.works-pagination :deep(.el-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: var(--fg-on-accent) !important;
+  border-color: transparent !important;
+}
+
+.works-pagination :deep(.el-pagination button) {
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75) !important;
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
+}
+
+.works-pagination :deep(.el-pagination button:hover:not(:disabled)) {
+  color: #667eea !important;
+  border-color: rgba(102, 126, 234, 0.4) !important;
+}
+
+.works-pagination :deep(.el-pagination button:disabled) {
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03) !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
+  cursor: not-allowed !important;
 }
 
 .invite-flow-tip {

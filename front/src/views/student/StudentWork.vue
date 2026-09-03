@@ -76,8 +76,16 @@
         </div>
       </template>
 
-      <!-- 已批改 -->
-      <div v-if="mySubmission && mySubmission.status === 2" class="graded-section">
+      <!-- 已批改 / 已打回：均展示分数与批语；打回时额外提示可重新提交 -->
+      <div v-if="mySubmission && (mySubmission.status === 2 || mySubmission.status === 3)" class="graded-section">
+        <el-alert
+          v-if="mySubmission.status === 3"
+          type="warning"
+          :closable="false"
+          show-icon
+          title="作业已被打回，请根据下方教师评语修改后重新提交"
+          class="edit-alert return-alert"
+        />
         <div class="score-row">
           <Award :size="20" />
           <span class="score-value">{{ mySubmission.score ?? '—' }}</span>
@@ -89,7 +97,7 @@
           <span>批改时间：{{ mySubmission.gradeTime ? formatDate(mySubmission.gradeTime) : '—' }}</span>
         </div>
         <div v-if="mySubmission.comment" class="comment-section">
-          <h4>教师评语</h4>
+          <h4>{{ mySubmission.status === 3 ? '教师评语（打回原因）' : '教师评语' }}</h4>
           <p>{{ mySubmission.comment }}</p>
         </div>
         <div v-if="mySubmission.submissionContent" class="content-section">
@@ -112,7 +120,7 @@
         </div>
       </div>
 
-      <!-- 只读展示已提交未批改 -->
+      <!-- 只读展示已提交未批改（已打回会走上面的分数/评语分支） -->
       <div v-else-if="mySubmission && !editing" class="readonly-section">
         <div class="submitted-meta">
           <span class="submitted-badge">
@@ -146,10 +154,12 @@
       <div v-else class="edit-section">
         <el-alert
           v-if="editing"
-          type="info"
+          :type="mySubmission && mySubmission.status === 3 ? 'warning' : 'info'"
           :closable="false"
           show-icon
-          title="正在修改已提交的作业，保存后将覆盖原提交内容"
+          :title="mySubmission && mySubmission.status === 3
+            ? '作业已被打回，请按教师评语修改后重新提交，保存后将覆盖原提交内容'
+            : '正在修改已提交的作业，保存后将覆盖原提交内容'"
           class="edit-alert"
         />
         <el-alert
@@ -173,7 +183,6 @@
           </el-form-item>
           <el-form-item label="新增附件">
             <el-upload
-              ref="newUploadRef"
               v-model:file-list="newFiles"
               class="new-upload"
               :auto-upload="false"
@@ -261,7 +270,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { get, postForm, putForm, del } from '@/utils/http'
 import instance from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { UploadFile, UploadInstance, UploadUserFile } from 'element-plus'
+import type { UploadFile, UploadUserFile } from 'element-plus'
 import {
   ArrowLeft,
   Award,
@@ -328,7 +337,6 @@ const editing = ref(false)
 const submitting = ref(false)
 const content = ref('')
 const newFiles = ref<UploadUserFile[]>([])
-const newUploadRef = ref<UploadInstance>()
 const existingAttachments = ref<AttachmentInfo[]>([])
 const removedIds = ref<number[]>([])
 

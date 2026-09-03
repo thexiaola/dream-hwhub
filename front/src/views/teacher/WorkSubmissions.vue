@@ -138,7 +138,7 @@
               </div>
             </div>
 
-            <div class="submission-grade" v-if="sub.status === 2">
+            <div class="submission-grade" v-if="sub.status === 2 || sub.status === 3">
               <div class="grade-row">
                 <Award :size="16" />
                 <span class="label">分数：</span>
