@@ -16,6 +16,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
+import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
@@ -32,6 +33,7 @@ public class LoginUserController {
     private final UserMapper userMapper;
     private final top.thexiaola.dreamhwhub.support.mapper.UserMapper userResponseMapper;
     private final JwtUtil jwtUtil;
+    private final PermissionService permissionService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request,
@@ -41,6 +43,7 @@ public class LoginUserController {
         try {
             User user = loginUserService.login(loginRequest, request);
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
+            userResponse.setPermissions(permissionService.getPermissionNodes(user.getId()));
 
             // 生成JWT Token并设置到响应中
             String token = jwtUtil.generateToken(user);
@@ -112,6 +115,7 @@ public class LoginUserController {
             return ResponseEntity.status(404).body(ApiResponse.error(404, "用户不存在"));
         }
         UserInfoResponse userInfoResponse = userResponseMapper.toUserInfoResponse(fullUser);
+        userInfoResponse.setPermissions(permissionService.getPermissionNodes(fullUser.getId()));
         return ResponseEntity.ok(ApiResponse.success(userInfoResponse, "获取用户信息成功"));
     }
 

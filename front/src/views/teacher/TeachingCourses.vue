@@ -69,7 +69,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" @click="createCourse">提交申请</el-button>
+        <el-button type="primary" @click="createCourse">创建</el-button>
       </template>
     </el-dialog>
   </div>
@@ -123,10 +123,11 @@ const createCourse = async () => {
   }
   const result = await post('/class/create', createForm.value)
   if (result.code === 200) {
-    ElMessage.success('创建申请已提交，等待管理员审核')
+    ElMessage.success('课程创建成功')
     showCreateDialog.value = false
     createForm.value.className = ''
     createForm.value.description = ''
+    loadTeacherCourses()
   } else {
     ElMessage.error(result.message)
   }

@@ -88,7 +88,7 @@ public class LogUtil {
                 "user_no: " + formatValue(user.getUserNo()) + ", " +
                 "username: " + formatValue(user.getUsername()) + ", " +
                 "email: " + formatValue(user.getEmail()) + ", " +
-                "permission: " + user.getPermission();
+                "is_op: " + Boolean.TRUE.equals(user.getIsOp());
 
         return StrUtil.removeSuffix(result, ", ");
     }
@@ -102,9 +102,9 @@ public class LogUtil {
      */
     public static String getUserInfoString(String ip, User user) {
         if (user != null) {
-            return String.format("ip: %s, id: %d, user_no: %s, username: %s, email: %s, permission: %d",
+            return String.format("ip: %s, id: %d, user_no: %s, username: %s, email: %s, is_op: %s",
                     ip, user.getId(), formatValue(user.getUserNo()), formatValue(user.getUsername()), 
-                    formatValue(user.getEmail()), user.getPermission());
+                    formatValue(user.getEmail()), Boolean.TRUE.equals(user.getIsOp()));
         } else {
             return String.format("ip: %s, not logged in", ip);
         }

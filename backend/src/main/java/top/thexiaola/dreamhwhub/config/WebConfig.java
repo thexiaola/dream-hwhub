@@ -8,6 +8,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.thexiaola.dreamhwhub.config.security.AuthInterceptor;
 import top.thexiaola.dreamhwhub.config.security.CsrfFilter;
+import top.thexiaola.dreamhwhub.config.security.PermissionInterceptor;
 
 /**
  * Web配置类，注册拦截器和过滤器
@@ -18,23 +19,24 @@ public class WebConfig implements WebMvcConfigurer {
     
     private final AuthInterceptor authInterceptor;
     private final CsrfFilter csrfFilter;
+    private final PermissionInterceptor permissionInterceptor;
 
-    public WebConfig(AuthInterceptor authInterceptor, CsrfFilter csrfFilter) {
+    public WebConfig(AuthInterceptor authInterceptor, CsrfFilter csrfFilter,
+                     PermissionInterceptor permissionInterceptor) {
         this.authInterceptor = authInterceptor;
         this.csrfFilter = csrfFilter;
+        this.permissionInterceptor = permissionInterceptor;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 拦截所有 API 请求，公开接口由 AuthInterceptor 内部的统一白名单判定
         registry.addInterceptor(authInterceptor)
-            .addPathPatterns("/api/**")  // 拦截所有 API 请求
-            .excludePathPatterns(        // 排除公开接口
-                "/api/users/register",
-                "/api/users/login",
-                "/api/users/getregcode",
-                "/api/users/retrieve/sendcode",
-                "/api/users/retrieve/resetpassword"
-            );
+            .addPathPatterns("/api/**");
+
+        // 权限节点校验：仅作用于管理员后台接口，须在认证拦截器之后执行
+        registry.addInterceptor(permissionInterceptor)
+            .addPathPatterns("/api/admin/**");
     }
     
     /**

@@ -112,7 +112,7 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const isAdmin = computed(() => (userStore.userInfo?.permission ?? 0) >= 100)
+const isAdmin = computed(() => userStore.isAdmin)
 const activeTab = ref<'student' | 'teacher' | 'admin'>('student')
 
 const switchTab = (tab: 'student' | 'teacher' | 'admin') => {

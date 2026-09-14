@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.*;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
@@ -28,19 +29,19 @@ public class ClassController {
         private final ClassService classService;
 
         /**
-         * 提交创建班级申请
+         * 创建班级（创建者自动成为班级老师）
          */
         @PostMapping("/create")
-        public ApiResponse<CreateClassApplicationResponse> applyCreateClass(
+        public ApiResponse<ClassDetailResponse> createClass(
                         @Valid @RequestBody CreateClassRequest request) {
                 request.validate();
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} applying to create class: {}", userInfo, request.getClassName());
-                CreateClassApplicationResponse response = classService.submitCreateClassRequest(
-                                request.getClassName(), request.getDescription());
-                log.info("User {} submitted create class application, id: {}", userInfo, response.getId());
-                return ApiResponse.success(response, "创建班级的申请已提交，待审核");
+                log.info("User {} creating class: {}", userInfo, request.getClassName());
+                ClassInfo created = classService.createClass(request.getClassName(), request.getDescription());
+                ClassDetailResponse response = classService.getClassDetail(created.getId());
+                log.info("User {} created class successfully, id: {}", userInfo, created.getId());
+                return ApiResponse.success(response, "课程创建成功");
         }
 
         /**
@@ -199,41 +200,6 @@ public class ClassController {
                 log.info("User {} check result: isMember={}, roleCode={}, roleName={}", userInfo, isMember, roleCode,
                                 roleName);
                 return ApiResponse.success(response);
-        }
-
-        /**
-         * 获取创建班级申请列表（管理员专用，分页）
-         * 
-         * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
-         */
-        @GetMapping("/applications/create/list")
-        public ApiResponse<Page<CreateClassApplicationResponse>> getCreateApplications(
-                        @RequestParam(value = "status", required = false) Integer status,
-                        @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
-                User currentUser = UserUtils.getCurrentUser();
-                String userInfo = LogUtil.getUserInfo(currentUser);
-                Page<CreateClassApplicationResponse> applications = classService.getCreateApplications(status,
-                                pageRequest.getPageNum(),
-                                pageRequest.getPageSize());
-                log.info("User {} queried {} create class applications, status={}, total: {}", userInfo,
-                                applications.getRecords().size(), status, applications.getTotal());
-                return ApiResponse.success(applications, "查询创建申请列表成功");
-        }
-
-        /**
-         * 审核创建班级申请（管理员专用）
-         */
-        @PutMapping("/applications/create/approve")
-        public ApiResponse<Void> approveCreateApplication(@Valid @RequestBody ApproveJoinClassRequest request) {
-                User currentUser = UserUtils.getCurrentUser();
-                String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} approving create class application, id: {}, approved: {}",
-                                userInfo, request.getApplicationId(), request.getApproved());
-                classService.approveCreateApplication(request.getApplicationId(), request.getApproved(),
-                                request.getComment());
-                String result = request.getApproved() ? "approved" : "rejected";
-                log.info("User {} create class application {}", userInfo, result);
-                return ApiResponse.success(null);
         }
 
         /**

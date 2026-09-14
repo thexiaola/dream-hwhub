@@ -9,6 +9,18 @@ export const useUserStore = defineStore('user', () => {
 
   const isLoggedIn = computed(() => !!token.value)
 
+  // 有效权限节点列表
+  const permissions = computed(() => userInfo.value?.permissions ?? [])
+  // 是否为平台管理员（OP）：拥有全部权限节点
+  const isOp = computed(() => userInfo.value?.isOp === true)
+  // 是否拥有任一管理权限（用于是否展示管理面板入口）
+  const isAdmin = computed(() => isOp.value || permissions.value.length > 0)
+  // 是否拥有指定权限节点
+  const hasPermission = (node: string) => isOp.value || permissions.value.includes(node)
+  // 是否拥有其中任意一个权限节点
+  const hasAnyPermission = (nodes: string[]) =>
+    isOp.value || nodes.some(node => permissions.value.includes(node))
+
   const login = async (account: string, password: string): Promise<{ code: number; message: string }> => {
     const result = await post<{ token: string; user: UserInfo }>('/users/login', { account, password })
     if (result.code === 200) {
@@ -51,10 +63,13 @@ export const useUserStore = defineStore('user', () => {
     }
     try {
       const result = await get<UserInfo>('/users/info')
-      if (result.code === 200) {
-        userInfo.value = result.data!
-      } else if (result.code === 401) {
-        logout()
+      if (result.code === 200 && result.data) {
+        userInfo.value = result.data
+        return
+      }
+      // 认证已失效（Token 无效 / 账号不存在或已被删除）时清理本地会话
+      if (result.code === 401 || result.code === 404) {
+        clearLocal()
       }
     } catch {
       userInfo.value = null
@@ -92,6 +107,11 @@ export const useUserStore = defineStore('user', () => {
     userInfo,
     token,
     isLoggedIn,
+    permissions,
+    isOp,
+    isAdmin,
+    hasPermission,
+    hasAnyPermission,
     login,
     logout,
     clearLocal,

@@ -20,7 +20,6 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
-import top.thexiaola.dreamhwhub.module.work_management.vo.CreateClassApplicationResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.JoinClassApplicationResponse;
 
 import java.util.Collections;
@@ -92,27 +91,30 @@ class ClassControllerTest {
     // ==================== 正常数据测试 ====================
 
     /**
-     * 测试创建班级申请 - 成功
+     * 测试创建班级 - 成功
      */
     @Test
-    @DisplayName("测试创建班级申请 - 成功")
+    @DisplayName("测试创建班级 - 成功")
     void testApplyCreateClass_Success() throws Exception {
         CreateClassRequest request = new CreateClassRequest();
         request.setClassName("测试班级");
         request.setDescription("这是一个测试班级");
 
-        CreateClassApplicationResponse response = new CreateClassApplicationResponse();
-        response.setId(1);
+        ClassInfo created = new ClassInfo();
+        created.setId(1);
+        Mockito.when(classService.createClass(Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(created);
 
-        Mockito.when(classService.submitCreateClassRequest(Mockito.anyString(), Mockito.anyString()))
-                .thenReturn(response);
+        ClassDetailResponse detail = new ClassDetailResponse();
+        detail.setId(1);
+        Mockito.when(classService.getClassDetail(1)).thenReturn(detail);
 
         mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("创建班级的申请已提交，待审核"));
+                .andExpect(jsonPath("$.message").value("课程创建成功"));
     }
 
     /**
@@ -330,11 +332,11 @@ class ClassControllerTest {
         request.setClassName(longName);
         request.setDescription("测试");
 
-        CreateClassApplicationResponse response = new CreateClassApplicationResponse();
-        response.setId(1);
-
-        Mockito.when(classService.submitCreateClassRequest(Mockito.anyString(), Mockito.anyString()))
-                .thenReturn(response);
+        ClassInfo created = new ClassInfo();
+        created.setId(1);
+        Mockito.when(classService.createClass(Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(created);
+        Mockito.when(classService.getClassDetail(1)).thenReturn(new ClassDetailResponse());
 
         mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -354,11 +356,11 @@ class ClassControllerTest {
         request.setClassName("测试班级");
         request.setDescription(longDesc);
 
-        CreateClassApplicationResponse response = new CreateClassApplicationResponse();
-        response.setId(1);
-
-        Mockito.when(classService.submitCreateClassRequest(Mockito.anyString(), Mockito.anyString()))
-                .thenReturn(response);
+        ClassInfo created = new ClassInfo();
+        created.setId(1);
+        Mockito.when(classService.createClass(Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(created);
+        Mockito.when(classService.getClassDetail(1)).thenReturn(new ClassDetailResponse());
 
         mockMvc.perform(post("/api/class/create")
                         .contentType(MediaType.APPLICATION_JSON)

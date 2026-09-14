@@ -51,6 +51,7 @@
           <el-form-item prop="code">
             <div class="code-row">
               <el-input 
+                ref="codeInputRef"
                 v-model="form.code" 
                 placeholder="验证码"
                 :prefix-icon="KeyIcon"
@@ -83,10 +84,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h } from 'vue'
+import { ref, h, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, InputInstance } from 'element-plus'
 import { BookOpen, User, CreditCard, Mail, Lock, Key } from '@lucide/vue'
 
 const router = useRouter()
@@ -100,6 +102,8 @@ const form = ref({
   code: ''
 })
 
+const formRef = ref<FormInstance>()
+const codeInputRef = ref<InputInstance>()
 const loading = ref(false)
 const sending = ref(false)
 const countdown = ref(0)
@@ -149,10 +153,26 @@ const MailIcon = () => h(Mail, { size: 18 })
 const LockIcon = () => h(Lock, { size: 18 })
 const KeyIcon = () => h(Key, { size: 18 })
 
+/**
+ * 清除验证码输入框的校验提示（表单校验异步返回，稍后再清一次，避免提示被写回）
+ */
+const clearCodeValidate = () => {
+  formRef.value?.clearValidate('code')
+  setTimeout(() => formRef.value?.clearValidate('code'), 0)
+}
+
+/** 将焦点移到验证码输入框 */
+const focusCodeInput = () => {
+  nextTick(() => codeInputRef.value?.focus())
+}
+
 const sendVerifyCode = async () => {
   if (sending.value || countdown.value > 0) {
     return
   }
+  clearCodeValidate()
+  // 聚焦验证码输入框，方便直接录入验证码
+  focusCodeInput()
   if (!form.value.email) {
     ElMessage.error('请先输入邮箱')
     return

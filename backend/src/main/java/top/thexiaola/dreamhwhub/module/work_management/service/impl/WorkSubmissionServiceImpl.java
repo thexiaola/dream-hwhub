@@ -710,7 +710,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     }
     
     /**
-     * 转换为响应对象（旧方法，保留用于单个查询）
+     * 转换为响应对象（用于单个查询）
      */
     private WorkSubmissionResponse convertToResponse(WorkSubmission submission) {
         WorkInfo workInfo = workMapper.selectById(submission.getWorkId());

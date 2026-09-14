@@ -48,7 +48,7 @@ public class JwtUtil {
         claims.put("username", user.getUsername());
         claims.put("userNo", user.getUserNo());
         claims.put("email", user.getEmail());
-        claims.put("permission", user.getPermission());
+        claims.put("isOp", user.getIsOp() != null && user.getIsOp() ? 1 : 0);
         claims.put("isBanned", user.getIsBanned() != null && user.getIsBanned() ? 1 : 0);
         claims.put("phone", user.getPhone());
         claims.put("idName", user.getIdName());
@@ -100,7 +100,8 @@ public class JwtUtil {
         user.setUsername(claims.get("username", String.class));
         user.setUserNo(claims.get("userNo", String.class));
         user.setEmail(claims.get("email", String.class));
-        user.setPermission(claims.get("permission", Short.class));
+        Integer isOp = claims.get("isOp", Integer.class);
+        user.setIsOp(isOp != null && isOp == 1);
         Integer isBanned = claims.get("isBanned", Integer.class);
         user.setIsBanned(isBanned != null && isBanned == 1);
         user.setPhone(claims.get("phone", String.class));

@@ -82,22 +82,6 @@ CREATE TABLE IF NOT EXISTS `class_teacher_approval` (
     UNIQUE KEY uk_invitation (`invitation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='教师审核邀请表';
 
--- 班级创建申请表（管理员审核）
-CREATE TABLE IF NOT EXISTS `class_create_application` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '申请ID',
-    `applicant_id` INT NOT NULL COMMENT '申请人ID',
-    `class_name` VARCHAR(100) NOT NULL COMMENT '申请的班级名称',
-    `description` VARCHAR(500) DEFAULT NULL COMMENT '申请的班级描述',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '审核状态：0-待审核，1-已通过，2-已拒绝',
-    `reviewer_id` INT DEFAULT NULL COMMENT '审核人ID（管理员）',
-    `review_time` DATETIME DEFAULT NULL COMMENT '审核时间',
-    `review_comment` VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
-    `created_class_id` INT DEFAULT NULL COMMENT '审核通过后创建的班级ID',
-    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
-    INDEX idx_applicant_id (`applicant_id`),
-    INDEX idx_status (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级创建申请表';
-
 -- 班级加入申请表（老师和管理员审核）
 CREATE TABLE IF NOT EXISTS `class_join_application` (
     `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '申请ID',

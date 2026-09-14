@@ -12,6 +12,8 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.permission.constant.PermissionNodes;
+import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
@@ -33,7 +35,6 @@ public class ClassServiceImpl implements ClassService {
     private final ClassInfoMapper classInfoMapper;
     private final ClassMemberMapper classMemberMapper;
     private final UserMapper userMapper;
-    private final ClassCreateApplicationMapper classCreateApplicationMapper;
     private final ClassJoinApplicationMapper classJoinApplicationMapper;
     private final ClassUserInvitationMapper classUserInvitationMapper;
     private final ClassTeacherApprovalMapper classTeacherApprovalMapper;
@@ -43,6 +44,18 @@ public class ClassServiceImpl implements ClassService {
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
     private final top.thexiaola.dreamhwhub.support.password.PasswordUtil passwordUtil;
+    private final PermissionService permissionService;
+
+    /**
+     * 具备「班级管理能力」的权限节点：拥有其中任意一个即可按教师身份管理所有班级。
+     * 仅包含写操作节点（管理任意班级、解散班级、踢出成员、添加老师），
+     * 只读的 class:view_all 与仅用于审批的 class:approve_join 不在此列。
+     */
+    private static final Set<String> CLASS_ADMIN_NODES = Set.of(
+            PermissionNodes.CLASS_UPDATE,
+            PermissionNodes.CLASS_DISSOLVE,
+            PermissionNodes.CLASS_MEMBER_KICK,
+            PermissionNodes.CLASS_TEACHER_ADD);
 
     /**
      * 获取当前登录用户，如果未登录则抛出异常
@@ -76,13 +89,24 @@ public class ClassServiceImpl implements ClassService {
     }
 
     /**
-     * 判断用户是否为管理员
-     * 
+     * 判断用户是否拥有指定的班级管理权限节点（平台管理员 OP 恒定拥有）
+     *
      * @param user 用户对象
-     * @return true-是管理员，false-不是管理员
+     * @param node 权限节点
+     * @return true-拥有该权限节点
      */
-    private boolean isAdmin(User user) {
-        return user != null && user.getPermission() != null && user.getPermission() >= 100;
+    private boolean hasPermission(User user, String node) {
+        return user != null && permissionService.hasPermission(user.getId(), node);
+    }
+
+    /**
+     * 判断用户是否具备任意班级管理权限（用于「管理员可管理所有班级」这类宽泛判定）
+     *
+     * @param user 用户对象
+     * @return true-具备班级管理权限
+     */
+    private boolean isClassAdmin(User user) {
+        return user != null && permissionService.hasAnyPermission(user.getId(), CLASS_ADMIN_NODES);
     }
 
     @Override
@@ -96,8 +120,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否有权限添加老师（需要是老师或管理员）
-        boolean isAdmin = isAdmin(currentUser);
+        // 检查当前用户是否有权限添加老师（需要是老师或拥有添加班级老师权限）
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_TEACHER_ADD);
         boolean isTeacher = isTeacher(classId, currentUser.getId());
 
         if (!isAdmin && !isTeacher) {
@@ -141,7 +165,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        boolean isAdmin = isAdmin(currentUser);
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_TEACHER_ADD);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
 
         if (!isAdmin && !isClassTeacher) {
@@ -185,7 +209,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        boolean isAdmin = isAdmin(currentUser);
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_MEMBER_KICK);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
 
         if (!isAdmin && !isClassTeacher) {
@@ -234,8 +258,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否是创建者或管理员
-        boolean isAdmin = isAdmin(currentUser);
+        // 检查当前用户是否是创建者或拥有添加班级老师权限
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_TEACHER_ADD);
         boolean isCreator = classEntity.getOwnerId().equals(currentUser.getId());
 
         if (!isAdmin && !isCreator) {
@@ -295,7 +319,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         // 检查当前用户是否是班级内的成员（学生或助理/老师均可邀请）
-        boolean isAdmin = isAdmin(currentUser);
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_UPDATE);
         boolean isClassMember = isTeacher(classId, currentUser.getId())
                 || isStudent(classId, currentUser.getId());
 
@@ -405,8 +429,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该申请已处理", null);
         }
 
-        // 检查审核人是否是老师或助理
-        boolean isAdmin = isAdmin(currentUser);
+        // 检查审核人是否是老师助理或拥有审批权限
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_APPROVE_JOIN);
         boolean isClassTeacher = isTeacher(approval.getClassId(), currentUser.getId());
 
         if (!isAdmin && !isClassTeacher) {
@@ -451,7 +475,7 @@ public class ClassServiceImpl implements ClassService {
         User currentUser = getCurrentUserOrThrow();
 
         // 检查是否是班级内的老师或助理
-        boolean isAdmin = isAdmin(currentUser);
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_APPROVE_JOIN);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
 
         if (!isAdmin && !isClassTeacher) {
@@ -514,8 +538,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 创建者或管理员可以解散班级
-        boolean isAdmin = isAdmin(currentUser);
+        // 创建者或拥有解散班级权限者可以解散班级
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_DISSOLVE);
         boolean isOwner = classEntity.getOwnerId().equals(currentUser.getId());
         if (!isAdmin && !isOwner) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者或管理员可以解散班级", null);
@@ -683,9 +707,9 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public boolean isTeacher(Integer classId, Integer userId) {
-        // 管理员可以像老师一样管理所有班级
+        // 具备班级管理权限的用户可以像老师一样管理所有班级
         User user = userMapper.selectById(userId);
-        if (isAdmin(user)) {
+        if (isClassAdmin(user)) {
             return true;
         }
         // 检查是否是班级创建者
@@ -705,9 +729,9 @@ public class ClassServiceImpl implements ClassService {
             return Collections.emptyList();
         }
 
-        // 管理员可管理所有班级，返回全部班级 ID
+        // 具备班级管理权限的用户可管理所有班级，返回全部班级 ID
         User user = userMapper.selectById(userId);
-        if (isAdmin(user)) {
+        if (isClassAdmin(user)) {
             QueryWrapper<ClassInfo> allQuery = new QueryWrapper<>();
             allQuery.select("id");
             return classInfoMapper.selectList(allQuery).stream()
@@ -850,9 +874,9 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 权限校验：管理员可查看任意班级，普通用户仅可查看自己所在的班级
+        // 权限校验：拥有查看全部班级权限者可查看任意班级，普通用户仅可查看自己所在的班级
         User currentUser = getCurrentUserOrThrow();
-        boolean isAdmin = isAdmin(currentUser);
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_VIEW_ALL);
         if (!isAdmin && !isClassMember(classId, currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级成员或管理员可以查看班级详情", null);
         }
@@ -921,9 +945,9 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize,
             String keyword) {
-        // 仅管理员可管理全部班级
+        // 仅拥有查看全部班级权限者可管理班级列表
         User currentUser = userMapper.selectById(userId);
-        if (!isAdmin(currentUser)) {
+        if (!hasPermission(currentUser, PermissionNodes.CLASS_VIEW_ALL)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "仅管理员可管理全部班级", null);
         }
 
@@ -1083,8 +1107,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 权限校验：管理员不受限制，普通用户只能查询自己创建或加入的班级
-        boolean isAdmin = isAdmin(currentUser);
+        // 权限校验：拥有查看全部班级权限者不受限制，普通用户只能查询自己创建或加入的班级
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_VIEW_ALL);
         boolean isClassMember = isClassMember(classId, currentUser.getId());
 
         if (!isAdmin && !isClassMember) {
@@ -1207,126 +1231,25 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public CreateClassApplicationResponse submitCreateClassRequest(String className, String description) {
+    public ClassInfo createClass(String className, String description) {
         User currentUser = getCurrentUserOrThrow();
 
-        // 创建申请记录
-        ClassCreateApplication application = new ClassCreateApplication();
-        application.setApplicantId(currentUser.getId());
-        application.setClassName(className);
-        application.setDescription(description);
-        application.setStatus(0); // 待审核
+        // 直接创建班级，无需管理员审批
+        ClassInfo classInfo = new ClassInfo();
+        classInfo.setClassName(className);
+        classInfo.setDescription(description);
+        classInfo.setOwnerId(currentUser.getId());
+        classInfoMapper.insert(classInfo);
 
-        classCreateApplicationMapper.insert(application);
+        // 创建者自动成为班级老师
+        ClassMember member = new ClassMember();
+        member.setClassId(classInfo.getId());
+        member.setUserId(currentUser.getId());
+        member.setRole(1);
+        member.setJoinTime(LocalDateTime.now());
+        classMemberMapper.insert(member);
 
-        // 构建响应对象
-        return new CreateClassApplicationResponse(
-                application.getId(),
-                application.getApplicantId(),
-                application.getClassName(),
-                application.getDescription(),
-                application.getStatus(),
-                application.getCreateTime());
-    }
-
-    @Override
-    public Page<CreateClassApplicationResponse> getCreateApplications(Integer status, Integer pageNum,
-            Integer pageSize) {
-        User currentUser = getCurrentUserOrThrow();
-
-        // 检查是否是管理员（permission >= 100）
-        if (!isAdmin(currentUser)) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以查看创建申请列表", null);
-        }
-
-        QueryWrapper<ClassCreateApplication> queryWrapper = new QueryWrapper<>();
-
-        if (status != null) {
-            queryWrapper.eq("status", status);
-        }
-
-        // 按创建时间倒序排列
-        queryWrapper.orderByDesc("create_time");
-
-        // 使用MyBatisPlus分页
-        Page<ClassCreateApplication> appPage = new Page<>(pageNum, pageSize);
-        Page<ClassCreateApplication> resultPage = classCreateApplicationMapper.selectPage(appPage, queryWrapper);
-
-        // 转换为VO列表
-        List<CreateClassApplicationResponse> voList = resultPage.getRecords().stream()
-                .map(this::convertToCreateClassApplicationResponse)
-                .toList();
-
-        // 构建新的分页结果
-        Page<CreateClassApplicationResponse> voPage = new Page<>(pageNum, pageSize, resultPage.getTotal());
-        voPage.setRecords(voList);
-        return voPage;
-    }
-
-    /**
-     * 将 ClassCreateApplication 实体转换为 CreateClassApplicationResponse VO
-     */
-    private CreateClassApplicationResponse convertToCreateClassApplicationResponse(ClassCreateApplication application) {
-        User applicant = userMapper.selectById(application.getApplicantId());
-        String applicantName = applicant != null ? applicant.getUsername() : "未知";
-
-        return new CreateClassApplicationResponse(
-                application.getId(),
-                application.getApplicantId(),
-                application.getClassName(),
-                application.getDescription(),
-                application.getStatus(),
-                application.getCreateTime());
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void approveCreateApplication(Integer applicationId, Boolean approved, String comment) {
-        User currentUser = getCurrentUserOrThrow();
-
-        // 检查是否是管理员（permission >= 100）
-        if (!isAdmin(currentUser)) {
-            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有管理员可以审核创建申请", null);
-        }
-
-        ClassCreateApplication application = classCreateApplicationMapper.selectById(applicationId);
-        if (application == null) {
-            throw new BusinessException(BusinessErrorCode.NOT_IN_CLASS, "申请不存在", null);
-        }
-
-        if (!Integer.valueOf(0).equals(application.getStatus())) {
-            throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该申请已处理", null);
-        }
-
-        // 更新申请状态
-        application.setStatus(approved ? 1 : 2);
-        application.setReviewerId(currentUser.getId());
-        application.setReviewTime(LocalDateTime.now());
-        application.setReviewComment(comment);
-        classCreateApplicationMapper.updateById(application);
-
-        // 如果审核通过，创建班级
-        if (approved) {
-            ClassInfo classInfo = new ClassInfo();
-            classInfo.setClassName(application.getClassName());
-            classInfo.setDescription(application.getDescription());
-            classInfo.setOwnerId(application.getApplicantId());
-            classInfoMapper.insert(classInfo);
-
-            // 关联申请和创建的班级
-            application.setCreatedClassId(classInfo.getId());
-            classCreateApplicationMapper.updateById(application);
-
-            // 创建者自动成为老师
-            ClassMember member = new ClassMember();
-            member.setClassId(classInfo.getId());
-            member.setUserId(application.getApplicantId());
-            member.setRole(1);
-            member.setJoinTime(LocalDateTime.now());
-            classMemberMapper.insert(member);
-
-        }
-
+        return classInfo;
     }
 
     @Override
@@ -1382,8 +1305,8 @@ public class ClassServiceImpl implements ClassService {
             Integer pageSize) {
         User currentUser = getCurrentUserOrThrow();
 
-        // 检查权限：管理员或班级老师
-        boolean isAdmin = isAdmin(currentUser);
+        // 检查权限：拥有审批加入申请权限或班级老师
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_APPROVE_JOIN);
 
         if (!isAdmin && classId != null) {
             // 如果不是管理员，必须是该班级的老师
@@ -1497,8 +1420,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.ALREADY_IN_CLASS, "该申请已处理", null);
         }
 
-        // 检查权限：管理员或班级老师
-        boolean isAdmin = isAdmin(currentUser);
+        // 检查权限：拥有审批加入申请权限或班级老师
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_APPROVE_JOIN);
         boolean isClassTeacher = isTeacher(application.getClassId(), currentUser.getId());
 
         if (!isAdmin && !isClassTeacher) {
@@ -1536,8 +1459,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 检查当前用户是否有权限邀请（必须是老师或管理员）
-        boolean isAdmin = isAdmin(currentUser);
+        // 检查当前用户是否有权限邀请（必须是老师或有添加班级老师权限）
+        boolean isAdmin = hasPermission(currentUser, PermissionNodes.CLASS_TEACHER_ADD);
         boolean isClassTeacher = isTeacher(classId, currentUser.getId());
 
         if (!isAdmin && !isClassTeacher) {
@@ -1733,7 +1656,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        boolean isAdminUser = isAdmin(currentUser);
+        boolean isAdminUser = hasPermission(currentUser, PermissionNodes.CLASS_UPDATE);
         boolean isTeacherUser = isTeacher(classId, currentUser.getId());
         if (!isAdminUser && !isTeacherUser) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以查看邀请码", null);
@@ -1762,7 +1685,7 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        boolean isAdminUser = isAdmin(currentUser);
+        boolean isAdminUser = hasPermission(currentUser, PermissionNodes.CLASS_UPDATE);
         boolean isTeacherUser = isTeacher(classId, currentUser.getId());
         if (!isAdminUser && !isTeacherUser) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有老师可以重置邀请码", null);

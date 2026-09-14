@@ -18,6 +18,7 @@ public interface UserMapper {
      * @return 用户响应 DTO
      */
     @Mapping(target = "token", ignore = true)
+    @Mapping(target = "permissions", ignore = true)
     UserResponse toUserResponse(User user);
 
     /**
@@ -25,5 +26,6 @@ public interface UserMapper {
      * @param user 用户实体
      * @return 用户信息响应 DTO
      */
+    @Mapping(target = "permissions", ignore = true)
     UserInfoResponse toUserInfoResponse(User user);
 }

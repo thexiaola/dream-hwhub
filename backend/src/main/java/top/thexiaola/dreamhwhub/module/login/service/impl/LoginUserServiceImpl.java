@@ -47,7 +47,7 @@ public class LoginUserServiceImpl implements LoginUserService {
         // 使用BCrypt验证密码
         if (passwordUtil.matches(loginRequest.getPassword(), user.getPassword())) {
             LocalDateTime now = LocalDateTime.now();
-            // 更新最后登录时间；若注册时间为空（历史数据），一并补全为首次登录时间
+            // 更新最后登录时间；若注册时间为空，一并补全为首次登录时间
             user.setLastLoginTime(now);
             if (user.getRegisterTime() == null) {
                 user.setRegisterTime(now);

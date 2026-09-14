@@ -177,24 +177,13 @@ public interface ClassService {
     void updateMemberRole(Integer classId, Integer userId, Integer role);
 
     /**
-     * 提交创建班级申请
-     * @return 创建申请响应对象
+     * 创建班级（创建者自动成为班级老师）
+     *
+     * @param className   班级名称
+     * @param description 班级描述
+     * @return 创建完成的班级实体
      */
-    CreateClassApplicationResponse submitCreateClassRequest(String className, String description);
-
-    /**
-     * 获取创建班级申请列表（管理员专用，分页）
-     * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
-     * @param pageNum 页码，默认1
-     * @param pageSize 每页大小
-     * @return 按创建时间倒序排列的申请分页结果
-     */
-    Page<CreateClassApplicationResponse> getCreateApplications(Integer status, Integer pageNum, Integer pageSize);
-
-    /**
-     * 审核创建班级申请
-     */
-    void approveCreateApplication(Integer applicationId, Boolean approved, String comment);
+    ClassInfo createClass(String className, String description);
 
     /**
      * 提交加入班级申请

@@ -1,6 +1,7 @@
 HELP.md
 
 ### Backend Gradle ###
+.gradle-home
 backend/.gradle
 backend/gradle
 backend/build/
@@ -10,6 +11,10 @@ backend/build/
 
 ### Backend Logs ###
 backend/logs/
+
+### Backend User Files ###
+attachments/*
+backend/attachments/*
 
 ### Backend Sensitive Config ###
 backend/src/main/resources/mail-config.properties

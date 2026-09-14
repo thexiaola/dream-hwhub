@@ -7,7 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 @MapperScan(basePackages = {
         "top.thexiaola.dreamhwhub.module.login.mapper",
-        "top.thexiaola.dreamhwhub.module.work_management.mapper"
+        "top.thexiaola.dreamhwhub.module.work_management.mapper",
+        "top.thexiaola.dreamhwhub.module.permission.mapper"
 })
 public class DreamHwhubApplication {
     static void main(String[] args) {

@@ -40,7 +40,6 @@ public class CsrfFilter implements Filter {
             "/api/users/logout",
             "/api/users/register",
             "/api/users/getregcode",
-            "/api/users/send-code",
             "/api/users/retrieve/sendcode",
             "/api/users/retrieve/resetpassword",
             "/api/users/modify/getmodifycode/before",

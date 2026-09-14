@@ -32,8 +32,8 @@ public class FileController {
     /** 附件根目录（运行目录下的 attachments） */
     private static final Path UPLOAD_ROOT = Paths.get("attachments").toAbsolutePath().normalize();
 
-    /** 旧版附件根目录（历史数据仍存放在 upload/ 下，仅允许读取，不再写入） */
-    private static final Path LEGACY_UPLOAD_ROOT = Paths.get("upload").toAbsolutePath().normalize();
+    /** 备用附件根目录（upload/），仅允许读取 */
+    private static final Path SECONDARY_UPLOAD_ROOT = Paths.get("upload").toAbsolutePath().normalize();
 
     /**
      * 下载或内联预览附件
@@ -79,14 +79,14 @@ public class FileController {
 
     /**
      * 将请求路径解析为附件根目录内的绝对路径，越界返回 null。
-     * 新根为 attachments/，兼容旧根 upload/（历史数据）。
+     * 附件根目录为 attachments/，同时也接受 upload/ 目录下的路径。
      */
     private static Path toSafeUploadPath(String rawPath) {
         if (rawPath == null || rawPath.isBlank()) {
             return null;
         }
         Path target = Paths.get(rawPath).toAbsolutePath().normalize();
-        if (!target.startsWith(UPLOAD_ROOT) && !target.startsWith(LEGACY_UPLOAD_ROOT)) {
+        if (!target.startsWith(UPLOAD_ROOT) && !target.startsWith(SECONDARY_UPLOAD_ROOT)) {
             return null;
         }
         return target;

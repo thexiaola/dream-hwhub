@@ -104,17 +104,29 @@ router.beforeEach(async (to, _from, next) => {
         next('/login')
         return
       }
+
+      // 拿不到用户信息说明登录态已失效（Token 无效 / 账号不存在），不允许进入
+      if (!userStore.userInfo) {
+        userStore.clearLocal()
+        next('/login')
+        return
+      }
     }
 
-    if (to.meta.requiresAdmin && (userStore.userInfo?.permission ?? 0) < 100) {
+    if (to.meta.requiresAdmin && !userStore.isAdmin) {
       next('/student/courses')
       return
     }
     next()
   } else {
-    if (userStore.isLoggedIn && to.path === '/login') {
-      next('/student/courses')
-      return
+    // 已登录用户访问登录页时，确认登录态仍然有效后再回到主页
+    if (to.path === '/login' && userStore.isLoggedIn) {
+      await userStore.getUserInfo()
+      if (userStore.userInfo) {
+        next('/student/courses')
+        return
+      }
+      userStore.clearLocal()
     }
     next()
   }

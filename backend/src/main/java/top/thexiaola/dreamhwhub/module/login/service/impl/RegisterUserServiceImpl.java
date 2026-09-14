@@ -11,6 +11,7 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.RegisterUserService;
+import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 
@@ -27,6 +28,7 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     private final UserMapper userMapper;
     private final EmailService emailService;
     private final PasswordUtil passwordUtil;
+    private final PermissionService permissionService;
 
     @Override
     public User register(RegisterRequest registerRequest) {
@@ -50,7 +52,7 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         user.setEmail(email);
         // 使用BCrypt加密密码
         user.setPassword(passwordUtil.encode(registerRequest.getPassword()));
-        user.setPermission((short) 1);
+        user.setIsOp(false);
         user.setIsBanned(false);
         LocalDateTime timeNow = LocalDateTime.now();
         user.setRegisterTime(timeNow);
@@ -58,6 +60,10 @@ public class RegisterUserServiceImpl implements RegisterUserService {
 
         try {
             userMapper.insert(user);
+            // 应用默认权限组（如有）
+            permissionService.applyDefaultGroups(user.getId());
+            // 部署引导：系统首个用户自动成为平台管理员（OP）
+            permissionService.promoteToOpIfFirstUser(user.getId());
             return user;
         } catch (Exception e) {
             log.error(LogUtil.getFailureLog(operation, "database insert failed: " + e.getMessage(), user), e);

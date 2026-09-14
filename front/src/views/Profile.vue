@@ -343,7 +343,7 @@ const roleText = computed(() => {
   const r = userStore.userInfo?.role
   if (r === 'teacher') return '教师'
   if (r === 'student') return '学生'
-  if (userStore.userInfo && userStore.userInfo.permission >= 9) return '管理员'
+  if (userStore.isOp) return '管理员'
   return '普通用户'
 })
 
@@ -351,7 +351,7 @@ const roleTagType = computed(() => {
   const r = userStore.userInfo?.role
   if (r === 'teacher') return 'primary'
   if (r === 'student') return 'success'
-  if (userStore.userInfo && userStore.userInfo.permission >= 9) return 'danger'
+  if (userStore.isOp) return 'danger'
   return 'info'
 })
 

@@ -18,6 +18,7 @@
 - [2. 作业管理接口 (WorkController)](#2-作业管理接口-workcontroller)
 - [3. 班级管理接口 (ClassController)](#3-班级管理接口-classcontroller)
 - [4. 作业提交接口 (WorkSubmissionController)](#4-作业提交接口-worksubmissioncontroller)
+- [5. 管理员后台接口 (AdminController)](#5-管理员后台接口-admincontroller)
 
 ---
 
@@ -133,7 +134,8 @@ axios.get('/api/works/list', {
     "username": "张三",
     "userNo": "2024001",
     "email": "zhangsan@example.com",
-    "permission": 0,
+    "isOp": false,
+    "permissions": [],
     "createTime": "2026-05-07T10:00:00"
   }
 }
@@ -253,7 +255,8 @@ axios.get('/api/works/list', {
     "username": "张三",
     "userNo": "2024001",
     "email": "zhangsan@example.com",
-    "permission": 0,
+    "isOp": false,
+    "permissions": [],
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
@@ -267,7 +270,8 @@ axios.get('/api/works/list', {
 | username   | String | 用户名                  |
 | userNo     | String | 学号/工号               |
 | email      | String | 邮箱                    |
-| permission | Integer | 权限等级                |
+| isOp        | Boolean | 是否为平台管理员（OP，拥有全部权限节点） |
+| permissions | Array\<String\> | 生效的权限节点列表（OP 为全部节点） |
 | token      | String | JWT Token（用于后续请求）|
 
 **注意**:
@@ -354,7 +358,8 @@ axios.get('/api/works/list', {
     "username": "李四",
     "userNo": "2024001",
     "email": "zhangsan@example.com",
-    "permission": 0
+    "isOp": false,
+    "permissions": []
   }
 }
 ```
@@ -410,7 +415,8 @@ axios.get('/api/works/list', {
     "username": "张三",
     "userNo": "2024001",
     "email": "lisi@example.com",
-    "permission": 0
+    "isOp": false,
+    "permissions": []
   }
 }
 ```
@@ -1245,9 +1251,9 @@ curl -X PATCH http://localhost:8080/api/works/1/pin \
 
 **基础路径**: `/api/class`
 
-### 4.1 提交创建班级申请
+### 4.1 创建班级
 
-**接口地址**: `POST /api/class/`
+**接口地址**: `POST /api/class/create`
 
 **请求头**:
 
@@ -1275,13 +1281,18 @@ curl -X PATCH http://localhost:8080/api/works/1/pin \
 ```json
 {
   "code": 200,
-  "message": "创建班级的申请已提交，待审核",
+  "message": "课程创建成功",
   "data": {
-    "id": 1,
-    "applicantId": 1001,
+    "id": 12,
     "className": "计算机科学2024级1班",
+    "ownerId": 1001,
+    "ownerName": "TheXiaoLa",
+    "userRole": "创建者",
+    "memberCount": 1,
+    "teacherCount": 1,
+    "studentCount": 0,
     "description": "计算机科学与技术专业2024级1班",
-    "status": 0,
+    "allowStudentInvite": true,
     "createTime": "2026-04-09T10:00:00"
   }
 }
@@ -1289,19 +1300,23 @@ curl -X PATCH http://localhost:8080/api/works/1/pin \
 
 **响应字段说明**:
 
-| 字段        | 类型          | 说明                                 |
-| ----------- | ------------- | ------------------------------------ |
-| id          | Integer       | 申请 ID                              |
-| applicantId | Integer       | 申请人 ID                            |
-| className   | String        | 申请的班级名称                       |
-| description | String        | 申请的班级描述                       |
-| status      | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| createTime  | LocalDateTime | 申请时间                             |
+| 字段       | 类型          | 说明                                     |
+| ---------- | ------------- | ---------------------------------------- |
+| id         | Integer       | 班级 ID                                  |
+| className  | String        | 班级名称                                 |
+| ownerId    | Integer       | 班级所有者（创建者）ID                   |
+| ownerName  | String        | 班级所有者用户名                         |
+| userRole   | String        | 当前用户在该班级的角色（创建者）         |
+| memberCount| Long          | 成员总数                                 |
+| teacherCount| Long         | 教师数量                                 |
+| studentCount| Long         | 学生数量                                 |
+| description| String        | 班级描述                                 |
+| allowStudentInvite| Boolean| 是否允许学生邀请同学加入                 |
+| createTime | LocalDateTime | 创建时间                                 |
 
 **注意**:
 
-- 创建申请仅管理员可审核
-- 审核通过后自动创建班级，申请人成为`创建者`
+- 调用成功即创建班级，创建者自动成为班级老师（创建者）
 
 **失败响应**:
 
@@ -1905,25 +1920,22 @@ curl -X PUT http://localhost:8080/api/class/1 \
 - `3`: 学生（普通班级成员）
 - `null`: 非班级成员
 
-**管理员特殊权限规则**:
+**管理权限规则（权限节点）**:
 
-管理员（permission >= 100）具有特殊的跨班级权限：
+平台采用 LuckPerms 风格的**权限节点**控制管理操作：权限节点由后端内置注册表定义（不支持运行时新增节点），通过「权限组」或直接授予的方式分配给用户；平台管理员（OP，`isOp = true`）拥有全部权限节点。
 
-- **管理员在班级中时**：
-  - 可以被踢出班级
-  - 可以被任命为班级助理
-  - 可以创建作业
-  - 可以提交作业（以学生身份）
-  - 拥有老师的所有权限
+班级管理相关权限节点：
 
-- **管理员不在班级中时**：
-  - **受限操作**：不能提交作业（必须先加入班级）
-  - **可用权限**：
-    - 查看班级信息
-    - 审核加入申请和邀请申请
-    - 管理班级成员（踢出、任命等）
-    - 创建新班级
-    - 拥有老师的管理权限
+| 权限节点             | 说明         |
+| -------------------- | ------------ |
+| `class:view_all`     | 查看全部班级 |
+| `class:update`       | 管理任意班级 |
+| `class:dissolve`     | 解散任意班级 |
+| `class:member:kick`  | 踢出班级成员 |
+| `class:approve_join` | 审批加入申请 |
+| `class:teacher:add`  | 添加班级老师 |
+
+拥有以上任意节点的用户，在班级语境中等同于「管理员」，可跨班级执行对应的管理操作。
 
 **使用建议**:
 
@@ -1957,146 +1969,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.10 获取创建班级申请列表（管理员专用）
-
-**接口地址**: `GET /api/class/applications/create/list`
-
-**请求参数**:
-
-| 参数     | 类型    | 必填 | 说明                                     |
-| -------- | ------- | ---- | ---------------------------------------- |
-| status   | Integer | 否   | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
-| pageNum  | Integer | 否   | 页码，默认1                              |
-| pageSize | Integer | 否   | 每页大小，默认20，最大300                |
-
-**请求示例**:
-
-- `GET /api/class/applications/create/list`
-- `GET /api/class/applications/create/list?status=0`
-- `GET /api/class/applications/create/list?pageNum=1&pageSize=20`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "查询创建申请列表成功",
-  "data": {
-    "records": [
-      {
-        "id": 1,
-        "applicantId": 1001,
-        "className": "计算机科学2024级1班",
-        "description": "计算机科学与技术专业2024级1班",
-        "status": 0,
-        "reviewerId": null,
-        "reviewTime": null,
-        "reviewComment": null,
-        "createdClassId": null,
-        "createTime": "2026-04-09T10:00:00"
-      }
-    ],
-    "total": 1,
-    "size": 20,
-    "current": 1,
-    "pages": 1
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段    | 类型  | 说明         |
-| ------- | ----- | ------------ |
-| records | Array | 申请列表数据 |
-| total   | Long  | 总记录数     |
-| size    | Long  | 每页大小     |
-| current | Long  | 当前页码     |
-| pages   | Long  | 总页数       |
-
-**records内部字段说明**:
-
-| 字段           | 类型          | 说明                                 |
-| -------------- | ------------- | ------------------------------------ |
-| id             | Integer       | 申请 ID                              |
-| applicantId    | Integer       | 申请人 ID                            |
-| className      | String        | 申请的班级名称                       |
-| description    | String        | 申请的班级描述                       |
-| status         | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId     | Integer       | 审核人 ID                            |
-| reviewTime     | LocalDateTime | 审核时间                             |
-| reviewComment  | String        | 审核意见                             |
-| createdClassId | Integer       | 审核通过后创建的班级 ID              |
-| createTime     | LocalDateTime | 申请时间                             |
-
-**注意**:
-
-- 仅管理员(permission >= 100)可访问
-- 按更新时间倒序排列
-
----
-
-### 4.11 审核创建班级申请（管理员专用）
-
-**接口地址**: `PUT /api/class/applications/create/approve`
-
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求体**:
-
-```json
-{
-  "applicationId": 1,
-  "approved": true,
-  "comment": "同意创建"
-}
-```
-
-**字段说明**:
-
-| 字段          | 类型    | 必填 | 说明                            |
-| ------------- | ------- | ---- | ------------------------------- |
-| applicationId | Integer | 是   | 申请 ID                         |
-| approved      | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
-| comment       | String  | 否   | 审核意见，最长 500 字符         |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**注意**:
-
-- 仅管理员可审核
-- 审核通过后自动创建班级，申请人成为`创建者`
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "该申请已处理",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "只有管理员可以审核创建申请"
-- "申请不存在"
-- "该申请已处理"
-
----
-
-### 4.12 获取加入班级申请列表（老师和管理员专用）
+### 4.10 获取加入班级申请列表（老师和管理员专用）
 
 **接口地址**: `GET /api/class/applications/join/list`
 
@@ -2175,7 +2048,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.13 审核加入班级申请（老师和管理员专用）
+### 4.11 审核加入班级申请（老师和管理员专用）
 
 **接口地址**: `PUT /api/class/applications/join/approve`
 
@@ -2236,7 +2109,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.14 设置学生为班级助理（老师专用）
+### 4.12 设置学生为班级助理（老师专用）
 
 **接口地址**: `PUT /api/class/{classId}/assistants`
 
@@ -2285,7 +2158,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.15 将学生踢出班级（老师/班级助理专用）
+### 4.13 将学生踢出班级（老师/班级助理专用）
 
 **接口地址**: `DELETE /api/class/{classId}/members/{studentUserId}`
 
@@ -2335,7 +2208,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.16 取消班级助理权限（降级为学生，仅创建者可用）
+### 4.14 取消班级助理权限（降级为学生，仅创建者可用）
 
 **接口地址**: `DELETE /api/class/{classId}/assistants/{teacherUserId}`
 
@@ -2375,7 +2248,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.17 学生邀请用户加入班级（需要用户确认和教师审核）
+### 4.15 学生邀请用户加入班级（需要用户确认和教师审核）
 
 **接口地址**: `POST /api/class/{classId}/invitations`
 
@@ -2433,7 +2306,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.18 被邀请用户响应邀请（同意/拒绝）
+### 4.16 被邀请用户响应邀请（同意/拒绝）
 
 **接口地址**: `PUT /api/class/invitations/{invitationId}`
 
@@ -2487,7 +2360,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.19 教师或助理审核邀请申请
+### 4.17 教师或助理审核邀请申请
 
 **接口地址**: `PUT /api/class/invitations/{applicationId}/approval`
 
@@ -2551,7 +2424,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.20 获取待教师审核的邀请列表（班级老师/助理专用）
+### 4.18 获取待教师审核的邀请列表（班级老师/助理专用）
 
 **接口地址**: `GET /api/class/{classId}/invitations/pending`
 
@@ -2687,7 +2560,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.21 教师邀请用户加入班级（需用户同意）
+### 4.19 教师邀请用户加入班级（需用户同意）
 
 **接口地址**: `POST /api/class/{classId}/invitations/teacher`
 
@@ -2764,7 +2637,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.22 获取我收到的邀请列表
+### 4.20 获取我收到的邀请列表
 
 **接口地址**: `GET /api/class/my-invitations`
 
@@ -2833,7 +2706,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.23 响应邀请（同意/拒绝）
+### 4.21 响应邀请（同意/拒绝）
 
 **接口地址**: `PUT /api/class/respond-invitation`
 
@@ -2888,7 +2761,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.24 生成/刷新班级邀请码（教师专用）
+### 4.22 生成/刷新班级邀请码（教师专用）
 
 **接口地址**: `POST /api/class/{classId}/invite-code`
 
@@ -2941,7 +2814,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.25 通过邀请码加入班级
+### 4.23 通过邀请码加入班级
 
 **接口地址**: `POST /api/class/join-by-code`
 
@@ -3021,7 +2894,7 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 ---
 
-### 4.26 转让班级所有权（仅创建者）
+### 4.24 转让班级所有权（仅创建者）
 
 **接口地址**: `PUT /api/class/{classId}/owner`
 
@@ -4008,6 +3881,362 @@ fetch('/api/submissions/batch-download', {
   "fileNameFormat": "{userNo}_{originalFileName}"
 }
 ```
+
+---
+
+## 5. 管理员后台接口 (AdminController)
+
+**基础路径**: `/api/admin`
+
+> 所有接口均需登录并携带 JWT Token + CSRF Token。每个接口要求对应的**权限节点**，不满足时返回 `403`（`权限不足，缺少所需权限节点`）。
+> 平台管理员（OP，`isOp = true`）拥有全部权限节点，恒定放行。
+
+### 5.1 权限节点清单
+
+权限节点由后端内置注册表定义（`PermissionRegistry`），不支持运行时新增，避免出现无效节点。管理操作与节点的对应关系如下：
+
+**用户管理**
+
+| 权限节点       | 说明                                          |
+| -------------- | --------------------------------------------- |
+| `user:view`    | 查看用户列表与详情                            |
+| `user:add`     | 在后台新增用户                                |
+| `user:edit`    | 修改用户资料                                  |
+| `user:delete`  | 删除用户账号及其数据                          |
+| `user:ban`     | 封禁或解封用户                                |
+| `user:setop`   | 授予或取消用户的平台管理员（OP）              |
+
+**权限管理**
+
+| 权限节点                    | 说明                           |
+| --------------------------- | ------------------------------ |
+| `permission:view`           | 查看权限节点与权限组           |
+| `permission:group:add`      | 创建权限组                     |
+| `permission:group:edit`     | 修改权限组信息与所含节点       |
+| `permission:group:delete`   | 删除权限组                     |
+| `permission:group:assign`   | 为用户分配权限组               |
+| `permission:user:assign`    | 为用户单独授予权限节点         |
+
+**班级管理**（用于班级模块的跨班级管理操作）
+
+| 权限节点             | 说明         |
+| -------------------- | ------------ |
+| `class:view_all`     | 查看全部班级 |
+| `class:update`       | 管理任意班级 |
+| `class:dissolve`     | 解散任意班级 |
+| `class:member:kick`  | 踢出班级成员 |
+| `class:approve_join` | 审批加入申请 |
+| `class:teacher:add`  | 添加班级老师 |
+
+### 5.2 用户管理
+
+#### 5.2.1 查询用户列表
+
+**接口地址**: `GET /api/admin/users`
+
+**所需权限节点**: `user:view`
+
+**请求参数**:
+
+| 参数     | 类型    | 必填 | 说明                                  |
+| -------- | ------- | ---- | ------------------------------------- |
+| keyword  | String  | 否   | 关键字（用户名/学号/邮箱/姓名模糊匹配）|
+| pageNum  | Integer | 否   | 页码，默认 1                          |
+| pageSize | Integer | 否   | 每页大小，默认 10                     |
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "成功",
+  "data": {
+    "records": [
+      {
+        "id": 1001,
+        "userNo": "2024001",
+        "username": "TheXiaoLa",
+        "idName": "张三",
+        "email": "zhangsan@example.com",
+        "phone": "13800000000",
+        "isOp": false,
+        "isBanned": false,
+        "banReason": null,
+        "groupNames": ["班级管理员"],
+        "permissions": ["class:view_all", "user:view"],
+        "registerTime": "2026-05-07T10:00:00",
+        "lastLoginTime": "2026-05-08T09:00:00"
+      }
+    ],
+    "total": 1,
+    "size": 10,
+    "current": 1,
+    "pages": 1
+  }
+}
+```
+
+#### 5.2.2 新增用户
+
+**接口地址**: `POST /api/admin/users`
+
+**所需权限节点**: `user:add`
+
+**请求体**:
+
+```json
+{
+  "userNo": "2024002",
+  "username": "lisi",
+  "idName": "李四",
+  "email": "lisi@example.com",
+  "phone": "13900000000",
+  "password": "123456"
+}
+```
+
+**字段说明**:
+
+| 字段     | 类型   | 必填 | 说明                                            |
+| -------- | ------ | ---- | ----------------------------------------------- |
+| userNo   | String | 是   | 学号/工号，仅数字，最长 24 位                    |
+| username | String | 是   | 用户名，3-16 位字母/数字/下划线，不区分大小写唯一 |
+| idName   | String | 否   | 姓名，最长 32 位                                 |
+| email    | String | 是   | 邮箱，最长 64 位，唯一                           |
+| phone    | String | 否   | 手机号，最长 20 位                               |
+| password | String | 是   | 初始密码，4-48 位                                |
+
+**注意**:
+
+- 新增用户会自动加入所有「默认权限组」
+
+#### 5.2.3 编辑用户
+
+**接口地址**: `PUT /api/admin/users/{userId}`
+
+**所需权限节点**: `user:edit`
+
+**请求体**: 同新增用户，但所有字段均可选；`password` 非空时重置密码。
+
+#### 5.2.4 删除用户
+
+**接口地址**: `DELETE /api/admin/users/{userId}`
+
+**所需权限节点**: `user:delete`
+
+**注意**:
+
+- 不能删除当前登录的账号
+- 不能删除平台管理员（需先取消其 OP 身份）
+- 若该用户仍是班级创建者，需先转让或解散其班级
+- 删除时会同时清理其权限绑定、班级成员关系及相关的邀请/申请记录
+
+#### 5.2.5 封禁 / 解封用户
+
+**接口地址**: `PUT /api/admin/users/{userId}/ban`
+
+**所需权限节点**: `user:ban`
+
+**请求体**:
+
+```json
+{
+  "banned": true,
+  "reason": "违反平台规定"
+}
+```
+
+#### 5.2.6 设置 / 取消平台管理员（OP）
+
+**接口地址**: `PUT /api/admin/users/{userId}/op`
+
+**所需权限节点**: `user:setop`
+
+**请求体**:
+
+```json
+{
+  "isOp": true
+}
+```
+
+**注意**:
+
+- 只有平台管理员（OP）可以授予或取消平台管理员身份
+- 不能修改自己的平台管理员身份
+
+#### 5.2.7 查询用户权限明细
+
+**接口地址**: `GET /api/admin/users/{userId}/permissions`
+
+**所需权限节点**: `user:view` 或 `permission:view`
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "成功",
+  "data": {
+    "userId": 1001,
+    "username": "TheXiaoLa",
+    "isOp": false,
+    "groups": [
+      { "id": 2, "code": "class-admin", "name": "班级管理员", "isDefault": false, "nodes": ["class:view_all"], "userCount": 3 }
+    ],
+    "directNodes": ["user:view"],
+    "permissions": ["class:view_all", "user:view"]
+  }
+}
+```
+
+#### 5.2.8 分配用户权限组
+
+**接口地址**: `PUT /api/admin/users/{userId}/groups`
+
+**所需权限节点**: `permission:group:assign`
+
+**请求体**（覆盖式，传入即为最终归属）:
+
+```json
+{
+  "groupIds": [2, 3]
+}
+```
+
+**注意**:
+
+- 覆盖式：传入即为最终归属
+- 不能修改自己的权限组
+- 非平台管理员只能分配自己已拥有其全部权限节点的权限组
+
+#### 5.2.9 分配用户直接权限节点
+
+**接口地址**: `PUT /api/admin/users/{userId}/nodes`
+
+**所需权限节点**: `permission:user:assign`
+
+**请求体**（覆盖式，未注册的节点会被拒绝）:
+
+```json
+{
+  "nodes": ["user:view"]
+}
+```
+
+**注意**:
+
+- 未注册的节点会被拒绝
+- 非平台管理员只能授予自己已拥有的权限节点（防止越权提权）
+
+### 5.3 权限组管理
+
+#### 5.3.1 查询权限节点树
+
+**接口地址**: `GET /api/admin/permissions/nodes`
+
+**所需权限节点**: `permission:view`
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "成功",
+  "data": [
+    {
+      "key": "user",
+      "name": "用户管理",
+      "nodes": [
+        { "node": "user:view", "name": "查看用户", "description": "查看用户列表与详情" }
+      ]
+    }
+  ]
+}
+```
+
+#### 5.3.2 查询权限组列表
+
+**接口地址**: `GET /api/admin/permissions/groups`
+
+**所需权限节点**: `permission:view`
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 200,
+  "message": "成功",
+  "data": [
+    {
+      "id": 2,
+      "code": "class-admin",
+      "name": "班级管理员",
+      "description": "可管理全部班级",
+      "isDefault": false,
+      "nodes": ["class:view_all", "class:dissolve"],
+      "userCount": 3,
+      "createTime": "2026-05-07T10:00:00"
+    }
+  ]
+}
+```
+
+#### 5.3.3 创建权限组
+
+**接口地址**: `POST /api/admin/permissions/groups`
+
+**所需权限节点**: `permission:group:add`
+
+**请求体**:
+
+```json
+{
+  "code": "class-admin",
+  "name": "班级管理员",
+  "description": "可管理全部班级",
+  "isDefault": false
+}
+```
+
+| 字段        | 类型    | 必填 | 说明                                                          |
+| ----------- | ------- | ---- | ------------------------------------------------------------- |
+| code        | String  | 是   | 权限组标识，字母开头，仅字母/数字/下划线/连字符，最长 64 位，唯一 |
+| name        | String  | 是   | 权限组名称，最长 64 位                                        |
+| description | String  | 否   | 描述，最长 255 位                                             |
+| isDefault   | Boolean | 否   | 是否为新注册用户的默认组                                      |
+
+#### 5.3.4 编辑权限组
+
+**接口地址**: `PUT /api/admin/permissions/groups/{groupId}`
+
+**所需权限节点**: `permission:group:edit`
+
+**请求体**: `name`、`description`、`isDefault`（`code` 创建后不可修改）
+
+#### 5.3.5 删除权限组
+
+**接口地址**: `DELETE /api/admin/permissions/groups/{groupId}`
+
+**所需权限节点**: `permission:group:delete`
+
+**注意**: 删除后组内用户将失去该组带来的权限；组-节点绑定与用户-组绑定会一并清理。
+
+#### 5.3.6 配置权限组节点
+
+**接口地址**: `PUT /api/admin/permissions/groups/{groupId}/nodes`
+
+**所需权限节点**: `permission:group:edit`
+
+**请求体**（覆盖式，未注册的节点会被拒绝）:
+
+```json
+{
+  "nodes": ["class:view_all", "class:dissolve"]
+}
+```
+
+**注意**: 非平台管理员只能授予自己已拥有的权限节点（防止越权提权）。
 
 ---
 

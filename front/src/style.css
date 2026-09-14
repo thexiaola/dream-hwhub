@@ -298,7 +298,7 @@
   --text-secondary: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.62);
   --text-muted: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 
-  /* 兼容历史引用 */
+  /* 变量别名（供其他样式引用） */
   --bg-dark: var(--bg-page);
 
   /* Element Plus 亮色覆盖 */
@@ -509,6 +509,31 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
   ) !important;
   border: none !important;
   color: var(--fg-on-accent) !important;
+}
+
+/* =========================================================
+   暗色模式：danger plain 按钮适配
+   EP 默认 plain 底取 --el-color-danger-light-9（近白），
+   在暗色页面上会形成“白块”，此处限定暗色下改为半透明红。
+   ========================================================= */
+html[data-theme="dark"] .el-button--danger.is-plain {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: var(--danger-title) !important;
+}
+
+html[data-theme="dark"] .el-button--danger.is-plain:hover,
+html[data-theme="dark"] .el-button--danger.is-plain:focus {
+  background: rgba(239, 68, 68, 0.3) !important;
+  border-color: rgba(239, 68, 68, 0.65) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .el-button--danger.is-plain.is-disabled,
+html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
+  background: rgba(239, 68, 68, 0.05) !important;
+  border-color: rgba(239, 68, 68, 0.15) !important;
+  color: rgba(239, 68, 68, 0.4) !important;
 }
 
 .el-card {

@@ -18,6 +18,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
+import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
 import top.thexiaola.dreamhwhub.support.mapper.UserMapper;
 
@@ -44,6 +45,9 @@ class LoginUserControllerTest {
 
     @MockitoBean
     private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private PermissionService permissionService;
 
     private ObjectMapper objectMapper;
 

@@ -54,9 +54,9 @@ public class User implements Serializable {
     @ToString.Exclude
     private String password;
 
-    // 权限级别
-    @TableField("permission")
-    private Short permission = 1;
+    // 是否平台管理员（OP）：拥有全部权限节点
+    @TableField("is_op")
+    private Boolean isOp = false;
 
     // 是否被封禁：0-正常，1-封禁
     @TableField("is_banned")

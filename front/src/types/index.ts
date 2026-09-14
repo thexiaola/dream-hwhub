@@ -12,7 +12,10 @@ export interface UserInfo {
   email: string
   idName?: string
   phone?: string
-  permission: number
+  /** 是否为平台管理员（OP），拥有全部权限节点 */
+  isOp?: boolean
+  /** 生效的权限节点（OP 为全部节点） */
+  permissions?: string[]
   role: 'teacher' | 'student'
   registerTime?: string
   lastLoginTime?: string

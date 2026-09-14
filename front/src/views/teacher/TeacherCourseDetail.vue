@@ -634,7 +634,7 @@ const selectedStudentIds = ref<number[]>([]);
 const canDissolve = computed(() => {
   if (!course.value || !userStore.userInfo) return false;
   const isOwner = course.value.userRole === "创建者";
-  const isAdmin = userStore.userInfo.permission >= 100;
+  const isAdmin = userStore.hasPermission('class:dissolve');
   return isOwner || isAdmin;
 });
 
@@ -724,7 +724,7 @@ const loadCourse = async () => {
   if (result.code === 200) {
     const info = result.data!;
     // 管理员可查看任意班级；非班级教师（创建者/老师）禁止进入教师管理视图
-    const isAdmin = (userStore.userInfo?.permission ?? 0) >= 100;
+    const isAdmin = userStore.hasPermission('class:view_all');
     if (!isAdmin && info.userRole !== "创建者" && info.userRole !== "老师") {
       ElMessage.warning("您不是该班级的老师，无权访问教师管理页面");
       router.push("/teacher/courses");

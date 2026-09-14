@@ -52,11 +52,12 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         
         user.setUserNo(newUserNo);
         user.setUsername(newUsername);
-
         user.setIdName(newIdName);
         user.setPhone(newPhone);
 
-        // 更新数据库，返回成功
+        // 更新数据库
+        userMapper.updateById(user);
+
         return userMapper.selectById(user.getId());
     }
     
