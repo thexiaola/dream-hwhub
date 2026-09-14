@@ -14,10 +14,7 @@ import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * 认证拦截器单元测试：覆盖公开路径放行、Token 缺失/无效，以及账号被删除、封禁等越权场景
