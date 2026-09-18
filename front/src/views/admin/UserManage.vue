@@ -423,12 +423,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.filter-bar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
 .pagination {
   display: flex;
   justify-content: center;
@@ -478,15 +472,6 @@ onMounted(() => {
 
 .admin-table :deep(.el-table__row:hover > td) {
   background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05) !important;
-}
-
-.filter-bar :deep(.el-input__wrapper) {
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
-  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
-}
-
-.filter-bar :deep(.el-input__inner) {
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95) !important;
 }
 
 :deep(.el-checkbox__label) {

@@ -268,6 +268,15 @@
   --bg-card: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
   --border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
 
+  /* 筛选工具栏 (.filter-bar)：浮起卡片表面 + 分段控件凹槽 */
+  --toolbar-bg: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+  --toolbar-border: rgba(102, 126, 234, 0.18);
+  --toolbar-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(16, 24, 40, 0.05),
+    0 12px 28px -18px rgba(102, 126, 234, 0.45);
+  --segment-track: rgba(102, 126, 234, 0.08);
+
   /* 前景色：--r-fg/--g-fg/--b-fg 为 RGB 分量（已 @property 注册可插值），
      供 rgba(var(--r-fg), var(--g-fg), var(--b-fg), X) 使用；--fg 为实色前景；
      --fg-on-accent 用于渐变/主色面上的文字（恒白） */
@@ -331,6 +340,19 @@ html[data-theme="dark"] {
   --dialog-bg: rgba(30, 30, 65, 0.72);
   --bg-card: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   --border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
+
+  /* 筛选工具栏 (.filter-bar)：浮起卡片表面 + 分段控件凹槽 */
+  --toolbar-bg: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  --toolbar-border: rgba(255, 255, 255, 0.12);
+  --toolbar-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 20px 44px -26px rgba(0, 0, 0, 0.85);
+  --segment-track: rgba(0, 0, 0, 0.25);
 
   --r-fg: 255;
   --g-fg: 255;
@@ -3020,4 +3042,91 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 
 .el-pagination .el-select__selected-item {
   color: var(--text-primary);
+}
+
+/* =========================================================
+   筛选工具栏 (.filter-bar)
+   用法：页面顶部筛选区使用 class="filter-bar"，内部直接放
+   el-input / el-radio-group / el-button 等；卡片宽度贴合内容，
+   内容超出容器时按 flex 自动换行。
+   ========================================================= */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--toolbar-border);
+  box-shadow: var(--toolbar-shadow);
+}
+
+/* 筛选区左侧的说明标签，为无输入控件的筛选行提供文字锚点 */
+.filter-bar__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.filter-bar__label svg {
+  color: var(--primary-color);
+}
+
+/* flex 的 gap 已提供间距，抵消 el-button 相邻时的默认外边距 */
+.filter-bar .el-button + .el-button {
+  margin-left: 0;
+}
+
+/* 分段选择控件：外层凹槽轨道 + 内层贴身按钮 */
+.filter-bar .el-radio-group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--segment-track);
+}
+
+.filter-bar .el-radio-button {
+  margin: 0;
+}
+
+/* 工具栏内的输入框：浅色底 + 细描边，在浮起卡片上保持清晰边界 */
+.filter-bar .el-input__wrapper {
+  border-radius: 9px !important;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05) !important;
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.14) inset !important;
+}
+
+.filter-bar .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.24) inset !important;
+}
+
+.filter-bar .el-input__wrapper.is-focus,
+.filter-bar .el-input__wrapper:focus-within {
+  box-shadow:
+    0 0 0 1px var(--primary-color) inset,
+    0 0 0 4px rgba(102, 126, 234, 0.14) !important;
+}
+
+.filter-bar .el-input__inner {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95) !important;
+}
+
+.filter-bar .el-input__inner::placeholder {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
+}
+
+@media (max-width: 768px) {
+  .filter-bar {
+    padding: 8px 12px;
+  }
 }

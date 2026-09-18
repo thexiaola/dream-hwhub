@@ -252,13 +252,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
 .hint {
   font-size: 13px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);

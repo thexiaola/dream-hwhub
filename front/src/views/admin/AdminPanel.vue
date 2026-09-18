@@ -8,6 +8,10 @@
       <!-- 加入班级申请 -->
       <el-tab-pane v-if="canApproveJoin" label="加入班级申请" name="join">
         <div class="filter-bar">
+          <span class="filter-bar__label">
+            <SlidersHorizontal :size="14" />
+            状态
+          </span>
           <el-radio-group v-model="joinFilter" @change="loadJoinApplications">
             <el-radio-button :value="-1">全部</el-radio-button>
             <el-radio-button :value="0">待审核</el-radio-button>
@@ -259,7 +263,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { get, put, del } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { FileText, ShieldAlert } from '@lucide/vue'
+import { FileText, ShieldAlert, SlidersHorizontal } from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
 import UserManage from './UserManage.vue'
 import PermissionGroupManage from './PermissionGroupManage.vue'
@@ -584,10 +588,6 @@ const batchKickFromAdmin = async (classId: number) => {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
-.filter-bar {
-  margin-bottom: 20px;
-}
-
 .admin-tabs :deep(.el-tabs__item) {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
 }
@@ -781,82 +781,41 @@ const batchKickFromAdmin = async (classId: number) => {
   padding: 16px;
 }
 
-.filter-bar :deep(.el-input__wrapper) {
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
-  border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
-}
-
-.filter-bar :deep(.el-input__wrapper:focus-within) {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-.filter-bar :deep(.el-input__inner) {
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95) !important;
-}
-
-.filter-bar :deep(.el-input__inner::placeholder) {
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
-}
-
-/* el-radio-button 深色主题适配
-   注意：Element Plus 新版本 .el-radio-button__inner 的外边框用的是
-   outline: var(--el-border)（即 1px solid var(--el-border-color)），
-   不是 border！所以必须覆盖 outline / --el-border-color，覆盖 border-color 无效。 */
-.filter-bar :deep(.el-radio-group) {
-  --el-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2);
-}
-
+/* el-radio-button 做成凹槽轨道内的分段控件：
+   边界由外层 .el-radio-group 的 background 提供，按钮自身不再描边，
+   避免 Element Plus 默认 outline 在浮起卡片上形成灰色硬线。 */
 .filter-bar :deep(.el-radio-button__inner) {
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05) !important;
-  outline: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) !important;
-  outline-offset: -1px;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7) !important;
-  box-shadow: -1px 0 0 0 rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2) inset !important;
-  transition: background-color 0.2s ease, color 0.2s ease, outline-color 0.2s ease;
-}
-
-.filter-bar :deep(.el-radio-button:first-child .el-radio-button__inner) {
-  border-top-left-radius: 8px !important;
-  border-bottom-left-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
   box-shadow: none !important;
+  border-radius: 8px !important;
+  padding: 7px 16px !important;
+  font-size: 13px !important;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.62) !important;
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.filter-bar :deep(.el-radio-button:last-child .el-radio-button__inner) {
-  border-top-right-radius: 8px !important;
-  border-bottom-right-radius: 8px !important;
-}
-
-.filter-bar :deep(.el-radio-button:not(.is-active):hover .el-radio-button__inner) {
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.09) !important;
+.filter-bar :deep(.el-radio-button:not(.is-active) .el-radio-button__inner:hover) {
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
-  outline-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.32) !important;
-  box-shadow: -1px 0 0 0 rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.32) inset !important;
 }
 
-.filter-bar :deep(.el-radio-button:first-child:not(.is-active):hover .el-radio-button__inner) {
-  box-shadow: none !important;
+/* 键盘聚焦时保留可见的焦点指示 */
+.filter-bar :deep(.el-radio-button__original-radio:focus-visible + .el-radio-button__inner) {
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.55) !important;
 }
 
 .filter-bar :deep(.el-radio-button.is-active .el-radio-button__inner),
 .filter-bar :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.85), rgba(118, 75, 162, 0.85)) !important;
-  outline: 1px solid rgba(102, 126, 234, 0.8) !important;
-  outline-offset: -1px;
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
   color: var(--fg-on-accent) !important;
-  box-shadow: -1px 0 0 0 rgba(102, 126, 234, 0.8) inset !important;
   font-weight: 600;
-}
-
-.filter-bar :deep(.el-radio-button.is-active:first-child .el-radio-button__inner),
-.filter-bar :deep(.el-radio-button:first-child .el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  box-shadow: none !important;
+  box-shadow: 0 2px 8px -2px rgba(102, 126, 234, 0.65) !important;
 }
 
 .filter-bar :deep(.el-radio-button.is-disabled .el-radio-button__inner) {
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.02) !important;
-  outline: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
-  outline-offset: -1px;
+  background: transparent !important;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
   cursor: not-allowed;
 }
@@ -899,13 +858,12 @@ const batchKickFromAdmin = async (classId: number) => {
     -webkit-overflow-scrolling: touch;
   }
 
-  .filter-bar .el-radio-group {
-    gap: 4px;
+  .filter-bar :deep(.el-radio-group) {
     min-width: max-content;
   }
 
-  .filter-bar .el-radio-button__inner {
-    padding: 8px 14px !important;
+  .filter-bar :deep(.el-radio-button__inner) {
+    padding: 6px 12px !important;
     font-size: 12px !important;
   }
 
