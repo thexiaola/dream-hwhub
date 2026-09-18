@@ -5,8 +5,10 @@
     :aria-label="isDark ? '切换到亮色模式' : '切换到暗色模式'"
     @click="toggle"
   >
-    <Sun v-if="isDark" :size="18" />
-    <Moon v-else :size="18" />
+    <span class="theme-toggle-icon" :class="{ 'is-dark': isDark }">
+      <Sun class="icon icon-sun" :size="18" aria-hidden="true" />
+      <Moon class="icon icon-moon" :size="18" aria-hidden="true" />
+    </span>
   </button>
 </template>
 
@@ -36,5 +38,46 @@ const { isDark, toggle } = useTheme()
 .theme-toggle:hover {
   background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   color: var(--fg);
+}
+
+/* 太阳与月亮叠放，主题切换时一方旋转放大展开、另一方旋转缩小收起 */
+.theme-toggle-icon {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.theme-toggle-icon :deep(.icon) {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-icon :deep(.icon-moon) {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-toggle-icon :deep(.icon-sun) {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.4);
+}
+
+.theme-toggle-icon.is-dark :deep(.icon-moon) {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.4);
+}
+
+.theme-toggle-icon.is-dark :deep(.icon-sun) {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* 系统要求减少动画时直接互换图标 */
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-icon :deep(.icon) {
+    transition: none;
+  }
 }
 </style>

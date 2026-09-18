@@ -189,13 +189,19 @@ const handleLogin = async () => {
   inset: 0;
 }
 
+/* 星点是暗色夜空装饰：亮色主题下背景透明，不显示深色点；
+   背景色跟随主题切换的过渡淡入淡出 */
 .star {
   position: absolute;
   width: 2px;
   height: 2px;
-  background: var(--fg);
+  background: transparent;
   border-radius: 50%;
   animation: twinkle 3s ease-in-out infinite;
+}
+
+html[data-theme="dark"] .star {
+  background: var(--fg);
 }
 
 @keyframes twinkle {

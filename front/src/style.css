@@ -383,11 +383,27 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-/* 主题切换平滑过渡：仅在切换瞬间启用，避免首屏闪烁与 hover 永久滞后 */
+/* 主题切换平滑过渡（View Transitions 路径）：旧快照保持不动，新主题整页淡入，
+   动画只在合成层进行，页面只需一次样式重算，避免逐元素过渡卡主线程 */
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: theme-fade-in 0.22s ease;
+}
+
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 不支持 View Transitions 的浏览器回退：仅在切换瞬间启用全站颜色过渡；
+   不含 box-shadow，避免大范围阴影插值带来的重绘开销 */
 html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
 }
 
 * {
