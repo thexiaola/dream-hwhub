@@ -1,0 +1,1238 @@
+/* =========================================================================
+   统一认证页（登录 / 注册 / 找回密码）
+   结构：全屏渐变背景 + 居中双栏卡片。左栏为品牌介绍，右栏为表单。
+   主题：跟随站点亮暗主题（html[data-theme]），品牌色取全局 --primary-color。
+   ========================================================================= */
+
+@property --auth-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.auth-page {
+  /* 品牌色深浅派生：亮色向白混合得到浅色阶，向黑混合得到深色阶 */
+  --auth-primary: var(--primary-color);
+  --auth-light-2: color-mix(in srgb, var(--auth-primary) 80%, #ffffff);
+  --auth-light-3: color-mix(in srgb, var(--auth-primary) 70%, #ffffff);
+  --auth-light-5: color-mix(in srgb, var(--auth-primary) 50%, #ffffff);
+  --auth-light-6: color-mix(in srgb, var(--auth-primary) 40%, #ffffff);
+  --auth-light-7: color-mix(in srgb, var(--auth-primary) 30%, #ffffff);
+  --auth-light-8: color-mix(in srgb, var(--auth-primary) 20%, #ffffff);
+  --auth-light-9: color-mix(in srgb, var(--auth-primary) 8%, #ffffff);
+  --auth-dark-2: color-mix(in srgb, var(--auth-primary) 82%, #000000);
+
+  /* 卡片内使用的表面色与描边色 */
+  --auth-surface: var(--bg-elevated);
+  --auth-border: var(--border-color);
+
+  /* 品牌栏渐变：主色向深色收拢，保证白字对比度 */
+  --auth-brand-from: color-mix(in srgb, var(--auth-primary) 92%, #ffffff);
+  --auth-brand-mid: color-mix(in srgb, var(--auth-primary) 82%, #0f172a);
+  --auth-brand-to: color-mix(in srgb, var(--auth-primary) 70%, #0a0f1a);
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 28px 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  /* 纯色兜底在前：background 简写含 color-mix，旧浏览器丢弃简写时仍有底色 */
+  background-color: var(--bg-page);
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 50% -10%,
+      color-mix(in srgb, var(--auth-light-8) 90%, transparent),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 100% 100%,
+      color-mix(in srgb, var(--auth-light-9) 70%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(168deg, #ffffff 0%, var(--bg-page) 50%, #ffffff 100%);
+}
+
+/* 背景装饰：网格 + 四周压暗 + 四个缓慢漂移的模糊色团 */
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.auth-bg-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--auth-border) 30%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--auth-border) 30%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+  -webkit-mask-image: radial-gradient(88% 78% at 50% 42%, #000 12%, transparent 80%);
+  mask-image: radial-gradient(88% 78% at 50% 42%, #000 12%, transparent 80%);
+}
+
+.auth-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 75% 70% at 50% 50%,
+    transparent 40%,
+    color-mix(in srgb, var(--bg-page) 35%, transparent) 100%
+  );
+}
+
+.auth-bg-shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.32;
+  filter: blur(96px);
+  animation: auth-float 24s ease-in-out infinite;
+}
+
+.auth-bg-shape--1 {
+  top: -14%;
+  left: -10%;
+  width: 560px;
+  height: 560px;
+  background: var(--auth-light-5);
+}
+
+.auth-bg-shape--2 {
+  right: -8%;
+  bottom: -12%;
+  width: 480px;
+  height: 480px;
+  background: var(--auth-light-7);
+  animation-delay: -8s;
+}
+
+.auth-bg-shape--3 {
+  top: 22%;
+  right: 12%;
+  width: 280px;
+  height: 280px;
+  opacity: 0.28;
+  background: color-mix(in srgb, var(--auth-light-3) 50%, transparent);
+  animation-delay: -14s;
+}
+
+.auth-bg-shape--4 {
+  bottom: 12%;
+  left: 10%;
+  width: 220px;
+  height: 220px;
+  opacity: 0.26;
+  background: color-mix(in srgb, var(--auth-light-5) 45%, transparent);
+  animation-delay: -20s;
+}
+
+/* 右上角工具栏（主题切换等） */
+.auth-toolbar {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 卡片外壳：外描边 + 投影 + 边缘流转光效 */
+.auth-card-shell {
+  --auth-flow-width: 2px;
+
+  position: relative;
+  z-index: 10;
+  width: 960px;
+  max-width: 95vw;
+  border-radius: 24px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--auth-border) 80%, transparent),
+    0 8px 16px -4px rgba(15, 23, 42, 0.06),
+    0 32px 64px -16px rgba(15, 23, 42, 0.14);
+}
+
+.auth-card-shell::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 1px solid var(--auth-border);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.auth-card-shell::after {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  content: "";
+  pointer-events: none;
+}
+
+.auth-card-border {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  padding: var(--auth-flow-width);
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--auth-border-angle, 0deg),
+    transparent 0deg 272deg,
+    color-mix(in srgb, var(--auth-light-6) 40%, transparent) 292deg,
+    var(--auth-light-3) 314deg,
+    var(--auth-primary) 330deg,
+    color-mix(in srgb, var(--auth-light-5) 50%, transparent) 360deg
+  );
+  opacity: 0.92;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  -webkit-mask-clip: content-box, border-box;
+  mask-clip: content-box, border-box;
+  -webkit-mask-origin: content-box, border-box;
+  mask-origin: content-box, border-box;
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: auth-border-flow 4s linear infinite;
+}
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  min-height: 580px;
+  border-radius: 24px;
+  animation: auth-card-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ============================ 左栏：品牌介绍 ============================ */
+
+.auth-brand {
+  position: relative;
+  flex: 0 0 45%;
+  display: flex;
+  flex-direction: column;
+  width: 45%;
+  padding: 48px 40px 24px;
+  overflow: hidden;
+  color: #ffffff;
+  border-radius: 24px 0 0 24px;
+  background-color: var(--auth-brand-mid);
+  background: linear-gradient(
+    155deg,
+    var(--auth-brand-from) 0%,
+    var(--auth-brand-mid) 48%,
+    var(--auth-brand-to) 100%
+  );
+}
+
+.auth-brand-mesh {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: linear-gradient(#000 0%, transparent 85%);
+  mask-image: linear-gradient(#000 0%, transparent 85%);
+}
+
+.auth-brand-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(95% 65% at 0 0, rgba(255, 255, 255, 0.28), transparent 52%),
+    radial-gradient(55% 40% at 85% 15%, rgba(255, 255, 255, 0.12), transparent 50%),
+    radial-gradient(70% 50% at 100% 100%, rgba(255, 255, 255, 0.06), transparent 50%);
+}
+
+.auth-brand-glow {
+  position: absolute;
+  top: 20%;
+  right: -20%;
+  z-index: 0;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.auth-brand-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.auth-logo-wrap {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  line-height: 0;
+  color: var(--auth-primary);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.auth-logo-wrap--brand {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.22),
+    0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+.auth-logo-wrap--mobile {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--auth-border);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--auth-primary) 14%, transparent);
+}
+
+.auth-brand-name {
+  display: block;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.2px;
+}
+
+.auth-brand-sub {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  opacity: 0.72;
+}
+
+.auth-brand-content {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  margin-top: 26px;
+  padding-bottom: 28px;
+}
+
+.auth-brand-title {
+  margin: 0 0 10px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.38;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.12);
+}
+
+.auth-brand-desc {
+  max-width: 88%;
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.72;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.auth-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 0 0;
+  list-style: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.auth-feature {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+
+.auth-feature:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.auth-feature-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* 品牌栏右下角的抽象示意图：轨道圆环 + 迷你仪表盘卡片 */
+.auth-illustration {
+  position: absolute;
+  right: 0;
+  bottom: 32px;
+  width: 200px;
+  height: 128px;
+  margin: 14px 0 0 auto;
+  opacity: 0.68;
+  pointer-events: none;
+}
+
+.auth-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  animation: auth-orbit 14s linear infinite;
+}
+
+.auth-orbit--1 {
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+}
+
+.auth-orbit--2 {
+  width: 200px;
+  height: 200px;
+  opacity: 0.45;
+  animation-duration: 20s;
+  animation-direction: reverse;
+  transform: translate(-50%, -50%);
+}
+
+.auth-preview {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 210px;
+  height: 128px;
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(12px);
+  animation: auth-preview-float 7s ease-in-out infinite;
+}
+
+.auth-preview-bar {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.auth-preview-bar span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.auth-preview-bar span:nth-child(1) {
+  background: #fca5a5;
+}
+
+.auth-preview-bar span:nth-child(2) {
+  background: #fcd34d;
+}
+
+.auth-preview-bar span:nth-child(3) {
+  background: #6ee7b7;
+}
+
+.auth-preview-body {
+  display: flex;
+  gap: 8px;
+  height: calc(100% - 18px);
+}
+
+.auth-preview-sidebar {
+  flex-shrink: 0;
+  width: 44px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.auth-preview-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-preview-chart {
+  flex: 1;
+  border-radius: 8px;
+  background: linear-gradient(rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.auth-preview-cards {
+  display: flex;
+  gap: 6px;
+  height: 26px;
+}
+
+.auth-preview-cards span {
+  flex: 1;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ============================ 右栏：表单 ============================ */
+
+.auth-form-side {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 52px 64px;
+  border-radius: 0 24px 24px 0;
+  background-color: var(--auth-surface);
+  background: color-mix(in srgb, var(--auth-surface) 42%, transparent);
+  backdrop-filter: blur(28px) saturate(1.35);
+}
+
+/* 两栏之间的竖向渐变分割线 */
+.auth-form-divider {
+  position: absolute;
+  top: 10%;
+  bottom: 10%;
+  left: 0;
+  z-index: 2;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--auth-light-5) 55%, var(--auth-border)) 25%,
+    color-mix(in srgb, var(--auth-light-3) 45%, var(--auth-border)) 50%,
+    color-mix(in srgb, var(--auth-light-5) 55%, var(--auth-border)) 75%,
+    transparent 100%
+  );
+}
+
+.auth-form-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 32%),
+    radial-gradient(
+      ellipse 85% 55% at 50% -5%,
+      color-mix(in srgb, var(--auth-light-9) 50%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 100%,
+      color-mix(in srgb, var(--auth-light-9) 30%, transparent),
+      transparent 55%
+    );
+}
+
+.auth-form-body {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+  animation: auth-form-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+/* 窄屏下品牌栏隐藏，改为表单内的小标识 */
+.auth-mobile-brand {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.auth-form-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.auth-form-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 16px;
+  padding: 5px 16px 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: var(--auth-primary);
+  border: 1px solid color-mix(in srgb, var(--auth-light-7) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--auth-light-9) 75%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--auth-primary) 8%, transparent);
+}
+
+.auth-form-badge::before {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--auth-primary);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--auth-primary) 60%, transparent);
+  content: "";
+  animation: auth-badge-pulse 2.4s ease-in-out infinite;
+}
+
+.auth-form-title {
+  margin: 0 0 10px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+}
+
+/* 渐变文字依赖 color-mix，仅在支持的浏览器上启用，旧浏览器保留纯色标题 */
+@supports (color: color-mix(in srgb, red, blue)) {
+  .auth-form-title {
+    background: linear-gradient(
+      135deg,
+      var(--text-primary) 0%,
+      color-mix(in srgb, var(--auth-primary) 50%, var(--text-primary)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+.auth-form-subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* 表单控件 */
+.auth-form {
+  width: 100%;
+}
+
+.auth-form .el-form-item {
+  margin-bottom: 20px;
+}
+
+.auth-form .el-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.auth-form .el-form-item.is-error .el-input__wrapper {
+  border-color: color-mix(in srgb, var(--danger-strong) 65%, var(--auth-border)) !important;
+  box-shadow: none !important;
+}
+
+.auth-form .el-form-item.is-error .el-input__wrapper:hover,
+.auth-form .el-form-item.is-error .el-input__wrapper.is-focus {
+  border-color: var(--danger-strong) !important;
+}
+
+.auth-input .el-input__wrapper {
+  min-height: 46px;
+  padding-left: 8px;
+  border: 1px solid color-mix(in srgb, var(--auth-border) 80%, transparent) !important;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--auth-surface) 70%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+}
+
+.auth-input .el-input__wrapper:hover {
+  border-color: color-mix(in srgb, var(--auth-light-5) 65%, var(--auth-border)) !important;
+  background: color-mix(in srgb, var(--auth-surface) 90%, transparent) !important;
+}
+
+.auth-input .el-input__wrapper.is-focus,
+.auth-input .el-input__wrapper:focus-within {
+  border-color: var(--auth-primary) !important;
+  background: var(--auth-surface) !important;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--auth-primary) 14%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+.auth-input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--auth-primary);
+  background: color-mix(in srgb, var(--auth-light-9) 80%, transparent);
+  transition: background 0.25s, color 0.25s, transform 0.25s;
+}
+
+.auth-input .el-input__wrapper.is-focus .auth-input-icon,
+.auth-input .el-input__wrapper:focus-within .auth-input-icon {
+  color: #ffffff;
+  background: var(--auth-primary);
+  transform: scale(1.02);
+}
+
+.auth-input .el-input__inner {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.auth-input .el-input__inner::placeholder {
+  color: var(--text-muted);
+}
+
+/* 验证码行：输入框 + 获取验证码按钮 */
+.auth-code-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.auth-code-row .el-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-code-btn.el-button {
+  flex-shrink: 0;
+  width: 112px;
+  height: 46px;
+  padding: 0;
+  font-size: 13px;
+  border: none !important;
+  border-radius: 13px;
+  background: linear-gradient(
+    135deg,
+    var(--auth-primary) 0%,
+    color-mix(in srgb, var(--auth-light-3) 85%, var(--auth-primary)) 100%
+  ) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--auth-primary) 26%, transparent);
+}
+
+/* 倒计时或发送中：禁用态改用半透明主色，与可用态区分 */
+.auth-code-btn.el-button.is-disabled,
+.auth-code-btn.el-button.is-disabled:hover,
+.auth-code-btn.el-button.is-disabled:focus {
+  background: color-mix(in srgb, var(--auth-primary) 40%, transparent) !important;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* 主提交按钮 */
+.auth-submit.el-button {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 50px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  border: none !important;
+  border-radius: 13px;
+  background: linear-gradient(
+    135deg,
+    var(--auth-primary) 0%,
+    color-mix(in srgb, var(--auth-light-3) 85%, var(--auth-primary)) 100%
+  ) !important;
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--auth-primary) 35%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.auth-submit.el-button::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.28) 50%, transparent 62%);
+  transform: translateX(-100%);
+  transition: transform 0.55s;
+  content: "";
+}
+
+.auth-submit.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 32px color-mix(in srgb, var(--auth-primary) 42%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.auth-submit.el-button:hover::before {
+  transform: translateX(100%);
+}
+
+.auth-submit.el-button:active {
+  transform: translateY(0);
+}
+
+.auth-submit-text {
+  position: relative;
+  z-index: 1;
+  /* 补偿字距在行尾多出的间距，使文字在按钮内居中 */
+  padding-left: 4px;
+}
+
+/* 找回密码页的步骤条 */
+.auth-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.auth-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--auth-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--auth-surface) 60%, transparent);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.auth-step.active .auth-step-number {
+  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--auth-primary), color-mix(in srgb, var(--auth-primary) 70%, #ffffff));
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--auth-primary) 32%, transparent);
+}
+
+.auth-step.completed .auth-step-number {
+  color: var(--auth-primary);
+  border-color: color-mix(in srgb, var(--auth-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--auth-primary) 12%, transparent);
+}
+
+.auth-step-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.auth-step-line {
+  width: 40px;
+  height: 2px;
+  margin: 0 8px;
+  border-radius: 2px;
+  background: var(--auth-border);
+}
+
+/* 表单下方的辅助说明与提示 */
+.auth-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: -8px 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* 表单下方的辅助入口行 */
+.auth-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.auth-links--center {
+  justify-content: center;
+  gap: 6px;
+}
+
+.auth-link {
+  color: var(--auth-primary);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.auth-link:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+/* 双按钮行（找回密码第二步） */
+.auth-form-actions .el-form-item__content {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.auth-form-actions .el-button {
+  margin-left: 0;
+}
+
+/* 移动端版权：窄屏品牌栏隐藏，版权改在表单下方显示 */
+.auth-mobile-copyright {
+  display: none;
+  margin-top: 24px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.auth-mobile-copyright a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s, opacity 0.2s;
+}
+
+.auth-mobile-copyright a:hover {
+  color: var(--auth-primary);
+}
+
+/* ============================ 暗色主题 ============================ */
+
+html[data-theme="dark"] .auth-page {
+  /* 暗色下浅色阶向黑混合，深色阶向白混合 */
+  --auth-light-2: color-mix(in srgb, var(--auth-primary) 80%, #000000);
+  --auth-light-3: color-mix(in srgb, var(--auth-primary) 70%, #000000);
+  --auth-light-5: color-mix(in srgb, var(--auth-primary) 50%, #000000);
+  --auth-light-6: color-mix(in srgb, var(--auth-primary) 40%, #000000);
+  --auth-light-7: color-mix(in srgb, var(--auth-primary) 30%, #000000);
+  --auth-light-8: color-mix(in srgb, var(--auth-primary) 20%, #000000);
+  --auth-light-9: color-mix(in srgb, var(--auth-primary) 12%, #000000);
+  --auth-dark-2: color-mix(in srgb, var(--auth-primary) 80%, #ffffff);
+
+  background-color: #0d0d1f;
+  background:
+    radial-gradient(
+      ellipse 90% 65% at 50% -8%,
+      color-mix(in srgb, var(--auth-dark-2) 40%, transparent),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 100%,
+      color-mix(in srgb, var(--auth-dark-2) 25%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(168deg, #0a0a1a 0%, #14142b 50%, #0d0d1f 100%);
+}
+
+html[data-theme="dark"] .auth-bg-vignette {
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+html[data-theme="dark"] .auth-bg-grid {
+  opacity: 0.4;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--auth-border) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--auth-border) 45%, transparent) 1px, transparent 1px);
+}
+
+html[data-theme="dark"] .auth-bg-shape {
+  opacity: 0.22;
+}
+
+html[data-theme="dark"] .auth-card-shell {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--auth-border) 60%, transparent),
+    0 8px 16px -4px rgba(0, 0, 0, 0.25),
+    0 32px 64px -16px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .auth-card-shell::after {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .auth-card-border {
+  background: conic-gradient(
+    from var(--auth-border-angle, 0deg),
+    transparent 0deg 265deg,
+    color-mix(in srgb, var(--auth-light-3) 30%, transparent) 285deg,
+    var(--auth-light-3) 308deg,
+    var(--auth-primary) 328deg,
+    color-mix(in srgb, var(--auth-light-5) 45%, transparent) 360deg
+  );
+}
+
+html[data-theme="dark"] .auth-form-side {
+  background: color-mix(in srgb, var(--auth-surface) 28%, transparent);
+  backdrop-filter: blur(28px) saturate(1.2);
+}
+
+html[data-theme="dark"] .auth-form-divider {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--auth-primary) 25%, var(--auth-border)) 50%,
+    transparent 100%
+  );
+}
+
+html[data-theme="dark"] .auth-form-glass {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 0%, transparent 30%),
+    radial-gradient(80% 50% at 50% 0, rgba(255, 255, 255, 0.04), transparent 60%);
+}
+
+html[data-theme="dark"] .auth-form-badge {
+  border-color: color-mix(in srgb, var(--auth-primary) 22%, transparent);
+  background: color-mix(in srgb, var(--auth-primary) 12%, transparent);
+  box-shadow: none;
+}
+
+/* 与亮色同样只在支持 color-mix 时启用渐变文字，否则保留纯色标题 */
+@supports (color: color-mix(in srgb, red, blue)) {
+  html[data-theme="dark"] .auth-form-title {
+    background: linear-gradient(
+      135deg,
+      var(--text-primary) 0%,
+      color-mix(in srgb, var(--auth-light-3) 70%, var(--text-primary)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+html[data-theme="dark"] .auth-brand-glow {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+}
+
+html[data-theme="dark"] .auth-logo-wrap--brand {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+html[data-theme="dark"] .auth-logo-wrap--mobile {
+  border-color: var(--auth-border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="dark"] .auth-features {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .auth-feature {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .auth-feature:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+html[data-theme="dark"] .auth-feature-icon {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+html[data-theme="dark"] .auth-preview {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+}
+
+html[data-theme="dark"] .auth-input .el-input__wrapper {
+  border-color: color-mix(in srgb, var(--auth-border) 75%, transparent) !important;
+  background: color-mix(in srgb, var(--auth-surface) 35%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="dark"] .auth-input .el-input__wrapper:hover {
+  border-color: color-mix(in srgb, var(--auth-primary) 35%, transparent) !important;
+  background: color-mix(in srgb, var(--auth-surface) 48%, transparent) !important;
+}
+
+html[data-theme="dark"] .auth-input .el-input__wrapper.is-focus,
+html[data-theme="dark"] .auth-input .el-input__wrapper:focus-within {
+  background: color-mix(in srgb, var(--auth-surface) 52%, transparent) !important;
+}
+
+/* 品牌栏变窄后特性胶囊会换成多行、占满内容区高度，此处隐藏示意图避免与其重叠 */
+@media (max-width: 900px) {
+  .auth-illustration {
+    display: none;
+  }
+}
+
+/* ============================ 移动端 ============================ */
+
+@media (max-width: 768px) {
+  .auth-page {
+    padding: 16px 0;
+  }
+
+  .auth-toolbar {
+    top: 16px;
+    right: 16px;
+  }
+
+  /* style.css 的移动端全局规则会给 .el-form-item 加 !important 的 14px，此处重申表单间距 */
+  .auth-form .el-form-item {
+    margin-bottom: 18px !important;
+  }
+
+  .auth-form .el-form-item:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .auth-brand {
+    display: none;
+  }
+
+  .auth-mobile-brand {
+    display: flex;
+  }
+
+  .auth-mobile-copyright {
+    display: block;
+  }
+
+  .auth-form-side {
+    padding: 36px 24px;
+    border-radius: 24px;
+    box-shadow: none;
+  }
+
+  .auth-form-divider {
+    display: none;
+  }
+
+  .auth-card {
+    min-height: 0;
+  }
+
+  .auth-form-title {
+    font-size: 26px;
+  }
+}
+
+/* ============================ 动画 ============================ */
+
+@keyframes auth-float {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, 18px);
+  }
+}
+
+@keyframes auth-border-flow {
+  to {
+    --auth-border-angle: 360deg;
+  }
+}
+
+@keyframes auth-card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes auth-form-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes auth-orbit {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes auth-preview-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translate(0, 0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translate(6px, 12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-bg-shape,
+  .auth-card-border,
+  .auth-card,
+  .auth-form-body,
+  .auth-form-badge::before,
+  .auth-orbit,
+  .auth-preview {
+    animation: none;
+  }
+}
