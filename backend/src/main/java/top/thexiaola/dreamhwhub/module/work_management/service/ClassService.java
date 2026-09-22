@@ -13,27 +13,22 @@ import java.util.List;
 public interface ClassService {
 
     /**
-     * 添加用户为班级老师（管理员或老师专用）
-     */
-    ClassMember addTeacherToClass(Integer classId, String userAccount);
-
-    /**
-     * 批量设置学生为班级助理（老师专用）
+     * 批量将学生设为课代表（班级管理员专用）
      */
     void batchSetAssistantTeachers(Integer classId, List<Integer> studentUserIds);
 
     /**
-     * 检查用户是否是普通老师（非创建者）
+     * 检查用户是否是普通班级管理员（非创建者）
      */
     boolean isOrdinaryTeacher(Integer classId, Integer userId);
 
     /**
-     * 批量将学生踢出班级（老师/班级助理/管理员专用）
+     * 批量将学生踢出班级（班级管理员/平台管理员专用）
      */
     void batchKickStudentsFromClass(Integer classId, List<Integer> studentUserIds);
 
     /**
-     * 取消班级助理权限（降级为学生，仅创建者可用）
+     * 取消课代表的班级管理员权限（降级为普通成员，仅创建者或平台管理员可用）
      */
     void demoteAssistantTeacher(Integer classId, Integer teacherUserId);
 
@@ -44,16 +39,17 @@ public interface ClassService {
 
     /**
      * 被邀请用户响应邀请（同意/拒绝）
+     * 同意时以学校成员身份加入班级
      */
     void respondUserInvitation(Integer invitationId, Boolean accepted);
 
     /**
-     * 教师或助理审核邀请申请
+     * 班级管理员审核邀请申请
      */
     void approveTeacherApproval(Integer approvalId, Boolean approved, String comment);
 
     /**
-     * 获取待教师审核的邀请列表（班级老师/助理专用）
+     * 获取待审核的邀请列表（班级管理员专用）
      */
     List<TeacherApprovalResponse> getPendingTeacherApprovals(Integer classId);
 
@@ -69,17 +65,12 @@ public interface ClassService {
     void dissolveClass(Integer classId, String account, String password, String confirmText);
 
     /**
-     * 查询用户所在的班级列表
-     */
-    List<ClassInfo> getUserClasses(Integer userId);
-
-    /**
-     * 检查用户在指定班级是否是老师
+     * 检查用户是否拥有该班级的管理员权限
      */
     boolean isTeacher(Integer classId, Integer userId);
     
     /**
-     * 获取用户是老师的所有班级ID列表
+     * 获取用户作为班级管理员的所有班级 ID 列表
      *
      * @param userId 用户 ID
      * @return 班级ID列表
@@ -100,7 +91,7 @@ public interface ClassService {
 
     /**
      * 判断用户是否可以提交作业：
-     * 班级学生（role=0）或助理/协作老师（role=1）可以提交，班主任（创建者）不可提交
+     * 普通成员（role=0）或班级管理员（role=1）可以提交，创建者不可提交
      */
     boolean canSubmitWork(Integer classId, Integer userId);
 
@@ -110,18 +101,10 @@ public interface ClassService {
     boolean isClassMember(Integer classId, Integer userId);
 
     /**
-     * 获取用户在班级中的角色
-     * @param classId 班级 ID
-     * @param userId 用户 ID
-     * @return 角色字符串（创建者/班级助理/学生），如果不是成员则返回 null
-     */
-    String getUserRoleInClass(Integer classId, Integer userId);
-
-    /**
      * 获取用户在班级中的角色代码
      * @param classId 班级 ID
      * @param userId 用户 ID
-     * @return 角色代码：1-创建者，2-班级助理，3-学生，null-非成员
+     * @return 角色代码：1-拥有班级管理员权限，0-普通成员，null-非成员
      */
     Integer getUserRoleCodeInClass(Integer classId, Integer userId);
 
@@ -129,15 +112,10 @@ public interface ClassService {
      * 获取用户在班级中的角色名称
      * @param classId 班级 ID
      * @param userId 用户 ID
-     * @return 角色名称（创建者/班级助理/学生），如果不是成员则返回 null
+     * @return 角色名称（创建者/老师/课代表/学生），如果不是成员则返回 null
      */
     String getUserRoleNameInClass(Integer classId, Integer userId);
 
-    /**
-     * 获取班级信息
-     */
-    ClassInfo getClassById(Integer classId);
-    
     /**
      * 批量获取班级信息
      *
@@ -172,27 +150,23 @@ public interface ClassService {
     List<ClassMemberResponse> getAllClassMembers(Integer classId);
 
     /**
-     * 更新成员角色
-     */
-    void updateMemberRole(Integer classId, Integer userId, Integer role);
-
-    /**
-     * 创建班级（创建者自动成为班级老师）
+     * 创建班级（创建者自动成为班级管理员）
      *
+     * @param schoolId    班级所属学校 ID
      * @param className   班级名称
      * @param description 班级描述
      * @return 创建完成的班级实体
      */
-    ClassInfo createClass(String className, String description);
+    ClassInfo createClass(Integer schoolId, String className, String description);
 
     /**
-     * 提交加入班级申请
+     * 提交加入班级申请（姓名与学工号取自学校成员身份）
      * @return 加入申请响应对象
      */
     JoinClassApplicationResponse submitJoinClassRequest(Integer classId);
 
     /**
-     * 获取加入班级申请列表（老师和管理员专用，分页）
+     * 获取加入班级申请列表（班级管理员或平台管理员专用，分页）
      * @param classId 班级 ID 筛选，可选
      * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
      * @param pageNum 页码，默认1
@@ -207,7 +181,7 @@ public interface ClassService {
     void approveJoinApplication(Integer applicationId, Boolean approved, String comment);
 
     /**
-     * 更新班级信息（老师或班级助理）
+     * 更新班级信息（班级管理员）
      *
      * @param classId 班级 ID
      * @param className 班级名称
@@ -217,7 +191,7 @@ public interface ClassService {
     ClassDetailResponse updateClassInfo(Integer classId, String className, String description);
 
     /**
-     * 更新学生邀请设置（班级老师或助理）
+     * 更新学生邀请设置（班级管理员）
      *
      * @param classId 班级 ID
      * @param allowStudentInvite 是否允许学生邀请同学加入
@@ -244,6 +218,7 @@ public interface ClassService {
 
     /**
      * 用户响应邀请（同意/拒绝）
+     * 同意时以学校成员身份加入班级
      */
     void respondInvitation(Integer invitationId, Boolean accepted);
 

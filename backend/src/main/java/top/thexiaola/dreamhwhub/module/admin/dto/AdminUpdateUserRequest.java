@@ -12,20 +12,10 @@ import lombok.Data;
 @Data
 public class AdminUpdateUserRequest {
 
-    // 学号/工号（仅允许数字）
-    @Size(max = 24, message = "学号/工号长度不能超过 24 位")
-    @Pattern(regexp = "^[0-9]*$", message = "学号/工号只能包含数字")
-    private String userNo;
-
     // 用户名
     @Size(min = 3, max = 16, message = "用户名长度需为 3-16 位")
     @Pattern(regexp = "^[A-Za-z0-9_]*$", message = "用户名只能包含字母、数字和下划线")
     private String username;
-
-    // 姓名
-    @Size(max = 32, message = "姓名长度不能超过 32 位")
-    @Pattern(regexp = "^[\\p{L}\\s·-]*$", message = "姓名只能包含字母、汉字及允许的符号（空格、中点、连字符）")
-    private String idName;
 
     // 邮箱
     @Email(message = "邮箱格式不正确")

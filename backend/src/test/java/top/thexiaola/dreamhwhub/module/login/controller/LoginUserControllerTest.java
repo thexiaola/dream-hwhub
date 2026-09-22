@@ -77,12 +77,10 @@ class LoginUserControllerTest {
         User mockUser = new User();
         mockUser.setId(1);
         mockUser.setUsername("testuser");
-        mockUser.setUserNo("123456");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
         userResponse.setUsername("testuser");
-        userResponse.setUserNo("123456");
 
         String mockToken = "mock.jwt.token";
 
@@ -217,12 +215,10 @@ class LoginUserControllerTest {
         User mockUser = new User();
         mockUser.setId(1);
         mockUser.setUsername("testuser");
-        mockUser.setUserNo("123456");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId(1);
         userResponse.setUsername("testuser");
-        userResponse.setUserNo("123456");
 
         String mockToken = "mock.jwt.token";
 

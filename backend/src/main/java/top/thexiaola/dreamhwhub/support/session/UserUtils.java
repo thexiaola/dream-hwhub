@@ -99,8 +99,8 @@ public class UserUtils {
         if (user == null) {
             return "not logged in";
         }
-        return String.format("id: %d, user_no: %s, username: %s, email: %s", 
-            user.getId(), user.getUserNo(), user.getUsername(), user.getEmail());
+        return String.format("id: %d, username: %s, email: %s", 
+            user.getId(), user.getUsername(), user.getEmail());
     }
     
     /**

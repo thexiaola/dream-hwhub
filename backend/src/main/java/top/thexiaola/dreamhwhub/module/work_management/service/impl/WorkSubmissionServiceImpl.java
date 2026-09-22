@@ -14,12 +14,16 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
+import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
 import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmissionAttachment;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
@@ -31,7 +35,7 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionResponseMapper;
 import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionSubmitResponseMapper;
-import top.thexiaola.dreamhwhub.support.session.UserUtils;
+import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
 import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
 
 import java.io.IOException;
@@ -63,6 +67,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
+    private final UserLookupSupport userLookup;
+    private final ClassInfoMapper classInfoMapper;
+    private final SchoolService schoolService;
     private final WorkSubmissionResponseMapper submissionResponseMapper;
     private final WorkSubmissionSubmitResponseMapper submissionSubmitResponseMapper;
     private final TransactionTemplate transactionTemplate;
@@ -70,10 +77,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Override
     public WorkSubmissionSubmitResponse submitWork(SubmitWorkRequest request) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询作业
         WorkInfo workInfo = workMapper.selectById(request.getWorkId());
@@ -277,10 +281,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                                                           List<MultipartFile> attachments,
                                                           List<Integer> removedAttachmentIds) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询提交记录（排除已软删除的）
         WorkSubmission submission = workSubmissionMapper.selectById(submissionId);
@@ -352,10 +353,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteSubmission(Integer submissionId) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询提交记录（排除已软删除的）
         WorkSubmission submission = workSubmissionMapper.selectById(submissionId);
@@ -407,10 +405,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
     @Override
     public WorkSubmissionResponse getSubmissionById(Integer submissionId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         WorkSubmission submission = workSubmissionMapper.selectById(submissionId);
         if (submission == null || Boolean.TRUE.equals(submission.getIsDeleted())) {
@@ -429,12 +424,23 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         return convertToResponse(submission);
     }
 
-    @Override
-    public List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId) {
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+    /**
+     * 按班级批量获取成员的学校内身份（姓名/学工号），返回以用户 ID 为键的映射
+     */
+    private Map<Integer, SchoolMember> loadClassMembers(Integer classId, Collection<Integer> userIds) {
+        if (classId == null || userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
         }
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null || classInfo.getSchoolId() == null) {
+            return Collections.emptyMap();
+        }
+        return schoolService.getMembersByUserIds(classInfo.getSchoolId(), userIds);
+    }
+
+    @Override
+    public List<WorkSubmissionResponse> getStudentSubmissions(Integer workId) {
+        User currentUser = userLookup.requireCurrentUser();
 
         QueryWrapper<WorkSubmission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("submitter_id", currentUser.getId())
@@ -455,10 +461,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Override
     public List<WorkSubmissionResponse> getSubmittedStudents(Integer workId) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询作业信息
         WorkInfo workInfo = workMapper.selectById(workId);
@@ -486,10 +489,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Override
     public List<UnsubmittedStudentResponse> getUnsubmittedStudents(Integer workId) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询作业信息
         WorkInfo workInfo = workMapper.selectById(workId);
@@ -535,17 +535,23 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
         // 4. 查询未交学生详情（只取展示字段，绝不查询/返回 password 等敏感列）
         QueryWrapper<User> userQuery = new QueryWrapper<>();
-        userQuery.select("id", "username", "email", "id_name", "user_no")
+        userQuery.select("id", "username", "email")
                  .in("id", allStudentIds);
         List<User> users = userMapper.selectList(userQuery);
+
+        // 姓名与学号是班级内身份，从班级成员记录中取
+        Map<Integer, SchoolMember> memberMap = loadClassMembers(workInfo.getClassId(), allStudentIds);
 
         return users.stream().map(u -> {
             UnsubmittedStudentResponse resp = new UnsubmittedStudentResponse();
             resp.setId(u.getId());
             resp.setUsername(u.getUsername());
             resp.setEmail(u.getEmail());
-            resp.setIdName(u.getIdName());
-            resp.setUserNo(u.getUserNo());
+            SchoolMember member = memberMap.get(u.getId());
+            if (member != null) {
+                resp.setStudentName(member.getRealName());
+                resp.setStudentNo(member.getStaffNo());
+            }
             return resp;
         }).collect(Collectors.toList());
     }
@@ -553,10 +559,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Override
     public Page<WorkSubmissionResponse> getWorkSubmissions(Integer workId, Integer pageNum, Integer pageSize) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 检查权限（只有班级老师可以查看所有提交）
         WorkInfo workInfo = workMapper.selectById(workId);
@@ -619,11 +622,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
         }
         
-        // 转换为响应对象，使用缓存的数据
+        // 转换为响应对象，使用缓存的数据（用户信息 + 班级内身份）
+        Map<Integer, SchoolMember> memberMap = loadClassMembers(workInfo.getClassId(), userIds);
         final Map<Integer, User> finalUserMap = userMap;
+        final Map<Integer, SchoolMember> finalMemberMap = memberMap;
         List<WorkSubmissionResponse> responses = pagedResult.getRecords().stream()
                 .map(submission -> {
-                    WorkSubmissionResponse response = convertToResponseWithCache(submission, workInfo, finalUserMap);
+                    WorkSubmissionResponse response = convertToResponseWithCache(submission, workInfo, finalUserMap, finalMemberMap);
                     response.setAttachments(attachmentMap.getOrDefault(submission.getId(), new ArrayList<>()));
                     return response;
                 })
@@ -639,10 +644,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Transactional(rollbackFor = Exception.class)
     public WorkSubmissionResponse gradeWork(GradeWorkRequest request) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询提交记录（排除已软删除的）
         WorkSubmission submission = workSubmissionMapper.selectById(request.getSubmissionId());
@@ -685,7 +687,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     /**
      * 转换为响应对象（带缓存的作业信息和用户信息）
      */
-    private WorkSubmissionResponse convertToResponseWithCache(WorkSubmission submission, WorkInfo cachedWorkInfo, Map<Integer, User> userMap) {
+    private WorkSubmissionResponse convertToResponseWithCache(WorkSubmission submission, WorkInfo cachedWorkInfo,
+                                                              Map<Integer, User> userMap,
+                                                              Map<Integer, SchoolMember> memberMap) {
         WorkSubmissionResponse response = submissionResponseMapper.toResponse(submission, cachedWorkInfo);
         
         // 从缓存中获取批改人信息
@@ -696,14 +700,17 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             }
         }
         
-        // 从缓存中获取提交人信息
+        // 从缓存中获取提交人信息；姓名与学号取自班级成员记录
         User submitter = userMap.get(submission.getSubmitterId());
         if (submitter != null) {
             response.setSubmitterName(submitter.getUsername());
             response.setSubmitterUsername(submitter.getUsername());
             response.setSubmitterEmail(submitter.getEmail());
-            response.setSubmitterIdName(submitter.getIdName());
-            response.setSubmitterUserNo(submitter.getUserNo());
+            SchoolMember member = memberMap.get(submitter.getId());
+            if (member != null) {
+                response.setSubmitterStudentName(member.getRealName());
+                response.setSubmitterStudentNo(member.getStaffNo());
+            }
         }
         
         return response;
@@ -856,10 +863,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Override
     public void batchDownloadAttachments(BatchDownloadAttachmentsRequest request, HttpServletResponse response) {
         // 1. 获取当前用户并验证权限
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 2. 查询作业信息
         WorkInfo workInfo = workMapper.selectById(request.getWorkId());
@@ -909,6 +913,9 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         Map<Integer, User> userMap = users.stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // 班级内身份（姓名/学号）随成员记录存储
+        Map<Integer, SchoolMember> memberMap = loadClassMembers(workInfo.getClassId(), submitterIds);
+
         // 7. 批量查询附件
         List<Integer> submissionIds = submissions.stream()
                 .map(WorkSubmission::getId)
@@ -954,8 +961,11 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                     continue;
                 }
 
-                // 为每个学生的附件创建子目录
-                String studentDir = sanitizeFileName(student.getUsername() + "-" + student.getUserNo()) + "/";
+                // 为每个学生的附件创建子目录，学工号取自学校成员身份
+                SchoolMember studentMember = memberMap.get(student.getId());
+                String studentNoPart = studentMember != null && studentMember.getStaffNo() != null
+                        ? studentMember.getStaffNo() : "";
+                String studentDir = sanitizeFileName(student.getUsername() + "-" + studentNoPart) + "/";
 
                 for (WorkSubmissionAttachment attachment : attachments) {
                     try {
@@ -963,6 +973,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                         String customFileName = generateCustomFileName(
                                 request.getFileNameFormat(),
                                 student,
+                                studentMember,
                                 workInfo,
                                 submission,
                                 attachment
@@ -1010,14 +1021,16 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     /**
      * 生成自定义文件名
      */
-    private String generateCustomFileName(String format, User student, WorkInfo workInfo,
+    private String generateCustomFileName(String format, User student, SchoolMember member, WorkInfo workInfo,
                                           WorkSubmission submission, WorkSubmissionAttachment attachment) {
         String fileName = format;
 
-        // 替换变量
+        // 替换变量；{userNo} / {idName} 取该成员在学校内的学工号与姓名
+        String memberNo = member != null && member.getStaffNo() != null ? member.getStaffNo() : "";
+        String memberName = member != null && member.getRealName() != null ? member.getRealName() : "";
         fileName = fileName.replace("{username}", sanitizeFileName(student.getUsername()));
-        fileName = fileName.replace("{userNo}", sanitizeFileName(student.getUserNo()));
-        fileName = fileName.replace("{idName}", sanitizeFileName(student.getIdName() != null ? student.getIdName() : ""));
+        fileName = fileName.replace("{userNo}", sanitizeFileName(memberNo));
+        fileName = fileName.replace("{idName}", sanitizeFileName(memberName));
         fileName = fileName.replace("{workTitle}", sanitizeFileName(workInfo.getTitle()));
         fileName = fileName.replace("{submissionId}", String.valueOf(submission.getId()));
         fileName = fileName.replace("{originalFileName}", sanitizeFileName(attachment.getFileName()));

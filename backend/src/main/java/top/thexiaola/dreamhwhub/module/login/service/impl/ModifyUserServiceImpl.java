@@ -36,12 +36,10 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         }
 
         // 新字段数据
-        String newUserNo = modifyUserInfoRequest.getUserNo();
         String newUsername = modifyUserInfoRequest.getUsername();
-        String newIdName = modifyUserInfoRequest.getIdName();
         String newPhone = modifyUserInfoRequest.getPhone();
-        
-        // 学号允许重复（仅校验非空），用户名不区分大小写唯一（排除自己）
+
+        // 用户名不区分大小写唯一（排除自己）
         QueryWrapper<User> usernameQueryWrapper = new QueryWrapper<>();
         usernameQueryWrapper.ne("id", user.getId());
         usernameQueryWrapper.apply("LOWER(username) = LOWER({0})", newUsername);
@@ -50,9 +48,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
             throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
         }
         
-        user.setUserNo(newUserNo);
         user.setUsername(newUsername);
-        user.setIdName(newIdName);
         user.setPhone(newPhone);
 
         // 更新数据库
@@ -75,7 +71,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
 
         // 验证原邮箱验证码
         String oldEmail = user.getEmail();
-        boolean isBeforeCodeValid = emailService.verifyModifyCode(oldEmail, beforeCode, user.getUserNo(), user.getUsername());
+        boolean isBeforeCodeValid = emailService.verifyModifyCode(oldEmail, beforeCode, user.getUsername());
         if (!isBeforeCodeValid) {
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "原邮箱验证码错误", null);
         }
@@ -90,7 +86,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         }
 
         // 验证新邮箱验证码（使用新邮箱作为 key）
-        boolean isAfterCodeValid = emailService.verifyModifyCode(newEmail, afterCode, user.getUserNo(), user.getUsername());
+        boolean isAfterCodeValid = emailService.verifyModifyCode(newEmail, afterCode, user.getUsername());
         if (!isAfterCodeValid) {
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "新邮箱验证码错误", null);
         }
@@ -116,7 +112,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         }
 
         // 发送验证码到新邮箱
-        emailService.sendModifyEmailCode(email, user.getUserNo(), user.getUsername());
+        emailService.sendModifyEmailCode(email, user.getUsername());
     }
     
     @Override
@@ -128,7 +124,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         }
 
         // 发送验证码到原邮箱（当前邮箱）
-        emailService.sendModifyEmailCode(user.getEmail(), user.getUserNo(), user.getUsername());
+        emailService.sendModifyEmailCode(user.getEmail(), user.getUsername());
     }
     
     @Override
@@ -176,7 +172,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         }
         
         // 发送验证码到用户邮箱
-        emailService.sendRetrievePasswordEmailCode(user.getEmail(), user.getUserNo(), user.getUsername());
+        emailService.sendRetrievePasswordEmailCode(user.getEmail(), user.getUsername());
         
         return user;
     }
@@ -195,7 +191,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         
         // 验证验证码
         boolean isCodeValid = emailService.verifyRetrievePasswordCode(
-            user.getEmail(), code, user.getUserNo(), user.getUsername()
+            user.getEmail(), code, user.getUsername()
         );
         if (!isCodeValid) {
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "验证码错误", null);

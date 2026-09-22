@@ -63,6 +63,16 @@ public enum BusinessErrorCode {
     ALREADY_IN_CLASS(8503, "你已经在该班级中"),
     NOT_IN_CLASS(8504, "你不是该班级的成员"),
     CREATOR_CANNOT_LEAVE(8505, "创建者不能退出班级"),
+    DUPLICATE_STUDENT_NO(8506, "该学号在班级中已被占用"),
+
+    // 学校管理相关错误
+    SCHOOL_NOT_FOUND(8601, "学校不存在"),
+    SCHOOL_NAME_EXISTS(8602, "学校名称已被占用"),
+    ALREADY_IN_SCHOOL(8603, "你已经在该学校中"),
+    NOT_IN_SCHOOL(8604, "你不是该学校的成员"),
+    DUPLICATE_STAFF_NO(8605, "该学工号在该学校已被占用"),
+    SCHOOL_HAS_CLASSES(8606, "学校下仍存在班级，请先处理这些班级"),
+    NOT_SCHOOL_TEACHER(8607, "只有学校老师才能创建班级"),
     
     // 参数相关错误
     PARAMETER_MISSING(9002, "缺少必要参数"),

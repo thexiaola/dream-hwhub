@@ -17,21 +17,6 @@
         </el-input>
       </el-form-item>
 
-      <el-form-item prop="userNo">
-        <el-input
-          v-model="form.userNo"
-          size="large"
-          placeholder="学号 / 工号"
-          class="auth-input"
-        >
-          <template #prefix>
-            <span class="auth-input-icon">
-              <CreditCard :size="16" />
-            </span>
-          </template>
-        </el-input>
-      </el-form-item>
-
       <el-form-item prop="email">
         <el-input
           v-model="form.email"
@@ -117,7 +102,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, InputInstance } from 'element-plus'
-import { User, CreditCard, Mail, Lock, Key } from '@lucide/vue'
+import { User, Mail, Lock, Key } from '@lucide/vue'
 import AuthShell from '@/components/AuthShell.vue'
 
 const router = useRouter()
@@ -125,7 +110,6 @@ const userStore = useUserStore()
 
 const form = ref({
   username: '',
-  userNo: '',
   email: '',
   password: '',
   code: ''
@@ -158,9 +142,6 @@ const rules = {
     { min: 3, max: 16, message: '用户名长度需为 3-16 位', trigger: 'blur' },
     { pattern: /^[A-Za-z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' },
     { pattern: /^[A-Za-z0-9].*[A-Za-z0-9]$/, message: '用户名不能以下划线开头或结尾', trigger: 'blur' }
-  ],
-  userNo: [
-    { required: true, message: '请输入学号/工号', trigger: 'blur' }
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
@@ -200,10 +181,6 @@ const sendVerifyCode = async () => {
     ElMessage.error('请先输入邮箱')
     return
   }
-  if (!form.value.userNo) {
-    ElMessage.error('请先输入学号/工号')
-    return
-  }
   if (!form.value.username) {
     ElMessage.error('请先输入用户名')
     return
@@ -212,7 +189,7 @@ const sendVerifyCode = async () => {
   sending.value = true
   try {
     const result = await Promise.race([
-      userStore.sendCode(form.value.email, form.value.userNo, form.value.username)
+      userStore.sendCode(form.value.email, form.value.username)
         .catch(() => ({ code: -1, message: '网络请求失败', data: null })),
       // 10 秒内未收到后端回复则自动释放等待状态
       new Promise<{ code: number; message: string; data: unknown }>((resolve) =>
@@ -248,7 +225,6 @@ const handleRegister = async () => {
   try {
     const result = await userStore.register({
       username: form.value.username,
-      userNo: form.value.userNo,
       email: form.value.email,
       password: form.value.password,
       emailCode: form.value.code

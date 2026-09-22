@@ -25,6 +25,16 @@ public class ClassDetailResponse {
     private String className;
 
     /**
+     * 班级所属学校 ID
+     */
+    private Integer schoolId;
+
+    /**
+     * 班级所属学校名称
+     */
+    private String schoolName;
+
+    /**
      * 班级所有者 ID
      */
     private Integer ownerId;
@@ -35,9 +45,14 @@ public class ClassDetailResponse {
     private String ownerName;
 
     /**
-     * 用户在该班级的角色（OWNER/ASSISTANT/STUDENT）
+     * 用户在该班级的角色名称（创建者/老师/课代表/学生）
      */
     private String userRole;
+
+    /**
+     * 用户在该班级的角色代码：1-拥有班级管理员权限，0-普通成员
+     */
+    private Integer userRoleCode;
 
     /**
      * 成员总数

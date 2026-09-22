@@ -13,6 +13,11 @@
     <el-card class="work-info-card">
       <div class="info-section">
         <div class="info-item">
+          <User :size="16" />
+          <span class="label">布置人：</span>
+          <span class="value">{{ publisherLabel }}</span>
+        </div>
+        <div class="info-item">
           <FileText :size="16" />
           <span class="label">总分：</span>
           <span class="value">{{ work?.totalScore }}分</span>
@@ -284,9 +289,11 @@ import {
   RotateCcw,
   Undo2,
   Upload,
+  User,
   X,
   XCircle,
 } from '@lucide/vue'
+import { formatDateTime as formatDate, formatFileSize as formatSize } from '@/utils/format'
 
 interface AttachmentInfo {
   id: number
@@ -309,6 +316,8 @@ interface WorkDetail {
   status: number
   isPinned: boolean
   attachments?: AttachmentInfo[]
+  publisherName?: string | null
+  publisherStudentName?: string | null
 }
 
 interface MySubmission {
@@ -345,6 +354,15 @@ const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
 const isExpired = computed(() => {
   if (!work.value) return false
   return new Date() > new Date(work.value.deadline)
+})
+
+/** 布置人标识：班级成员显示班级内姓名，非成员（如管理员）退回用户名。不展示学号 */
+const publisherLabel = computed(() => {
+  const w = work.value
+  if (!w) {
+    return '—'
+  }
+  return w.publisherStudentName || w.publisherName || '—'
 })
 
 const workStatus = computed(() => {
@@ -415,18 +433,6 @@ const withdrawSubmission = async () => {
   } else {
     ElMessage.error(result.message || '撤回失败')
   }
-}
-
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
-const formatSize = (size?: number) => {
-  if (!size) return ''
-  if (size < 1024) return `${size}B`
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)}KB`
-  return `${(size / (1024 * 1024)).toFixed(1)}MB`
 }
 
 const handleExceed = () => {

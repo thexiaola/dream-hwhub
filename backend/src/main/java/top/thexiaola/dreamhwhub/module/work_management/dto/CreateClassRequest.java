@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -11,6 +12,12 @@ import top.thexiaola.dreamhwhub.support.validation.XssValidator;
  */
 @Data
 public class CreateClassRequest {
+
+    /**
+     * 班级所属学校 ID（只有该学校的老师才能在其下创建班级）
+     */
+    @NotNull(message = "请选择班级所属学校")
+    private Integer schoolId;
 
     /**
      * 班级名称（允许字母、汉字和常用特殊字符，不允许换行符、制表符等不常见字符）

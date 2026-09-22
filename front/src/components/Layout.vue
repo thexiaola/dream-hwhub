@@ -24,6 +24,14 @@
             我教的课
           </button>
           <button
+            class="nav-tab"
+            :class="{ active: activeTab === 'school' }"
+            @click="switchTab('school')"
+          >
+            <School :size="18" />
+            我的学校
+          </button>
+          <button
             v-if="isAdmin"
             class="nav-tab"
             :class="{ active: activeTab === 'admin' }"
@@ -80,6 +88,14 @@
         <span>我教的</span>
       </button>
       <button
+        class="mobile-tab"
+        :class="{ active: activeTab === 'school' }"
+        @click="switchTab('school')"
+      >
+        <School :size="22" />
+        <span>学校</span>
+      </button>
+      <button
         v-if="isAdmin"
         class="mobile-tab"
         :class="{ active: activeTab === 'admin' }"
@@ -106,21 +122,23 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import ThemeToggle from '@/components/ThemeToggle.vue'
-import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield } from '@lucide/vue'
+import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield, School } from '@lucide/vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
 const isAdmin = computed(() => userStore.isAdmin)
-const activeTab = ref<'student' | 'teacher' | 'admin'>('student')
+const activeTab = ref<'student' | 'teacher' | 'school' | 'admin'>('student')
 
-const switchTab = (tab: 'student' | 'teacher' | 'admin') => {
+const switchTab = (tab: 'student' | 'teacher' | 'school' | 'admin') => {
   activeTab.value = tab
   if (tab === 'student') {
     router.push('/student/courses')
   } else if (tab === 'teacher') {
     router.push('/teacher/courses')
+  } else if (tab === 'school') {
+    router.push('/school')
   } else {
     router.push('/admin/panel')
   }
@@ -145,6 +163,8 @@ onMounted(() => {
     activeTab.value = 'teacher'
   } else if (route.path.startsWith('/admin')) {
     activeTab.value = 'admin'
+  } else if (route.path.startsWith('/school')) {
+    activeTab.value = 'school'
   } else {
     activeTab.value = 'student'
   }

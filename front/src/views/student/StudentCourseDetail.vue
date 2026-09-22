@@ -75,6 +75,10 @@
           </div>
           <div class="work-info">
             <div class="info-item">
+              <User :size="14" />
+              <span>布置人：{{ publisherLabel(work) }}</span>
+            </div>
+            <div class="info-item">
               <Clock :size="14" />
               <span>截止：{{ formatDate(work.deadline) }}</span>
             </div>
@@ -157,18 +161,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { get, post, del } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, User, Users, Calendar, Clock, FileText, Star, UserPlus, LogOut } from '@lucide/vue'
-
-interface CourseInfo {
-  id: number
-  className: string
-  description?: string
-  ownerId: number
-  ownerName: string
-  userRole: string
-  memberCount: number
-  teacherCount: number
-  studentCount: number
-}
+import { formatDateTime as formatDate } from '@/utils/format'
+import type { CourseInfo } from '@/types/class'
 
 interface WorkInfo {
   id: number
@@ -181,6 +175,8 @@ interface WorkInfo {
   isPinned: boolean
   status: number
   publishTime: string
+  publisherName?: string | null
+  publisherStudentName?: string | null
 }
 
 interface SubmissionInfo {
@@ -293,11 +289,6 @@ const loadSubmissions = async () => {
   }
 }
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
 const getWorkStatus = (work: WorkInfo) => {
   const now = new Date()
   const deadline = new Date(work.deadline)
@@ -336,6 +327,11 @@ const getSubmissionStatus = (work: WorkInfo) => {
 
 const goBack = () => {
   router.push('/student/courses')
+}
+
+/** 布置人标识：班级成员显示班级内姓名，非成员（如管理员）退回用户名。不展示学号 */
+const publisherLabel = (work: WorkInfo) => {
+  return work.publisherStudentName || work.publisherName || '—'
 }
 
 const goToWork = (workId: number) => {

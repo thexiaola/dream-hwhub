@@ -55,6 +55,7 @@ class WorkControllerTest {
                 workInfo.getDescription(),
                 workInfo.getPublisherId(),
                 "测试用户", // publisherName - 简化处理
+                null, // publisherStudentName - 非班级成员时为空
                 workInfo.getClassId(),
                 "测试班级", // className - 简化处理
                 workInfo.getDeadline(),

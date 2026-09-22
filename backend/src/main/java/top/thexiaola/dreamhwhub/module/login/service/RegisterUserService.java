@@ -18,23 +18,21 @@ public interface RegisterUserService {
     /**
      * 发送邮箱验证码
      * @param email 邮箱地址
-     * @param userNo 学号
      * @param username 用户名
      */
-    void sendEmailCode(String email, String userNo, String username);
+    void sendEmailCode(String email, String username);
 
     /**
-     * 验证邮箱验证码（需要匹配 userNo、username、email）
+     * 验证邮箱验证码（需要匹配 username、email）
      * @param email 邮箱地址
      * @param code 验证码
-     * @param userNo 学号/工号
      * @param username 用户名
      * @return 是否验证通过
      */
-    boolean verifyEmailCode(String email, String code, String userNo, String username);
+    boolean verifyEmailCode(String email, String code, String username);
 
     /**
-     * 检查用户名是否已存在（用户名唯一，学号允许重复）
+     * 检查用户名是否已存在（用户名唯一）
      * @param username 用户名
      * @return 是否存在
      */

@@ -46,12 +46,10 @@ public class JwtUtil {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("username", user.getUsername());
-        claims.put("userNo", user.getUserNo());
         claims.put("email", user.getEmail());
         claims.put("isOp", user.getIsOp() != null && user.getIsOp() ? 1 : 0);
         claims.put("isBanned", user.getIsBanned() != null && user.getIsBanned() ? 1 : 0);
         claims.put("phone", user.getPhone());
-        claims.put("idName", user.getIdName());
         if (user.getRegisterTime() != null) {
             claims.put("registerTime", user.getRegisterTime().format(JWT_DATE_FORMAT));
         }
@@ -98,14 +96,12 @@ public class JwtUtil {
         User user = new User();
         user.setId(claims.get("userId", Integer.class));
         user.setUsername(claims.get("username", String.class));
-        user.setUserNo(claims.get("userNo", String.class));
         user.setEmail(claims.get("email", String.class));
         Integer isOp = claims.get("isOp", Integer.class);
         user.setIsOp(isOp != null && isOp == 1);
         Integer isBanned = claims.get("isBanned", Integer.class);
         user.setIsBanned(isBanned != null && isBanned == 1);
         user.setPhone(claims.get("phone", String.class));
-        user.setIdName(claims.get("idName", String.class));
         String registerTimeStr = claims.get("registerTime", String.class);
         if (registerTimeStr != null && !registerTimeStr.isEmpty()) {
             user.setRegisterTime(LocalDateTime.parse(registerTimeStr, JWT_DATE_FORMAT));

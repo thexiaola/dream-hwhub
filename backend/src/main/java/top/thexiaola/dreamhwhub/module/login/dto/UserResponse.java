@@ -11,20 +11,14 @@ import java.util.Set;
  * 用户信息响应 DTO
  */
 @Data
-@JsonPropertyOrder({"id", "userNo", "username", "idName", "email", "phone", "isOp", "permissions", "isBanned", "registerTime", "lastLoginTime", "token"})
+@JsonPropertyOrder({"id", "username", "email", "phone", "isOp", "permissions", "isBanned", "registerTime", "lastLoginTime", "token"})
 public class UserResponse {
 
     // 用户编号
     private Integer id;
 
-    // 学号/工号
-    private String userNo;
-
     // 用户名
     private String username;
-
-    // 身份证姓名
-    private String idName;
 
     // 邮箱
     private String email;

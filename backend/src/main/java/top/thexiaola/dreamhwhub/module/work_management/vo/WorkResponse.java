@@ -36,9 +36,14 @@ public class WorkResponse {
     private Integer publisherId;
 
     /**
-     * 发布人用户名
+     * 发布人用户名（发布人不是班级成员时用于标识，如管理员）
      */
     private String publisherName;
+
+    /**
+     * 发布人在班级内的姓名（发布人不是班级成员时为空）
+     */
+    private String publisherStudentName;
 
     /**
      * 所属班级 ID

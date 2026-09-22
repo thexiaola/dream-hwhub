@@ -85,7 +85,6 @@ public class LogUtil {
 
         // 移除末尾的逗号和空格
         String result = "id: " + user.getId() + ", " +
-                "user_no: " + formatValue(user.getUserNo()) + ", " +
                 "username: " + formatValue(user.getUsername()) + ", " +
                 "email: " + formatValue(user.getEmail()) + ", " +
                 "is_op: " + Boolean.TRUE.equals(user.getIsOp());
@@ -102,8 +101,8 @@ public class LogUtil {
      */
     public static String getUserInfoString(String ip, User user) {
         if (user != null) {
-            return String.format("ip: %s, id: %d, user_no: %s, username: %s, email: %s, is_op: %s",
-                    ip, user.getId(), formatValue(user.getUserNo()), formatValue(user.getUsername()), 
+            return String.format("ip: %s, id: %d, username: %s, email: %s, is_op: %s",
+                    ip, user.getId(), formatValue(user.getUsername()), 
                     formatValue(user.getEmail()), Boolean.TRUE.equals(user.getIsOp()));
         } else {
             return String.format("ip: %s, not logged in", ip);

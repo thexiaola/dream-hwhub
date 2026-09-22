@@ -23,19 +23,29 @@ public class ClassMemberResponse {
     private Integer userId;
 
     /**
-     * 用户姓名
+     * 用户名
      */
     private String userName;
 
     /**
-     * 学号/工号
+     * 班级内姓名（学生入班时填写，老师为空）
      */
-    private String userNo;
+    private String studentName;
 
     /**
-     * 角色（OWNER/ASSISTANT/STUDENT）
+     * 班级内学号（学生入班时填写，老师为空）
+     */
+    private String studentNo;
+
+    /**
+     * 角色名称（创建者/老师/课代表/学生）
      */
     private String role;
+
+    /**
+     * 角色代码：1-拥有班级管理员权限，0-普通成员
+     */
+    private Integer roleCode;
 
     /**
      * 加入时间

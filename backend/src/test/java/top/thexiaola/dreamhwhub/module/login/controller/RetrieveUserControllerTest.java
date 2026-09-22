@@ -186,7 +186,6 @@ class RetrieveUserControllerTest {
 
         User mockUser = new User();
         mockUser.setId(1);
-        mockUser.setUserNo("2024001");
 
         Mockito.when(modifyUserService.sendRetrievePasswordCode(Mockito.anyString()))
                 .thenReturn(mockUser);
@@ -403,7 +402,6 @@ class RetrieveUserControllerTest {
 
         User mockUser = new User();
         mockUser.setId(1);
-        mockUser.setUserNo("invalid-email");
 
         Mockito.when(modifyUserService.sendRetrievePasswordCode(Mockito.anyString()))
                 .thenReturn(mockUser);

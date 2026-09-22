@@ -58,7 +58,7 @@ public class RegisterController {
     @PostMapping("/getregcode")
     public ResponseEntity<ApiResponse<Object>> sendRegisterCode(@Valid @RequestBody EmailCodeRequest emailCodeRequest) {
         try {
-            registerUserService.sendEmailCode(emailCodeRequest.getEmail(), emailCodeRequest.getUserNo(),
+            registerUserService.sendEmailCode(emailCodeRequest.getEmail(),
                     emailCodeRequest.getUsername());
             return ResponseEntity.ok(ApiResponse.success(emailService.getCooldownSeconds(), "验证码发送成功"));
         } catch (BusinessException e) {

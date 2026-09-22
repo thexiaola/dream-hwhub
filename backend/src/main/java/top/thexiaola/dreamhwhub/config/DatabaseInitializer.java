@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
  * 数据库初始化器
  * 服务启动时自动同步 classpath 下 SQL 脚本中定义的所有表：
  * 脚本中新增的表自动创建，已存在的表自动补齐缺失字段、清理多余字段，
- * 因此在脚本文件中任意新增表或字段均无需修改本类
+ * 且会补齐脚本中声明但实际缺失的索引；
+ * 因此在脚本文件中任意新增表、字段或索引均无需修改本类
  */
 @Slf4j
 @Component
@@ -33,11 +34,17 @@ public class DatabaseInitializer {
     private final JdbcTemplate jdbcTemplate;
 
     // 需要同步的 SQL 脚本文件，新增脚本文件只需在此登记
-    private static final String[] SCHEMA_RESOURCES = {"user_schema.sql", "work_management.sql", "permission_schema.sql"};
+    private static final String[] SCHEMA_RESOURCES = {"user_schema.sql", "school_schema.sql", "class_schema.sql", "work_schema.sql", "permission_schema.sql"};
 
     // CREATE TABLE 语句的表名提取（兼容有无反引号、是否带 IF NOT EXISTS）
     private static final Pattern CREATE_TABLE_NAME_PATTERN = Pattern.compile(
             "CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?`?(\\w+)`?\\s*\\(",
+            Pattern.CASE_INSENSITIVE);
+
+    // 索引定义提取：UNIQUE KEY / KEY / INDEX，索引名由反引号包裹或直接书写
+    // 索引名与其后的列列表之间可能没有空格（如 uk_username(username)），故使用 \s*
+    private static final Pattern INDEX_DEFINITION_PATTERN = Pattern.compile(
+            "^(?:UNIQUE\\s+)?(?:KEY|INDEX)\\s+`?(\\w+)`?\\s*.*",
             Pattern.CASE_INSENSITIVE);
 
     // 应用启动后执行数据库初始化和字段校验
@@ -118,6 +125,7 @@ public class DatabaseInitializer {
         }
 
         syncTableColumns(tableName, createTableStatement);
+        syncTableIndexes(tableName, createTableStatement);
     }
 
     /**
@@ -182,6 +190,85 @@ public class DatabaseInitializer {
             }
         }
         log.info("Table '{}' structure synced successfully!", tableName);
+    }
+
+    /**
+     * 对已存在的表按脚本中的索引定义补齐缺失索引
+     * 只新增脚本中声明但实际不存在的索引；实际存在而脚本未声明的索引保持不动
+     */
+    private void syncTableIndexes(String tableName, String createTableStatement) {
+        String tableBody = extractCreateTableBody(createTableStatement);
+        if (StrUtil.isBlank(tableBody)) {
+            return;
+        }
+
+        List<IndexDefinition> expectedIndexes = parseIndexDefinitions(tableBody);
+        if (expectedIndexes.isEmpty()) {
+            return;
+        }
+
+        Set<String> actualIndexNames = getActualIndexNames(tableName);
+        for (IndexDefinition expected : expectedIndexes) {
+            if (isInvalidColumnName(expected.indexName)) {
+                log.warn("Invalid index name skipped: {}", expected.indexName);
+                continue;
+            }
+            if (actualIndexNames.contains(expected.indexName.toLowerCase())) {
+                continue;
+            }
+
+            // 表名与索引片段均来自受信的 classpath 脚本，且索引名已通过白名单验证
+            String statement = String.format("ALTER TABLE `%s` ADD %s", tableName, expected.definition);
+            try {
+                jdbcTemplate.execute(statement);
+                log.info("Missing index '{}' on table '{}' created.", expected.indexName, tableName);
+            } catch (Exception e) {
+                log.error("Failed to create index '{}' on table '{}': {}",
+                        expected.indexName, tableName, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 获取表的实际索引名（统一转为小写便于比较）
+     */
+    private Set<String> getActualIndexNames(String tableName) {
+        Set<String> indexNames = new HashSet<>();
+        try {
+            String sql = "SELECT DISTINCT INDEX_NAME FROM information_schema.STATISTICS "
+                    + "WHERE table_schema = DATABASE() AND table_name = ?";
+            List<String> result = jdbcTemplate.queryForList(sql, String.class, tableName);
+            for (String indexName : result) {
+                indexNames.add(indexName.toLowerCase());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get indexes from table {}: {}", tableName, e.getMessage());
+        }
+        return indexNames;
+    }
+
+    /**
+     * 解析 CREATE TABLE 表体中的索引定义（UNIQUE KEY / KEY / INDEX）
+     */
+    private List<IndexDefinition> parseIndexDefinitions(String createTableBody) {
+        List<IndexDefinition> indexes = new ArrayList<>();
+
+        for (String part : splitColumnDefinitions(createTableBody)) {
+            String trimmedPart = part.trim();
+            String upperPart = trimmedPart.toUpperCase();
+            if (!(upperPart.startsWith("UNIQUE") || upperPart.startsWith("KEY") || upperPart.startsWith("INDEX"))) {
+                continue;
+            }
+
+            Matcher matcher = INDEX_DEFINITION_PATTERN.matcher(trimmedPart);
+            if (!matcher.matches()) {
+                log.warn("Unparsable index definition skipped: {}", trimmedPart);
+                continue;
+            }
+            indexes.add(new IndexDefinition(matcher.group(1), trimmedPart));
+        }
+
+        return indexes;
     }
 
     /**
@@ -526,6 +613,19 @@ public class DatabaseInitializer {
         ColumnDefinition(String columnName, String fullDefinition) {
             this.columnName = columnName;
             this.fullDefinition = fullDefinition;
+        }
+    }
+
+    /**
+     * 索引定义内部类
+     */
+    private static class IndexDefinition {
+        String indexName;
+        String definition; // 完整的索引定义片段，如 UNIQUE KEY `uk_x` (`a`, `b`)
+
+        IndexDefinition(String indexName, String definition) {
+            this.indexName = indexName;
+            this.definition = definition;
         }
     }
 }

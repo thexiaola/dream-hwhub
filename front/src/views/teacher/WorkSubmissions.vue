@@ -96,7 +96,7 @@
                   <h4>{{ sub.submitterUsername || sub.submitterName }}</h4>
                   <p class="student-email">{{ sub.submitterEmail }}</p>
                   <p class="student-meta">
-                    <template v-if="sub.submitterIdName">{{ sub.submitterIdName }} · </template>{{ sub.submitterUserNo }}
+                    <template v-if="sub.submitterStudentName">{{ sub.submitterStudentName }} · </template>{{ sub.submitterStudentNo || '未填写学号' }}
                   </p>
                 </div>
               </div>
@@ -195,7 +195,7 @@
               <span class="name">{{ stu.username }}</span>
               <span class="email">{{ stu.email }}</span>
               <span class="user-no">
-                <template v-if="stu.idName">{{ stu.idName }} · </template>{{ stu.userNo }}
+                <template v-if="stu.studentName">{{ stu.studentName }} · </template>{{ stu.studentNo || '未填写学号' }}
               </span>
             </div>
           </div>
@@ -216,7 +216,7 @@
     >
       <div v-if="gradingSubmission" class="grade-form-wrap">
         <p class="grade-student">
-          {{ gradingSubmission.submitterName }}（{{ gradingSubmission.submitterUserNo }}）的提交
+          {{ gradingSubmission.submitterName }}（{{ gradingSubmission.submitterStudentNo || '未填写学号' }}）的提交
         </p>
         <el-form label-width="90px">
           <el-form-item label="分数">
@@ -260,6 +260,7 @@ import { useRoute, useRouter } from "vue-router";
 import { get, put } from "@/utils/http";
 import instance from "@/utils/http";
 import { openAttachmentPreview } from "@/utils/attachment";
+import { formatDateTime, formatFileSize } from "@/utils/format";
 import { ElMessage } from "element-plus";
 import {
   ArrowLeft,
@@ -301,8 +302,8 @@ interface SubmissionInfo {
   submitterName: string;
   submitterUsername?: string;
   submitterEmail?: string;
-  submitterIdName?: string;
-  submitterUserNo: string;
+  submitterStudentName?: string | null;
+  submitterStudentNo?: string | null;
   submissionContent: string;
   score: number | null;
   comment: string | null;
@@ -318,8 +319,8 @@ interface UnsubmittedStudent {
   id: number;
   username: string;
   email?: string;
-  idName?: string;
-  userNo: string;
+  studentName?: string | null;
+  studentNo?: string | null;
 }
 
 const route = useRoute();
@@ -347,24 +348,7 @@ const goBack = () => {
   router.push("/teacher/courses");
 };
 
-const formatDate = (dateStr: string | null): string => {
-  if (!dateStr) return "未知";
-  const d = new Date(dateStr.replace(" ", "T"));
-  if (isNaN(d.getTime())) return dateStr;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${day} ${h}:${min}`;
-};
-
-const formatFileSize = (bytes: number): string => {
-  if (!bytes) return "";
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
-};
+const formatDate = (dateStr: string | null): string => formatDateTime(dateStr, dateStr || "未知");
 
 const loadWork = async () => {
   const workId = route.params.id;

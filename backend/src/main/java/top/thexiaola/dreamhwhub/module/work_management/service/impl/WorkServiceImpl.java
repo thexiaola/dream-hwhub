@@ -12,9 +12,12 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
+import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.*;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
@@ -22,6 +25,7 @@ import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapp
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
+import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
 
@@ -49,15 +53,15 @@ public class WorkServiceImpl implements WorkService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
+    private final UserLookupSupport userLookup;
+    private final ClassInfoMapper classInfoMapper;
+    private final SchoolService schoolService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public WorkResponse createWork(CreateWorkRequest request) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 检查权限（只有班级老师可以发布作业）
         if (!classService.isTeacher(request.getClassId(), currentUser.getId())) {
@@ -92,10 +96,7 @@ public class WorkServiceImpl implements WorkService {
     @Transactional(rollbackFor = Exception.class)
     public WorkResponse updateWork(UpdateWorkRequest request) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询作业
         WorkInfo workInfo = workMapper.selectById(request.getId());
@@ -155,10 +156,7 @@ public class WorkServiceImpl implements WorkService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteWork(Integer workId) {
         // 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 查询作业
         WorkInfo workInfo = workMapper.selectById(workId);
@@ -341,6 +339,9 @@ public class WorkServiceImpl implements WorkService {
             userMap = new HashMap<>();
         }
         
+        // 批量查询发布人的学校内身份（学校成员才有校内姓名）
+        final Map<String, SchoolMember> publisherMemberMap = loadPublisherMembers(pagedResult.getRecords());
+
         // 批量查询班级信息
         final Map<Integer, ClassInfo> classMap;
         if (!classIds.isEmpty()) {
@@ -403,10 +404,14 @@ public class WorkServiceImpl implements WorkService {
                     response.setTitle(work.getTitle());
                     response.setDescription(work.getDescription());
                     response.setPublisherId(work.getPublisherId());
-                    
-                    // 从缓存中获取发布人用户名
+
+                    // 发布人标识：学校成员展示校内姓名，非成员（如管理员）退回用户名
                     User publisher = userMap.get(work.getPublisherId());
                     response.setPublisherName(publisher != null ? publisher.getUsername() : null);
+                    SchoolMember publisherMember = publisherMemberMap.get(work.getClassId() + ":" + work.getPublisherId());
+                    if (publisherMember != null) {
+                        response.setPublisherStudentName(publisherMember.getRealName());
+                    }
                     
                     response.setClassId(work.getClassId());
                     
@@ -460,6 +465,78 @@ public class WorkServiceImpl implements WorkService {
     }
     
     /**
+     * 按「班级 + 发布人」批量获取发布人的学校内身份，key 为 classId:userId
+     */
+    private Map<String, SchoolMember> loadPublisherMembers(List<WorkInfo> works) {
+        Set<Integer> classIds = works.stream().map(WorkInfo::getClassId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<Integer> publisherIds = works.stream().map(WorkInfo::getPublisherId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        if (classIds.isEmpty() || publisherIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // 姓名与学工号是学校内身份，同一用户在不同学校可有不同身份，故先取班级所属学校
+        QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
+        classQuery.in("id", classIds).select("id", "school_id");
+        Map<Integer, Integer> classSchoolMap = classInfoMapper.selectList(classQuery).stream()
+                .filter(classInfo -> classInfo.getSchoolId() != null)
+                .collect(Collectors.toMap(ClassInfo::getId, ClassInfo::getSchoolId, (a, b) -> a));
+
+        Map<Integer, Set<Integer>> schoolToPublishers = new HashMap<>();
+        for (WorkInfo work : works) {
+            Integer schoolId = classSchoolMap.get(work.getClassId());
+            if (schoolId == null || work.getPublisherId() == null) {
+                continue;
+            }
+            schoolToPublishers.computeIfAbsent(schoolId, key -> new HashSet<>()).add(work.getPublisherId());
+        }
+
+        Map<Integer, Map<Integer, SchoolMember>> membersBySchool = new HashMap<>();
+        for (Map.Entry<Integer, Set<Integer>> entry : schoolToPublishers.entrySet()) {
+            membersBySchool.put(entry.getKey(),
+                    schoolService.getMembersByUserIds(entry.getKey(), entry.getValue()));
+        }
+
+        Map<String, SchoolMember> result = new HashMap<>();
+        for (WorkInfo work : works) {
+            Integer schoolId = classSchoolMap.get(work.getClassId());
+            if (schoolId == null || work.getPublisherId() == null) {
+                continue;
+            }
+            Map<Integer, SchoolMember> members = membersBySchool.get(schoolId);
+            SchoolMember member = members == null ? null : members.get(work.getPublisherId());
+            if (member != null) {
+                result.put(work.getClassId() + ":" + work.getPublisherId(), member);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 填充发布人信息：学校成员用校内姓名，非成员（如管理员）退回用户名
+     */
+    private void fillPublisherInfo(WorkResponse response, Integer classId, Integer publisherId) {
+        if (publisherId == null) {
+            return;
+        }
+        User publisher = userMapper.selectById(publisherId);
+        response.setPublisherName(publisher != null ? publisher.getUsername() : null);
+
+        if (classId == null) {
+            return;
+        }
+        ClassInfo classInfo = classInfoMapper.selectById(classId);
+        if (classInfo == null || classInfo.getSchoolId() == null) {
+            return;
+        }
+        SchoolMember member = schoolService.getMember(classInfo.getSchoolId(), publisherId);
+        if (member != null) {
+            response.setPublisherStudentName(member.getRealName());
+        }
+    }
+
+    /**
      * 将WorkInfo转换为WorkResponse
      * @param workInfo 作业信息
      * @return 作业响应对象
@@ -470,6 +547,7 @@ public class WorkServiceImpl implements WorkService {
         response.setTitle(workInfo.getTitle());
         response.setDescription(workInfo.getDescription());
         response.setPublisherId(workInfo.getPublisherId());
+        fillPublisherInfo(response, workInfo.getClassId(), workInfo.getPublisherId());
         response.setClassId(workInfo.getClassId());
         response.setDeadline(workInfo.getDeadline());
         response.setTotalScore(workInfo.getTotalScore());
@@ -704,10 +782,7 @@ public class WorkServiceImpl implements WorkService {
     @Transactional(rollbackFor = Exception.class)
     public WorkResponse pinWork(Integer workId, Boolean isPinned) {
         // 1. 获取当前用户
-        User currentUser = UserUtils.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
-        }
+        User currentUser = userLookup.requireCurrentUser();
 
         // 2. 查询作业
         WorkInfo workInfo = workMapper.selectById(workId);

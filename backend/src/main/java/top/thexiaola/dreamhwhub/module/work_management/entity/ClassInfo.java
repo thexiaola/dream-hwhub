@@ -18,6 +18,9 @@ public class ClassInfo {
     @TableField("class_name")
     private String className;
 
+    @TableField("school_id")
+    private Integer schoolId;  // 所属学校ID
+
     @TableField("description")
     private String description;
 

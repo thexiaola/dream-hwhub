@@ -34,4 +34,16 @@ public final class PermissionNodes {
     public static final String CLASS_MEMBER_KICK = "class:member:kick";
     public static final String CLASS_APPROVE_JOIN = "class:approve_join";
     public static final String CLASS_TEACHER_ADD = "class:teacher:add";
+
+    // ===== 学校管理（平台管理员侧） =====
+    /** 查看平台上所有学校 */
+    public static final String SCHOOL_VIEW_ALL = "school:view_all";
+    /** 创建学校 */
+    public static final String SCHOOL_CREATE = "school:create";
+    /** 管理任意学校（修改信息、设置加入是否需要审核） */
+    public static final String SCHOOL_UPDATE = "school:update";
+    /** 解散任意学校 */
+    public static final String SCHOOL_DISSOLVE = "school:dissolve";
+    /** 指派或取消学校管理员 */
+    public static final String SCHOOL_ADMIN_ASSIGN = "school:admin:assign";
 }

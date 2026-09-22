@@ -12,12 +12,6 @@ import lombok.Data;
 @Data
 public class RegisterRequest {
 
-    // 学号/工号（仅允许数字）
-    @NotBlank(message = "学号/工号不能为空")
-    @Size(max = 24, message = "学号/工号长度不能超过24位")
-    @Pattern(regexp = "^[0-9]+$", message = "学号/工号只能包含数字")
-    private String userNo;
-
     // 用户名（参考 Minecraft 命名规则：3-16 位字母/数字/下划线，不能以下划线开头或结尾）
     @NotBlank(message = "用户名不能为空")
     @Size(min = 3, max = 16, message = "用户名长度需为 3-16 位")

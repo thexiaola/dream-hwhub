@@ -23,9 +23,7 @@ export interface PermissionGroup {
 
 export interface AdminUser {
   id: number
-  userNo: string
   username: string
-  idName?: string
   email: string
   phone?: string
   isOp: boolean
@@ -47,9 +45,7 @@ export interface UserPermissionDetail {
 }
 
 export interface AdminUserForm {
-  userNo: string
   username: string
-  idName: string
   email: string
   phone: string
   password: string

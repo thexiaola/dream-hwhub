@@ -52,9 +52,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (StrUtil.isNotBlank(keyword)) {
             String kw = keyword.trim();
             query.and(q -> q.like("username", kw)
-                    .or().like("user_no", kw)
-                    .or().like("email", kw)
-                    .or().like("id_name", kw));
+                    .or().like("email", kw));
         }
         query.orderByDesc("id");
 
@@ -75,9 +73,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         User user = new User();
-        user.setUserNo(request.getUserNo());
         user.setUsername(request.getUsername());
-        user.setIdName(request.getIdName());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(passwordUtil.encode(request.getPassword()));
@@ -111,12 +107,6 @@ public class AdminUserServiceImpl implements AdminUserService {
                 throw new BusinessException(BusinessErrorCode.EMAIL_EXISTS, "邮箱已被占用", null);
             }
             user.setEmail(request.getEmail());
-        }
-        if (request.getUserNo() != null) {
-            user.setUserNo(request.getUserNo());
-        }
-        if (request.getIdName() != null) {
-            user.setIdName(request.getIdName());
         }
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
@@ -257,9 +247,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private AdminUserVO toVO(User user) {
         AdminUserVO vo = new AdminUserVO();
         vo.setId(user.getId());
-        vo.setUserNo(user.getUserNo());
         vo.setUsername(user.getUsername());
-        vo.setIdName(user.getIdName());
         vo.setEmail(user.getEmail());
         vo.setPhone(user.getPhone());
         vo.setIsOp(Boolean.TRUE.equals(user.getIsOp()));

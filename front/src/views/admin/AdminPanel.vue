@@ -33,6 +33,14 @@
             </div>
             <div class="app-body">
               <div class="app-info">
+                <span class="label">申请人：</span>
+                <span class="value">{{ app.applicantName || '未填写姓名' }}</span>
+              </div>
+              <div class="app-info">
+                <span class="label">学号：</span>
+                <span class="value">{{ app.applicantNo || '未填写学号' }}</span>
+              </div>
+              <div class="app-info">
                 <span class="label">申请人ID：</span>
                 <span class="value">{{ app.applicantId }}</span>
               </div>
@@ -145,17 +153,26 @@
               <div v-if="classMembers.length === 0" class="empty-tip">暂无成员</div>
               <div v-for="member in classMembers" :key="member.id" class="member-row">
                 <el-checkbox
-                  v-if="member.role === '学生'"
+                  v-if="member.roleCode === 0"
                   v-model="selectedAdminKickIds"
                   :label="member.userId"
                 />
-                <span class="member-name">{{ member.userName }}</span>
-                <span class="member-no">{{ member.userNo }}</span>
-                <span :class="['member-role', member.role === '老师' ? 'teacher' : 'student']">
+                <span class="member-name">{{ member.studentName || member.userName }}</span>
+                <span v-if="member.studentNo" class="member-no">{{ member.studentNo }}</span>
+                <span
+                  :class="[
+                    'member-role',
+                    member.role === '课代表'
+                      ? 'assistant'
+                      : member.roleCode === 1
+                        ? 'teacher'
+                        : 'student',
+                  ]"
+                >
                   {{ member.role }}
                 </span>
                 <el-button
-                  v-if="member.role === '学生'"
+                  v-if="member.roleCode === 0"
                   type="danger"
                   size="small"
                   text
@@ -191,6 +208,11 @@
       <!-- 权限组 -->
       <el-tab-pane v-if="canViewPermissions" label="权限组" name="groups" lazy>
         <PermissionGroupManage />
+      </el-tab-pane>
+
+      <!-- 学校管理 -->
+      <el-tab-pane v-if="canViewSchools" label="学校管理" name="schools" lazy>
+        <SchoolManage />
       </el-tab-pane>
     </el-tabs>
 
@@ -267,11 +289,15 @@ import { FileText, ShieldAlert, SlidersHorizontal } from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
 import UserManage from './UserManage.vue'
 import PermissionGroupManage from './PermissionGroupManage.vue'
+import SchoolManage from './SchoolManage.vue'
+import { formatDateTime as formatDate } from '@/utils/format'
 
 interface ClassJoinApplication {
   id: number
   classId: number
   applicantId: number
+  applicantName: string | null
+  applicantNo: string | null
   status: number
   reviewerId: number | null
   reviewTime: string | null
@@ -286,7 +312,7 @@ interface PageResult<T> {
   current: number
 }
 
-type AdminTab = 'join' | 'classes' | 'users' | 'groups'
+type AdminTab = 'join' | 'classes' | 'users' | 'groups' | 'schools'
 
 const activeTab = ref<AdminTab>('join')
 
@@ -295,6 +321,7 @@ const canApproveJoin = computed(() => userStore.hasPermission('class:approve_joi
 const canViewAllClasses = computed(() => userStore.hasPermission('class:view_all'))
 const canViewUsers = computed(() => userStore.hasPermission('user:view'))
 const canViewPermissions = computed(() => userStore.hasPermission('permission:view'))
+const canViewSchools = computed(() => userStore.hasPermission('school:view_all'))
 
 const visibleTabs = computed<AdminTab[]>(() => {
   const tabs: AdminTab[] = []
@@ -302,6 +329,7 @@ const visibleTabs = computed<AdminTab[]>(() => {
   if (canViewAllClasses.value) tabs.push('classes')
   if (canViewUsers.value) tabs.push('users')
   if (canViewPermissions.value) tabs.push('groups')
+  if (canViewSchools.value) tabs.push('schools')
   return tabs
 })
 
@@ -338,13 +366,6 @@ const getStatusText = (status: number) => {
 const getStatusClass = (status: number) => {
   const map: Record<number, string> = { 0: 'pending', 1: 'approved', 2: 'rejected' }
   return map[status] || 'pending'
-}
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return '-'
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 const loadJoinApplications = async () => {
@@ -410,8 +431,11 @@ interface ClassMemberInfo {
   id: number
   userId: number
   userName: string
-  userNo: string
+  studentName: string | null
+  studentNo: string | null
   role: string
+  /** 1-拥有班级管理员权限，0-普通成员 */
+  roleCode: number
 }
 
 const classList = ref<ClassInfoSimple[]>([])
@@ -479,7 +503,7 @@ const pendingDissolve = ref<{ classId: number; className: string }>({ classId: 0
 const currentAccountDisplay = computed(() => {
   const u = userStore.userInfo
   if (!u) return '-'
-  return (u.userNo || u.username || u.email || '-') as string
+  return (u.username || u.email || '-') as string
 })
 
 const clearDangerInputs = () => {
@@ -767,6 +791,11 @@ const batchKickFromAdmin = async (classId: number) => {
 .member-role.teacher {
   background: rgba(102, 126, 234, 0.2);
   color: #667eea;
+}
+
+.member-role.assistant {
+  background: rgba(64, 158, 255, 0.2);
+  color: #409eff;
 }
 
 .member-role.student {

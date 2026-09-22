@@ -51,9 +51,12 @@ class ClassControllerTest {
         return new ClassDetailResponse(
                 classInfo.getId(),
                 classInfo.getClassName(),
+                classInfo.getSchoolId(),
+                "测试学校", // schoolName - 简化处理
                 classInfo.getOwnerId(),
                 "测试用户", // ownerName - 简化处理
                 "MEMBER", // userRole - 简化处理
+                1, // userRoleCode - 简化处理
                 1L, // memberCount - 简化处理
                 1L, // teacherCount - 简化处理
                 0L, // studentCount - 简化处理
@@ -74,7 +77,8 @@ class ClassControllerTest {
                 application.getStatus(),
                 application.getCreateTime(),
                 "测试班级", // className - 简化处理
-                "测试用户" // applicantName - 简化处理
+                "测试用户", // applicantName - 简化处理
+                "20230001" // applicantNo - 简化处理
         );
     }
 
@@ -97,12 +101,13 @@ class ClassControllerTest {
     @DisplayName("测试创建班级 - 成功")
     void testApplyCreateClass_Success() throws Exception {
         CreateClassRequest request = new CreateClassRequest();
+        request.setSchoolId(1);
         request.setClassName("测试班级");
         request.setDescription("这是一个测试班级");
 
         ClassInfo created = new ClassInfo();
         created.setId(1);
-        Mockito.when(classService.createClass(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(classService.createClass(Mockito.anyInt(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(created);
 
         ClassDetailResponse detail = new ClassDetailResponse();
@@ -278,9 +283,6 @@ class ClassControllerTest {
     @Test
     @DisplayName("测试提交加入班级申请 - 成功")
     void testApplyJoinClass_Success() throws Exception {
-        JoinClassRequest request = new JoinClassRequest();
-        request.setClassId(1);
-
         top.thexiaola.dreamhwhub.module.work_management.vo.JoinClassApplicationResponse response =
                 new top.thexiaola.dreamhwhub.module.work_management.vo.JoinClassApplicationResponse();
         response.setId(1);
@@ -289,9 +291,7 @@ class ClassControllerTest {
         Mockito.when(classService.submitJoinClassRequest(Mockito.anyInt()))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/class/1/applications/join")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+        mockMvc.perform(post("/api/class/1/applications/join"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("加入班级的申请已提交，待审核"));
@@ -329,12 +329,13 @@ class ClassControllerTest {
     void testApplyCreateClass_MaxClassNameLength() throws Exception {
         String longName = "班".repeat(64);
         CreateClassRequest request = new CreateClassRequest();
+        request.setSchoolId(1);
         request.setClassName(longName);
         request.setDescription("测试");
 
         ClassInfo created = new ClassInfo();
         created.setId(1);
-        Mockito.when(classService.createClass(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(classService.createClass(Mockito.anyInt(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(created);
         Mockito.when(classService.getClassDetail(1)).thenReturn(new ClassDetailResponse());
 
@@ -353,12 +354,13 @@ class ClassControllerTest {
     void testApplyCreateClass_MaxDescriptionLength() throws Exception {
         String longDesc = "描".repeat(512);
         CreateClassRequest request = new CreateClassRequest();
+        request.setSchoolId(1);
         request.setClassName("测试班级");
         request.setDescription(longDesc);
 
         ClassInfo created = new ClassInfo();
         created.setId(1);
-        Mockito.when(classService.createClass(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(classService.createClass(Mockito.anyInt(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(created);
         Mockito.when(classService.getClassDetail(1)).thenReturn(new ClassDetailResponse());
 

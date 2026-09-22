@@ -276,8 +276,11 @@ spring.mail.properties.mail.smtp.ssl.enable=true
 │   │       ├── logback-spring.xml               # 日志配置
 │   │       ├── mail-config.properties.example   # 邮件配置示例
 │   │       ├── password-key.properties.example  # 密钥配置示例
-│   │       ├── user_schema.sql                  # 数据库初始化脚本
-│   │       └── work_management.sql              # 课堂管理表结构
+│   │       ├── user_schema.sql                  # 用户与登录相关表
+│   │       ├── school_schema.sql                # 学校、学校成员与加入申请
+│   │       ├── class_schema.sql                 # 班级、成员、邀请与加入申请
+│   │       ├── work_schema.sql                  # 作业、附件与作业提交
+│   │       └── permission_schema.sql            # 权限组与权限节点
 │   └── test/                                    # 测试代码
 │       └── java/top/thexiaola/dreamhwhub/
 │           └── DreamHwhubApplicationTests.java  # 应用测试类
@@ -327,12 +330,13 @@ mysql -u root -p < src/main/resources/user_schema.sql
 ```
 
 ### 数据库表结构
-- `user` 表：存储用户基本信息
-  - 核心字段：学号、用户名、邮箱、加密密码、是否平台管理员（OP，`is_op`）
-  - 唯一约束：学号、用户名、邮箱均唯一
-- `permission_group` / `permission_group_node` / `user_permission_group` / `user_permission_node` 表：权限组、组-权限节点绑定、用户-组绑定、用户直接权限节点
+建表脚本按模块拆分在 `src/main/resources/` 下，启动时自动创建并同步字段与索引：
+- `user_schema.sql`：`user` 表，存储用户基本信息（学号、用户名、邮箱、加密密码、是否平台管理员 OP `is_op`），学号/用户名/邮箱均唯一
+- `school_schema.sql`：`school` / `school_member` / `school_join_application` 表，学校、学校成员（学工号与姓名、老师/学生/学校管理员角色）与加入申请
+- `class_schema.sql`：`class_info` / `class_member` 及邀请、审核、加入申请相关表，班级与成员关系
+- `work_schema.sql`：`work_info` / `work_attachment` / `work_submission` / `work_submission_attachment` 表，作业、附件与提交
+- `permission_schema.sql`：`permission_group` / `permission_group_node` / `user_permission_group` / `user_permission_node` 表，权限组、组-节点绑定、用户-组绑定与用户直接权限节点
 - 支持 UTF-8 字符集，确保中文内容正确存储
-- 简洁高效的表结构设计
 
 ## 权限体系与管理员后台
 

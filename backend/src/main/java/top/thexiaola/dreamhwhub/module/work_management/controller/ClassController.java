@@ -29,7 +29,7 @@ public class ClassController {
         private final ClassService classService;
 
         /**
-         * 创建班级（创建者自动成为班级老师）
+         * 创建班级（创建者自动成为班级管理员）
          */
         @PostMapping("/create")
         public ApiResponse<ClassDetailResponse> createClass(
@@ -38,14 +38,15 @@ public class ClassController {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} creating class: {}", userInfo, request.getClassName());
-                ClassInfo created = classService.createClass(request.getClassName(), request.getDescription());
+                ClassInfo created = classService.createClass(request.getSchoolId(), request.getClassName(),
+                                request.getDescription());
                 ClassDetailResponse response = classService.getClassDetail(created.getId());
                 log.info("User {} created class successfully, id: {}", userInfo, created.getId());
                 return ApiResponse.success(response, "课程创建成功");
         }
 
         /**
-         * 提交加入班级申请
+         * 提交加入班级申请（姓名与学工号取自学校成员身份）
          */
         @PostMapping("/{classId}/applications/join")
         public ApiResponse<JoinClassApplicationResponse> applyJoinClass(
@@ -95,7 +96,7 @@ public class ClassController {
         }
 
         /**
-         * 更新班级信息（老师或班级助理）
+         * 更新班级信息（班级管理员）
          */
         @PutMapping("/{classId}")
         public ApiResponse<ClassDetailResponse> updateClassInfo(
@@ -203,7 +204,7 @@ public class ClassController {
         }
 
         /**
-         * 获取加入班级申请列表（老师和管理员专用，分页）
+         * 获取加入班级申请列表（班级管理员或平台管理员专用，分页）
          * 
          * @param classId 班级 ID 筛选，可选
          * @param status  状态筛选（0-待审核，1-已通过，2-已拒绝），可选
@@ -223,7 +224,7 @@ public class ClassController {
         }
 
         /**
-         * 审核加入班级申请（老师和管理员专用）
+         * 审核加入班级申请（班级管理员或平台管理员专用）
          */
         @PutMapping("/applications/join/approve")
         public ApiResponse<Void> approveJoinApplication(@Valid @RequestBody ApproveJoinClassRequest request) {
@@ -239,7 +240,7 @@ public class ClassController {
         }
 
         /**
-         * 批量设置学生为班级助理（老师专用）
+         * 批量将学生设为课代表（班级管理员专用）
          */
         @PutMapping("/{classId}/assistants/batch")
         public ApiResponse<Void> batchSetAssistantTeachers(
@@ -255,7 +256,7 @@ public class ClassController {
         }
 
         /**
-         * 批量将学生踢出班级（老师/班级助理/管理员专用）
+         * 批量将学生踢出班级（班级管理员/平台管理员专用）
          */
         @DeleteMapping("/{classId}/members/batch")
         public ApiResponse<Void> batchKickStudents(
@@ -272,7 +273,7 @@ public class ClassController {
         }
 
         /**
-         * 取消班级助理权限（降级为学生，仅创建者可用）
+         * 取消课代表的班级管理员权限（降级为普通成员，仅创建者或平台管理员可用）
          */
         @DeleteMapping("/{classId}/assistants/{teacherUserId}")
         public ApiResponse<Void> demoteAssistantTeacher(
@@ -289,7 +290,7 @@ public class ClassController {
         }
 
         /**
-         * 更新学生邀请设置（班级老师或助理）
+         * 更新学生邀请设置（班级管理员）
          */
         @PutMapping("/{classId}/invite-settings")
         public ApiResponse<Void> setStudentInviteAllowed(
@@ -338,7 +339,7 @@ public class ClassController {
         }
 
         /**
-         * 教师或助理审核邀请申请
+         * 班级管理员审核邀请申请
          */
         @PutMapping("/invitations/{applicationId}/approval")
         public ApiResponse<Void> approveTeacherApproval(
@@ -355,7 +356,7 @@ public class ClassController {
         }
 
         /**
-         * 获取待教师审核的邀请列表（班级老师/助理专用）
+         * 获取待审核的邀请列表（班级管理员专用）
          */
         @GetMapping("/{classId}/invitations/pending")
         public ApiResponse<List<TeacherApprovalResponse>> getPendingTeacherApprovals(

@@ -130,12 +130,11 @@ public class EmailServiceImpl implements EmailService {
     /**
      * 发送验证码（通用方法）
      * @param email 邮箱
-     * @param userNo 学号/工号
      * @param username 用户名
      * @param isModify 是否为换绑验证码
      * @param isRetrieve 是否为找回密码验证码
      */
-    private void sendVerificationCodeInternal(String email, String userNo, String username, boolean isModify, boolean isRetrieve) {
+    private void sendVerificationCodeInternal(String email, String username, boolean isModify, boolean isRetrieve) {
         // 检查发送频率限制
         Long remainingTime = checkSendFrequency(email);
         if (remainingTime != null && remainingTime > 0) {
@@ -151,11 +150,11 @@ public class EmailServiceImpl implements EmailService {
         // 使用组合 key 存储新验证码
         String compositeKey;
         if (isRetrieve) {
-            compositeKey = buildRetrievePasswordKey(userNo, username, email);
+            compositeKey = buildRetrievePasswordKey(username, email);
         } else if (isModify) {
-            compositeKey = buildModifyKey(userNo, username, email);
+            compositeKey = buildModifyKey(username, email);
         } else {
-            compositeKey = buildCompositeKey(userNo, username, email);
+            compositeKey = buildCompositeKey(username, email);
         }
         VerificationCodeInfo codeInfo = new VerificationCodeInfo(code, LocalDateTime.now().plusMinutes(expiryMinutes));
         verificationCodes.put(compositeKey, codeInfo);
@@ -192,11 +191,11 @@ public class EmailServiceImpl implements EmailService {
     }
 
     /**
-     * 发送注册验证码（绑定 userNo、username、email）
+     * 发送注册验证码（绑定 username、email）
      */
     @Override
-    public void sendVerificationCode(String email, String userNo, String username) {
-        sendVerificationCodeInternal(email, userNo, username, false, false);
+    public void sendVerificationCode(String email, String username) {
+        sendVerificationCodeInternal(email, username, false, false);
     }
     
     /**
@@ -222,29 +221,27 @@ public class EmailServiceImpl implements EmailService {
     }
         
     /**
-     * 验证注册验证码 (需要匹配 userNo、username、email)
+     * 验证注册验证码 (需要匹配 username、email)
      * @param email 邮箱地址
      * @param code 验证码
-     * @param userNo 学号/工号
      * @param username 用户名
      * @return 验证是否成功
      */
     @Override
-    public boolean verifyRegistrationCode(String email, String code, String userNo, String username) {
-        return verifyCodeInternal(buildCompositeKey(userNo, username, email), code);
+    public boolean verifyRegistrationCode(String email, String code, String username) {
+        return verifyCodeInternal(buildCompositeKey(username, email), code);
     }
     
     /**
-     * 验证换绑验证码 (需要匹配 userNo、username、email)
+     * 验证换绑验证码 (需要匹配 username、email)
      * @param email 邮箱地址
      * @param code 验证码
-     * @param userNo 学号/工号
      * @param username 用户名
      * @return 验证是否成功
      */
     @Override
-    public boolean verifyModifyCode(String email, String code, String userNo, String username) {
-        return verifyCodeInternal(buildModifyKey(userNo, username, email), code);
+    public boolean verifyModifyCode(String email, String code, String username) {
+        return verifyCodeInternal(buildModifyKey(username, email), code);
     }
     
     /**
@@ -271,10 +268,10 @@ public class EmailServiceImpl implements EmailService {
     }
         
     /**
-     * 构建组合键：userNo#username#email
+     * 构建组合键：username#email
      */
-    private String buildCompositeKey(String userNo, String username, String email) {
-        return userNo + "#" + username + "#" + email;
+    private String buildCompositeKey(String username, String email) {
+        return username + "#" + email;
     }
     
     private void sendVerificationCodeEmail(String email, String code) {
@@ -290,38 +287,38 @@ public class EmailServiceImpl implements EmailService {
      * 发送换绑验证码
      */
     @Override
-    public void sendModifyEmailCode(String email, String userNo, String username) {
-        sendVerificationCodeInternal(email, userNo, username, true, false);
+    public void sendModifyEmailCode(String email, String username) {
+        sendVerificationCodeInternal(email, username, true, false);
     }
     
     /**
-     * 构建换绑验证码的组合键：modify#userNo#username#email
+     * 构建换绑验证码的组合键：modify#username#email
      */
-    private String buildModifyKey(String userNo, String username, String email) {
-        return "modify#" + userNo + "#" + username + "#" + email;
+    private String buildModifyKey(String username, String email) {
+        return "modify#" + username + "#" + email;
     }
     
     /**
-     * 构建找回密码验证码的组合键：retrieve#userNo#username#email
+     * 构建找回密码验证码的组合键：retrieve#username#email
      */
-    private String buildRetrievePasswordKey(String userNo, String username, String email) {
-        return "retrieve#" + userNo + "#" + username + "#" + email;
+    private String buildRetrievePasswordKey(String username, String email) {
+        return "retrieve#" + username + "#" + email;
     }
     
     /**
      * 发送找回密码验证码
      */
     @Override
-    public void sendRetrievePasswordEmailCode(String email, String userNo, String username) {
-        sendVerificationCodeInternal(email, userNo, username, false, true);
+    public void sendRetrievePasswordEmailCode(String email, String username) {
+        sendVerificationCodeInternal(email, username, false, true);
     }
     
     /**
      * 验证找回密码验证码
      */
     @Override
-    public boolean verifyRetrievePasswordCode(String email, String code, String userNo, String username) {
-        return verifyCodeInternal(buildRetrievePasswordKey(userNo, username, email), code);
+    public boolean verifyRetrievePasswordCode(String email, String code, String username) {
+        return verifyCodeInternal(buildRetrievePasswordKey(username, email), code);
     }
     
     private void sendRetrievePasswordCodeEmail(String email, String code) {

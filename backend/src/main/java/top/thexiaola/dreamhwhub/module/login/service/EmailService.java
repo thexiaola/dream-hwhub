@@ -15,58 +15,52 @@ public interface EmailService {
     void sendEmail(String to, String subject, String content);
 
     /**
-     * 生成并发送验证码（用于注册，绑定 userNo、username、email）
+     * 生成并发送验证码（用于注册，绑定 username、email）
      * @param email 收件人邮箱
-     * @param userNo 学号/工号
      * @param username 用户名
      */
-    void sendVerificationCode(String email, String userNo, String username);
-    
+    void sendVerificationCode(String email, String username);
+
     /**
-     * 验证注册验证码 (需要匹配 userNo、username、email)
+     * 验证注册验证码 (需要匹配 username、email)
      * @param email 邮箱地址
      * @param code 验证码
-     * @param userNo 学号/工号
      * @param username 用户名
      * @return 验证是否成功
      */
-    boolean verifyRegistrationCode(String email, String code, String userNo, String username);
-    
+    boolean verifyRegistrationCode(String email, String code, String username);
+
     /**
-     * 验证换绑验证码 (需要匹配 userNo、username、email)
+     * 验证换绑验证码 (需要匹配 username、email)
      * @param email 邮箱地址
      * @param code 验证码
-     * @param userNo 学号/工号
      * @param username 用户名
      * @return 验证是否成功
      */
-    boolean verifyModifyCode(String email, String code, String userNo, String username);
-    
+    boolean verifyModifyCode(String email, String code, String username);
+
     /**
      * 生成并发送换绑验证码
      * @param email 收件人邮箱
-     * @param userNo 学号/工号
      * @param username 用户名
      */
-    void sendModifyEmailCode(String email, String userNo, String username);
-    
+    void sendModifyEmailCode(String email, String username);
+
     /**
      * 生成并发送找回密码验证码
      * @param email 收件人邮箱
-     * @param userNo 学号/工号
      * @param username 用户名
      */
-    void sendRetrievePasswordEmailCode(String email, String userNo, String username);
-    
+    void sendRetrievePasswordEmailCode(String email, String username);
+
     /**
      * 验证找回密码验证码
      * @param email 邮箱地址
      * @param code 验证码
-     * @param userNo 学号/工号
      * @param username 用户名
      * @return 验证是否成功
      */
-    boolean verifyRetrievePasswordCode(String email, String code, String userNo, String username);
+    boolean verifyRetrievePasswordCode(String email, String code, String username);
 
     /**
      * 获取验证码发送冷却时间（秒），前端用于展示倒计时

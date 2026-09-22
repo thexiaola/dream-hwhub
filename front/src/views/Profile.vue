@@ -16,7 +16,7 @@
           <div class="user-info">
             <h3>{{ userStore.userInfo?.username }}</h3>
             <p class="account-row">
-              <span>{{ userStore.userInfo?.userNo }}</span>
+              <span>{{ userStore.userInfo?.email }}</span>
               <el-tag size="small" :type="roleTagType" effect="dark" round>
                 {{ roleText }}
               </el-tag>
@@ -37,12 +37,6 @@
           >
             <el-form-item label="用户昵称" prop="username">
               <el-input v-model="infoForm.username" placeholder="请输入用户昵称" maxlength="16" show-word-limit />
-            </el-form-item>
-            <el-form-item label="学号/工号" prop="userNo">
-              <el-input v-model="infoForm.userNo" placeholder="只允许数字" maxlength="24" show-word-limit />
-            </el-form-item>
-            <el-form-item label="真实姓名" prop="idName">
-              <el-input v-model="infoForm.idName" placeholder="字母/汉字及空格、中点、连字符" maxlength="32" show-word-limit />
             </el-form-item>
             <el-form-item label="手机号" prop="phone">
               <el-input v-model="infoForm.phone" placeholder="可选，数字 / + - ( ) 空格" maxlength="20" />
@@ -215,14 +209,6 @@
               <span class="summary-value">{{ userStore.userInfo?.id ?? '—' }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-label">学号/工号</span>
-              <span class="summary-value">{{ userStore.userInfo?.userNo || '—' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">真实姓名</span>
-              <span class="summary-value">{{ userStore.userInfo?.idName || '未填写' }}</span>
-            </div>
-            <div class="summary-row">
               <span class="summary-label">手机号</span>
               <span class="summary-value">{{ userStore.userInfo?.phone || '未绑定' }}</span>
             </div>
@@ -255,11 +241,6 @@
                 <Circle v-else :size="14" />
                 <span>用户昵称</span>
               </li>
-              <li :class="{ done: isIdNameFilled }" @click="!isIdNameFilled && (activeTab = 'info')">
-                <Check v-if="isIdNameFilled" :size="14" />
-                <Circle v-else :size="14" />
-                <span>真实姓名</span>
-              </li>
               <li :class="{ done: isPhoneFilled }" @click="!isPhoneFilled && (activeTab = 'info')">
                 <Check v-if="isPhoneFilled" :size="14" />
                 <Circle v-else :size="14" />
@@ -286,6 +267,7 @@ import type { UserInfo } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { put, post } from '@/utils/http'
+import { formatDateTime } from '@/utils/format'
 import {
   AlertTriangle,
   Check,
@@ -309,25 +291,16 @@ const activeTab = ref('info')
 const currentEmail = computed(() => userStore.userInfo?.email ?? '')
 
 // 格式化日期：后端返回 ISO 或时间戳字符串，统一显示 yyyy-MM-dd HH:mm
-const formatDateTime = (raw?: string): string => {
-  if (!raw) return '—'
-  const d = new Date(raw)
-  if (Number.isNaN(d.getTime())) return '—'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-const formattedRegisterTime = computed(() => formatDateTime(userStore.userInfo?.registerTime))
-const formattedLastLoginTime = computed(() => formatDateTime(userStore.userInfo?.lastLoginTime))
+const formattedRegisterTime = computed(() => formatDateTime(userStore.userInfo?.registerTime, '—'))
+const formattedLastLoginTime = computed(() => formatDateTime(userStore.userInfo?.lastLoginTime, '—'))
 
 // ========== 账号完成度 ==========
 const isUsernameFilled = computed(() => Boolean(userStore.userInfo?.username))
-const isIdNameFilled = computed(() => Boolean(userStore.userInfo?.idName))
 const isPhoneFilled = computed(() => Boolean(userStore.userInfo?.phone))
 const isEmailFilled = computed(() => Boolean(userStore.userInfo?.email))
 
 const completionPercent = computed(() => {
-  const flags = [isUsernameFilled.value, isIdNameFilled.value, isPhoneFilled.value, isEmailFilled.value]
+  const flags = [isUsernameFilled.value, isPhoneFilled.value, isEmailFilled.value]
   const done = flags.filter(Boolean).length
   return Math.round((done / flags.length) * 100)
 })
@@ -390,16 +363,12 @@ const infoLoading = ref(false)
 
 const infoForm = reactive({
   username: '',
-  userNo: '',
-  idName: '',
   phone: '',
 })
 
 const fillInfoForm = () => {
   const u = userStore.userInfo
   infoForm.username = u?.username ?? ''
-  infoForm.userNo = u?.userNo ?? ''
-  infoForm.idName = u?.idName ?? ''
   infoForm.phone = u?.phone ?? ''
 }
 
@@ -411,15 +380,6 @@ const infoRules: FormRules = {
     { min: 3, max: 16, message: '昵称长度需为 3-16 位', trigger: 'blur' },
     { pattern: /^[A-Za-z0-9_]+$/, message: '昵称只能包含字母、数字和下划线', trigger: 'blur' },
     { pattern: /^[A-Za-z0-9].*[A-Za-z0-9]$/, message: '昵称不能以下划线开头或结尾', trigger: 'blur' },
-  ],
-  userNo: [
-    { required: true, message: '请输入学号/工号', trigger: 'blur' },
-    { max: 24, message: '长度不能超过 24 位', trigger: 'blur' },
-    { pattern: /^[0-9]+$/, message: '学号/工号只能包含数字', trigger: 'blur' },
-  ],
-  idName: [
-    { max: 32, message: '长度不能超过 32 位', trigger: 'blur' },
-    { pattern: /^[\p{L}\s·-]+$/u, message: '真实姓名只能包含字母、汉字及空格、中点、连字符', trigger: 'blur' },
   ],
   phone: [
     { max: 20, message: '手机号长度不能超过 20 位', trigger: 'blur' },
@@ -443,8 +403,6 @@ const submitInfo = async () => {
   try {
     const payload = {
       username: infoForm.username,
-      userNo: infoForm.userNo,
-      idName: infoForm.idName || undefined,
       phone: infoForm.phone || undefined,
     } as Record<string, unknown>
     const res = await put<UserInfo>('/users/modify/info', payload)

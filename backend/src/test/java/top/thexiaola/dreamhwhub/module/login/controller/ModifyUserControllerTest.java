@@ -59,7 +59,6 @@ class ModifyUserControllerTest {
     @DisplayName("测试修改用户信息 - 成功")
     void testModifyUserInfo_Success() throws Exception {
         ModifyUserInfoRequest request = new ModifyUserInfoRequest();
-        request.setUserNo("20240001");
         request.setUsername("NewName01");
 
         User mockUser = new User();
@@ -216,7 +215,6 @@ class ModifyUserControllerTest {
     void testModifyUserInfo_MaxUsernameLength() throws Exception {
         String maxUsername = "Z".repeat(16);
         ModifyUserInfoRequest request = new ModifyUserInfoRequest();
-        request.setUserNo("20240002");
         request.setUsername(maxUsername);
 
         User mockUser = new User();
@@ -439,7 +437,6 @@ class ModifyUserControllerTest {
     @DisplayName("极限数据测试 - 用户名包含中文与Emoji")
     void testModifyUserInfo_UsernameWithEmoji() throws Exception {
         ModifyUserInfoRequest request = new ModifyUserInfoRequest();
-        request.setUserNo("20240003");
         request.setUsername("张😀🎉三"); // 不符合 Minecraft 用户名规则
 
         // 中文与 emoji 超出允许字符集，应被参数校验拒绝

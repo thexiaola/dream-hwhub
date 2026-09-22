@@ -33,21 +33,19 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     @Override
     public User register(RegisterRequest registerRequest) {
         String operation = "User registration";
-        
-        String userNo = registerRequest.getUserNo();
+
         String username = registerRequest.getUsername();
         String email = registerRequest.getEmail();
 
-        // 学号允许重复，仅校验用户名与邮箱唯一
+        // 校验用户名与邮箱唯一
         checkUsernameExists(username);
         checkEmailExists(email);
 
-        if (!verifyEmailCode(registerRequest.getEmail(), registerRequest.getEmailCode(), userNo, username)) {
+        if (!verifyEmailCode(registerRequest.getEmail(), registerRequest.getEmailCode(), username)) {
             throw new BusinessException(BusinessErrorCode.VERIFICATION_CODE_INVALID, "验证码无效或已过期", null);
         }
 
         User user = new User();
-        user.setUserNo(userNo);
         user.setUsername(username);
         user.setEmail(email);
         // 使用BCrypt加密密码
@@ -72,15 +70,15 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     }
 
     @Override
-    public void sendEmailCode(String email, String userNo, String username) {
+    public void sendEmailCode(String email, String username) {
         String operation = "Send registration verification code";
 
-        // 学号允许重复，仅校验用户名与邮箱唯一
+        // 校验用户名与邮箱唯一
         checkUsernameExists(username);
         checkEmailExists(email);
-            
+
         try {
-            emailService.sendVerificationCode(email, userNo, username);
+            emailService.sendVerificationCode(email, username);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -102,11 +100,11 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     }
 
     /**
-     * 验证注册验证码（需要匹配 userNo、username、email）
+     * 验证注册验证码（需要匹配 username、email）
      */
     @Override
-    public boolean verifyEmailCode(String email, String code, String userNo, String username) {
-        return emailService.verifyRegistrationCode(email, code, userNo, username);
+    public boolean verifyEmailCode(String email, String code, String username) {
+        return emailService.verifyRegistrationCode(email, code, username);
     }
 
     @Override

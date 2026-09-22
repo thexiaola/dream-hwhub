@@ -30,7 +30,6 @@ public class TestWebConfig implements WebMvcConfigurer {
             User testUser = new User();
             testUser.setId(1);
             testUser.setUsername("testuser");
-            testUser.setUserNo("123456");
             testUser.setIsOp(false);
             request.setAttribute("currentUser", testUser);
             return true;

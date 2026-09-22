@@ -5,6 +5,7 @@ import lombok.Data;
 
 /**
  * 响应邀请请求
+ * 姓名与学工号取自用户的学校成员身份，不在此处填写
  */
 @Data
 public class RespondInvitationRequest {

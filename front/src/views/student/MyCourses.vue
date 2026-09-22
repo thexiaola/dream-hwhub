@@ -74,6 +74,9 @@
           />
         </el-form-item>
       </el-form>
+      <p class="dialog-tip">
+        加入班级使用你在学校内的姓名与学工号；若提示尚未加入学校，请先前往「我的学校」加入。
+      </p>
       <template #footer>
         <el-button @click="showJoinDialog = false">取消</el-button>
         <el-button type="primary" @click="joinByCode">加入</el-button>
@@ -195,18 +198,8 @@ import {
   Inbox,
   UserPlus,
 } from "@lucide/vue";
-
-interface CourseInfo {
-  id: number;
-  className: string;
-  description?: string;
-  ownerId: number;
-  ownerName: string;
-  userRole: string;
-  memberCount: number;
-  teacherCount: number;
-  studentCount: number;
-}
+import { formatDateTime as formatDate } from '@/utils/format'
+import type { CourseInfo } from '@/types/class'
 
 const router = useRouter();
 
@@ -219,9 +212,9 @@ const joinForm = ref({
 const loadStudentCourses = async () => {
   const result = await get<{ records: CourseInfo[] }>("/class/mine", { pageSize: 300 });
   if (result.code === 200) {
-    // 学生与助理（协作老师）的课程都在“我听的课”中显示
+    // 非创建者的成员（老师/课代表/学生）的课程都在“我听的课”中显示
     studentCourses.value = result.data!.records.filter(
-      (course) => course.userRole === "学生" || course.userRole === "老师",
+      (course) => course.userRole !== "创建者",
     );
   }
 };
@@ -309,7 +302,9 @@ const handleRespond = async (item: InvitationInfo, accepted: boolean) => {
 
 const handleUserRespond = async (item: InvitationInfo, accepted: boolean) => {
   respondingId.value = item.id;
-  const result = await put(`/class/invitations/${item.id}`, { accepted });
+  const result = await put(`/class/invitations/${item.id}`, {
+    accepted,
+  });
   respondingId.value = null;
   if (result.code === 200) {
     ElMessage.success(accepted ? "已接受，等待老师审核" : "已拒绝该邀请");
@@ -317,11 +312,6 @@ const handleUserRespond = async (item: InvitationInfo, accepted: boolean) => {
   } else {
     ElMessage.error(result.message || "操作失败");
   }
-};
-
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 };
 
 onMounted(() => {
@@ -561,6 +551,13 @@ onMounted(() => {
 .empty-tip {
   font-size: 12px;
   margin-top: 8px;
+}
+
+.dialog-tip {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
 }
 
 @media (max-width: 1200px) {

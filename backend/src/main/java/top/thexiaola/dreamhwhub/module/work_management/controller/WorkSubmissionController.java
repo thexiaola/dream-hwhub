@@ -145,7 +145,7 @@ public class WorkSubmissionController {
             if (user == null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(400, "用户未登录"));
             }
-            List<WorkSubmissionResponse> submissions = workSubmissionService.getStudentSubmissions(user.getUserNo(), workId);
+            List<WorkSubmissionResponse> submissions = workSubmissionService.getStudentSubmissions(workId);
             log.info("User ({}) queried student submissions, size: {}", userInfo, submissions.size());
             return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (BusinessException e) {

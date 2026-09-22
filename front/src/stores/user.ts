@@ -93,8 +93,8 @@ export const useUserStore = defineStore('user', () => {
     return false
   }
 
-  const sendCode = async (email: string, userNo: string, username: string): Promise<{ code: number; message: string; data: unknown }> => {
-    const result = await post('/users/getregcode', { email, userNo, username })
+  const sendCode = async (email: string, username: string): Promise<{ code: number; message: string; data: unknown }> => {
+    const result = await post('/users/getregcode', { email, username })
     return { code: result.code, message: result.message, data: result.data }
   }
 

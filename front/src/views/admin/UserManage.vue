@@ -3,7 +3,7 @@
     <div class="filter-bar">
       <el-input
         v-model="keyword"
-        placeholder="搜索用户名 / 学号 / 邮箱 / 姓名"
+        placeholder="搜索用户名 / 邮箱"
         style="width: 260px"
         clearable
         @clear="search"
@@ -15,9 +15,7 @@
 
     <el-table v-loading="loading" :data="users" class="admin-table">
       <el-table-column prop="id" label="ID" width="70" />
-      <el-table-column prop="userNo" label="学号/工号" width="110" />
       <el-table-column prop="username" label="用户名" min-width="110" />
-      <el-table-column prop="idName" label="姓名" width="90" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
       <el-table-column label="权限" min-width="150">
         <template #default="{ row }">
@@ -72,14 +70,8 @@
       class="dark-dialog"
     >
       <el-form :model="formDialog.form" label-width="90px">
-        <el-form-item label="学号/工号">
-          <el-input v-model="formDialog.form.userNo" placeholder="仅限数字" maxlength="24" />
-        </el-form-item>
         <el-form-item label="用户名">
           <el-input v-model="formDialog.form.username" placeholder="3-16 位字母、数字、下划线" maxlength="16" />
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="formDialog.form.idName" maxlength="32" />
         </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="formDialog.form.email" maxlength="64" />
@@ -171,9 +163,7 @@ const allGroups = ref<PermissionGroup[]>([])
 const nodeGroups = ref<PermissionNodeGroup[]>([])
 
 const emptyForm = (): AdminUserForm => ({
-  userNo: '',
   username: '',
-  idName: '',
   email: '',
   phone: '',
   password: ''
@@ -246,9 +236,7 @@ const openEdit = (row: AdminUser) => {
   formDialog.isCreate = false
   formDialog.editingId = row.id
   formDialog.form = {
-    userNo: row.userNo ?? '',
     username: row.username ?? '',
-    idName: row.idName ?? '',
     email: row.email ?? '',
     phone: row.phone ?? '',
     password: ''
@@ -258,8 +246,8 @@ const openEdit = (row: AdminUser) => {
 
 const submitForm = async () => {
   const form = formDialog.form
-  if (!form.userNo || !form.username || !form.email) {
-    ElMessage.warning('请填写学号、用户名和邮箱')
+  if (!form.username || !form.email) {
+    ElMessage.warning('请填写用户名和邮箱')
     return
   }
   if (formDialog.isCreate && !form.password) {
@@ -270,9 +258,7 @@ const submitForm = async () => {
   formDialog.submitting = true
   try {
     const payload: Record<string, unknown> = {
-      userNo: form.userNo,
       username: form.username,
-      idName: form.idName,
       email: form.email,
       phone: form.phone
     }

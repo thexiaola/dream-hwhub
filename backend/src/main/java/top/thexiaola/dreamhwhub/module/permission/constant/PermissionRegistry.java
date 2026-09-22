@@ -94,7 +94,13 @@ public final class PermissionRegistry {
                     new Node(PermissionNodes.CLASS_DISSOLVE, "解散任意班级", "解散非自己创建的班级"),
                     new Node(PermissionNodes.CLASS_MEMBER_KICK, "踢出班级成员", "从任意班级踢出成员"),
                     new Node(PermissionNodes.CLASS_APPROVE_JOIN, "审批加入申请", "审批任意班级的加入申请"),
-                    new Node(PermissionNodes.CLASS_TEACHER_ADD, "添加班级老师", "为任意班级添加老师"))));
+                    new Node(PermissionNodes.CLASS_TEACHER_ADD, "添加班级老师", "为任意班级添加老师"))),
+            new Group("school", "学校管理", List.of(
+                    new Node(PermissionNodes.SCHOOL_VIEW_ALL, "查看全部学校", "查看平台上所有学校及其成员"),
+                    new Node(PermissionNodes.SCHOOL_CREATE, "创建学校", "在平台上新建学校"),
+                    new Node(PermissionNodes.SCHOOL_UPDATE, "管理任意学校", "修改任意学校信息与加入审核设置"),
+                    new Node(PermissionNodes.SCHOOL_DISSOLVE, "解散任意学校", "解散学校并解除其成员关系"),
+                    new Node(PermissionNodes.SCHOOL_ADMIN_ASSIGN, "指派学校管理员", "指派或取消任意学校的学校管理员"))));
 
     /** 全部权限节点 */
     private static final Set<String> ALL_NODES = buildAllNodes();

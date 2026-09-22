@@ -6,7 +6,7 @@
         <p class="subtitle">管理你作为老师教授的课程</p>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="showCreateDialog = true">
+        <el-button v-if="canCreateCourse" type="primary" @click="openCreateDialog">
           <Plus :size="18" />
           创建课程
         </el-button>
@@ -48,12 +48,38 @@
       <div v-if="teacherCourses.length === 0" class="empty-state">
         <Presentation :size="48" />
         <p>暂无课程</p>
-        <p class="empty-tip">点击"创建课程"按钮创建你的第一个课程</p>
+        <template v-if="canCreateCourse">
+          <p class="empty-tip">点击"创建课程"按钮创建你的第一个课程</p>
+        </template>
+        <template v-else>
+          <p class="empty-tip">只有学校老师才能创建班级</p>
+          <p class="empty-tip">请先在「我的学校」加入学校，并由学校管理员将你设为老师</p>
+          <el-button type="primary" plain size="small" @click="router.push('/school')">
+            前往我的学校
+          </el-button>
+        </template>
       </div>
     </el-card>
 
     <el-dialog v-model="showCreateDialog" title="创建课程" width="500px" class="dark-dialog">
       <el-form :model="createForm" label-width="80px">
+        <el-form-item label="所属学校">
+          <el-select
+            v-model="createForm.schoolId"
+            placeholder="请选择班级所属学校"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="school in teachableSchools"
+              :key="school.id"
+              :label="school.schoolName"
+              :value="school.id"
+            />
+          </el-select>
+          <p class="form-tip" v-if="teachableSchools.length === 0">
+            你还没有可作为老师建班的学校，请先加入学校并由学校管理员将你设为老师
+          </p>
+        </el-form-item>
         <el-form-item label="课程名称">
           <el-input v-model="createForm.className" placeholder="请输入课程名称" maxlength="64" />
         </el-form-item>
@@ -76,38 +102,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { get, post } from '@/utils/http'
+import type { SchoolDetail } from '@/types/school'
 import { ElMessage } from 'element-plus'
 import { Plus, Presentation, Users, User } from '@lucide/vue'
-
-interface CourseInfo {
-  id: number
-  className: string
-  description?: string
-  ownerId: number
-  ownerName: string
-  userRole: string
-  memberCount: number
-  teacherCount: number
-  studentCount: number
-}
+import type { CourseInfo } from '@/types/class'
 
 const router = useRouter()
 
 const teacherCourses = ref<CourseInfo[]>([])
 const showCreateDialog = ref(false)
 const createForm = ref({
+  schoolId: undefined as number | undefined,
   className: '',
   description: ''
 })
 
+// 可作为老师建班的学校（学校老师或学校管理员）
+const teachableSchools = ref<SchoolDetail[]>([])
+
+const loadTeachableSchools = async () => {
+  const result = await get<SchoolDetail[]>('/school/mine')
+  if (result.code === 200) {
+    teachableSchools.value = (result.data || []).filter(
+      school => (school.myRoleCode ?? 0) >= 1
+    )
+    if (teachableSchools.value.length === 1) {
+      createForm.value.schoolId = teachableSchools.value[0].id
+    }
+  }
+}
+
+// 可作为老师建班的学校（学校老师或学校管理员），没有则无法创建班级
+const canCreateCourse = computed(() => teachableSchools.value.length > 0)
+
+const openCreateDialog = () => {
+  showCreateDialog.value = true
+  loadTeachableSchools()
+}
+
 const loadTeacherCourses = async () => {
   const result = await get<{ records: CourseInfo[] }>('/class/mine', { pageSize: 300 })
   if (result.code === 200) {
+    // 我教的课：拥有班级管理员权限的班级（创建者/老师/课代表）
     teacherCourses.value = result.data!.records.filter(
-      course => course.userRole === '创建者' || course.userRole === '老师'
+      course => course.userRoleCode === 1
     )
   }
 }
@@ -117,11 +158,19 @@ const goToCourse = (id: number) => {
 }
 
 const createCourse = async () => {
+  if (!createForm.value.schoolId) {
+    ElMessage.warning('请选择班级所属学校')
+    return
+  }
   if (!createForm.value.className) {
     ElMessage.warning('请输入课程名称')
     return
   }
-  const result = await post('/class/create', createForm.value)
+  const result = await post('/class/create', {
+    schoolId: createForm.value.schoolId,
+    className: createForm.value.className,
+    description: createForm.value.description
+  })
   if (result.code === 200) {
     ElMessage.success('课程创建成功')
     showCreateDialog.value = false
@@ -135,10 +184,17 @@ const createCourse = async () => {
 
 onMounted(() => {
   loadTeacherCourses()
+  loadTeachableSchools()
 })
 </script>
 
 <style scoped>
+.form-tip {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+}
+
 .teacher-courses-page {
   padding-bottom: 24px;
 }

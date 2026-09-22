@@ -26,7 +26,10 @@ public interface WorkSubmissionResponseMapper {
     @Mapping(target = "updateTime", source = "submission.updateTime")
     @Mapping(target = "attachments", ignore = true)  // 附件需要单独加载
     @Mapping(target = "graderName", ignore = true)  // 批改人姓名需要从用户表查询
-    @Mapping(target = "submitterName", ignore = true)  // 提交人姓名需要从用户表查询
-    @Mapping(target = "submitterUserNo", ignore = true)  // 提交人学号需要从用户表查询
+    @Mapping(target = "submitterName", ignore = true)  // 提交人用户名需要从用户表查询
+    @Mapping(target = "submitterUsername", ignore = true)  // 提交人用户名需要从用户表查询
+    @Mapping(target = "submitterEmail", ignore = true)  // 提交人邮箱需要从用户表查询
+    @Mapping(target = "submitterStudentName", ignore = true)  // 提交人在班级内的姓名取自班级成员记录
+    @Mapping(target = "submitterStudentNo", ignore = true)  // 提交人在班级内的学号取自班级成员记录
     WorkSubmissionResponse toResponse(WorkSubmission submission, WorkInfo workInfo);
 }

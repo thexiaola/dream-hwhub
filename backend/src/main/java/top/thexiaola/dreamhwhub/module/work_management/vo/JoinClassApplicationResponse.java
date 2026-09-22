@@ -50,4 +50,9 @@ public class JoinClassApplicationResponse {
      * 申请人用户名
      */
     private String applicantName;
+
+    /**
+     * 申请人在班级内的学号
+     */
+    private String applicantNo;
 }

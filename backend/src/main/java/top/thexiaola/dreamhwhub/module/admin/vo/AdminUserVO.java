@@ -16,14 +16,8 @@ public class AdminUserVO {
     // 用户编号
     private Integer id;
 
-    // 学号/工号
-    private String userNo;
-
     // 用户名
     private String username;
-
-    // 姓名
-    private String idName;
 
     // 邮箱
     private String email;

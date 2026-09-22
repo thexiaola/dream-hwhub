@@ -8,9 +8,7 @@ export interface UserInfo {
   id: number
   account: string
   username: string
-  userNo: string
   email: string
-  idName?: string
   phone?: string
   /** 是否为平台管理员（OP），拥有全部权限节点 */
   isOp?: boolean
@@ -24,7 +22,6 @@ export interface UserInfo {
 
 export interface RegisterRequest {
   username: string
-  userNo: string
   email: string
   password: string
   emailCode: string

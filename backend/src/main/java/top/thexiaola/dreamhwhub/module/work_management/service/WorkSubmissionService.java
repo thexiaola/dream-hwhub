@@ -59,7 +59,7 @@ public interface WorkSubmissionService {
      * @param workId 作业 ID（可选）
      * @return 提交列表
      */
-    List<WorkSubmissionResponse> getStudentSubmissions(String studentNo, Integer workId);
+    List<WorkSubmissionResponse> getStudentSubmissions(Integer workId);
 
     /**
      * 查询某次作业的所有提交（分页）

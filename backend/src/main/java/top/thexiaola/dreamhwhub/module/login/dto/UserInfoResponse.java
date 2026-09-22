@@ -11,20 +11,14 @@ import java.util.Set;
  * 用户信息查询响应 DTO（不含 token，token 仅在登录时返回）
  */
 @Data
-@JsonPropertyOrder({"id", "userNo", "username", "idName", "email", "phone", "isOp", "permissions", "isBanned", "registerTime", "lastLoginTime"})
+@JsonPropertyOrder({"id", "username", "email", "phone", "isOp", "permissions", "isBanned", "registerTime", "lastLoginTime"})
 public class UserInfoResponse {
 
     // 用户编号
     private Integer id;
 
-    // 学号/工号
-    private String userNo;
-
     // 用户名
     private String username;
-
-    // 身份证姓名
-    private String idName;
 
     // 邮箱
     private String email;

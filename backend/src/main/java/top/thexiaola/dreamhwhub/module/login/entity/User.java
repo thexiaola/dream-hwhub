@@ -27,17 +27,9 @@ public class User implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
-    // 学号/工号
-    @TableField("user_no")
-    private String userNo;
-
     // 用户名
     @TableField("username")
     private String username;
-
-    // 身份证姓名
-    @TableField("id_name")
-    private String idName;
 
     // 邮箱
     @TableField("email")

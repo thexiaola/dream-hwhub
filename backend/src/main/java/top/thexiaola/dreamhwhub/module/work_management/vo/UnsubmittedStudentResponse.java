@@ -24,12 +24,12 @@ public class UnsubmittedStudentResponse {
     private String email;
 
     /**
-     * 姓名（可能为空）
+     * 班级内姓名（学生入班时填写，可能为空）
      */
-    private String idName;
+    private String studentName;
 
     /**
-     * 学号/工号
+     * 班级内学号（学生入班时填写，可能为空）
      */
-    private String userNo;
+    private String studentNo;
 }

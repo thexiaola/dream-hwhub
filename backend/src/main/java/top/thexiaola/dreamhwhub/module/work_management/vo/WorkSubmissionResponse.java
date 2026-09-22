@@ -82,14 +82,14 @@ public class WorkSubmissionResponse {
     private String submitterEmail;
 
     /**
-     * 提交人姓名（id_name，可能为空）
+     * 提交人在班级内的姓名（入班时填写，可能为空）
      */
-    private String submitterIdName;
+    private String submitterStudentName;
 
     /**
-     * 提交人学号
+     * 提交人在班级内的学号（入班时填写，可能为空）
      */
-    private String submitterUserNo;
+    private String submitterStudentNo;
 
     /**
      * 提交状态：1-已提交，2-已批改

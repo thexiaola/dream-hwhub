@@ -63,8 +63,8 @@ class WorkSubmissionControllerTest {
                 "测试用户", // submitterName - 简化处理
                 "testuser", // submitterUsername - 简化处理
                 "test@example.com", // submitterEmail - 简化处理
-                "测试学号", // submitterIdName - 简化处理
-                "20230001", // submitterUserNo - 简化处理
+                "测试学生", // submitterStudentName - 简化处理
+                "20230001", // submitterStudentNo - 简化处理
                 submission.getStatus(),
                 submission.getIsLate(),
                 submission.getCreateTime(),
@@ -151,7 +151,7 @@ class WorkSubmissionControllerTest {
     @Test
     @DisplayName("测试查询学生提交列表 - 成功")
     void testGetStudentSubmissions_Success() throws Exception {
-        Mockito.when(workSubmissionService.getStudentSubmissions(Mockito.anyString(), Mockito.any()))
+        Mockito.when(workSubmissionService.getStudentSubmissions(Mockito.anyInt()))
                 .thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/submissions/student/list"))
