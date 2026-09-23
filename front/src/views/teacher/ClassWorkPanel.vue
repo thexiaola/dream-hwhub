@@ -75,7 +75,6 @@
       title="发布作业"
       width="600px"
       class="dark-dialog create-work-dialog"
-      @close="resetCreateWorkForm"
     >
       <el-form :model="workForm" label-width="80px">
         <el-form-item label="作业标题">

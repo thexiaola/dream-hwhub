@@ -6,6 +6,24 @@
         <p class="subtitle">查看你作为学生加入的课程</p>
       </div>
       <div class="header-right">
+        <el-select
+          v-if="schoolOptions.length > 0"
+          :model-value="schoolStore.currentSchoolId"
+          class="school-select"
+          placeholder="选择学校"
+          @update:model-value="schoolStore.setCurrentSchool"
+        >
+          <el-option
+            v-for="school in schoolOptions"
+            :key="school.id"
+            :label="school.schoolName"
+            :value="school.id"
+          />
+        </el-select>
+        <span v-else class="school-empty-tip">
+          <School :size="16" />
+          尚未加入任何学校
+        </span>
         <el-badge
           :value="pendingCount"
           :hidden="pendingCount === 0"
@@ -16,7 +34,10 @@
             我的邀请
           </el-button>
         </el-badge>
-        <el-button @click="showJoinDialog = true">
+        <el-button
+          :disabled="!schoolStore.currentSchoolId"
+          @click="openJoinDialog"
+        >
           <Plus :size="18" />
           加入课程
         </el-button>
@@ -56,7 +77,10 @@
       <div v-if="studentCourses.length === 0" class="empty-state">
         <GraduationCap :size="48" />
         <p>暂无课程</p>
-        <p class="empty-tip">点击"加入课程"按钮加入一个课程</p>
+        <p v-if="schoolStore.currentSchoolId" class="empty-tip">
+          点击"加入课程"按钮加入一个课程
+        </p>
+        <p v-else class="empty-tip">请先前往「我的学校」加入一所学校</p>
       </div>
     </el-card>
 
@@ -67,6 +91,11 @@
       class="dark-dialog"
     >
       <el-form :model="joinForm" label-width="80px">
+        <el-form-item label="学校">
+          <span class="dialog-school">
+            {{ schoolStore.currentSchool?.schoolName ?? "未选择学校" }}
+          </span>
+        </el-form-item>
         <el-form-item label="邀请码">
           <el-input
             v-model="joinForm.inviteCode"
@@ -75,7 +104,7 @@
         </el-form-item>
       </el-form>
       <p class="dialog-tip">
-        加入班级使用你在学校内的姓名与学工号；若提示尚未加入学校，请先前往「我的学校」加入。
+        只能加入当前所在学校的班级；入班使用你在该校的姓名与学工号。
       </p>
       <template #footer>
         <el-button @click="showJoinDialog = false">取消</el-button>
@@ -185,7 +214,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { get, post, put } from "@/utils/http";
 import { ElMessage } from "element-plus";
@@ -197,11 +226,17 @@ import {
   GraduationCap,
   Inbox,
   UserPlus,
+  School,
 } from "@lucide/vue";
 import { formatDateTime as formatDate } from '@/utils/format'
 import type { CourseInfo } from '@/types/class'
+import { useSchoolStore } from '@/stores/school'
 
 const router = useRouter();
+const schoolStore = useSchoolStore();
+
+// 我加入的学校，作为「当前学校」切换项
+const schoolOptions = computed(() => schoolStore.mySchools ?? []);
 
 const studentCourses = ref<CourseInfo[]>([]);
 const showJoinDialog = ref(false);
@@ -210,26 +245,54 @@ const joinForm = ref({
 });
 
 const loadStudentCourses = async () => {
-  const result = await get<{ records: CourseInfo[] }>("/class/mine", { pageSize: 300 });
+  // 未选择学校时不查询，避免把所有学校的课程混在一起展示
+  if (!schoolStore.currentSchoolId) {
+    studentCourses.value = [];
+    return;
+  }
+  // 学校与角色筛选由后端在数据库中完成，不再取回全量后本地过滤
+  const result = await get<{ records: CourseInfo[] }>("/class/mine", {
+    pageSize: 300,
+    schoolId: schoolStore.currentSchoolId,
+    excludeOwner: true,
+  });
   if (result.code === 200) {
-    // 非创建者的成员（老师/课代表/学生）的课程都在“我听的课”中显示
-    studentCourses.value = result.data!.records.filter(
-      (course) => course.userRole !== "创建者",
-    );
+    studentCourses.value = result.data!.records;
   }
 };
+
+// 切换当前学校后重新查询该学校下的课程
+watch(
+  () => schoolStore.currentSchoolId,
+  () => {
+    loadStudentCourses();
+  },
+);
 
 const goToCourse = (id: number) => {
   router.push(`/student/course/${id}`);
 };
 
+const openJoinDialog = () => {
+  if (!schoolStore.currentSchoolId) {
+    ElMessage.warning("请先选择学校");
+    return;
+  }
+  showJoinDialog.value = true;
+};
+
 const joinByCode = async () => {
+  if (!schoolStore.currentSchoolId) {
+    ElMessage.warning("请先选择学校");
+    return;
+  }
   if (!joinForm.value.inviteCode) {
     ElMessage.warning("请输入邀请码");
     return;
   }
   const result = await post("/class/join-by-code", {
     inviteCode: joinForm.value.inviteCode,
+    schoolId: schoolStore.currentSchoolId,
   });
   if (result.code === 200) {
     ElMessage.success("加入成功");
@@ -314,7 +377,8 @@ const handleUserRespond = async (item: InvitationInfo, accepted: boolean) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await schoolStore.fetchMySchools();
   loadStudentCourses();
   loadMyInvitations();
   loadMyUserInvitations();
@@ -328,6 +392,25 @@ onMounted(() => {
 
 .invite-badge {
   margin-right: 12px;
+}
+
+.school-select {
+  width: 180px;
+  margin-right: 12px;
+}
+
+.school-empty-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 12px;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+}
+
+.dialog-school {
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
 }
 
 .invitation-group + .invitation-group {

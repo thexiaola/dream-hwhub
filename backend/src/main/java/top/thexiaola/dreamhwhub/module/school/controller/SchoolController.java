@@ -10,6 +10,8 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.school.dto.ApproveSchoolJoinRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.BatchApproveSchoolJoinRequest;
+import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
 import top.thexiaola.dreamhwhub.module.school.dto.JoinSchoolRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.SetSchoolJoinApprovalRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberIdentityRequest;
@@ -56,9 +58,10 @@ public class SchoolController {
      * 获取我加入的学校列表
      */
     @GetMapping("/mine")
-    public ApiResponse<List<SchoolDetailResponse>> getMySchools() {
+    public ApiResponse<List<SchoolDetailResponse>> getMySchools(
+            @RequestParam(value = "minRoleCode", required = false) Integer minRoleCode) {
         User currentUser = UserUtils.getCurrentUser();
-        List<SchoolDetailResponse> schools = schoolService.getMySchools();
+        List<SchoolDetailResponse> schools = schoolService.getMySchools(minRoleCode);
         log.info("User {} queried {} joined schools", LogUtil.getUserInfo(currentUser), schools.size());
         return ApiResponse.success(schools);
     }
@@ -134,6 +137,25 @@ public class SchoolController {
         log.info("User {} reviewed school {} application {}, approved: {}",
                 LogUtil.getUserInfo(currentUser), schoolId, request.getApplicationId(), request.getApproved());
         return ApiResponse.success(null);
+    }
+
+    /**
+     * 批量审核加入学校申请（学校管理员）
+     */
+    @PutMapping("/{schoolId}/applications/batch-approve")
+    public ApiResponse<BatchReviewResult> batchApproveJoinApplications(
+            @PathVariable(value = "schoolId") Integer schoolId,
+            @Valid @RequestBody BatchApproveSchoolJoinRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        BatchReviewResult result = schoolService.batchApproveJoinApplications(schoolId, request);
+        int handled = result.getHandled();
+        int skipped = result.getSkipped();
+        log.info("User {} batch reviewed school {} applications, handled: {}, skipped: {}, approved: {}",
+                LogUtil.getUserInfo(currentUser), schoolId, handled, skipped, request.getApproved());
+        String message = skipped > 0
+                ? "已处理 " + handled + " 条申请，跳过 " + skipped + " 条"
+                : "已处理 " + handled + " 条申请";
+        return ApiResponse.success(result, message);
     }
 
     /**

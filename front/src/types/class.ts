@@ -13,6 +13,9 @@ export interface CourseInfo {
   userRole: string
   /** 我在该班级的角色代码：1-拥有班级管理员权限，0-普通成员 */
   userRoleCode: number
+  /** 班级所属学校 */
+  schoolId?: number | null
+  schoolName?: string | null
   memberCount: number
   teacherCount: number
   studentCount: number

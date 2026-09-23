@@ -53,6 +53,12 @@
               <p class="identity-tip" v-else-if="school?.myApplicationStatus === 2">
                 你的加入申请被拒绝，可修改信息后重新提交
               </p>
+              <p
+                v-if="school?.myApplicationStatus === 2 && school?.myApplicationComment"
+                class="identity-comment"
+              >
+                拒绝理由：{{ school.myApplicationComment }}
+              </p>
               <el-button type="primary" @click="openJoinDialog">加入学校</el-button>
             </div>
           </template>
@@ -62,9 +68,17 @@
 
     <el-card class="content-card" v-if="canManage">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-        <el-tab-pane label="加入申请" name="applications">
+        <el-tab-pane name="applications">
+          <template #label>
+            加入申请
+            <el-badge
+              v-if="(school?.pendingApplicationCount ?? 0) > 0"
+              :value="school?.pendingApplicationCount"
+              class="tab-badge"
+            />
+          </template>
           <div class="filter-bar">
-            <el-radio-group v-model="appFilter" @change="loadApplications">
+            <el-radio-group v-model="appFilter" @change="reloadApplications">
               <el-radio-button :value="-1">全部</el-radio-button>
               <el-radio-button :value="0">待审核</el-radio-button>
               <el-radio-button :value="1">已通过</el-radio-button>
@@ -76,9 +90,37 @@
               inactive-text="需审核"
               @change="submitJoinApproval"
             />
+            <div class="batch-actions">
+              <el-switch
+                v-model="confirmBeforeApprove"
+                size="small"
+                active-text="通过前二次确认"
+              />
+              <el-button
+                type="primary"
+                size="small"
+                :disabled="selectedApplications.length === 0"
+                @click="openBatchReview(true)"
+              >
+                批量通过
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                :disabled="selectedApplications.length === 0"
+                @click="openBatchReview(false)"
+              >
+                批量拒绝
+              </el-button>
+            </div>
           </div>
 
-          <el-table :data="applications" style="width: 100%">
+          <el-table
+            :data="applications"
+            style="width: 100%"
+            @selection-change="handleAppSelection"
+          >
+            <el-table-column type="selection" width="45" :selectable="isPendingRow" />
             <el-table-column prop="applicantUsername" label="账号" min-width="120" />
             <el-table-column prop="applicantName" label="姓名" min-width="100">
               <template #default="{ row }">{{ row.applicantName || '-' }}</template>
@@ -94,11 +136,39 @@
             <el-table-column label="申请时间" min-width="150">
               <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
             </el-table-column>
+            <el-table-column label="审核人" min-width="100">
+              <template #default="{ row }">{{ row.reviewerName || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="审核时间" min-width="150">
+              <template #default="{ row }">
+                {{ row.reviewTime ? formatDate(row.reviewTime) : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="审核意见" min-width="140">
+              <template #default="{ row }">{{ row.reviewComment || '-' }}</template>
+            </el-table-column>
             <el-table-column label="操作" width="150" fixed="right">
               <template #default="{ row }">
                 <template v-if="row.status === 0">
-                  <el-button size="small" type="primary" text @click="openReview(row, true)">通过</el-button>
-                  <el-button size="small" type="danger" text @click="openReview(row, false)">拒绝</el-button>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    text
+                    :loading="reviewSubmitting"
+                    :disabled="reviewSubmitting"
+                    @click="openReview(row, true)"
+                  >
+                    通过
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                    text
+                    :disabled="reviewSubmitting"
+                    @click="openReview(row, false)"
+                  >
+                    拒绝
+                  </el-button>
                 </template>
                 <span v-else class="muted">{{ row.reviewComment || '-' }}</span>
               </template>
@@ -197,7 +267,7 @@
     <!-- 审核加入申请 -->
     <el-dialog
       v-model="reviewDialog.visible"
-      :title="reviewDialog.approved ? '通过申请' : '拒绝申请'"
+      :title="reviewTitle"
       width="440px"
       class="dark-dialog"
     >
@@ -233,7 +303,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put } from '@/utils/http'
@@ -291,8 +361,6 @@ const joinDialog = reactive({
 const openJoinDialog = () => {
   joinDialog.visible = true
   joinDialog.submitting = false
-  joinDialog.realName = ''
-  joinDialog.staffNo = ''
 }
 
 const submitJoin = async () => {
@@ -313,6 +381,9 @@ const submitJoin = async () => {
   if (result.code === 200) {
     ElMessage.success(result.data?.status === 1 ? '已加入学校' : '申请已提交，等待学校管理员审核')
     joinDialog.visible = false
+    // 提交完成后清空，避免加入其他学校时沿用上一所学校的学工号
+    joinDialog.realName = ''
+    joinDialog.staffNo = ''
     loadSchool()
   } else {
     ElMessage.error(result.message)
@@ -322,16 +393,57 @@ const submitJoin = async () => {
 // ===== 加入申请审核 =====
 
 const applications = ref<SchoolJoinApplication[]>([])
-const appFilter = ref(-1)
+// 默认只看待审核
+const appFilter = ref(0)
 const appPage = ref(1)
 const appTotal = ref(0)
+const selectedApplications = ref<SchoolJoinApplication[]>([])
+
+const handleAppSelection = (rows: SchoolJoinApplication[]) => {
+  selectedApplications.value = rows
+}
+
+// 只有待审核的申请可以勾选（已处理的不允许再审核）
+const isPendingRow = (row: SchoolJoinApplication) => row.status === 0
 
 const reviewDialog = reactive({
   visible: false,
   submitting: false,
-  applicationId: 0,
+  applicationIds: [] as number[],
   approved: false,
   comment: ''
+})
+
+// 单条与批量共用同一个弹窗，标题按数量区分
+const reviewTitle = computed(() => {
+  const batch = reviewDialog.applicationIds.length > 1
+  const action = reviewDialog.approved ? '通过' : '拒绝'
+  return batch ? `批量${action} ${reviewDialog.applicationIds.length} 条申请` : `${action}申请`
+})
+
+// 通过申请前是否需要二次确认：前端偏好，存本地
+const CONFIRM_APPROVE_KEY = 'schoolReviewConfirmBeforeApprove'
+
+// 隐私模式下 localStorage 可能不可写，失败时回退到默认值
+const readConfirmBeforeApprove = (): boolean => {
+  try {
+    return localStorage.getItem(CONFIRM_APPROVE_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+const confirmBeforeApprove = ref(readConfirmBeforeApprove())
+
+// 审核请求进行中：关闭二次确认时没有弹窗可反馈，靠它禁用行内按钮避免重复提交
+const reviewSubmitting = ref(false)
+
+watch(confirmBeforeApprove, (value: boolean) => {
+  try {
+    localStorage.setItem(CONFIRM_APPROVE_KEY, value ? '1' : '0')
+  } catch {
+    // 存储不可用时仅本次会话生效
+  }
 })
 
 const loadApplications = async () => {
@@ -348,30 +460,95 @@ const loadApplications = async () => {
   }
 }
 
-const openReview = (row: SchoolJoinApplication, approved: boolean) => {
-  reviewDialog.visible = true
-  reviewDialog.submitting = false
-  reviewDialog.applicationId = row.id
-  reviewDialog.approved = approved
-  reviewDialog.comment = ''
+// 切换状态筛选后回到第一页再查询
+const reloadApplications = () => {
+  appPage.value = 1
+  loadApplications()
 }
 
-const submitReview = async () => {
-  reviewDialog.submitting = true
-  const result = await put(`/school/${schoolId}/applications/approve`, {
-    applicationId: reviewDialog.applicationId,
-    approved: reviewDialog.approved,
-    comment: reviewDialog.comment.trim()
-  })
+const openReview = (row: SchoolJoinApplication, approved: boolean) => {
+  if (approved && !confirmBeforeApprove.value) {
+    // 关闭二次确认时，通过操作直接提交
+    submitReview({ applicationIds: [row.id], approved: true, comment: '' })
+    return
+  }
+  // 重新打开同一条申请时保留未提交的审核意见
+  if (reviewDialog.applicationIds.length !== 1 || reviewDialog.applicationIds[0] !== row.id) {
+    reviewDialog.comment = ''
+  }
+  reviewDialog.visible = true
   reviewDialog.submitting = false
-  if (result.code === 200) {
-    ElMessage.success(reviewDialog.approved ? '已通过' : '已拒绝')
-    reviewDialog.visible = false
-    loadApplications()
-    loadMembers()
-    loadSchool()
+  reviewDialog.applicationIds = [row.id]
+  reviewDialog.approved = approved
+}
+
+const openBatchReview = (approved: boolean) => {
+  if (selectedApplications.value.length === 0) {
+    return
+  }
+  const applicationIds = selectedApplications.value.map(row => row.id)
+  if (approved && !confirmBeforeApprove.value) {
+    submitReview({ applicationIds, approved: true, comment: '' })
+    return
+  }
+  reviewDialog.visible = true
+  reviewDialog.submitting = false
+  // 批量审核针对的是另一组申请，不沿用单条审核时未提交的意见
+  reviewDialog.comment = ''
+  reviewDialog.applicationIds = applicationIds
+  reviewDialog.approved = approved
+}
+
+interface ReviewTarget {
+  applicationIds: number[]
+  approved: boolean
+  comment: string
+}
+
+const submitReview = async (target?: ReviewTarget) => {
+  const applicationIds = target?.applicationIds ?? reviewDialog.applicationIds
+  const approved = target?.approved ?? reviewDialog.approved
+  const comment = target?.comment ?? reviewDialog.comment
+  if (applicationIds.length === 0) {
+    return
+  }
+
+  const isBatch = applicationIds.length > 1
+  const url = isBatch
+    ? `/school/${schoolId}/applications/batch-approve`
+    : `/school/${schoolId}/applications/approve`
+  // 通过申请无需说明原因，只有拒绝时才提交意见
+  const payload: Record<string, unknown> = { approved }
+  if (!approved) {
+    payload.comment = comment.trim()
+  }
+  if (isBatch) {
+    payload.applicationIds = applicationIds
   } else {
-    ElMessage.error(result.message)
+    payload.applicationId = applicationIds[0]
+  }
+
+  reviewSubmitting.value = true
+  reviewDialog.submitting = true
+  try {
+    const result = await put(url, payload)
+    if (result.code === 200) {
+      ElMessage.success(isBatch ? result.message : approved ? '已通过' : '已拒绝')
+      reviewDialog.visible = false
+      reviewDialog.comment = ''
+      reviewDialog.applicationIds = []
+      selectedApplications.value = []
+      appPage.value = 1
+      loadApplications()
+      loadMembers()
+      loadSchool()
+    } else {
+      ElMessage.error(result.message)
+    }
+  } finally {
+    // 网络异常时也要复位，否则行内按钮会一直处于禁用态
+    reviewDialog.submitting = false
+    reviewSubmitting.value = false
   }
 }
 
@@ -431,11 +608,14 @@ const identityDialog = reactive({
 })
 
 const openIdentityDialog = (row: SchoolMember) => {
+  // 重新打开同一位成员时保留未提交的修改
+  if (identityDialog.userId !== row.userId) {
+    identityDialog.realName = row.realName ?? ''
+    identityDialog.staffNo = row.staffNo ?? ''
+  }
   identityDialog.visible = true
   identityDialog.submitting = false
   identityDialog.userId = row.userId
-  identityDialog.realName = row.realName ?? ''
-  identityDialog.staffNo = row.staffNo ?? ''
 }
 
 const submitIdentity = async () => {
@@ -595,6 +775,38 @@ onMounted(loadSchool)
   margin: 4px 0 0;
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+/* 被拒绝时展示管理员填写的审核意见 */
+.identity-comment {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--danger-strong);
+}
+
+/* 「加入申请」页签上的待审核数量角标 */
+.tab-badge {
+  margin-left: 6px;
+}
+
+.tab-badge :deep(.el-badge__content) {
+  transform: translateY(-1px);
+}
+
+/* 通过申请前的确认提示 */
+.confirm-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .filter-bar {

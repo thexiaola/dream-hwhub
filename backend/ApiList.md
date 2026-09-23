@@ -29,15 +29,18 @@
 所有接口均需要登录认证，使用 **JWT Token** 进行身份验证。
 
 **请求头要求**:
+
 - `Authorization`: `Bearer <jwt_token>` - JWT认证Token（所有接口必需）
 - `X-CSRF-Token`: `<csrf_token>` - CSRF防护Token（POST/PUT/DELETE/PATCH请求必需）
 
 **获取Token流程**:
+
 1. 调用登录接口 `/api/auth/login` 获取 JWT Token
 2. 基于 JWT Token 生成 CSRF Token（使用 HMAC-SHA256 算法）
 3. 后续请求在 Header 中携带这两个 Token
 
 **CSRF Token 生成示例**（前端）:
+
 ```javascript
 // 使用 HMAC-SHA256 生成 CSRF Token
 function generateCsrfToken(jwtToken) {
@@ -46,12 +49,13 @@ function generateCsrfToken(jwtToken) {
 ```
 
 **请求示例**:
+
 ```javascript
-axios.get('/api/works/list', {
+axios.get("/api/works/list", {
   headers: {
-    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    'X-CSRF-Token': 'dGhpcyBpcyBhIGNzcmYgdG9rZW4...'
-  }
+    Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "X-CSRF-Token": "dGhpcyBpcyBhIGNzcmYgdG9rZW4...",
+  },
 });
 ```
 
@@ -115,13 +119,13 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段     | 类型   | 必填 | 说明                         |
-| -------- | ------ | ---- | ---------------------------- |
-| username | String | 是   | 用户名，最长 64 字符         |
-| userNo   | String | 是   | 学号/工号，最长 32 字符      |
-| email    | String | 是   | 邮箱地址                     |
+| 字段     | 类型   | 必填 | 说明                                 |
+| -------- | ------ | ---- | ------------------------------------ |
+| username | String | 是   | 用户名，最长 64 字符                 |
+| userNo   | String | 是   | 学号/工号，最长 32 字符              |
+| email    | String | 是   | 邮箱地址                             |
 | password | String | 是   | 密码，8-32位，需包含大小写字母和数字 |
-| code     | String | 是   | 邮箱验证码                   |
+| code     | String | 是   | 邮箱验证码                           |
 
 **成功响应 (200)**:
 
@@ -185,11 +189,11 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段     | 类型   | 必填 | 说明                 |
-| -------- | ------ | ---- | -------------------- |
-| email    | String | 是   | 邮箱地址             |
-| userNo   | String | 是   | 学号/工号            |
-| username | String | 是   | 用户名               |
+| 字段     | 类型   | 必填 | 说明      |
+| -------- | ------ | ---- | --------- |
+| email    | String | 是   | 邮箱地址  |
+| userNo   | String | 是   | 学号/工号 |
+| username | String | 是   | 用户名    |
 
 **成功响应 (200)**:
 
@@ -239,10 +243,10 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段     | 类型   | 必填 | 说明                       |
-| -------- | ------ | ---- | -------------------------- |
-| account  | String | 是   | 账号（学号/工号或邮箱）    |
-| password | String | 是   | 密码                       |
+| 字段     | 类型   | 必填 | 说明                    |
+| -------- | ------ | ---- | ----------------------- |
+| account  | String | 是   | 账号（学号/工号或邮箱） |
+| password | String | 是   | 密码                    |
 
 **成功响应 (200)**:
 
@@ -264,15 +268,15 @@ axios.get('/api/works/list', {
 
 **响应字段说明**:
 
-| 字段       | 类型   | 说明                    |
-| ---------- | ------ | ----------------------- |
-| id         | Integer | 用户 ID                 |
-| username   | String | 用户名                  |
-| userNo     | String | 学号/工号               |
-| email      | String | 邮箱                    |
-| isOp        | Boolean | 是否为平台管理员（OP，拥有全部权限节点） |
-| permissions | Array\<String\> | 生效的权限节点列表（OP 为全部节点） |
-| token      | String | JWT Token（用于后续请求）|
+| 字段        | 类型            | 说明                                     |
+| ----------- | --------------- | ---------------------------------------- |
+| id          | Integer         | 用户 ID                                  |
+| username    | String          | 用户名                                   |
+| userNo      | String          | 学号/工号                                |
+| email       | String          | 邮箱                                     |
+| isOp        | Boolean         | 是否为平台管理员（OP，拥有全部权限节点） |
+| permissions | Array\<String\> | 生效的权限节点列表（OP 为全部节点）      |
+| token       | String          | JWT Token（用于后续请求）                |
 
 **注意**:
 
@@ -343,9 +347,9 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段     | 类型   | 必填 | 说明                 |
-| -------- | ------ | ---- | -------------------- |
-| username | String | 是   | 新的用户名           |
+| 字段     | 类型   | 必填 | 说明       |
+| -------- | ------ | ---- | ---------- |
+| username | String | 是   | 新的用户名 |
 
 **成功响应 (200)**:
 
@@ -398,11 +402,11 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段         | 类型   | 必填 | 说明                 |
-| ------------ | ------ | ---- | -------------------- |
-| oldEmailCode | String | 是   | 旧邮箱验证码         |
-| newEmail     | String | 是   | 新邮箱地址           |
-| newEmailCode | String | 是   | 新邮箱验证码         |
+| 字段         | 类型   | 必填 | 说明         |
+| ------------ | ------ | ---- | ------------ |
+| oldEmailCode | String | 是   | 旧邮箱验证码 |
+| newEmail     | String | 是   | 新邮箱地址   |
+| newEmailCode | String | 是   | 新邮箱验证码 |
 
 **成功响应 (200)**:
 
@@ -474,9 +478,9 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段     | 类型   | 必填 | 说明         |
-| -------- | ------ | ---- | ------------ |
-| newEmail | String | 是   | 新邮箱地址   |
+| 字段     | 类型   | 必填 | 说明       |
+| -------- | ------ | ---- | ---------- |
+| newEmail | String | 是   | 新邮箱地址 |
 
 **成功响应 (200)**:
 
@@ -516,9 +520,9 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段        | 类型   | 必填 | 说明                         |
-| ----------- | ------ | ---- | ---------------------------- |
-| oldPassword | String | 是   | 旧密码                       |
+| 字段        | 类型   | 必填 | 说明                                   |
+| ----------- | ------ | ---- | -------------------------------------- |
+| oldPassword | String | 是   | 旧密码                                 |
 | newPassword | String | 是   | 新密码，8-32位，需包含大小写字母和数字 |
 
 **成功响应 (200)**:
@@ -562,9 +566,9 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段    | 类型   | 必填 | 说明                       |
-| ------- | ------ | ---- | -------------------------- |
-| account | String | 是   | 账号（学号/工号或邮箱）    |
+| 字段    | 类型   | 必填 | 说明                    |
+| ------- | ------ | ---- | ----------------------- |
+| account | String | 是   | 账号（学号/工号或邮箱） |
 
 **成功响应 (200)**:
 
@@ -604,10 +608,10 @@ axios.get('/api/works/list', {
 
 **字段说明**:
 
-| 字段        | 类型   | 必填 | 说明                         |
-| ----------- | ------ | ---- | ---------------------------- |
-| account     | String | 是   | 账号（学号/工号或邮箱）      |
-| code        | String | 是   | 验证码                       |
+| 字段        | 类型   | 必填 | 说明                                   |
+| ----------- | ------ | ---- | -------------------------------------- |
+| account     | String | 是   | 账号（学号/工号或邮箱）                |
+| code        | String | 是   | 验证码                                 |
 | newPassword | String | 是   | 新密码，8-32位，需包含大小写字母和数字 |
 
 **成功响应 (200)**:
@@ -1156,9 +1160,9 @@ removedAttachmentIds: [1, 2]
 
 **字段说明**:
 
-| 字段     | 类型    | 必填 | 说明                             |
-| -------- | ------- | ---- | -------------------------------- |
-| workId   | Integer | 是   | 作业 ID                          |
+| 字段     | 类型    | 必填 | 说明                                |
+| -------- | ------- | ---- | ----------------------------------- |
+| workId   | Integer | 是   | 作业 ID                             |
 | isPinned | Boolean | 是   | 是否置顶：true-置顶，false-取消置顶 |
 
 **请求示例**:
@@ -1300,19 +1304,19 @@ curl -X PATCH http://localhost:8080/api/works/1/pin \
 
 **响应字段说明**:
 
-| 字段       | 类型          | 说明                                     |
-| ---------- | ------------- | ---------------------------------------- |
-| id         | Integer       | 班级 ID                                  |
-| className  | String        | 班级名称                                 |
-| ownerId    | Integer       | 班级所有者（创建者）ID                   |
-| ownerName  | String        | 班级所有者用户名                         |
-| userRole   | String        | 当前用户在该班级的角色（创建者）         |
-| memberCount| Long          | 成员总数                                 |
-| teacherCount| Long         | 教师数量                                 |
-| studentCount| Long         | 学生数量                                 |
-| description| String        | 班级描述                                 |
-| allowStudentInvite| Boolean| 是否允许学生邀请同学加入                 |
-| createTime | LocalDateTime | 创建时间                                 |
+| 字段               | 类型          | 说明                             |
+| ------------------ | ------------- | -------------------------------- |
+| id                 | Integer       | 班级 ID                          |
+| className          | String        | 班级名称                         |
+| ownerId            | Integer       | 班级所有者（创建者）ID           |
+| ownerName          | String        | 班级所有者用户名                 |
+| userRole           | String        | 当前用户在该班级的角色（创建者） |
+| memberCount        | Long          | 成员总数                         |
+| teacherCount       | Long          | 教师数量                         |
+| studentCount       | Long          | 学生数量                         |
+| description        | String        | 班级描述                         |
+| allowStudentInvite | Boolean       | 是否允许学生邀请同学加入         |
+| createTime         | LocalDateTime | 创建时间                         |
 
 **注意**:
 
@@ -1538,11 +1542,11 @@ curl -X PATCH http://localhost:8080/api/works/1/pin \
 
 **字段说明**:
 
-| 字段        | 类型    | 必填 | 说明                        |
-| ----------- | ------- | ---- | --------------------------- |
-| classId     | Integer | 是   | 班级 ID                     |
-| className   | String  | 是   | 班级名称，最长100字符       |
-| description | String  | 否   | 班级描述，最长500字符       |
+| 字段        | 类型    | 必填 | 说明                  |
+| ----------- | ------- | ---- | --------------------- |
+| classId     | Integer | 是   | 班级 ID               |
+| className   | String  | 是   | 班级名称，最长100字符 |
+| description | String  | 否   | 班级描述，最长500字符 |
 
 **请求示例**:
 
@@ -1580,17 +1584,17 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **响应字段说明**:
 
-| 字段           | 类型          | 说明                                    |
-| -------------- | ------------- | --------------------------------------- |
-| id             | Integer       | 班级 ID                                 |
-| className      | String        | 班级名称                                |
-| description    | String        | 班级描述                                |
-| ownerId        | Integer       | 班级创建者ID                            |
-| inviteCode     | String        | 班级邀请码（25位随机码）                |
-| approvalStatus | Integer       | 审核状态（0-待审核，1-已通过，2-已拒绝）|
-| adminRemark    | String        | 管理员审核备注                          |
-| createTime     | LocalDateTime | 创建时间                                |
-| updateTime     | LocalDateTime | 更新时间                                |
+| 字段           | 类型          | 说明                                     |
+| -------------- | ------------- | ---------------------------------------- |
+| id             | Integer       | 班级 ID                                  |
+| className      | String        | 班级名称                                 |
+| description    | String        | 班级描述                                 |
+| ownerId        | Integer       | 班级创建者ID                             |
+| inviteCode     | String        | 班级邀请码（25位随机码）                 |
+| approvalStatus | Integer       | 审核状态（0-待审核，1-已通过，2-已拒绝） |
+| adminRemark    | String        | 管理员审核备注                           |
+| createTime     | LocalDateTime | 创建时间                                 |
+| updateTime     | LocalDateTime | 更新时间                                 |
 
 **失败响应**:
 
@@ -2115,10 +2119,10 @@ curl -X PUT http://localhost:8080/api/class/1 \
 
 **请求参数**:
 
-| 参数          | 类型    | 必填 | 说明        | 位置   |
-| ------------- | ------- | ---- | ----------- | ------ |
-| classId       | Integer | 是   | 班级 ID     | path   |
-| studentUserId | Integer | 是   | 学生用户 ID | body   |
+| 参数          | 类型    | 必填 | 说明        | 位置 |
+| ------------- | ------- | ---- | ----------- | ---- |
+| classId       | Integer | 是   | 班级 ID     | path |
+| studentUserId | Integer | 是   | 学生用户 ID | body |
 
 **请求体 (JSON)**:
 
@@ -3719,12 +3723,12 @@ attachments: [file1.pdf, file2.docx]
 
 **字段说明**:
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| workId | Integer | 是 | 作业ID |
-| fileNameFormat | String | 否 | 文件名格式模板，默认：`{username}-{userNo}_{originalFileName}` |
-| gradedOnly | Boolean | 否 | 是否只下载已批改的作业（null-全部，true-已批改，false-未批改） |
-| lateOnly | Boolean | 否 | 是否只下载逾期提交的作业（null-全部，true-逾期，false-按时） |
+| 参数           | 类型    | 必填 | 说明                                                           |
+| -------------- | ------- | ---- | -------------------------------------------------------------- |
+| workId         | Integer | 是   | 作业ID                                                         |
+| fileNameFormat | String  | 否   | 文件名格式模板，默认：`{username}-{userNo}_{originalFileName}` |
+| gradedOnly     | Boolean | 否   | 是否只下载已批改的作业（null-全部，true-已批改，false-未批改） |
+| lateOnly       | Boolean | 否   | 是否只下载逾期提交的作业（null-全部，true-逾期，false-按时）   |
 
 **文件名格式变量**:
 
@@ -3787,32 +3791,32 @@ curl -X POST http://localhost:8080/api/submissions/batch-download \
 **JavaScript (Fetch API)**:
 
 ```javascript
-fetch('/api/submissions/batch-download', {
-  method: 'POST',
+fetch("/api/submissions/batch-download", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + token,
-    'X-CSRF-Token': csrfToken
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + token,
+    "X-CSRF-Token": csrfToken,
   },
   body: JSON.stringify({
     workId: 1,
-    fileNameFormat: '{username}-{userNo}_{workTitle}',
+    fileNameFormat: "{username}-{userNo}_{workTitle}",
     gradedOnly: null,
-    lateOnly: null
+    lateOnly: null,
+  }),
+})
+  .then((response) => response.blob())
+  .then((blob) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "作业附件.zip";
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   })
-})
-.then(response => response.blob())
-.then(blob => {
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = '作业附件.zip';
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
-})
-.catch(error => console.error('Download failed:', error));
+  .catch((error) => console.error("Download failed:", error));
 ```
 
 **错误响应**:
@@ -3897,25 +3901,25 @@ fetch('/api/submissions/batch-download', {
 
 **用户管理**
 
-| 权限节点       | 说明                                          |
-| -------------- | --------------------------------------------- |
-| `user:view`    | 查看用户列表与详情                            |
-| `user:add`     | 在后台新增用户                                |
-| `user:edit`    | 修改用户资料                                  |
-| `user:delete`  | 删除用户账号及其数据                          |
-| `user:ban`     | 封禁或解封用户                                |
-| `user:setop`   | 授予或取消用户的平台管理员（OP）              |
+| 权限节点      | 说明                             |
+| ------------- | -------------------------------- |
+| `user:view`   | 查看用户列表与详情               |
+| `user:add`    | 在后台新增用户                   |
+| `user:edit`   | 修改用户资料                     |
+| `user:delete` | 删除用户账号及其数据             |
+| `user:ban`    | 封禁或解封用户                   |
+| `user:setop`  | 授予或取消用户的平台管理员（OP） |
 
 **权限管理**
 
-| 权限节点                    | 说明                           |
-| --------------------------- | ------------------------------ |
-| `permission:view`           | 查看权限节点与权限组           |
-| `permission:group:add`      | 创建权限组                     |
-| `permission:group:edit`     | 修改权限组信息与所含节点       |
-| `permission:group:delete`   | 删除权限组                     |
-| `permission:group:assign`   | 为用户分配权限组               |
-| `permission:user:assign`    | 为用户单独授予权限节点         |
+| 权限节点                  | 说明                     |
+| ------------------------- | ------------------------ |
+| `permission:view`         | 查看权限节点与权限组     |
+| `permission:group:add`    | 创建权限组               |
+| `permission:group:edit`   | 修改权限组信息与所含节点 |
+| `permission:group:delete` | 删除权限组               |
+| `permission:group:assign` | 为用户分配权限组         |
+| `permission:user:assign`  | 为用户单独授予权限节点   |
 
 **班级管理**（用于班级模块的跨班级管理操作）
 
@@ -3930,19 +3934,54 @@ fetch('/api/submissions/batch-download', {
 
 ### 5.2 用户管理
 
-#### 5.2.1 查询用户列表
+#### 5.2.1 检索用户列表
 
-**接口地址**: `GET /api/admin/users`
+**接口地址**: `POST /api/admin/users/search`
 
 **所需权限节点**: `user:view`
 
+**说明**: 采用可提交多行条件的策略；每行指定字段、匹配方式与内容，行间用「并且」或「或者」连接。**连续的「并且」归为一组，组间用「或者」**，即 `(a AND b) OR (c AND d)`。筛选与排序均在数据库完成。
+
 **请求参数**:
 
-| 参数     | 类型    | 必填 | 说明                                  |
-| -------- | ------- | ---- | ------------------------------------- |
-| keyword  | String  | 否   | 关键字（用户名/学号/邮箱/姓名模糊匹配）|
-| pageNum  | Integer | 否   | 页码，默认 1                          |
-| pageSize | Integer | 否   | 每页大小，默认 10                     |
+| 参数       | 类型    | 必填 | 说明                                     |
+| ---------- | ------- | ---- | ---------------------------------------- |
+| conditions | Array   | 否   | 条件行列表，最多 10 行；为空表示不加筛选 |
+| pageNum    | Integer | 否   | 页码，默认 1                             |
+| pageSize   | Integer | 否   | 每页大小，默认 10                        |
+
+`conditions` 中每行：
+
+| 字段      | 类型   | 必填 | 说明                                                                   |
+| --------- | ------ | ---- | ---------------------------------------------------------------------- |
+| field     | String | 是   | `username` / `email` / `school` / `staffNo` / `realName` / `className` |
+| matchType | String | 否   | `contains`-模糊（默认） / `equals`-精确                                |
+| value     | String | 是   | 搜索内容，最长 100 位                                                  |
+| connector | String | 否   | `and`-并且（默认） / `or`-或者；第一行忽略该值                         |
+
+请求示例：
+
+```json
+{
+  "conditions": [
+    { "field": "username", "matchType": "contains", "value": "the" },
+    {
+      "field": "school",
+      "matchType": "equals",
+      "value": "第一中学",
+      "connector": "and"
+    },
+    {
+      "field": "realName",
+      "matchType": "contains",
+      "value": "张",
+      "connector": "or"
+    }
+  ],
+  "pageNum": 1,
+  "pageSize": 10
+}
+```
 
 **成功响应 (200)**:
 
@@ -3997,14 +4036,14 @@ fetch('/api/submissions/batch-download', {
 
 **字段说明**:
 
-| 字段     | 类型   | 必填 | 说明                                            |
-| -------- | ------ | ---- | ----------------------------------------------- |
-| userNo   | String | 是   | 学号/工号，仅数字，最长 24 位                    |
+| 字段     | 类型   | 必填 | 说明                                              |
+| -------- | ------ | ---- | ------------------------------------------------- |
+| userNo   | String | 是   | 学号/工号，仅数字，最长 24 位                     |
 | username | String | 是   | 用户名，3-16 位字母/数字/下划线，不区分大小写唯一 |
-| idName   | String | 否   | 姓名，最长 32 位                                 |
-| email    | String | 是   | 邮箱，最长 64 位，唯一                           |
-| phone    | String | 否   | 手机号，最长 20 位                               |
-| password | String | 是   | 初始密码，4-48 位                                |
+| idName   | String | 否   | 姓名，最长 32 位                                  |
+| email    | String | 是   | 邮箱，最长 64 位，唯一                            |
+| phone    | String | 否   | 手机号，最长 20 位                                |
+| password | String | 是   | 初始密码，4-48 位                                 |
 
 **注意**:
 
@@ -4082,7 +4121,14 @@ fetch('/api/submissions/batch-download', {
     "username": "TheXiaoLa",
     "isOp": false,
     "groups": [
-      { "id": 2, "code": "class-admin", "name": "班级管理员", "isDefault": false, "nodes": ["class:view_all"], "userCount": 3 }
+      {
+        "id": 2,
+        "code": "class-admin",
+        "name": "班级管理员",
+        "isDefault": false,
+        "nodes": ["class:view_all"],
+        "userCount": 3
+      }
     ],
     "directNodes": ["user:view"],
     "permissions": ["class:view_all", "user:view"]
@@ -4148,7 +4194,11 @@ fetch('/api/submissions/batch-download', {
       "key": "user",
       "name": "用户管理",
       "nodes": [
-        { "node": "user:view", "name": "查看用户", "description": "查看用户列表与详情" }
+        {
+          "node": "user:view",
+          "name": "查看用户",
+          "description": "查看用户列表与详情"
+        }
       ]
     }
   ]
@@ -4199,12 +4249,12 @@ fetch('/api/submissions/batch-download', {
 }
 ```
 
-| 字段        | 类型    | 必填 | 说明                                                          |
-| ----------- | ------- | ---- | ------------------------------------------------------------- |
+| 字段        | 类型    | 必填 | 说明                                                              |
+| ----------- | ------- | ---- | ----------------------------------------------------------------- |
 | code        | String  | 是   | 权限组标识，字母开头，仅字母/数字/下划线/连字符，最长 64 位，唯一 |
-| name        | String  | 是   | 权限组名称，最长 64 位                                        |
-| description | String  | 否   | 描述，最长 255 位                                             |
-| isDefault   | Boolean | 否   | 是否为新注册用户的默认组                                      |
+| name        | String  | 是   | 权限组名称，最长 64 位                                            |
+| description | String  | 否   | 描述，最长 255 位                                                 |
+| isDefault   | Boolean | 否   | 是否为新注册用户的默认组                                          |
 
 #### 5.3.4 编辑权限组
 

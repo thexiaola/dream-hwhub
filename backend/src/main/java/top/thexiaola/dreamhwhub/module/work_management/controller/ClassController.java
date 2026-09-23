@@ -129,7 +129,10 @@ public class ClassController {
          */
         @GetMapping("/mine")
         public ApiResponse<Page<ClassDetailResponse>> getMyClasses(
-                        @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
+                        @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest,
+                        @RequestParam(value = "schoolId", required = false) Integer schoolId,
+                        @RequestParam(value = "roleCode", required = false) Integer roleCode,
+                        @RequestParam(value = "excludeOwner", required = false) Boolean excludeOwner) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 if (currentUser == null) {
@@ -137,7 +140,8 @@ public class ClassController {
                 }
                 Page<ClassDetailResponse> classes = classService.getMyClasses(currentUser.getId(),
                                 pageRequest.getPageNum(),
-                                pageRequest.getPageSize());
+                                pageRequest.getPageSize(),
+                                schoolId, roleCode, excludeOwner);
                 log.info("User {} queried {} classes, page={}, size={}", userInfo, classes.getTotal(),
                                 pageRequest.getPageNum(), pageRequest.getPageSize());
                 return ApiResponse.success(classes);
@@ -148,7 +152,8 @@ public class ClassController {
          */
         @GetMapping("/manage")
         public ApiResponse<Page<ClassDetailResponse>> getAdminManageClasses(
-                        @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest) {
+                        @Valid @ModelAttribute(value = "pageRequest") PageRequest pageRequest,
+                        @RequestParam(value = "schoolId", required = false) Integer schoolId) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 if (currentUser == null) {
@@ -157,7 +162,8 @@ public class ClassController {
                 Page<ClassDetailResponse> classes = classService.getAdminManageClasses(currentUser.getId(),
                                 pageRequest.getPageNum(),
                                 pageRequest.getPageSize(),
-                                pageRequest.getKeyword());
+                                pageRequest.getKeyword(),
+                                schoolId);
                 log.info("User {} queried {} classes for management, page={}, size={}, keyword={}", userInfo,
                                 classes.getTotal(), pageRequest.getPageNum(), pageRequest.getPageSize(),
                                 pageRequest.getKeyword());
@@ -466,7 +472,8 @@ public class ClassController {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
                 log.info("User {} joining class by invite code", userInfo);
-                JoinClassApplicationResponse application = classService.joinClassByInviteCode(request.getInviteCode());
+                JoinClassApplicationResponse application = classService.joinClassByInviteCode(request.getInviteCode(),
+                                request.getSchoolId());
                 log.info("User {} submitted join application via invite code, id: {}", userInfo, application.getId());
                 return ApiResponse.success(application, "加入申请已提交，待审核");
         }

@@ -349,13 +349,15 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize) {
-        return classQueryService.getMyClasses(userId, pageNum, pageSize);
+    public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize,
+            Integer schoolId, Integer roleCode, Boolean excludeOwner) {
+        return classQueryService.getMyClasses(userId, pageNum, pageSize, schoolId, roleCode, excludeOwner);
     }
 
     @Override
-    public Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize, String keyword) {
-        return classQueryService.getAdminManageClasses(userId, pageNum, pageSize, keyword);
+    public Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize, String keyword,
+            Integer schoolId) {
+        return classQueryService.getAdminManageClasses(userId, pageNum, pageSize, keyword, schoolId);
     }
 
     @Override
@@ -459,7 +461,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public JoinClassApplicationResponse joinClassByInviteCode(String inviteCode) {
-        return classJoinService.joinClassByInviteCode(inviteCode);
+    public JoinClassApplicationResponse joinClassByInviteCode(String inviteCode, Integer schoolId) {
+        return classJoinService.joinClassByInviteCode(inviteCode, schoolId);
     }
 }

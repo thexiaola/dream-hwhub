@@ -48,16 +48,7 @@
       <div v-if="teacherCourses.length === 0" class="empty-state">
         <Presentation :size="48" />
         <p>暂无课程</p>
-        <template v-if="canCreateCourse">
-          <p class="empty-tip">点击"创建课程"按钮创建你的第一个课程</p>
-        </template>
-        <template v-else>
-          <p class="empty-tip">只有学校老师才能创建班级</p>
-          <p class="empty-tip">请先在「我的学校」加入学校，并由学校管理员将你设为老师</p>
-          <el-button type="primary" plain size="small" @click="router.push('/school')">
-            前往我的学校
-          </el-button>
-        </template>
+        <p v-if="canCreateCourse" class="empty-tip">点击"创建课程"按钮创建你的第一个课程</p>
       </div>
     </el-card>
 
@@ -76,9 +67,6 @@
               :value="school.id"
             />
           </el-select>
-          <p class="form-tip" v-if="teachableSchools.length === 0">
-            你还没有可作为老师建班的学校，请先加入学校并由学校管理员将你设为老师
-          </p>
         </el-form-item>
         <el-form-item label="课程名称">
           <el-input v-model="createForm.className" placeholder="请输入课程名称" maxlength="64" />
@@ -120,18 +108,17 @@ const createForm = ref({
   description: ''
 })
 
-// 可作为老师建班的学校（学校老师或学校管理员）
+// 可作为老师建班的学校（学校老师或学校管理员），由后端按角色过滤
 const teachableSchools = ref<SchoolDetail[]>([])
 
 const loadTeachableSchools = async () => {
-  const result = await get<SchoolDetail[]>('/school/mine')
-  if (result.code === 200) {
-    teachableSchools.value = (result.data || []).filter(
-      school => (school.myRoleCode ?? 0) >= 1
-    )
-    if (teachableSchools.value.length === 1) {
-      createForm.value.schoolId = teachableSchools.value[0].id
-    }
+  const result = await get<SchoolDetail[]>('/school/mine', { minRoleCode: 1 })
+  if (result.code !== 200) {
+    return
+  }
+  teachableSchools.value = result.data ?? []
+  if (teachableSchools.value.length === 1) {
+    createForm.value.schoolId = teachableSchools.value[0].id
   }
 }
 
@@ -144,12 +131,13 @@ const openCreateDialog = () => {
 }
 
 const loadTeacherCourses = async () => {
-  const result = await get<{ records: CourseInfo[] }>('/class/mine', { pageSize: 300 })
+  // 我教的课：拥有班级管理员权限的班级（创建者/老师/课代表），角色过滤由后端完成
+  const result = await get<{ records: CourseInfo[] }>('/class/mine', {
+    pageSize: 300,
+    roleCode: 1
+  })
   if (result.code === 200) {
-    // 我教的课：拥有班级管理员权限的班级（创建者/老师/课代表）
-    teacherCourses.value = result.data!.records.filter(
-      course => course.userRoleCode === 1
-    )
+    teacherCourses.value = result.data!.records
   }
 }
 

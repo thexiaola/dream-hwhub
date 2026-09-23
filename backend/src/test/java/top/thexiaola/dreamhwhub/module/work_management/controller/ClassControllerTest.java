@@ -208,7 +208,7 @@ class ClassControllerTest {
         page.setRecords(Collections.emptyList());
         page.setTotal(0);
 
-        Mockito.when(classService.getMyClasses(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt()))
+        Mockito.when(classService.getMyClasses(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt(), Mockito.nullable(Integer.class), Mockito.nullable(Integer.class), Mockito.nullable(Boolean.class)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/class/mine")
@@ -244,11 +244,12 @@ class ClassControllerTest {
                 new top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication();
         application.setId(1);
 
-        Mockito.when(classService.joinClassByInviteCode(Mockito.anyString()))
+        Mockito.when(classService.joinClassByInviteCode(Mockito.anyString(), Mockito.anyInt()))
                 .thenReturn(convertToJoinClassApplicationResponse(application));
 
         JoinByInviteCodeRequest request = new JoinByInviteCodeRequest();
         request.setInviteCode("ABC123");
+        request.setSchoolId(1);
 
         mockMvc.perform(post("/api/class/join-by-code")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -256,6 +257,22 @@ class ClassControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("加入申请已提交，待审核"));
+    }
+
+    /**
+     * 测试通过邀请码加入班级 - 未指定学校
+     */
+    @Test
+    @DisplayName("测试通过邀请码加入班级 - 未指定学校")
+    void testJoinByInviteCode_MissingSchoolId() throws Exception {
+        JoinByInviteCodeRequest request = new JoinByInviteCodeRequest();
+        request.setInviteCode("ABC123");
+
+        mockMvc.perform(post("/api/class/join-by-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("请先选择学校"));
     }
 
     /**
@@ -381,7 +398,7 @@ class ClassControllerTest {
         page.setRecords(Collections.emptyList());
         page.setTotal(0);
 
-        Mockito.when(classService.getMyClasses(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt()))
+        Mockito.when(classService.getMyClasses(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt(), Mockito.nullable(Integer.class), Mockito.nullable(Integer.class), Mockito.nullable(Boolean.class)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/class/mine")

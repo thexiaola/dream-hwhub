@@ -10,10 +10,13 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.permission.annotation.RequirePermission;
 import top.thexiaola.dreamhwhub.module.permission.constant.PermissionNodes;
 import top.thexiaola.dreamhwhub.module.school.dto.AssignSchoolAdminRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.BatchApproveSchoolJoinRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.CreateSchoolRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolRequest;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
+import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
 import top.thexiaola.dreamhwhub.module.school.vo.SchoolDetailResponse;
+import top.thexiaola.dreamhwhub.module.school.vo.SchoolJoinApplicationResponse;
 import top.thexiaola.dreamhwhub.module.school.vo.SchoolMemberResponse;
 import top.thexiaola.dreamhwhub.module.school.vo.SchoolVO;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
@@ -46,6 +49,43 @@ public class AdminSchoolController {
         log.info("User {} queried {} schools for management, keyword={}",
                 LogUtil.getUserInfo(currentUser), schools.getTotal(), keyword);
         return ApiResponse.success(schools);
+    }
+
+    /**
+     * 分页查询全部学校的加入申请（平台管理员集中审核入口）
+     *
+     * 路径为字面量 applications，Spring 会优先于 /{schoolId} 匹配
+     */
+    @GetMapping("/applications")
+    @RequirePermission(PermissionNodes.SCHOOL_VIEW_ALL)
+    public ApiResponse<Page<SchoolJoinApplicationResponse>> listAllJoinApplications(
+            @RequestParam(value = "schoolId", required = false) Integer schoolId,
+            @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
+        User currentUser = UserUtils.getCurrentUser();
+        Page<SchoolJoinApplicationResponse> applications = schoolService.listAllJoinApplications(
+                schoolId, status, pageNum, pageSize);
+        log.info("User {} queried {} school join applications for management, schoolId={}, status={}",
+                LogUtil.getUserInfo(currentUser), applications.getTotal(), schoolId, status);
+        return ApiResponse.success(applications);
+    }
+
+    /**
+     * 批量审核加入申请（平台管理员，可跨学校）
+     */
+    @PutMapping("/applications/batch-approve")
+    @RequirePermission(PermissionNodes.SCHOOL_UPDATE)
+    public ApiResponse<BatchReviewResult> batchApproveAllJoinApplications(
+            @Valid @RequestBody BatchApproveSchoolJoinRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        BatchReviewResult result = schoolService.batchApproveAllJoinApplications(request);
+        log.info("User {} batch reviewed school join applications, handled: {}, skipped: {}",
+                LogUtil.getUserInfo(currentUser), result.getHandled(), result.getSkipped());
+        String message = result.getSkipped() > 0
+                ? "已处理 " + result.getHandled() + " 条申请，跳过 " + result.getSkipped() + " 条"
+                : "已处理 " + result.getHandled() + " 条申请";
+        return ApiResponse.success(result, message);
     }
 
     /**

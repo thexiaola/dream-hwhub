@@ -127,18 +127,21 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, School } from '@lucide/vue'
 import { get, post } from '@/utils/http'
+import { useSchoolStore } from '@/stores/school'
 import type { PageResult, School as SchoolInfo, SchoolDetail, SchoolJoinApplication } from '@/types/school'
 
 const router = useRouter()
+const schoolStore = useSchoolStore()
 
 const mySchools = ref<SchoolDetail[]>([])
 
 const loadMySchools = async () => {
-  const result = await get<SchoolDetail[]>('/school/mine')
-  if (result.code === 200) {
-    mySchools.value = result.data || []
+  // 以 school store 为准，避免同一接口重复请求
+  const loaded = await schoolStore.fetchMySchools(true)
+  if (loaded) {
+    mySchools.value = schoolStore.mySchools ?? []
   } else {
-    ElMessage.error(result.message)
+    ElMessage.error('学校列表加载失败，请稍后重试')
   }
 }
 
@@ -170,8 +173,6 @@ const loadSchools = async () => {
 
 const openBrowseDialog = () => {
   browseDialog.visible = true
-  browseDialog.keyword = ''
-  browseDialog.page = 1
   loadSchools()
 }
 
@@ -189,8 +190,6 @@ const openJoinDialog = (school: SchoolInfo) => {
   joinDialog.submitting = false
   joinDialog.schoolId = school.id
   joinDialog.schoolName = school.schoolName
-  joinDialog.realName = ''
-  joinDialog.staffNo = ''
 }
 
 const submitJoin = async () => {
@@ -213,6 +212,9 @@ const submitJoin = async () => {
     ElMessage.success(joined ? '已加入学校' : '申请已提交，等待学校管理员审核')
     joinDialog.visible = false
     browseDialog.visible = false
+    // 提交完成后清空，避免加入其他学校时沿用上一所学校的学工号
+    joinDialog.realName = ''
+    joinDialog.staffNo = ''
     loadMySchools()
   } else {
     ElMessage.error(result.message)

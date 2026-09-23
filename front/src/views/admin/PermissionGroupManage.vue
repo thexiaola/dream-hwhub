@@ -142,22 +142,35 @@ const loadNodes = async () => {
   }
 }
 
-const openCreate = () => {
+const emptyGroupForm = () => ({ code: '', name: '', description: '', isDefault: false })
+
+const resetGroupForm = () => {
   formDialog.isCreate = true
   formDialog.editingId = 0
-  formDialog.form = { code: '', name: '', description: '', isDefault: false }
+  formDialog.form = emptyGroupForm()
+}
+
+const openCreate = () => {
+  // 上一次处于编辑状态时切回新建需清空表单；连续新建则保留上次未提交的草稿
+  if (formDialog.editingId !== 0) {
+    resetGroupForm()
+  }
+  formDialog.isCreate = true
   formDialog.visible = true
 }
 
 const openEdit = (row: PermissionGroup) => {
+  // 重新打开同一个权限组时保留未提交的编辑内容
+  if (formDialog.editingId !== row.id) {
+    formDialog.form = {
+      code: row.code,
+      name: row.name,
+      description: row.description ?? '',
+      isDefault: !!row.isDefault
+    }
+  }
   formDialog.isCreate = false
   formDialog.editingId = row.id
-  formDialog.form = {
-    code: row.code,
-    name: row.name,
-    description: row.description ?? '',
-    isDefault: !!row.isDefault
-  }
   formDialog.visible = true
 }
 
@@ -187,8 +200,10 @@ const submitForm = async () => {
       : await put<PermissionGroup>(`/admin/permissions/groups/${formDialog.editingId}`, payload)
 
     if (result.code === 200) {
-      ElMessage.success(formDialog.isCreate ? '权限组创建成功' : '权限组更新成功')
+      const created = formDialog.isCreate
+      ElMessage.success(created ? '权限组创建成功' : '权限组更新成功')
       formDialog.visible = false
+      resetGroupForm()
       loadGroups()
     } else {
       ElMessage.error(result.message)
@@ -219,11 +234,14 @@ const removeGroup = async (row: PermissionGroup) => {
 
 const openNodes = async (row: PermissionGroup) => {
   await loadNodes()
-  const result = await get<PermissionGroup[]>('/admin/permissions/groups')
-  const current = (result.code === 200 ? result.data ?? [] : []).find(item => item.id === row.id)
+  // 重新打开同一个权限组时保留未提交的节点选择
+  if (nodesDialog.groupId !== row.id) {
+    const result = await get<PermissionGroup[]>('/admin/permissions/groups')
+    const current = (result.code === 200 ? result.data ?? [] : []).find(item => item.id === row.id)
+    nodesDialog.nodes = [...(current?.nodes ?? row.nodes ?? [])]
+  }
   nodesDialog.groupId = row.id
   nodesDialog.groupName = row.name
-  nodesDialog.nodes = current?.nodes ?? row.nodes ?? []
   nodesDialog.visible = true
 }
 

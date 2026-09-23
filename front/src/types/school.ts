@@ -32,6 +32,10 @@ export interface SchoolDetail extends School {
   myRealName: string | null
   /** 我的加入申请状态：0-待审核，1-已通过，2-已拒绝，null-无申请 */
   myApplicationStatus: number | null
+  /** 待审核的加入申请数量，仅管理员视角返回 */
+  pendingApplicationCount?: number | null
+  /** 我最新一条加入申请的审核意见，被拒绝时可看到原因 */
+  myApplicationComment?: string | null
 }
 
 /** 学校成员 */

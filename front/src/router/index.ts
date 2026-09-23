@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useSchoolStore } from '@/stores/school'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -50,22 +51,26 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'teacher/courses',
         name: 'TeacherCourses',
-        component: () => import('@/views/teacher/TeachingCourses.vue')
+        component: () => import('@/views/teacher/TeachingCourses.vue'),
+        meta: { requiresSchoolTeacher: true }
       },
       {
         path: 'teacher/course/:id',
         name: 'TeacherCourseDetail',
-        component: () => import('@/views/teacher/TeacherCourseDetail.vue')
+        component: () => import('@/views/teacher/TeacherCourseDetail.vue'),
+        meta: { requiresSchoolTeacher: true }
       },
       {
         path: 'teacher/work/:id/edit',
         name: 'TeacherWorkEdit',
-        component: () => import('@/views/teacher/EditWork.vue')
+        component: () => import('@/views/teacher/EditWork.vue'),
+        meta: { requiresSchoolTeacher: true }
       },
       {
         path: 'teacher/work/:id/submissions',
         name: 'TeacherWorkSubmissions',
-        component: () => import('@/views/teacher/WorkSubmissions.vue')
+        component: () => import('@/views/teacher/WorkSubmissions.vue'),
+        meta: { requiresSchoolTeacher: true }
       },
       {
         path: 'school',
@@ -126,6 +131,17 @@ router.beforeEach(async (to, _from, next) => {
     if (to.meta.requiresAdmin && !userStore.isAdmin) {
       next('/student/courses')
       return
+    }
+
+    // 教师相关页面对平台管理员与学校老师（含学校管理员）开放
+    if (to.meta.requiresSchoolTeacher) {
+      const schoolStore = useSchoolStore()
+      // 强制刷新，避免身份被收回后仍用旧的缓存放行
+      await schoolStore.fetchMySchools(true)
+      if (!userStore.isOp && !schoolStore.isSchoolTeacher) {
+        next('/student/courses')
+        return
+      }
     }
     next()
   } else {

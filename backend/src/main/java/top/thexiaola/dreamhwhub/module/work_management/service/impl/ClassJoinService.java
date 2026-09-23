@@ -684,7 +684,7 @@ public class ClassJoinService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public JoinClassApplicationResponse joinClassByInviteCode(String inviteCode) {
+    public JoinClassApplicationResponse joinClassByInviteCode(String inviteCode, Integer schoolId) {
         User currentUser = userLookup.requireCurrentUser();
 
         if (StrUtil.isBlank(inviteCode)) {
@@ -698,6 +698,11 @@ public class ClassJoinService {
 
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "邀请码失效", null);
+        }
+
+        // 只能加入当前所在学校的班级，避免跨校入班
+        if (!Objects.equals(classInfo.getSchoolId(), schoolId)) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "该邀请码不属于当前学校，请先切换到对应学校", null);
         }
 
         // 姓名与学工号取自学校成员身份，入班前必须先加入班级所属学校

@@ -20,10 +20,12 @@ import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachme
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
@@ -69,6 +71,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final UserMapper userMapper;
     private final UserLookupSupport userLookup;
     private final ClassInfoMapper classInfoMapper;
+    private final ClassMemberMapper classMemberMapper;
     private final SchoolService schoolService;
     private final WorkSubmissionResponseMapper submissionResponseMapper;
     private final WorkSubmissionSubmitResponseMapper submissionSubmitResponseMapper;
@@ -502,38 +505,23 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以查看", null);
         }
 
-        // 使用MyBatisPlus查询未交学生
-        // 1. 获取班级所有学生（不分页）
-        List<ClassMemberResponse> allMembers = classService.getAllClassMembers(workInfo.getClassId());
-        
-        Set<Integer> allStudentIds = allMembers.stream()
-            // getUserRole 返回的中文角色名（创建者/老师/学生），此处只取学生
-            .filter(m -> "学生".equals(m.getRole()))
-            .map(ClassMemberResponse::getUserId)
-            .collect(Collectors.toSet());
+        // 未交学生 = 该班学生中尚未提交该作业的人，差集在数据库里用反连接完成
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", workInfo.getClassId())
+                .eq("role", 0)
+                .apply("user_id NOT IN (SELECT submitter_id FROM work_submission WHERE work_id = {0} AND is_deleted = 0)",
+                        workId);
+        List<ClassMember> unsubmittedMembers = classMemberMapper.selectList(memberQuery);
 
-        if (allStudentIds.isEmpty()) {
-            return java.util.Collections.emptyList();
+        if (unsubmittedMembers.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        // 2. 查询已提交的学生ID（排除已软删除的）
-        QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
-        submissionQuery.eq("work_id", workId)
-                      .eq("is_deleted", false)
-                      .select("submitter_id");
-        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
-        Set<Integer> submittedStudentIds = submissions.stream()
-            .map(WorkSubmission::getSubmitterId)
+        Set<Integer> allStudentIds = unsubmittedMembers.stream()
+            .map(ClassMember::getUserId)
             .collect(Collectors.toSet());
 
-        // 3. 计算差集
-        allStudentIds.removeAll(submittedStudentIds);
-        
-        if (allStudentIds.isEmpty()) {
-            return java.util.Collections.emptyList();
-        }
-
-        // 4. 查询未交学生详情（只取展示字段，绝不查询/返回 password 等敏感列）
+        // 查询未交学生详情（只取展示字段，绝不查询/返回 password 等敏感列）
         QueryWrapper<User> userQuery = new QueryWrapper<>();
         userQuery.select("id", "username", "email")
                  .in("id", allStudentIds);

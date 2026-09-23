@@ -129,7 +129,6 @@
       title="邀请同学加入班级"
       width="460px"
       class="dark-dialog student-invite-dialog"
-      @close="inviteForm.account = ''"
     >
       <el-form :model="inviteForm" label-width="80px">
         <el-form-item label="用户名/邮箱">

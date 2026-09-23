@@ -2,6 +2,8 @@ package top.thexiaola.dreamhwhub.module.school.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.thexiaola.dreamhwhub.module.school.dto.ApproveSchoolJoinRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.BatchApproveSchoolJoinRequest;
+import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
 import top.thexiaola.dreamhwhub.module.school.dto.AssignSchoolAdminRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.CreateSchoolRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.JoinSchoolRequest;
@@ -83,7 +85,7 @@ public interface SchoolService {
      *
      * @return 学校详情列表
      */
-    List<SchoolDetailResponse> getMySchools();
+    List<SchoolDetailResponse> getMySchools(Integer minRoleCode);
 
     /**
      * 加入学校：学校免审核时直接成为成员，否则提交待审核申请
@@ -121,6 +123,22 @@ public interface SchoolService {
      * @param request  审核请求
      */
     void approveJoinApplication(Integer schoolId, ApproveSchoolJoinRequest request);
+
+    /**
+     * 批量审核加入申请，已处理、不属于该校或单条不满足审核条件的会被跳过
+     */
+    BatchReviewResult batchApproveJoinApplications(Integer schoolId, BatchApproveSchoolJoinRequest request);
+
+    /**
+     * 平台管理员：分页查询全部学校的加入申请，可按学校与状态筛选
+     */
+    Page<SchoolJoinApplicationResponse> listAllJoinApplications(Integer schoolId, Integer status,
+            Integer pageNum, Integer pageSize);
+
+    /**
+     * 平台管理员：批量审核加入申请，申请可分属不同学校，逐条按各自学校处理
+     */
+    BatchReviewResult batchApproveAllJoinApplications(BatchApproveSchoolJoinRequest request);
 
     /**
      * 分页查询学校成员（学校管理员侧）

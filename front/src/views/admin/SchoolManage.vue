@@ -193,15 +193,26 @@ const resetFormDialog = () => {
 }
 
 const openCreateDialog = () => {
-  resetFormDialog()
+  // 上一次处于编辑状态时切回新建需清空表单；连续新建则保留上次未提交的草稿
+  if (formDialog.id !== 0) {
+    formDialog.schoolName = ''
+    formDialog.description = ''
+    formDialog.allowJoinWithoutApproval = false
+  }
+  formDialog.id = 0
+  formDialog.submitting = false
   formDialog.visible = true
 }
 
 const openEditDialog = (school: SchoolInfo) => {
-  resetFormDialog()
+  // 重新打开同一所学校时保留未提交的编辑内容
+  if (formDialog.id !== school.id) {
+    formDialog.schoolName = school.schoolName
+    formDialog.description = school.description ?? ''
+    formDialog.allowJoinWithoutApproval = false
+  }
   formDialog.id = school.id
-  formDialog.schoolName = school.schoolName
-  formDialog.description = school.description ?? ''
+  formDialog.submitting = false
   formDialog.visible = true
 }
 
@@ -224,8 +235,10 @@ const submitForm = async () => {
   }
   formDialog.submitting = false
   if (result.code === 200) {
-    ElMessage.success(formDialog.id ? '学校信息已更新' : '学校创建成功')
+    const updated = !!formDialog.id
+    ElMessage.success(updated ? '学校信息已更新' : '学校创建成功')
     formDialog.visible = false
+    resetFormDialog()
     loadSchools()
   } else {
     ElMessage.error(result.message)
@@ -267,10 +280,7 @@ const openAdminDialog = (school: SchoolInfo) => {
   adminDialog.submitting = false
   adminDialog.schoolId = school.id
   adminDialog.schoolName = school.schoolName
-  adminDialog.userAccount = ''
   adminDialog.assigned = true
-  adminDialog.staffNo = ''
-  adminDialog.realName = ''
 }
 
 const submitAdmin = async () => {
@@ -289,6 +299,10 @@ const submitAdmin = async () => {
   if (result.code === 200) {
     ElMessage.success(adminDialog.assigned ? '已指派为学校管理员' : '已取消学校管理员身份')
     adminDialog.visible = false
+    // 提交完成后清空，避免给其他学校指派管理员时沿用上一个账号
+    adminDialog.userAccount = ''
+    adminDialog.staffNo = ''
+    adminDialog.realName = ''
     loadSchools()
   } else {
     ElMessage.error(result.message)

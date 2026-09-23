@@ -414,12 +414,15 @@ const gradingSubmission = ref<SubmissionInfo | null>(null);
 const gradeForm = ref({ score: 0, comment: "", isReturned: false });
 
 const openGradeDialog = (sub: SubmissionInfo) => {
+  // 重新打开同一份提交时保留未提交的批改内容
+  if (gradingSubmission.value?.id !== sub.id) {
+    gradeForm.value = {
+      score: sub.score ?? 0,
+      comment: sub.comment ?? "",
+      isReturned: false,
+    };
+  }
   gradingSubmission.value = sub;
-  gradeForm.value = {
-    score: sub.score ?? 0,
-    comment: sub.comment ?? "",
-    isReturned: false,
-  };
   gradeDialogVisible.value = true;
 };
 
@@ -440,6 +443,8 @@ const submitGrade = async () => {
   if (result.code === 200) {
     ElMessage.success(gradeForm.value.isReturned ? "已打回，学生可重新提交" : "批改成功");
     gradeDialogVisible.value = false;
+    // 清空批改目标，重新打开同一份提交时按最新批改结果回填
+    gradingSubmission.value = null;
     loadSubmissions();
   } else {
     ElMessage.error(result.message || "批改失败");

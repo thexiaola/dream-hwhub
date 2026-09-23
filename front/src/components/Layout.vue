@@ -6,8 +6,15 @@
           <BookOpen class="logo-icon" :size="24" />
           <span class="logo-text">作业管理系统</span>
         </div>
-        <div class="nav-tabs">
+        <div class="nav-tabs" ref="navTabsRef">
+          <!-- 激活项背景块：随选中项在选项卡之间平滑滑动 -->
+          <span
+            v-show="indicator.visible"
+            class="nav-indicator"
+            :style="{ transform: `translateX(${indicator.left}px)`, width: `${indicator.width}px` }"
+          />
           <button
+            :ref="tabRefSetters.student"
             class="nav-tab"
             :class="{ active: activeTab === 'student' }"
             @click="switchTab('student')"
@@ -16,6 +23,8 @@
             我听的课
           </button>
           <button
+            v-if="canEnterTeacherArea"
+            :ref="tabRefSetters.teacher"
             class="nav-tab"
             :class="{ active: activeTab === 'teacher' }"
             @click="switchTab('teacher')"
@@ -24,6 +33,7 @@
             我教的课
           </button>
           <button
+            :ref="tabRefSetters.school"
             class="nav-tab"
             :class="{ active: activeTab === 'school' }"
             @click="switchTab('school')"
@@ -33,6 +43,7 @@
           </button>
           <button
             v-if="isAdmin"
+            :ref="tabRefSetters.admin"
             class="nav-tab"
             :class="{ active: activeTab === 'admin' }"
             @click="switchTab('admin')"
@@ -66,7 +77,12 @@
       </div>
     </header>
     <main class="main-content">
-      <router-view />
+      <!-- 页面切换：淡出淡入配合位移与缩放，接近 PowerPoint 平滑过渡的观感 -->
+      <router-view v-slot="{ Component, route: currentRoute }">
+        <transition name="page-morph" mode="out-in">
+          <component :is="Component" :key="currentRoute.path" />
+        </transition>
+      </router-view>
     </main>
 
     <!-- 手机端底部导航 -->
@@ -80,6 +96,7 @@
         <span>我的课</span>
       </button>
       <button
+        v-if="canEnterTeacherArea"
         class="mobile-tab"
         :class="{ active: activeTab === 'teacher' }"
         @click="switchTab('teacher')"
@@ -117,20 +134,62 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { useSchoolStore } from '@/stores/school'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield, School } from '@lucide/vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const schoolStore = useSchoolStore()
 
 const isAdmin = computed(() => userStore.isAdmin)
+const canEnterTeacherArea = computed(() => userStore.isOp || schoolStore.isSchoolTeacher)
 const activeTab = ref<'student' | 'teacher' | 'school' | 'admin'>('student')
 
+// 导航激活块的定位：随选中选项卡移动
+const navTabsRef = ref<HTMLElement | null>(null)
+const tabElements = new Map<string, HTMLElement>()
+const indicator = reactive({ left: 0, width: 0, visible: false })
+let resizeObserver: ResizeObserver | null = null
+
+const setTabRef = (key: string, el: unknown) => {
+  if (el instanceof HTMLElement) {
+    tabElements.set(key, el)
+  } else {
+    tabElements.delete(key)
+  }
+}
+
+// 固定的 ref 回调，避免模板内联函数在每次渲染时重建
+const tabRefSetters = {
+  student: (el: unknown) => setTabRef('student', el),
+  teacher: (el: unknown) => setTabRef('teacher', el),
+  school: (el: unknown) => setTabRef('school', el),
+  admin: (el: unknown) => setTabRef('admin', el)
+}
+
+const updateIndicator = () => {
+  const el = tabElements.get(activeTab.value)
+  if (!el) {
+    indicator.visible = false
+    return
+  }
+  indicator.left = el.offsetLeft
+  indicator.width = el.offsetWidth
+  indicator.visible = true
+}
+
+// 切换选项卡或隐藏/显示入口（如学校身份变化）后重新定位
+watch(activeTab, () => nextTick(updateIndicator))
+watch(canEnterTeacherArea, () => nextTick(updateIndicator))
+watch(isAdmin, () => nextTick(updateIndicator))
+
+const handleResize = () => nextTick(updateIndicator)
 const switchTab = (tab: 'student' | 'teacher' | 'school' | 'admin') => {
   activeTab.value = tab
   if (tab === 'student') {
@@ -158,16 +217,36 @@ const handleCommand = async (command: string) => {
   }
 }
 
-onMounted(() => {
-  if (route.path.startsWith('/teacher')) {
-    activeTab.value = 'teacher'
+onMounted(async () => {
+  // 先同步定位一次，避免等身份请求期间导航没有激活块
+  await nextTick()
+  updateIndicator()
+
+  // 容器尺寸变化（窗口缩放、字体加载、选项卡增减）时重新定位
+  resizeObserver = new ResizeObserver(handleResize)
+  if (navTabsRef.value) {
+    resizeObserver.observe(navTabsRef.value)
+  }
+
+  // 非教师路径先同步确定高亮，避免等网络请求造成闪烁
+  if (route.path.startsWith('/school')) {
+    activeTab.value = 'school'
   } else if (route.path.startsWith('/admin')) {
     activeTab.value = 'admin'
-  } else if (route.path.startsWith('/school')) {
-    activeTab.value = 'school'
-  } else {
+  } else if (!route.path.startsWith('/teacher')) {
     activeTab.value = 'student'
   }
+
+  // 拉取学校身份：决定「我教的课」入口是否展示，以及教师页面的高亮
+  await schoolStore.fetchMySchools()
+  if (route.path.startsWith('/teacher') && canEnterTeacherArea.value) {
+    activeTab.value = 'teacher'
+  }
+})
+
+onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
 })
 </script>
 
@@ -216,11 +295,30 @@ onMounted(() => {
 }
 
 .nav-tabs {
+  position: relative;
   display: flex;
   gap: 8px;
 }
 
+/* 激活项背景块：位置与宽度过渡交给 transform/width 动画 */
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(102, 126, 234, 0.4);
+  border-radius: 8px;
+  background: rgba(102, 126, 234, 0.2);
+  pointer-events: none;
+  transition:
+    transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1),
+    width 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
 .nav-tab {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -240,8 +338,8 @@ onMounted(() => {
 }
 
 .nav-tab.active {
-  background: rgba(102, 126, 234, 0.2);
-  border-color: rgba(102, 126, 234, 0.4);
+  border-color: transparent;
+  background: transparent;
   color: #667eea;
 }
 
@@ -283,6 +381,43 @@ onMounted(() => {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+}
+
+/* ===== 页面过渡（配合 router-view 的 transition name="page-morph"）===== */
+.page-morph-enter-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.page-morph-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.page-morph-enter-from {
+  opacity: 0;
+  transform: translateY(14px) scale(0.99);
+}
+
+.page-morph-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.995);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-morph-enter-active,
+  .page-morph-leave-active,
+  .nav-indicator {
+    transition: none;
+  }
+
+  .page-morph-enter-from,
+  .page-morph-leave-to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* 手机端底部导航 */

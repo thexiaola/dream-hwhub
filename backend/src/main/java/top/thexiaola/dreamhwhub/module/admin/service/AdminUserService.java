@@ -3,6 +3,7 @@ package top.thexiaola.dreamhwhub.module.admin.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.thexiaola.dreamhwhub.module.admin.dto.AdminCreateUserRequest;
 import top.thexiaola.dreamhwhub.module.admin.dto.AdminUpdateUserRequest;
+import top.thexiaola.dreamhwhub.module.admin.dto.AdminUserSearchRequest;
 import top.thexiaola.dreamhwhub.module.admin.vo.AdminUserVO;
 import top.thexiaola.dreamhwhub.module.admin.vo.UserPermissionDetailVO;
 
@@ -17,12 +18,12 @@ public interface AdminUserService {
     /**
      * 分页查询用户
      *
-     * @param keyword  关键字（用户名/学号/邮箱/姓名），可选
+     * @param request  搜索条件（用户名/邮箱/学校/学号/姓名/班级，及和与或的组合方式）
      * @param pageNum  页码
      * @param pageSize 每页大小
      * @return 用户分页结果
      */
-    Page<AdminUserVO> listUsers(String keyword, Integer pageNum, Integer pageSize);
+    Page<AdminUserVO> listUsers(AdminUserSearchRequest request, Integer pageNum, Integer pageSize);
 
     /**
      * 新增用户

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { UserInfo, RegisterRequest } from '@/types'
 import { post, get } from '@/utils/http'
+import { useSchoolStore } from '@/stores/school'
 
 export const useUserStore = defineStore('user', () => {
   const userInfo = ref<UserInfo | null>(null)
@@ -27,6 +28,8 @@ export const useUserStore = defineStore('user', () => {
       token.value = result.data!.token
       userInfo.value = result.data!.user
       localStorage.setItem('token', token.value)
+      // 换账号登录时清空上一个账号的学校身份
+      useSchoolStore().clear()
     }
     return { code: result.code, message: result.message }
   }
@@ -36,6 +39,7 @@ export const useUserStore = defineStore('user', () => {
     token.value = ''
     userInfo.value = null
     localStorage.removeItem('token')
+    useSchoolStore().clear()
   }
 
   // 主动退出：后端登出成功后清除本地状态并返回后端提示内容，失败返回 null；401 由响应拦截器统一处理会话过期
@@ -101,6 +105,7 @@ export const useUserStore = defineStore('user', () => {
   window.addEventListener('auth-expired', () => {
     token.value = ''
     userInfo.value = null
+    useSchoolStore().clear()
   })
 
   return {

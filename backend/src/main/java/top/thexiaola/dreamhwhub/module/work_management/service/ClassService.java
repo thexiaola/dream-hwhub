@@ -132,12 +132,14 @@ public interface ClassService {
     /**
      * 获取用户加入的所有班级（分页）
      */
-    Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize);
+    Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize,
+            Integer schoolId, Integer roleCode, Boolean excludeOwner);
 
     /**
      * 管理员获取全部班级（用于管理面板的班级管理入口）
      */
-    Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize, String keyword);
+    Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize, String keyword,
+            Integer schoolId);
 
     /**
      * 获取班级成员列表（分页）
@@ -235,7 +237,7 @@ public interface ClassService {
     /**
      * 通过邀请码加入班级
      */
-    JoinClassApplicationResponse joinClassByInviteCode(String inviteCode);
+    JoinClassApplicationResponse joinClassByInviteCode(String inviteCode, Integer schoolId);
 
     /**
      * 转让班级所有权

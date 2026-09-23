@@ -30,18 +30,19 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     /**
-     * 分页查询用户
+     * 分页查询用户，支持按用户名、邮箱、学校、学工号、姓名、班级的高级组合检索
      */
-    @GetMapping
+    @PostMapping("/search")
     @RequirePermission(PermissionNodes.USER_VIEW)
     public ApiResponse<Page<AdminUserVO>> listUsers(
-            @RequestParam(value = "keyword", required = false) String keyword,
+            @Valid @RequestBody AdminUserSearchRequest searchRequest,
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
             @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         User currentUser = UserUtils.getCurrentUser();
-        Page<AdminUserVO> users = adminUserService.listUsers(keyword, pageNum, pageSize);
-        log.info("User {} queried {} users, keyword={}, page={}",
-                LogUtil.getUserInfo(currentUser), users.getTotal(), keyword, pageNum);
+        Page<AdminUserVO> users = adminUserService.listUsers(searchRequest, pageNum, pageSize);
+        log.info("User {} queried {} users, conditionCount={}, page={}",
+                LogUtil.getUserInfo(currentUser), users.getTotal(),
+                searchRequest.getConditions() == null ? 0 : searchRequest.getConditions().size(), pageNum);
         return ApiResponse.success(users);
     }
 

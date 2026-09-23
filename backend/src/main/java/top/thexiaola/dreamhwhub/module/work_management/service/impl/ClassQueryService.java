@@ -150,10 +150,39 @@ public class ClassQueryService {
                 classInfo.getCreateTime());
     }
 
-    public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize) {
+    /**
+     * 分页查询我加入的班级
+     *
+     * @param schoolId     仅返回该学校下的班级，为空则不限学校
+     * @param roleCode     1-仅返回我在该班拥有班级管理员权限的班级，0-仅返回我是普通成员的班级，为空则不限角色
+     * @param excludeOwner 为 true 时排除我是创建者的班级（用于「我听的课」）
+     */
+    public Page<ClassDetailResponse> getMyClasses(Integer userId, Integer pageNum, Integer pageSize,
+            Integer schoolId, Integer roleCode, Boolean excludeOwner) {
         // 按班级成员关系分页查询（管理员管理全部班级走 getAdminManageClasses）
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("user_id", userId);
+
+        // 学校、角色等筛选条件全部下推数据库，避免取回全量后在内存过滤
+        if (schoolId != null) {
+            memberQuery.apply("class_id IN (SELECT id FROM class_info WHERE school_id = {0})", schoolId);
+        }
+        if (roleCode != null) {
+            if (roleCode >= 1) {
+                // 拥有班级管理员权限：成员角色为管理员，或本人是该班创建者
+                memberQuery.and(wrapper -> wrapper.eq("role", 1)
+                        .or()
+                        .apply("class_id IN (SELECT id FROM class_info WHERE owner_id = {0})", userId));
+            } else if (roleCode == 0) {
+                memberQuery.eq("role", 0)
+                        .apply("class_id NOT IN (SELECT id FROM class_info WHERE owner_id = {0})", userId);
+            }
+        }
+        // 与 roleCode 同时传入时表示「在我不是创建者的班里」，此处仅用于「我听的课」
+        if (Boolean.TRUE.equals(excludeOwner)) {
+            memberQuery.apply("class_id NOT IN (SELECT id FROM class_info WHERE owner_id = {0})", userId);
+        }
+
         Page<ClassMember> memberPage = classMemberMapper.selectPage(
                 new Page<>(pageNum, pageSize), memberQuery);
         Map<Integer, ClassMember> memberMap = memberPage.getRecords().stream()
@@ -174,17 +203,20 @@ public class ClassQueryService {
     }
 
     public Page<ClassDetailResponse> getAdminManageClasses(Integer userId, Integer pageNum, Integer pageSize,
-            String keyword) {
+            String keyword, Integer schoolId) {
         // 仅拥有查看全部班级权限者可管理班级列表
         User currentUser = userMapper.selectById(userId);
         if (!userLookup.hasPermission(currentUser, PermissionNodes.CLASS_VIEW_ALL)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "仅管理员可管理全部班级", null);
         }
 
-        // 分页查询全部班级（可按班级名称关键字过滤）
+        // 分页查询全部班级（可按班级名称关键字、所属学校过滤，条件全部下推数据库）
         QueryWrapper<ClassInfo> queryWrapper = new QueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
             queryWrapper.like("class_name", keyword.trim());
+        }
+        if (schoolId != null) {
+            queryWrapper.eq("school_id", schoolId);
         }
         Page<ClassInfo> classPage = classInfoMapper.selectPage(
                 new Page<>(pageNum, pageSize), queryWrapper);

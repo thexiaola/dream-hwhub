@@ -15,6 +15,8 @@ import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.permission.constant.PermissionNodes;
 import top.thexiaola.dreamhwhub.module.school.constant.SchoolMemberRole;
 import top.thexiaola.dreamhwhub.module.school.dto.ApproveSchoolJoinRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.BatchApproveSchoolJoinRequest;
+import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
 import top.thexiaola.dreamhwhub.module.school.dto.AssignSchoolAdminRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.CreateSchoolRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.JoinSchoolRequest;
@@ -187,11 +189,21 @@ public class SchoolServiceImpl implements SchoolService {
 
         SchoolMember myMember = currentUser == null ? null : getMemberOrNull(school.getId(), currentUser.getId());
         Integer myApplicationStatus = null;
+        String myApplicationComment = null;
         if (myMember == null && currentUser != null) {
             SchoolJoinApplication latest = selectLatestApplication(school.getId(), currentUser.getId());
             if (latest != null) {
                 myApplicationStatus = latest.getStatus();
+                myApplicationComment = latest.getReviewComment();
             }
+        }
+
+        // 待审核数量只对能管理该校的人有意义
+        Long pendingApplicationCount = null;
+        if (currentUser != null && canManageSchool(currentUser, myMember)) {
+            QueryWrapper<SchoolJoinApplication> pendingQuery = new QueryWrapper<>();
+            pendingQuery.eq("school_id", school.getId()).eq("status", 0);
+            pendingApplicationCount = schoolJoinApplicationMapper.selectCount(pendingQuery);
         }
 
         return new SchoolDetailResponse(
@@ -210,7 +222,19 @@ public class SchoolServiceImpl implements SchoolService {
                 myMember != null ? SchoolMemberRole.nameOf(myMember.getRole()) : null,
                 myMember != null ? myMember.getStaffNo() : null,
                 myMember != null ? myMember.getRealName() : null,
-                myApplicationStatus);
+                myApplicationStatus,
+                pendingApplicationCount,
+                myApplicationComment);
+    }
+
+    /**
+     * 是否可管理该校：拥有学校管理权限（平台管理员），或在该校担任学校管理员
+     */
+    private boolean canManageSchool(User user, SchoolMember myMember) {
+        if (userLookup.hasPermission(user, PermissionNodes.SCHOOL_UPDATE)) {
+            return true;
+        }
+        return myMember != null && Objects.equals(myMember.getRole(), SchoolMemberRole.ADMIN);
     }
 
     /**
@@ -489,11 +513,16 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
-    public List<SchoolDetailResponse> getMySchools() {
+    public List<SchoolDetailResponse> getMySchools(Integer minRoleCode) {
         User currentUser = userLookup.requireCurrentUser();
 
         QueryWrapper<SchoolMember> memberQuery = new QueryWrapper<>();
-        memberQuery.eq("user_id", currentUser.getId()).orderByDesc("join_time");
+        memberQuery.eq("user_id", currentUser.getId());
+        // 角色下限下推到数据库，用于取「我可建班的学校」等子集
+        if (minRoleCode != null) {
+            memberQuery.ge("role", minRoleCode);
+        }
+        memberQuery.orderByDesc("join_time");
         List<SchoolMember> members = schoolMemberMapper.selectList(memberQuery);
         if (members.isEmpty()) {
             return Collections.emptyList();
@@ -614,7 +643,94 @@ public class SchoolServiceImpl implements SchoolService {
             throw new BusinessException(BusinessErrorCode.DUPLICATE_APPLICATION, "该申请已处理", null);
         }
 
+        reviewOne(schoolId, application, Boolean.TRUE.equals(request.getApproved()), request.getComment(),
+                currentUser.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public BatchReviewResult batchApproveJoinApplications(Integer schoolId, BatchApproveSchoolJoinRequest request) {
+        User currentUser = userLookup.requireCurrentUser();
+        getSchoolOrThrow(schoolId);
+        requireSchoolManager(currentUser, schoolId);
+
         boolean approved = Boolean.TRUE.equals(request.getApproved());
+        int handled = 0;
+        int skipped = 0;
+        for (Integer applicationId : request.getApplicationIds()) {
+            SchoolJoinApplication application = schoolJoinApplicationMapper.selectById(applicationId);
+            // 跳过不属于该校或已被处理过的申请
+            if (application == null || !Objects.equals(application.getSchoolId(), schoolId)
+                    || !Integer.valueOf(0).equals(application.getStatus())) {
+                skipped++;
+                continue;
+            }
+            try {
+                reviewOne(schoolId, application, approved, request.getComment(), currentUser.getId());
+                handled++;
+            } catch (BusinessException e) {
+                // 单条不满足审核条件（如学工号已被占用）时跳过，不影响其余申请
+                log.warn("Skip school {} application {} in batch review: {}", schoolId, applicationId, e.getMessage());
+                skipped++;
+            }
+        }
+        return new BatchReviewResult(handled, skipped);
+    }
+
+    @Override
+    public Page<SchoolJoinApplicationResponse> listAllJoinApplications(Integer schoolId, Integer status,
+            Integer pageNum, Integer pageSize) {
+        QueryWrapper<SchoolJoinApplication> queryWrapper = new QueryWrapper<>();
+        if (schoolId != null) {
+            queryWrapper.eq("school_id", schoolId);
+        }
+        if (status != null) {
+            queryWrapper.eq("status", status);
+        }
+        queryWrapper.orderByDesc("create_time");
+
+        Page<SchoolJoinApplication> applicationPage = schoolJoinApplicationMapper.selectPage(
+                new Page<>(pageNum, pageSize), queryWrapper);
+
+        Page<SchoolJoinApplicationResponse> page = new Page<>(pageNum, pageSize, applicationPage.getTotal());
+        page.setRecords(toApplicationResponses(applicationPage.getRecords()));
+        return page;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public BatchReviewResult batchApproveAllJoinApplications(BatchApproveSchoolJoinRequest request) {
+        User currentUser = userLookup.requireCurrentUser();
+
+        boolean approved = Boolean.TRUE.equals(request.getApproved());
+        int handled = 0;
+        int skipped = 0;
+        for (Integer applicationId : request.getApplicationIds()) {
+            SchoolJoinApplication application = schoolJoinApplicationMapper.selectById(applicationId);
+            // 只处理仍处于待审核的申请，其余跳过
+            if (application == null || !Integer.valueOf(0).equals(application.getStatus())) {
+                skipped++;
+                continue;
+            }
+            try {
+                // 逐条按申请所属学校校验操作人权限：正常情况下平台管理员已由接口注解放行，
+                // 这里保留校验是为了将来接口权限放宽后仍按学校隔离
+                requireSchoolManager(currentUser, application.getSchoolId());
+                reviewOne(application.getSchoolId(), application, approved, request.getComment(), currentUser.getId());
+                handled++;
+            } catch (BusinessException e) {
+                log.warn("Skip application {} in batch review: {}", applicationId, e.getMessage());
+                skipped++;
+            }
+        }
+        return new BatchReviewResult(handled, skipped);
+    }
+
+    /**
+     * 审核单条加入申请：写入审核结果，通过时补建学校成员
+     */
+    private void reviewOne(Integer schoolId, SchoolJoinApplication application, boolean approved,
+            String comment, Integer reviewerId) {
         SchoolMember existingMember = getMemberOrNull(schoolId, application.getApplicantId());
 
         // 通过前先确认申请携带完整的姓名与学工号，且学工号未被占用
@@ -630,9 +746,10 @@ public class SchoolServiceImpl implements SchoolService {
         }
 
         application.setStatus(approved ? 1 : 2);
-        application.setReviewerId(currentUser.getId());
+        application.setReviewerId(reviewerId);
         application.setReviewTime(LocalDateTime.now());
-        application.setReviewComment(request.getComment());
+        // 通过申请无需说明原因，只有拒绝时才记录审核意见
+        application.setReviewComment(approved ? null : comment);
         schoolJoinApplicationMapper.updateById(application);
 
         if (approved && existingMember == null) {
