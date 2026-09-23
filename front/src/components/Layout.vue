@@ -77,25 +77,14 @@
             :style="indicatorStyle"
           />
           <button
-            :ref="tabRefSetters.student"
+            :ref="tabRefSetters.courses"
             class="side-nav-item"
-            :class="{ active: activeTab === 'student' }"
-            :title="collapsed ? '我听的课' : undefined"
-            @click="switchTab('student')"
+            :class="{ active: activeTab === 'courses' }"
+            :title="collapsed ? '课程' : undefined"
+            @click="switchTab('courses')"
           >
-            <GraduationCap :size="18" />
-            <span v-if="!collapsed" class="side-nav-label">我听的课</span>
-          </button>
-          <button
-            v-if="canEnterTeacherArea"
-            :ref="tabRefSetters.teacher"
-            class="side-nav-item"
-            :class="{ active: activeTab === 'teacher' }"
-            :title="collapsed ? '我教的课' : undefined"
-            @click="switchTab('teacher')"
-          >
-            <Presentation :size="18" />
-            <span v-if="!collapsed" class="side-nav-label">我教的课</span>
+            <BookOpen :size="18" />
+            <span v-if="!collapsed" class="side-nav-label">课程</span>
           </button>
           <button
             :ref="tabRefSetters.school"
@@ -144,20 +133,11 @@
     <nav class="mobile-tab-bar">
       <button
         class="mobile-tab"
-        :class="{ active: activeTab === 'student' }"
-        @click="switchTab('student')"
+        :class="{ active: activeTab === 'courses' }"
+        @click="switchTab('courses')"
       >
-        <GraduationCap :size="22" />
-        <span>我的课</span>
-      </button>
-      <button
-        v-if="canEnterTeacherArea"
-        class="mobile-tab"
-        :class="{ active: activeTab === 'teacher' }"
-        @click="switchTab('teacher')"
-      >
-        <Presentation :size="22" />
-        <span>我教的</span>
+        <BookOpen :size="22" />
+        <span>课程</span>
       </button>
       <button
         class="mobile-tab"
@@ -198,11 +178,12 @@ import ThemeToggle from '@/components/ThemeToggle.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useDraggableIndicator } from '@/composables/useDraggableIndicator'
 import {
-  BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield, School,
+  BookOpen, User, ChevronDown, LogOut, Shield, School,
   ChevronsLeft, ChevronsRight
 } from '@lucide/vue'
 
-type NavTab = 'student' | 'teacher' | 'school' | 'admin'
+// 「课程」合并了原「我听的课」「我教的课」两个入口，具体切换在页面内完成
+type NavTab = 'courses' | 'school' | 'admin'
 
 const router = useRouter()
 const route = useRoute()
@@ -210,8 +191,7 @@ const userStore = useUserStore()
 const schoolStore = useSchoolStore()
 
 const isAdmin = computed(() => userStore.isAdmin)
-const canEnterTeacherArea = computed(() => userStore.isOp || schoolStore.isSchoolTeacher)
-const activeTab = ref<NavTab>('student')
+const activeTab = ref<NavTab>('courses')
 
 // 侧边栏收起状态：收起后只留图标，为内容区让出宽度
 const collapsed = ref(false)
@@ -250,17 +230,14 @@ const setTabRef = (key: string, el: unknown) => {
 
 // 固定的 ref 回调，避免模板内联函数在每次渲染时重建
 const tabRefSetters = {
-  student: (el: unknown) => setTabRef('student', el),
-  teacher: (el: unknown) => setTabRef('teacher', el),
+  courses: (el: unknown) => setTabRef('courses', el),
   school: (el: unknown) => setTabRef('school', el),
   admin: (el: unknown) => setTabRef('admin', el)
 }
 
 // 当前可见导航项的视觉顺序，拖拽吸附与命中测试都以此为准
 const tabOrder = computed<NavTab[]>(() => {
-  const keys: NavTab[] = ['student']
-  if (canEnterTeacherArea.value) keys.push('teacher')
-  keys.push('school')
+  const keys: NavTab[] = ['courses', 'school']
   if (isAdmin.value) keys.push('admin')
   return keys
 })
@@ -276,16 +253,11 @@ const getTabs = () => {
 
 // 各导航项对应的目标路径
 const navPath = (tab: NavTab): string =>
-  tab === 'student'
-    ? '/student/courses'
-    : tab === 'teacher'
-      ? '/teacher/courses'
-      : tab === 'school'
-        ? '/school'
-        : '/admin/panel'
+  tab === 'courses' ? '/courses/student' : tab === 'school' ? '/school' : '/admin/panel'
 
 // 当前是否已处于该项对应的路由下。
-// 用前缀匹配而非全等：如管理面板子路由为 /admin/panel/:tab，仍应视为已在该项
+// 用前缀匹配而非全等：「课程」下含 /courses/student 与 /courses/teacher 两个子页；
+// 管理面板子路由为 /admin/panel/:tab，同样应视为已在该项
 const isOnTab = (tab: NavTab): boolean => route.path === navPath(tab) || route.path.startsWith(`/${tab}`)
 
 // 点击导航项：写入历史，便于后退
@@ -328,9 +300,8 @@ const indicatorStyle = computed(() => {
   }
 })
 
-// 切换导航项或隐藏/显示入口（如学校身份变化）后重新定位
+// 切换导航项或显示/隐藏入口（如管理员身份变化）后重新定位
 watch(activeTab, () => nextTick(syncToActive))
-watch(canEnterTeacherArea, () => nextTick(syncToActive))
 watch(isAdmin, () => nextTick(syncToActive))
 
 const handleResize = () => nextTick(syncToActive)
@@ -360,21 +331,19 @@ onMounted(async () => {
     resizeObserver.observe(navTabsRef.value)
   }
 
-  // 非教师路径先同步确定高亮，避免等网络请求造成闪烁
+  // 先同步确定高亮，避免等网络请求造成闪烁
   if (route.path.startsWith('/school')) {
     activeTab.value = 'school'
   } else if (route.path.startsWith('/admin')) {
     activeTab.value = 'admin'
-  } else if (!route.path.startsWith('/teacher')) {
-    activeTab.value = 'student'
+  } else {
+    // /courses/student、/courses/teacher 及首页等都归属「课程」
+    activeTab.value = 'courses'
   }
 
-  // 拉取学校列表：顶部「选择学校」下拉需要它（教职工与学生共用），
-  // 「我教的课」入口是否展示也取决于此。请求在 store 内做了并发去重。
+  // 拉取学校列表：顶部「选择学校」下拉需要它（教职工与学生共用）。
+  // 请求在 store 内做了并发去重。
   await schoolStore.fetchMySchools()
-  if (route.path.startsWith('/teacher') && canEnterTeacherArea.value) {
-    activeTab.value = 'teacher'
-  }
 })
 
 onUnmounted(() => {
@@ -478,7 +447,7 @@ onUnmounted(() => {
   min-height: 0;
 }
 
-/* 左侧导航栏：品牌色渐变，形式参照超星平台 */
+/* 左侧导航栏：亮色为品牌渐变，暗色为深色表面（配色由主题令牌提供） */
 .sidebar {
   position: relative;
   z-index: 1;
@@ -487,7 +456,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   padding: 16px 12px 12px;
-  background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+  background: var(--sidebar-bg);
   transition: width 0.25s ease;
 }
 
@@ -504,7 +473,7 @@ onUnmounted(() => {
   gap: 10px;
   padding: 8px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--sidebar-surface);
   margin-bottom: 12px;
 }
 
@@ -515,7 +484,7 @@ onUnmounted(() => {
 
 /* 头像在渐变底上加深色环，保证边界清晰 */
 .sidebar-user :deep(.user-avatar) {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 2px var(--sidebar-avatar-ring);
 }
 
 .sidebar-user-meta {
@@ -527,7 +496,7 @@ onUnmounted(() => {
 .sidebar-user-name {
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--sidebar-fg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -535,7 +504,7 @@ onUnmounted(() => {
 
 .sidebar-user-role {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--sidebar-fg-muted);
 }
 
 .side-nav {
@@ -552,8 +521,8 @@ onUnmounted(() => {
   left: 0;
   box-sizing: border-box;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.24);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  background: var(--sidebar-active-bg);
+  box-shadow: inset 0 0 0 1px var(--sidebar-active-ring);
   pointer-events: none;
   transition:
     transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1),
@@ -579,7 +548,7 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--sidebar-item-fg);
   font-size: 14px;
   font-family: inherit;
   text-align: left;
@@ -596,12 +565,12 @@ onUnmounted(() => {
 }
 
 .side-nav-item:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--sidebar-item-hover);
+  color: var(--sidebar-fg);
 }
 
 .side-nav-item.active {
-  color: #ffffff;
+  color: var(--sidebar-fg);
   font-weight: 600;
 }
 
@@ -620,14 +589,14 @@ onUnmounted(() => {
   height: 36px;
   border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--sidebar-surface);
+  color: var(--sidebar-fg);
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .sidebar-collapse:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--sidebar-surface-hover);
 }
 
 /* ===== 内容区 ===== */

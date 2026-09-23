@@ -31,6 +31,7 @@ public class ClassQueryService {
     private final ClassInfoMapper classInfoMapper;
     private final ClassAccessResolver classAccessResolver;
     private final ClassMemberMapper classMemberMapper;
+    private final ClassTakeoverApplicationMapper classTakeoverApplicationMapper;
     private final UserMapper userMapper;
     private final SchoolService schoolService;
     private final UserLookupSupport userLookup;
@@ -101,10 +102,14 @@ public class ClassQueryService {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
 
-        // 权限校验：拥有查看全部班级权限者可查看任意班级，普通用户仅可查看自己所在的班级
+        // 权限校验：拥有查看全部班级权限者可查看任意班级，普通用户仅可查看自己所在的班级；
+        // 班级冻结时，本校其他老师可进入查看并申请接管
         User currentUser = userLookup.requireCurrentUser();
         boolean isAdmin = userLookup.hasPermission(currentUser, PermissionNodes.CLASS_VIEW_ALL);
-        if (!isAdmin && !classAccessResolver.isClassMember(classId, currentUser.getId())) {
+        boolean isMember = classAccessResolver.isClassMember(classId, currentUser.getId());
+        boolean canViewFrozenAsTeacher = classAccessResolver.isClassFrozen(classInfo)
+                && schoolService.isSchoolTeacher(classInfo.getSchoolId(), currentUser.getId());
+        if (!isAdmin && !isMember && !canViewFrozenAsTeacher) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级成员或管理员可以查看班级详情", null);
         }
 
@@ -133,7 +138,7 @@ public class ClassQueryService {
 
         String schoolName = classAccessResolver.resolveSchoolName(classInfo.getSchoolId());
 
-        return new ClassDetailResponse(
+        ClassDetailResponse response = new ClassDetailResponse(
                 classInfo.getId(),
                 classInfo.getClassName(),
                 classInfo.getSchoolId(),
@@ -148,6 +153,8 @@ public class ClassQueryService {
                 classInfo.getDescription(),
                 classInfo.getAllowStudentInvite(),
                 classInfo.getCreateTime());
+        fillTakeoverFields(response, classInfo, currentUser, member);
+        return response;
     }
 
     /**
@@ -299,7 +306,7 @@ public class ClassQueryService {
                     ClassMember selfMember = memberMap.get(classId);
                     String role = forceTeacherRole ? "老师" : classAccessResolver.getUserRole(classInfo, selfMember);
 
-                    return new ClassDetailResponse(
+                    ClassDetailResponse response = new ClassDetailResponse(
                             classInfo.getId(),
                             classInfo.getClassName(),
                             classInfo.getSchoolId(),
@@ -314,9 +321,44 @@ public class ClassQueryService {
                             classInfo.getDescription(),
                             classInfo.getAllowStudentInvite(),
                             classInfo.getCreateTime());
+                    // 列表场景不携带「我是否可接管」的个性化判定（批量列表用管理员/成员视角），
+                    // 仅给出班级是否冻结，供前端展示状态
+                    response.setFrozen(classAccessResolver.isClassFrozen(classInfo));
+                    response.setOwnerActive(classAccessResolver.isOwnerActive(classInfo));
+                    response.setCanTakeover(false);
+                    response.setTakeoverPending(false);
+                    response.setTakeoverAutoApprove(schoolService.isClassTakeoverAutoApprove(classInfo.getSchoolId()));
+                    return response;
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();
+    }
+
+    /**
+     * 填充班级冻结与接管相关字段（详情/个人班级列表场景，携带针对当前用户的个性化判定）
+     */
+    private void fillTakeoverFields(ClassDetailResponse response, ClassInfo classInfo, User currentUser,
+            ClassMember selfMember) {
+        boolean frozen = classAccessResolver.isClassFrozen(classInfo);
+        response.setFrozen(frozen);
+        response.setOwnerActive(classAccessResolver.isOwnerActive(classInfo));
+        response.setTakeoverAutoApprove(schoolService.isClassTakeoverAutoApprove(classInfo.getSchoolId()));
+
+        boolean pending = false;
+        boolean canTakeover = false;
+        if (frozen && currentUser != null && !Objects.equals(classInfo.getOwnerId(), currentUser.getId())) {
+            // 是否已提交待审核的接管申请
+            QueryWrapper<ClassTakeoverApplication> pendingQuery = new QueryWrapper<>();
+            pendingQuery.eq("class_id", classInfo.getId())
+                    .eq("applicant_id", currentUser.getId())
+                    .eq("status", 0);
+            pending = classTakeoverApplicationMapper.selectCount(pendingQuery) > 0;
+            // 仅该校老师可申请接管（本班已接管的老师无需再接管）
+            canTakeover = !pending
+                    && schoolService.isSchoolTeacher(classInfo.getSchoolId(), currentUser.getId());
+        }
+        response.setTakeoverPending(pending);
+        response.setCanTakeover(canTakeover);
     }
 
     public Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize) {

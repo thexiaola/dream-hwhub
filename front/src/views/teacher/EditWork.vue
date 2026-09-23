@@ -186,7 +186,7 @@ const goBack = () => {
     router.push(`/teacher/course/${workClassId.value}`)
     return
   }
-  router.push('/teacher/courses')
+  router.push('/courses/teacher')
 }
 
 const loadWork = async () => {

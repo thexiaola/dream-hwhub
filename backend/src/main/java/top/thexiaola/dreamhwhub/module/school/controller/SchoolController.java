@@ -13,6 +13,7 @@ import top.thexiaola.dreamhwhub.module.school.dto.ApproveSchoolJoinRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.BatchApproveSchoolJoinRequest;
 import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
 import top.thexiaola.dreamhwhub.module.school.dto.JoinSchoolRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.SetClassTakeoverApprovalRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.SetSchoolJoinApprovalRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberIdentityRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberRoleRequest;
@@ -239,5 +240,19 @@ public class SchoolController {
         log.info("User {} set school {} join approval, allowJoinWithoutApproval: {}",
                 LogUtil.getUserInfo(currentUser), schoolId, request.getAllowJoinWithoutApproval());
         return ApiResponse.success(null, "加入学校设置已更新");
+    }
+
+    /**
+     * 设置班级接管是否自动同意（学校管理员）
+     */
+    @PutMapping("/{schoolId}/class-takeover-approval")
+    public ApiResponse<Void> setClassTakeoverApproval(
+            @PathVariable(value = "schoolId") Integer schoolId,
+            @Valid @RequestBody SetClassTakeoverApprovalRequest request) {
+        User currentUser = UserUtils.getCurrentUser();
+        schoolService.setClassTakeoverAutoApprove(schoolId, request);
+        log.info("User {} set school {} class takeover auto approve: {}",
+                LogUtil.getUserInfo(currentUser), schoolId, request.getAutoApproveClassTakeover());
+        return ApiResponse.success(null, "班级接管设置已更新");
     }
 }

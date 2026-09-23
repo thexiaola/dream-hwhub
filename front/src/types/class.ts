@@ -21,6 +21,34 @@ export interface CourseInfo {
   studentCount: number
   /** 是否允许学生邀请同学加入 */
   allowStudentInvite?: boolean
+  /** 班级是否已冻结：创建者的教师身份被解除 */
+  frozen?: boolean
+  /** 创建者是否仍具备教师身份 */
+  ownerActive?: boolean
+  /** 当前用户是否可申请接管该班级（已冻结且本人是该校老师） */
+  canTakeover?: boolean
+  /** 当前用户是否已提交待审核的接管申请 */
+  takeoverPending?: boolean
+  /** 所属学校的班级接管是否自动同意 */
+  takeoverAutoApprove?: boolean
+}
+
+/** 班级接管申请 */
+export interface ClassTakeoverInfo {
+  id: number
+  classId: number
+  className: string
+  applicantId: number
+  applicantUsername?: string
+  applicantName?: string | null
+  applicantNo?: string | null
+  /** 0-待审核，1-已通过，2-已拒绝 */
+  status: number
+  reviewerId?: number | null
+  reviewerUsername?: string | null
+  reviewTime?: string | null
+  reviewComment?: string | null
+  createTime: string
 }
 
 /** 教师视角的作业信息 */

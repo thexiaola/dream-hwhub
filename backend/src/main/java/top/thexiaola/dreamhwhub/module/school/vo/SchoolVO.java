@@ -35,6 +35,11 @@ public class SchoolVO {
     private Boolean allowJoinWithoutApproval;
 
     /**
+     * 班级接管是否自动同意：true-其他老师申请接管失活班级时自动通过，false-需学校管理员审核
+     */
+    private Boolean autoApproveClassTakeover;
+
+    /**
      * 成员总数
      */
     private Long memberCount;

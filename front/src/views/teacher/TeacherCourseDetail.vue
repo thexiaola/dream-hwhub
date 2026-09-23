@@ -8,14 +8,50 @@
         <h2>{{ course?.className }}</h2>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="workPanelRef?.openCreateWork()">
+        <el-button
+          v-if="course?.canTakeover"
+          type="primary"
+          :loading="takeoverSubmitting"
+          @click="applyTakeoverAction"
+        >
+          <HandHelping :size="18" />
+          申请接管
+        </el-button>
+        <el-button
+          v-else-if="course?.takeoverPending"
+          type="info"
+          plain
+          disabled
+        >
+          <Clock :size="18" />
+          接管申请审核中
+        </el-button>
+        <el-button
+          v-if="!course?.frozen"
+          type="primary"
+          @click="workPanelRef?.openCreateWork()"
+        >
           <Plus :size="18" />
           发布作业
         </el-button>
-        <el-button v-if="canDissolve" type="danger" @click="dissolveClassAction">
+        <el-button v-if="canDissolve && !course?.frozen" type="danger" @click="dissolveClassAction">
           <Trash2 :size="18" />
           解散课堂
         </el-button>
+      </div>
+    </div>
+
+    <!-- 班级冻结提示：创建者的教师身份被解除 -->
+    <div v-if="course?.frozen" class="frozen-banner">
+      <AlertTriangle :size="20" />
+      <div class="frozen-text">
+        <p class="frozen-title">该班级的老师已失去教师身份，班级暂不可管理</p>
+        <p class="frozen-desc">
+          期间无法发布/批改作业、邀请同学、修改班级，邀请码也已失效且不再接纳新学生。
+          {{ course?.takeoverAutoApprove
+            ? '本校老师申请接管后将自动通过。'
+            : '本校老师可申请接管，需学校管理员审核。' }}
+        </p>
       </div>
     </div>
 
@@ -48,7 +84,7 @@
       </div>
     </el-card>
 
-    <el-tabs v-model="activeTab" class="course-tabs" @tab-change="handleTabChange">
+    <el-tabs v-if="!course?.frozen" v-model="activeTab" class="course-tabs" @tab-change="handleTabChange">
       <el-tab-pane label="作业管理" name="works">
         <ClassWorkPanel ref="workPanelRef" :class-id="classId" />
       </el-tab-pane>
@@ -181,7 +217,9 @@ import {
   AlertTriangle,
   ArrowLeft,
   Calendar,
+  Clock,
   Copy,
+  HandHelping,
   Plus,
   ShieldAlert,
   Trash2,
@@ -189,7 +227,7 @@ import {
   UserCheck,
   Users,
 } from "@lucide/vue";
-import { del, get } from "@/utils/http";
+import { del, get, post } from "@/utils/http";
 import { useUserStore } from "@/stores/user";
 import ClassWorkPanel from "./ClassWorkPanel.vue";
 import ClassMemberPanel from "./ClassMemberPanel.vue";
@@ -220,11 +258,13 @@ const loadCourse = async (): Promise<boolean> => {
   const result = await get<CourseInfo>(`/class/${classId}`);
   if (result.code === 200) {
     const info = result.data!;
-    // 管理员可查看任意班级；非班级管理员禁止进入教师管理视图
+    // 管理员可查看任意班级；班级管理员（含接管人）可进入；
+    // 班级冻结时允许本校老师进入查看/申请接管（写入操作在后端已全部拦截）
     const isAdmin = userStore.hasPermission("class:view_all");
-    if (!isAdmin && info.userRoleCode !== 1) {
+    const canEnter = isAdmin || info.userRoleCode === 1 || info.frozen === true;
+    if (!canEnter) {
       ElMessage.warning("您不是该班级的班级管理员，无权访问教师管理页面");
-      router.push("/teacher/courses");
+      router.push("/courses/teacher");
       return false;
     }
     course.value = info;
@@ -232,7 +272,7 @@ const loadCourse = async (): Promise<boolean> => {
   }
   // 无权访问（非班级成员返回 403）或班级不存在（404）：提示并返回课程列表
   ElMessage.error(result.message || "无法访问该课程");
-  router.push("/teacher/courses");
+  router.push("/courses/teacher");
   return false;
 };
 
@@ -247,7 +287,7 @@ const handleTabChange = (tab: string | number) => {
 };
 
 const goBack = () => {
-  router.push("/teacher/courses");
+  router.push("/courses/teacher");
 };
 
 // ========== 危险操作（解散课堂）三步弹窗 ==========
@@ -318,7 +358,7 @@ const passwordDialogConfirm = async () => {
     if (result.code === 200) {
       ElMessage.success("课堂已解散");
       clearDangerInputs();
-      router.push("/teacher/courses");
+      router.push("/courses/teacher");
     } else {
       ElMessage.error(result.message || "解散失败");
     }
@@ -348,12 +388,87 @@ const dissolveClassAction = async () => {
   }
 };
 
+// ========== 申请接管（班级已冻结时，本校其他老师可接管） ==========
+const takeoverSubmitting = ref(false);
+
+const applyTakeoverAction = async () => {
+  const auto = course.value?.takeoverAutoApprove;
+  try {
+    await ElMessageBox.confirm(
+      auto
+        ? `申请接管「${course.value?.className ?? ""}」后将立即成为该班级创建者（本校已开启自动同意）。确认接管？`
+        : `申请接管「${course.value?.className ?? ""}」后将提交学校管理员审核，通过后成为该班级创建者。确认申请？`,
+      "申请接管",
+      {
+        confirmButtonText: auto ? "确认接管" : "提交申请",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
+    );
+  } catch {
+    return;
+  }
+
+  takeoverSubmitting.value = true;
+  try {
+    const result = await post(`/class/${classId}/takeover`);
+    if (result.code === 200) {
+      ElMessage.success(result.message || "操作成功");
+      // 自动同意时所有权已转移，直接进入可管理视图
+      const ok = await loadCourse();
+      if (ok) memberPanelRef.value?.reload();
+    } else {
+      ElMessage.error(result.message || "操作失败");
+    }
+  } catch {
+    ElMessage.error("操作失败，请重试");
+  } finally {
+    takeoverSubmitting.value = false;
+  }
+};
+
 onMounted(loadCourse);
 </script>
 
 <style scoped>
 .teacher-course-detail {
   padding-bottom: 24px;
+}
+
+/* 班级冻结提示横幅 */
+.frozen-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(230, 162, 60, 0.4);
+  background: rgba(230, 162, 60, 0.12);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+}
+
+.frozen-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #e6a23c;
+}
+
+.frozen-text {
+  min-width: 0;
+}
+
+.frozen-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.frozen-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
 }
 
 .page-header {

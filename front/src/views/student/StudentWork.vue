@@ -548,7 +548,7 @@ const goBack = () => {
   if (work.value?.classId) {
     router.push(`/student/course/${work.value.classId}`)
   } else {
-    router.push('/student/courses')
+    router.push('/courses/student')
   }
 }
 

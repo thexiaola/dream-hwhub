@@ -1,10 +1,7 @@
 <template>
   <div class="teacher-courses-page">
-    <div class="page-header">
-      <div class="header-left">
-        <h2>我教的课</h2>
-        <p class="subtitle">管理你作为老师教授的课程</p>
-      </div>
+    <!-- 标题由外层「课程」页的选项卡承担，这里只保留操作按钮 -->
+    <div class="page-header courses-toolbar">
       <div class="header-right">
         <el-button v-if="canCreateCourse" type="primary" @click="openCreateDialog">
           <Plus :size="18" />
@@ -14,6 +11,40 @@
     </div>
 
     <el-card class="content-card">
+      <!-- 可接管的班级：原老师失去教师身份而冻结，本校其他老师可申请接管 -->
+      <div v-if="takeoverCandidates.length > 0" class="takeover-block">
+        <div class="takeover-head">
+          <HandHelping :size="16" />
+          <span>可接管的班级</span>
+          <em>原老师已失去教师身份，申请接管后即可管理</em>
+        </div>
+        <div class="course-grid">
+          <div
+            v-for="item in takeoverCandidates"
+            :key="`tk-${item.classId}`"
+            class="course-card is-frozen"
+          >
+            <div class="card-header">
+              <div class="course-icon frozen-icon">
+                <AlertTriangle :size="24" />
+              </div>
+              <h3>{{ item.className }}</h3>
+            </div>
+            <p class="description">该班级暂不可管理，且不再接纳新学生</p>
+            <div class="card-footer">
+              <el-button
+                type="primary"
+                size="small"
+                :loading="takeoverSubmittingId === item.classId"
+                @click="goToCourse(item.classId)"
+              >
+                查看并接管
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="course-grid">
         <div 
           v-for="course in teacherCourses" 
@@ -95,8 +126,8 @@ import { useRouter } from 'vue-router'
 import { get, post } from '@/utils/http'
 import type { SchoolDetail } from '@/types/school'
 import { ElMessage } from 'element-plus'
-import { Plus, Presentation, Users, User } from '@lucide/vue'
-import type { CourseInfo } from '@/types/class'
+import { Plus, Presentation, Users, User, HandHelping, AlertTriangle } from '@lucide/vue'
+import type { CourseInfo, ClassTakeoverInfo } from '@/types/class'
 import { useSchoolStore } from '@/stores/school'
 
 const router = useRouter()
@@ -109,6 +140,17 @@ const createForm = ref({
   className: '',
   description: ''
 })
+
+// 可接管的班级（原老师失去教师身份而冻结），接管入口
+const takeoverCandidates = ref<ClassTakeoverInfo[]>([])
+const takeoverSubmittingId = ref<number | null>(null)
+
+const loadTakeoverCandidates = async () => {
+  const result = await get<ClassTakeoverInfo[]>('/class/takeover/available')
+  if (result.code === 200) {
+    takeoverCandidates.value = result.data ?? []
+  }
+}
 
 // 可作为老师建班的学校（学校老师或学校管理员），由后端按角色过滤
 const teachableSchools = ref<SchoolDetail[]>([])
@@ -187,6 +229,7 @@ const createCourse = async () => {
 onMounted(() => {
   loadTeacherCourses()
   loadTeachableSchools()
+  loadTakeoverCandidates()
 })
 </script>
 
@@ -198,7 +241,25 @@ onMounted(() => {
 }
 
 .teacher-courses-page {
-  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 内容卡片纵向撑满剩余高度：内容少时铺满一屏，内容多时随内容增长并滚动。
+   卡片底边与页面底部的间距由 .main-content 的内边距提供。 */
+.content-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
@@ -224,6 +285,46 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+}
+
+/* 可接管班级区块：置于课程列表之上，用警示色区分 */
+.takeover-block {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.15);
+}
+
+.takeover-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6a23c;
+}
+
+.takeover-head em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+}
+
+.course-card.is-frozen {
+  cursor: default;
+  border-color: rgba(230, 162, 60, 0.4);
+}
+
+.course-card.is-frozen:hover {
+  transform: none;
+  border-color: rgba(230, 162, 60, 0.6);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+}
+
+.frozen-icon {
+  background: rgba(230, 162, 60, 0.2);
+  color: #e6a23c;
 }
 
 .course-card {
@@ -311,6 +412,7 @@ onMounted(() => {
 }
 
 .empty-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;

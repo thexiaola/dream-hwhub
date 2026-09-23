@@ -46,6 +46,7 @@ public class ClassServiceImpl implements ClassService {
     private final ClassQueryService classQueryService;
     private final ClassMembershipService classMembershipService;
     private final ClassJoinService classJoinService;
+    private final ClassTakeoverService classTakeoverService;
 
 
     @Override
@@ -465,5 +466,35 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public JoinClassApplicationResponse joinClassByInviteCode(String inviteCode, Integer schoolId) {
         return classJoinService.joinClassByInviteCode(inviteCode, schoolId);
+    }
+
+    @Override
+    public ClassTakeoverResponse applyClassTakeover(Integer classId) {
+        return classTakeoverService.applyTakeover(classId);
+    }
+
+    @Override
+    public ClassTakeoverResponse getMyClassTakeover(Integer classId) {
+        return classTakeoverService.getMyTakeover(classId);
+    }
+
+    @Override
+    public List<ClassTakeoverResponse> listSchoolClassTakeovers(Integer schoolId, Integer status) {
+        return classTakeoverService.listSchoolTakeovers(schoolId, status);
+    }
+
+    @Override
+    public List<ClassTakeoverResponse> listAvailableClassTakeovers() {
+        return classTakeoverService.listAvailableTakeovers();
+    }
+
+    @Override
+    public void reviewClassTakeover(Integer applicationId, Boolean approved, String comment) {
+        classTakeoverService.reviewTakeover(applicationId, approved, comment);
+    }
+
+    @Override
+    public boolean isClassFrozen(Integer classId) {
+        return classAccessResolver.isClassFrozen(classInfoMapper.selectById(classId));
     }
 }

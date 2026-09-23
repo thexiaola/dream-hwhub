@@ -1,10 +1,7 @@
 <template>
   <div class="student-courses-page">
-    <div class="page-header">
-      <div class="header-left">
-        <h2>我听的课</h2>
-        <p class="subtitle">查看你作为学生加入的课程</p>
-      </div>
+    <!-- 标题由外层「课程」页的选项卡承担，这里只保留操作按钮 -->
+    <div class="page-header courses-toolbar">
       <div class="header-right">
         <!-- 选择学校已上移到顶部导航栏（全局）；此处仅在没有学校时给出提示 -->
         <span v-if="schoolOptions.length === 0" class="school-empty-tip">
@@ -374,7 +371,25 @@ onMounted(async () => {
 
 <style scoped>
 .student-courses-page {
-  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 内容卡片纵向撑满剩余高度：内容少时铺满一屏，内容多时随内容增长并滚动。
+   卡片底边与页面底部的间距由 .main-content 的内边距提供。 */
+.content-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .invite-badge {
@@ -600,6 +615,7 @@ onMounted(async () => {
 }
 
 .empty-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;

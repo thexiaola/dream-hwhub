@@ -244,6 +244,82 @@
             />
           </div>
         </el-tab-pane>
+
+        <el-tab-pane name="takeovers">
+          <template #label>
+            接管申请
+            <el-badge
+              v-if="pendingTakeoverCount > 0"
+              :value="pendingTakeoverCount"
+              class="tab-badge"
+            />
+          </template>
+          <div class="filter-bar">
+            <el-radio-group v-model="takeoverFilter" @change="loadTakeovers">
+              <el-radio-button :value="-1">全部</el-radio-button>
+              <el-radio-button :value="0">待审核</el-radio-button>
+              <el-radio-button :value="1">已通过</el-radio-button>
+              <el-radio-button :value="2">已拒绝</el-radio-button>
+            </el-radio-group>
+            <el-switch
+              v-model="autoApproveClassTakeover"
+              active-text="自动同意接管"
+              inactive-text="需管理员审核"
+              @change="submitTakeoverSetting"
+            />
+          </div>
+
+          <p class="takeover-tip">
+            当班级创建者失去教师身份时，该班级将暂不可管理且不再接纳新学生，本校老师可申请接管。
+            开启「自动同意接管」后，老师申请即立即生效；关闭则需在此审核。
+          </p>
+
+          <el-table :data="takeovers" style="width: 100%">
+            <el-table-column prop="className" label="班级" min-width="140" />
+            <el-table-column prop="applicantUsername" label="账号" min-width="120">
+              <template #default="{ row }">{{ row.applicantUsername || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="applicantName" label="姓名" min-width="100">
+              <template #default="{ row }">{{ row.applicantName || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="applicantNo" label="学工号" min-width="120">
+              <template #default="{ row }">{{ row.applicantNo || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <span :class="['status-tag', statusClass(row.status)]">{{ statusText(row.status) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="申请时间" min-width="150">
+              <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="170" fixed="right">
+              <template #default="{ row }">
+                <template v-if="row.status === 0">
+                  <el-button
+                    size="small"
+                    type="primary"
+                    text
+                    :loading="takeoverReviewSubmitting"
+                    @click="reviewTakeover(row, true)"
+                  >
+                    同意
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                    text
+                    :loading="takeoverReviewSubmitting"
+                    @click="reviewTakeover(row, false)"
+                  >
+                    拒绝
+                  </el-button>
+                </template>
+                <span v-else class="reviewed-note">{{ row.reviewComment || '-' }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
       </el-tabs>
     </el-card>
 
@@ -310,6 +386,7 @@ import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import type { PageResult } from '@/types'
 import { SCHOOL_ROLE_ADMIN, type SchoolDetail, type SchoolJoinApplication, type SchoolMember } from '@/types/school'
+import type { ClassTakeoverInfo } from '@/types/class'
 import { formatDateTime as formatDate } from '@/utils/format'
 import { useConfirmBeforeApprove } from '@/composables/useConfirmBeforeApprove'
 import { applicationStatusText as statusText, applicationStatusClass as statusClass } from '@/utils/status'
@@ -328,8 +405,9 @@ const canManage = computed(
   () => school.value?.myRoleCode === SCHOOL_ROLE_ADMIN || userStore.hasPermission('school:update')
 )
 
-const activeTab = ref<'applications' | 'members'>('applications')
+const activeTab = ref<'applications' | 'members' | 'takeovers'>('applications')
 const allowJoinWithoutApproval = ref(false)
+const autoApproveClassTakeover = ref(true)
 
 // 申请状态文案/样式后缀与 AdminPanel 共用（见 utils/status）
 
@@ -340,12 +418,76 @@ const loadSchool = async () => {
   if (result.code === 200) {
     school.value = result.data
     allowJoinWithoutApproval.value = result.data?.allowJoinWithoutApproval ?? false
+    autoApproveClassTakeover.value = result.data?.autoApproveClassTakeover !== false
     if (canManage.value) {
       loadApplications()
       loadMembers()
+      loadTakeovers()
     }
   } else {
     ElMessage.error(result.message)
+  }
+}
+
+// ===== 班级接管（学校管理员）=====
+
+const takeoverFilter = ref(-1)
+const takeovers = ref<ClassTakeoverInfo[]>([])
+const takeoverReviewSubmitting = ref(false)
+
+const pendingTakeoverCount = computed(
+  () => takeovers.value.filter((t) => t.status === 0).length
+)
+
+const loadTakeovers = async () => {
+  const params: Record<string, unknown> = {}
+  if (takeoverFilter.value >= 0) {
+    params.status = takeoverFilter.value
+  }
+  const result = await get<ClassTakeoverInfo[]>(`/class/takeover/school/${schoolId}`, params)
+  if (result.code === 200) {
+    takeovers.value = result.data ?? []
+  } else {
+    ElMessage.error(result.message)
+  }
+}
+
+const submitTakeoverSetting = async () => {
+  const result = await put(`/school/${schoolId}/class-takeover-approval`, {
+    autoApproveClassTakeover: autoApproveClassTakeover.value
+  })
+  if (result.code === 200) {
+    ElMessage.success('班级接管设置已更新')
+  } else {
+    ElMessage.error(result.message)
+    // 回滚开关状态
+    autoApproveClassTakeover.value = !autoApproveClassTakeover.value
+  }
+}
+
+const reviewTakeover = async (row: ClassTakeoverInfo, approved: boolean) => {
+  try {
+    await ElMessageBox.confirm(
+      approved
+        ? `同意「${row.applicantUsername}」接管班级「${row.className}」？通过后其将成为该班级创建者。`
+        : `拒绝「${row.applicantUsername}」接管班级「${row.className}」的申请？`,
+      approved ? '同意接管' : '拒绝接管',
+      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  takeoverReviewSubmitting.value = true
+  try {
+    const result = await put(`/class/takeover/${row.id}/approve`, { approved, comment: '' })
+    if (result.code === 200) {
+      ElMessage.success(approved ? '已同意接管' : '已拒绝接管')
+      loadTakeovers()
+    } else {
+      ElMessage.error(result.message)
+    }
+  } finally {
+    takeoverReviewSubmitting.value = false
   }
 }
 
@@ -629,6 +771,8 @@ const handleTabChange = (name: string | number) => {
     loadApplications()
   } else if (name === 'members') {
     loadMembers()
+  } else if (name === 'takeovers') {
+    loadTakeovers()
   }
 }
 
@@ -795,6 +939,19 @@ onMounted(loadSchool)
 .status-tag.pending {
   color: #e6a23c;
   background: rgba(230, 162, 60, 0.15);
+}
+
+/* 班级接管 tab：说明文字与已处理申请的审核结果 */
+.takeover-tip {
+  margin: 4px 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
+}
+
+.reviewed-note {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
 .status-tag.approved {

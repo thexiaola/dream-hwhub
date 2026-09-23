@@ -494,4 +494,75 @@ public class ClassController {
                                 userInfo, classId, request.getNewOwnerId());
                 return ApiResponse.success(null, "班级所有权转让成功");
         }
+
+        /**
+         * 申请接管「已冻结」的班级（创建者教师身份被解除）。
+         * 学校配置为自动同意时立即转移所有权，否则生成待学校管理员审核的申请
+         */
+        @PostMapping("/{classId}/takeover")
+        public ApiResponse<ClassTakeoverResponse> applyClassTakeover(
+                        @PathVariable(value = "classId") Integer classId) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                log.info("User {} applying to take over class {}", userInfo, classId);
+                ClassTakeoverResponse response = classService.applyClassTakeover(classId);
+                log.info("User {} applied to take over class {}, status: {}", userInfo, classId, response.getStatus());
+                return ApiResponse.success(response,
+                                Integer.valueOf(1).equals(response.getStatus()) ? "已接管该班级" : "接管申请已提交，待学校管理员审核");
+        }
+
+        /**
+         * 查询我在某班级的接管申请（最近一条）
+         */
+        @GetMapping("/{classId}/takeover/mine")
+        public ApiResponse<ClassTakeoverResponse> getMyClassTakeover(
+                        @PathVariable(value = "classId") Integer classId) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                log.info("User {} querying own takeover application for class {}", userInfo, classId);
+                return ApiResponse.success(classService.getMyClassTakeover(classId));
+        }
+
+        /**
+         * 查询当前用户可接管的班级列表（本人是所属学校老师的冻结班级）
+         */
+        @GetMapping("/takeover/available")
+        public ApiResponse<List<ClassTakeoverResponse>> listAvailableClassTakeovers() {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                List<ClassTakeoverResponse> list = classService.listAvailableClassTakeovers();
+                log.info("User {} queried {} available takeovers", userInfo, list.size());
+                return ApiResponse.success(list);
+        }
+
+        /**
+         * 查询某学校下的接管申请列表（学校管理员）
+         *
+         * @param status 状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+         */
+        @GetMapping("/takeover/school/{schoolId}")
+        public ApiResponse<List<ClassTakeoverResponse>> listSchoolClassTakeovers(
+                        @PathVariable(value = "schoolId") Integer schoolId,
+                        @RequestParam(value = "status", required = false) Integer status) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                List<ClassTakeoverResponse> list = classService.listSchoolClassTakeovers(schoolId, status);
+                log.info("User {} queried {} takeovers for school {}", userInfo, list.size(), schoolId);
+                return ApiResponse.success(list);
+        }
+
+        /**
+         * 审核接管申请（学校管理员）
+         */
+        @PutMapping("/takeover/{applicationId}/approve")
+        public ApiResponse<Void> reviewClassTakeover(
+                        @PathVariable(value = "applicationId") Integer applicationId,
+                        @Valid @RequestBody ReviewClassTakeoverRequest request) {
+                User currentUser = UserUtils.getCurrentUser();
+                String userInfo = LogUtil.getUserInfo(currentUser);
+                log.info("User {} reviewing class takeover {}, approved: {}",
+                                userInfo, applicationId, request.getApproved());
+                classService.reviewClassTakeover(applicationId, request.getApproved(), request.getComment());
+                return ApiResponse.success(null, request.getApproved() ? "已同意接管" : "已拒绝接管");
+        }
 }

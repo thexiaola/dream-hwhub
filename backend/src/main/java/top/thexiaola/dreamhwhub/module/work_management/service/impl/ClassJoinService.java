@@ -52,6 +52,8 @@ public class ClassJoinService {
         if (classEntity == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
+        // 班级冻结（创建者教师身份被解除）期间不再接纳新成员
+        classAccessResolver.requireClassActive(classEntity);
 
         // 检查当前用户是否是班级内的成员（学生或助理/老师均可邀请）
         boolean isAdmin = userLookup.hasPermission(currentUser, PermissionNodes.CLASS_UPDATE);
@@ -245,6 +247,8 @@ public class ClassJoinService {
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
+        // 班级冻结（创建者教师身份被解除）期间不再接纳新成员
+        classAccessResolver.requireClassActive(classInfo);
 
         // 姓名与学工号取自学校成员身份，入班前必须先加入班级所属学校
         classAccessResolver.requireSchoolMember(classInfo, currentUser.getId());
@@ -443,6 +447,8 @@ public class ClassJoinService {
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
+        // 班级冻结期间不再接纳新成员（老师邀请同样受限）
+        classAccessResolver.requireClassActive(classInfo);
 
         // 检查当前用户是否有权限邀请（必须是老师或有添加班级老师权限）
         boolean isAdmin = userLookup.hasPermission(currentUser, PermissionNodes.CLASS_TEACHER_ADD);
@@ -640,6 +646,8 @@ public class ClassJoinService {
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
+        // 班级冻结期间邀请码失效，不再对外提供
+        classAccessResolver.requireClassActive(classInfo);
 
         boolean isAdminUser = userLookup.hasPermission(currentUser, PermissionNodes.CLASS_UPDATE);
         boolean isTeacherUser = classAccessResolver.isTeacher(classId, currentUser.getId());
@@ -668,6 +676,8 @@ public class ClassJoinService {
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "班级不存在", null);
         }
+        // 班级冻结期间不允许重置邀请码
+        classAccessResolver.requireClassActive(classInfo);
 
         boolean isAdminUser = userLookup.hasPermission(currentUser, PermissionNodes.CLASS_UPDATE);
         boolean isTeacherUser = classAccessResolver.isTeacher(classId, currentUser.getId());
@@ -699,6 +709,9 @@ public class ClassJoinService {
         if (classInfo == null) {
             throw new BusinessException(BusinessErrorCode.CLASS_NOT_FOUND, "邀请码失效", null);
         }
+
+        // 班级冻结期间邀请码失效，不再可作为入班凭证
+        classAccessResolver.requireClassActive(classInfo);
 
         // 只能加入当前所在学校的班级，避免跨校入班
         if (!Objects.equals(classInfo.getSchoolId(), schoolId)) {

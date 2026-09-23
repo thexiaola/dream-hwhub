@@ -54,6 +54,53 @@ public class ClassAccessResolver {
         return user != null && permissionService.hasAnyPermission(user.getId(), CLASS_ADMIN_NODES);
     }
 
+    /**
+     * 班级创建者是否仍具备教师身份（以班级所属学校内的角色为准）。
+     * 创建者在该校已是学生或不再是成员时，视为教师身份已解除。
+     *
+     * @param classInfo 班级信息
+     * @return true-创建者仍具备教师身份
+     */
+    public boolean isOwnerActive(ClassInfo classInfo) {
+        if (classInfo == null || classInfo.getSchoolId() == null || classInfo.getOwnerId() == null) {
+            return true;
+        }
+        SchoolMember owner = schoolService.getMember(classInfo.getSchoolId(), classInfo.getOwnerId());
+        return owner != null && owner.getRole() != null && owner.getRole() >= SchoolMemberRole.TEACHER;
+    }
+
+    /**
+     * 班级是否已「冻结」：创建者教师身份被解除，且创建者并非平台管理员。
+     * <p>
+     * 冻结期间：原创建者与班级老师均无法再管理该班，邀请码失效、不再接纳新学生；
+     * 该校其他老师可申请接管。创建者教师身份恢复后自动解冻。
+     *
+     * @param classInfo 班级信息
+     * @return true-班级已冻结
+     */
+    public boolean isClassFrozen(ClassInfo classInfo) {
+        if (classInfo == null) {
+            return false;
+        }
+        // 平台管理员持有的班级不因学校身份变化而冻结
+        if (permissionService.isOp(classInfo.getOwnerId())) {
+            return false;
+        }
+        return !isOwnerActive(classInfo);
+    }
+
+    /**
+     * 校验班级未冻结；已冻结时抛出业务异常（用于入班、邀请等写入路径）
+     *
+     * @param classInfo 班级信息
+     */
+    public void requireClassActive(ClassInfo classInfo) {
+        if (isClassFrozen(classInfo)) {
+            throw new BusinessException(BusinessErrorCode.CLASS_FROZEN,
+                    "该班级的老师已失去教师身份，班级暂不接受新成员", null);
+        }
+    }
+
     public boolean isOrdinaryTeacher(Integer classId, Integer userId) {
         // 检查是否是班级成员且是老师
         QueryWrapper<ClassMember> queryWrapper = new QueryWrapper<>();
@@ -75,8 +122,12 @@ public class ClassAccessResolver {
         if (isClassAdmin(user)) {
             return true;
         }
-        // 检查是否是班级创建者
         ClassInfo classInfo = classInfoMapper.selectById(classId);
+        // 班级冻结（创建者教师身份被解除）时，班级老师暂不可管理，需先申请接管
+        if (isClassFrozen(classInfo)) {
+            return false;
+        }
+        // 检查是否是班级创建者
         if (classInfo != null && classInfo.getOwnerId().equals(userId)) {
             return true;
         }

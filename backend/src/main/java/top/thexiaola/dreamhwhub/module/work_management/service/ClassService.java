@@ -243,4 +243,54 @@ public interface ClassService {
      * 转让班级所有权
      */
     void transferClassOwnership(Integer classId, Integer newOwnerId);
+
+    /**
+     * 申请接管「已冻结」的班级（创建者教师身份被解除）。
+     * 学校配置为自动同意时立即转移所有权，否则生成待学校管理员审核的申请
+     *
+     * @param classId 班级 ID
+     * @return 接管申请响应
+     */
+    ClassTakeoverResponse applyClassTakeover(Integer classId);
+
+    /**
+     * 查询我在某班级的接管申请（最近一条，无则返回 null）
+     *
+     * @param classId 班级 ID
+     * @return 接管申请响应
+     */
+    ClassTakeoverResponse getMyClassTakeover(Integer classId);
+
+    /**
+     * 查询某学校下的接管申请列表（学校管理员）
+     *
+     * @param schoolId 学校 ID
+     * @param status   状态筛选（0-待审核，1-已通过，2-已拒绝），可选
+     * @return 接管申请列表
+     */
+    List<ClassTakeoverResponse> listSchoolClassTakeovers(Integer schoolId, Integer status);
+
+    /**
+     * 查询当前用户可接管的班级列表（本人是所属学校老师的冻结班级）
+     *
+     * @return 可接管班级列表
+     */
+    List<ClassTakeoverResponse> listAvailableClassTakeovers();
+
+    /**
+     * 审核接管申请（学校管理员）
+     *
+     * @param applicationId 申请 ID
+     * @param approved      是否通过
+     * @param comment       审核意见
+     */
+    void reviewClassTakeover(Integer applicationId, Boolean approved, String comment);
+
+    /**
+     * 判断班级是否已冻结（创建者教师身份被解除）
+     *
+     * @param classId 班级 ID
+     * @return true-已冻结
+     */
+    boolean isClassFrozen(Integer classId);
 }

@@ -29,6 +29,14 @@ public class School {
     @TableField("allow_join_without_approval")
     private Boolean allowJoinWithoutApproval;  // 加入学校是否免审核：true-填入学工号与姓名后直接加入
 
+    /**
+     * 班级接管是否自动同意：
+     * true-其他老师申请接管「原老师已失去教师身份」的班级时自动通过；
+     * false-需由学校管理员审核（默认 true，即系统默认自动同意）
+     */
+    @TableField("auto_approve_class_takeover")
+    private Boolean autoApproveClassTakeover;
+
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

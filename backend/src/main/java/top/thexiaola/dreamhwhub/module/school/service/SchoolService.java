@@ -217,6 +217,32 @@ public interface SchoolService {
     boolean isSchoolTeacher(Integer schoolId, Integer userId);
 
     /**
+     * 判断用户是否具备该校的管理者身份（该校学校管理员或平台管理员）
+     *
+     * @param schoolId 学校 ID
+     * @param userId   用户 ID
+     * @return true-可管理该校
+     */
+    boolean isSchoolManager(Integer schoolId, Integer userId);
+
+    /**
+     * 设置班级接管是否自动同意（学校管理员或平台管理员）
+     *
+     * @param schoolId 学校 ID
+     * @param request  设置请求
+     */
+    void setClassTakeoverAutoApprove(Integer schoolId,
+            top.thexiaola.dreamhwhub.module.school.dto.SetClassTakeoverApprovalRequest request);
+
+    /**
+     * 班级接管是否自动同意（缺省视为 true，即系统默认自动同意）
+     *
+     * @param schoolId 学校 ID
+     * @return true-自动同意
+     */
+    boolean isClassTakeoverAutoApprove(Integer schoolId);
+
+    /**
      * 查询用户在学校的成员记录
      *
      * @param schoolId 学校 ID
@@ -224,6 +250,14 @@ public interface SchoolService {
      * @return 成员记录，非成员返回 null
      */
     SchoolMember getMember(Integer schoolId, Integer userId);
+
+    /**
+     * 查询用户加入的全部学校成员记录（用于判定其作为老师的学校集合）
+     *
+     * @param userId 用户 ID
+     * @return 成员记录列表，非成员返回空列表
+     */
+    List<SchoolMember> getMembershipsByUserId(Integer userId);
 
     /**
      * 批量查询用户在指定学校的成员记录，供班级成员列表读取姓名与学工号

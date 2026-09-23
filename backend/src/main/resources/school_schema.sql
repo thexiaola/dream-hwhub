@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `school` (
     `school_name` VARCHAR(100) NOT NULL COMMENT '学校名称',
     `description` VARCHAR(500) DEFAULT NULL COMMENT '学校描述',
     `allow_join_without_approval` BIT(1) NOT NULL DEFAULT b'0' COMMENT '加入学校是否免审核：0-需学校管理员审核，1-填入学工号与姓名后直接加入',
+    `auto_approve_class_takeover` BIT(1) NOT NULL DEFAULT b'1' COMMENT '班级接管是否自动同意：1-其他老师申请接管失活班级时自动通过，0-需学校管理员审核',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_school_name (`school_name`)

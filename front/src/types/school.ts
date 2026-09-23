@@ -5,6 +5,8 @@ export interface School {
   description?: string | null
   /** 加入学校是否免审核：true-填入学工号与姓名后直接加入 */
   allowJoinWithoutApproval: boolean
+  /** 班级接管是否自动同意：true-其他老师申请接管失活班级时自动通过 */
+  autoApproveClassTakeover?: boolean
   memberCount: number
   createTime?: string
 }

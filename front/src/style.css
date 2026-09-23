@@ -290,6 +290,7 @@
   --sidebar-fg: #ffffff;
   --sidebar-fg-muted: rgba(255, 255, 255, 0.7);
   --sidebar-item-fg: rgba(255, 255, 255, 0.82);
+  --sidebar-item-hover: rgba(255, 255, 255, 0.12);
   --sidebar-surface: rgba(255, 255, 255, 0.12);
   --sidebar-surface-hover: rgba(255, 255, 255, 0.22);
   --sidebar-active-bg: rgba(255, 255, 255, 0.24);
@@ -416,8 +417,9 @@ html[data-theme="dark"] {
   --sidebar-fg: #ffffff;
   --sidebar-fg-muted: rgba(255, 255, 255, 0.6);
   --sidebar-item-fg: rgba(255, 255, 255, 0.78);
-  --sidebar-surface: rgba(255, 255, 255, 0.06);
-  --sidebar-surface-hover: rgba(255, 255, 255, 0.14);
+  --sidebar-item-hover: rgba(255, 255, 255, 0.14);
+  --sidebar-surface: rgba(255, 255, 255, 0.08);
+  --sidebar-surface-hover: rgba(255, 255, 255, 0.16);
   --sidebar-active-bg: rgba(102, 126, 234, 0.38);
   --sidebar-active-ring: rgba(102, 126, 234, 0.55);
   --sidebar-avatar-ring: rgba(255, 255, 255, 0.35);

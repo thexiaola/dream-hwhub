@@ -241,7 +241,7 @@ const leaveClassAction = async () => {
   leaving.value = false
   if (result.code === 200) {
     ElMessage.success(result.message || '已退出班级')
-    router.push('/student/courses')
+    router.push('/courses/student')
   } else {
     ElMessage.error(result.message || '退出失败')
   }
@@ -255,7 +255,7 @@ const loadCourse = async () => {
   }
   // 无权访问（非班级成员）或班级不存在时提示并返回课程列表
   ElMessage.error(result.message || '无法访问该课程')
-  router.push('/student/courses')
+  router.push('/courses/student')
   return false
 }
 
@@ -325,7 +325,7 @@ const getSubmissionStatus = (work: WorkInfo) => {
 }
 
 const goBack = () => {
-  router.push('/student/courses')
+  router.push('/courses/student')
 }
 
 /** 布置人标识：班级成员显示班级内姓名，非成员（如管理员）退回用户名。不展示学号 */

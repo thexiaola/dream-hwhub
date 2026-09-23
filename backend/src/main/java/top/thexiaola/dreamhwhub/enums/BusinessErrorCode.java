@@ -64,6 +64,12 @@ public enum BusinessErrorCode {
     NOT_IN_CLASS(8504, "你不是该班级的成员"),
     CREATOR_CANNOT_LEAVE(8505, "创建者不能退出班级"),
     DUPLICATE_STUDENT_NO(8506, "该学号在班级中已被占用"),
+    /** 班级已冻结：创建者教师身份被解除，暂不接受管理操作与新成员加入 */
+    CLASS_FROZEN(8507, "该班级的老师已失去教师身份，班级暂不可管理"),
+    /** 仅班级已冻结时才可申请接管 */
+    TAKEOVER_NOT_ALLOWED(8508, "该班级当前无需接管"),
+    /** 已存在待处理的接管申请 */
+    TAKEOVER_ALREADY_APPLIED(8509, "你已提交过接管申请，请等待处理"),
 
     // 学校管理相关错误
     SCHOOL_NOT_FOUND(8601, "学校不存在"),

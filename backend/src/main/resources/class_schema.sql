@@ -101,3 +101,21 @@ CREATE TABLE IF NOT EXISTS `class_join_application` (
     INDEX idx_status (`status`),
     UNIQUE KEY uk_class_applicant (`class_id`, `applicant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级加入申请表';
+
+-- 班级接管申请表
+-- 班级创建者的教师身份被解除后，班级进入失活状态：原创建者无法再管理、不再接纳新学生，
+-- 本校其他老师可申请接管。学校可配置自动同意（默认），或由学校管理员审核；通过后转移班级所有权
+CREATE TABLE IF NOT EXISTS `class_takeover_application` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '申请ID',
+    `class_id` INT NOT NULL COMMENT '申请接管的班级ID',
+    `applicant_id` INT NOT NULL COMMENT '申请接管的用户ID',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '审核状态：0-待审核，1-已通过，2-已拒绝',
+    `reviewer_id` INT DEFAULT NULL COMMENT '审核人ID（学校管理员；自动同意时为空）',
+    `review_time` DATETIME DEFAULT NULL COMMENT '审核时间',
+    `review_comment` VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+    INDEX idx_class_id (`class_id`),
+    INDEX idx_applicant_id (`applicant_id`),
+    INDEX idx_status (`status`),
+    UNIQUE KEY uk_class_applicant (`class_id`, `applicant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='班级接管申请表';

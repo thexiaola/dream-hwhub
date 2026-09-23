@@ -20,6 +20,7 @@ import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
 import top.thexiaola.dreamhwhub.module.school.dto.AssignSchoolAdminRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.CreateSchoolRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.JoinSchoolRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.SetClassTakeoverApprovalRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.SetSchoolJoinApprovalRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberIdentityRequest;
 import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberRoleRequest;
@@ -211,6 +212,7 @@ public class SchoolServiceImpl implements SchoolService {
                 school.getSchoolName(),
                 school.getDescription(),
                 school.getAllowJoinWithoutApproval(),
+                isClassTakeoverAutoApprove(school.getId()),
                 memberCount,
                 adminCount,
                 teacherCount,
@@ -364,6 +366,7 @@ public class SchoolServiceImpl implements SchoolService {
                 school.getSchoolName(),
                 school.getDescription(),
                 school.getAllowJoinWithoutApproval(),
+                isClassTakeoverAutoApprove(school.getId()),
                 countMembers(school.getId(), null),
                 school.getCreateTime());
     }
@@ -995,6 +998,33 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
+    public boolean isSchoolManager(Integer schoolId, Integer userId) {
+        User user = userMapper.selectById(userId);
+        return canManageSchool(user, getMemberOrNull(schoolId, userId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void setClassTakeoverAutoApprove(Integer schoolId, SetClassTakeoverApprovalRequest request) {
+        User currentUser = userLookup.requireCurrentUser();
+        School school = getSchoolOrThrow(schoolId);
+        requireSchoolManager(currentUser, schoolId);
+
+        school.setAutoApproveClassTakeover(Boolean.TRUE.equals(request.getAutoApproveClassTakeover()));
+        schoolMapper.updateById(school);
+    }
+
+    @Override
+    public boolean isClassTakeoverAutoApprove(Integer schoolId) {
+        if (schoolId == null) {
+            return true;
+        }
+        School school = schoolMapper.selectById(schoolId);
+        // 缺省（历史数据为 null）视为自动同意
+        return school == null || !Boolean.FALSE.equals(school.getAutoApproveClassTakeover());
+    }
+
+    @Override
     public void requireSchoolExists(Integer schoolId) {
         getSchoolOrThrow(schoolId);
     }
@@ -1013,6 +1043,16 @@ public class SchoolServiceImpl implements SchoolService {
     @Override
     public SchoolMember getMember(Integer schoolId, Integer userId) {
         return getMemberOrNull(schoolId, userId);
+    }
+
+    @Override
+    public List<SchoolMember> getMembershipsByUserId(Integer userId) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+        QueryWrapper<SchoolMember> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        return schoolMemberMapper.selectList(queryWrapper);
     }
 
     @Override

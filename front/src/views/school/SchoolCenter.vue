@@ -226,6 +226,30 @@ onMounted(loadMySchools)
 </script>
 
 <style scoped>
+/* 页面撑满内容区高度：页头固定，下方卡片纵向延伸铺满。
+   本页是路由组件，直接挂在块级的 .main-content 下，故用 min-height:100%
+   （父级高度确定）而非 flex:1（那只在 flex 父容器下生效）。 */
+.school-center-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* 内容卡片纵向撑满剩余高度：内容少时铺满一屏，内容多时随内容增长并滚动。
+   卡片底边与页面底部的间距由 .main-content 的内边距提供。 */
+.content-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -332,9 +356,11 @@ onMounted(loadMySchools)
 }
 
 .empty-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 40px 0;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
