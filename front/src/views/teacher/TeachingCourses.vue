@@ -90,15 +90,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { get, post } from '@/utils/http'
 import type { SchoolDetail } from '@/types/school'
 import { ElMessage } from 'element-plus'
 import { Plus, Presentation, Users, User } from '@lucide/vue'
 import type { CourseInfo } from '@/types/class'
+import { useSchoolStore } from '@/stores/school'
 
 const router = useRouter()
+const schoolStore = useSchoolStore()
 
 const teacherCourses = ref<CourseInfo[]>([])
 const showCreateDialog = ref(false)
@@ -131,15 +133,27 @@ const openCreateDialog = () => {
 }
 
 const loadTeacherCourses = async () => {
-  // 我教的课：拥有班级管理员权限的班级（创建者/老师/课代表），角色过滤由后端完成
+  // 我教的课：拥有班级管理员权限的班级（创建者/老师/课代表），角色过滤由后端完成；
+  // 顶部导航选定的「当前学校」作为过滤条件，未选学校时不查询以免混在一起
+  if (!schoolStore.currentSchoolId) {
+    teacherCourses.value = []
+    return
+  }
   const result = await get<{ records: CourseInfo[] }>('/class/mine', {
     pageSize: 300,
-    roleCode: 1
+    roleCode: 1,
+    schoolId: schoolStore.currentSchoolId
   })
   if (result.code === 200) {
     teacherCourses.value = result.data!.records
   }
 }
+
+// 切换当前学校后重新查询该学校下的课程
+watch(
+  () => schoolStore.currentSchoolId,
+  () => loadTeacherCourses()
+)
 
 const goToCourse = (id: number) => {
   router.push(`/teacher/course/${id}`)

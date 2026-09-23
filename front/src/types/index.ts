@@ -4,6 +4,14 @@ export interface ApiResponse<T = null> {
   data: T
 }
 
+/** 分页查询结果信封（各列表接口通用） */
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+}
+
 export interface UserInfo {
   id: number
   account: string

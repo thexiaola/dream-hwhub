@@ -128,7 +128,8 @@ import { ElMessage } from 'element-plus'
 import { Plus, School } from '@lucide/vue'
 import { get, post } from '@/utils/http'
 import { useSchoolStore } from '@/stores/school'
-import type { PageResult, School as SchoolInfo, SchoolDetail, SchoolJoinApplication } from '@/types/school'
+import type { PageResult } from '@/types'
+import type { School as SchoolInfo, SchoolDetail, SchoolJoinApplication } from '@/types/school'
 
 const router = useRouter()
 const schoolStore = useSchoolStore()
@@ -379,21 +380,7 @@ onMounted(loadMySchools)
   gap: 8px;
 }
 
-.flag {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.flag.auto {
-  color: #67c23a;
-  background: rgba(103, 194, 58, 0.15);
-}
-
-.flag.manual {
-  color: #e6a23c;
-  background: rgba(230, 162, 60, 0.15);
-}
+/* .flag 加入审核标记样式见全局 style.css（多页共用） */
 
 .browse-empty {
   text-align: center;

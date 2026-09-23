@@ -29,6 +29,8 @@ public final class PermissionNodes {
 
     // ===== 班级管理 =====
     public static final String CLASS_VIEW_ALL = "class:view_all";
+    /** 在任意学校下创建班级（不受“必须是该校老师”限制） */
+    public static final String CLASS_CREATE = "class:create";
     public static final String CLASS_DISSOLVE = "class:dissolve";
     public static final String CLASS_UPDATE = "class:update";
     public static final String CLASS_MEMBER_KICK = "class:member:kick";

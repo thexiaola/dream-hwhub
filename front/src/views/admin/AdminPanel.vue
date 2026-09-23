@@ -118,6 +118,10 @@
             @keyup.enter="reloadClasses"
           />
           <el-button type="primary" @click="reloadClasses">搜索</el-button>
+          <el-button v-if="canCreateClass" type="primary" plain @click="openCreateClassDialog">
+            <Plus :size="16" />
+            新建班级
+          </el-button>
         </div>
 
         <div class="class-list">
@@ -229,7 +233,7 @@
 
       <!-- 用户管理 -->
       <el-tab-pane v-if="canViewUsers" label="用户管理" name="users" lazy>
-        <UserManage />
+        <UserManage ref="userManageRef" />
       </el-tab-pane>
 
       <!-- 学校加入申请（平台管理员集中审核） -->
@@ -388,12 +392,12 @@
 
       <!-- 权限组 -->
       <el-tab-pane v-if="canViewPermissions" label="权限组" name="groups" lazy>
-        <PermissionGroupManage />
+        <PermissionGroupManage ref="permissionGroupRef" />
       </el-tab-pane>
 
       <!-- 学校管理 -->
       <el-tab-pane v-if="canViewSchools" label="学校管理" name="schools" lazy>
-        <SchoolManage />
+        <SchoolManage ref="schoolManageRef" />
       </el-tab-pane>
       </el-tabs>
     </div>
@@ -414,6 +418,49 @@
         <el-button @click="reviewDialog.visible = false">取消</el-button>
         <el-button :type="reviewDialog.approved ? 'primary' : 'danger'" @click="submitReview">
           确认{{ reviewDialog.approved ? '通过' : '拒绝' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 新建班级 -->
+    <el-dialog v-model="createClassDialog.visible" title="新建班级" width="460px" class="dark-dialog">
+      <el-form :model="createClassDialog.form" label-width="80px">
+        <el-form-item label="所属学校" required>
+          <el-select
+            v-model="createClassDialog.form.schoolId"
+            placeholder="请选择班级所属学校"
+            style="width: 100%"
+            filterable
+          >
+            <el-option
+              v-for="school in classSchoolOptions"
+              :key="school.id"
+              :label="school.schoolName"
+              :value="school.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="班级名称" required>
+          <el-input
+            v-model="createClassDialog.form.className"
+            placeholder="请输入班级名称"
+            maxlength="64"
+          />
+        </el-form-item>
+        <el-form-item label="班级描述">
+          <el-input
+            v-model="createClassDialog.form.description"
+            type="textarea"
+            :rows="3"
+            maxlength="512"
+            placeholder="选填"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createClassDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="createClassDialog.submitting" @click="submitCreateClass">
+          创建
         </el-button>
       </template>
     </el-dialog>
@@ -463,19 +510,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { get, put, del } from '@/utils/http'
+import { get, post, put, del } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { FileText, ShieldAlert, SlidersHorizontal } from '@lucide/vue'
+import { FileText, Plus, ShieldAlert, SlidersHorizontal } from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
 import { useDraggableIndicator } from '@/composables/useDraggableIndicator'
-import UserManage from './UserManage.vue'
-import PermissionGroupManage from './PermissionGroupManage.vue'
-import SchoolManage from './SchoolManage.vue'
+import { useConfirmBeforeApprove } from '@/composables/useConfirmBeforeApprove'
 import SlideSegmented from '@/components/SlideSegmented.vue'
+import type { PageResult } from '@/types'
 import type { School as SchoolInfo } from '@/types/school'
 import { formatDateTime as formatDate } from '@/utils/format'
+import { applicationStatusText as getStatusText, applicationStatusClass as getStatusClass } from '@/utils/status'
+
+// 三个子模块各自成 chunk，仅在实际进入对应页签时加载其代码与数据
+const UserManage = defineAsyncComponent(() => import('./UserManage.vue'))
+const PermissionGroupManage = defineAsyncComponent(() => import('./PermissionGroupManage.vue'))
+const SchoolManage = defineAsyncComponent(() => import('./SchoolManage.vue'))
 
 interface ClassJoinApplication {
   id: number
@@ -488,13 +540,6 @@ interface ClassJoinApplication {
   reviewTime: string | null
   reviewComment: string | null
   createTime: string
-}
-
-interface PageResult<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
 }
 
 type AdminTab = 'join' | 'classes' | 'users' | 'groups' | 'schools' | 'schoolJoin'
@@ -513,36 +558,19 @@ const userStore = useUserStore()
 // 按权限节点控制各页签可见性
 const canApproveJoin = computed(() => userStore.hasPermission('class:approve_join'))
 const canViewAllClasses = computed(() => userStore.hasPermission('class:view_all'))
+// 平台管理员（OP）恒有 class:create，可在任意学校下创建班级
+const canCreateClass = computed(() => userStore.hasPermission('class:create'))
 const canViewUsers = computed(() => userStore.hasPermission('user:view'))
 const canViewPermissions = computed(() => userStore.hasPermission('permission:view'))
 const canViewSchools = computed(() => userStore.hasPermission('school:view_all'))
 // 审核（含批量）需要 school:update，避免只读角色看得到按钮却点不动
 const canUpdateSchool = computed(() => userStore.hasPermission('school:update'))
 
-// 通过申请前是否需要二次确认：前端偏好，存本地
-const CONFIRM_APPROVE_KEY = 'schoolReviewConfirmBeforeApprove'
-
-// 隐私模式下 localStorage 可能不可写，失败时回退到默认值
-const readConfirmBeforeApprove = (): boolean => {
-  try {
-    return localStorage.getItem(CONFIRM_APPROVE_KEY) !== '0'
-  } catch {
-    return true
-  }
-}
-
-const confirmBeforeApprove = ref(readConfirmBeforeApprove())
+// 通过申请前是否需要二次确认：前端偏好，与 SchoolDetail 共用（见 useConfirmBeforeApprove）
+const confirmBeforeApprove = useConfirmBeforeApprove()
 
 // 审核请求进行中：关闭二次确认时没有弹窗可反馈，靠它禁用行内按钮避免重复提交
 const reviewSubmitting = ref(false)
-
-watch(confirmBeforeApprove, (value: boolean) => {
-  try {
-    localStorage.setItem(CONFIRM_APPROVE_KEY, value ? '1' : '0')
-  } catch {
-    // 存储不可用时仅本次会话生效
-  }
-})
 
 const visibleTabs = computed<AdminTab[]>(() => {
   // 顺序与模板中 el-tab-pane 的书写顺序保持一致（决定了「首个可见页签」）
@@ -555,6 +583,12 @@ const visibleTabs = computed<AdminTab[]>(() => {
   if (canViewSchools.value) tabs.push('schools')
   return tabs
 })
+
+// 三个子模块的实例引用：用于在每次进入对应页签时触发其数据刷新
+// （el-tab-pane lazy 挂载后保持常驻，子组件的 onMounted 只执行一次）
+const userManageRef = ref<{ reload: () => void } | null>(null)
+const permissionGroupRef = ref<{ reload: () => void } | null>(null)
+const schoolManageRef = ref<{ reload: () => void } | null>(null)
 
 // 页签对应的数据加载：点击、拖拽、直接访问链接都走这里，避免重复实现
 const runTabLoad = (name: AdminTab) => {
@@ -571,6 +605,13 @@ const runTabLoad = (name: AdminTab) => {
       loadClassSchoolOptions()
     }
     loadSchoolJoinApplications()
+  } else if (name === 'users') {
+    // 每次进入都刷新用户列表与筛选元数据
+    userManageRef.value?.reload()
+  } else if (name === 'groups') {
+    permissionGroupRef.value?.reload()
+  } else if (name === 'schools') {
+    schoolManageRef.value?.reload()
   }
 }
 
@@ -697,15 +738,7 @@ const reviewDialog = ref({
   comment: ''
 })
 
-const getStatusText = (status: number) => {
-  const map: Record<number, string> = { 0: '待审核', 1: '已通过', 2: '已拒绝' }
-  return map[status] || '未知'
-}
-
-const getStatusClass = (status: number) => {
-  const map: Record<number, string> = { 0: 'pending', 1: 'approved', 2: 'rejected' }
-  return map[status] || 'pending'
-}
+// 申请状态文案/样式后缀与 SchoolDetail 共用（见 utils/status）
 
 const loadJoinApplications = async () => {
   const params: Record<string, unknown> = {
@@ -748,8 +781,7 @@ const submitReview = async () => {
 }
 
 onMounted(async () => {
-  // 强制刷新一次用户信息，确保权限节点为最新（权限变更后无需重新登录）
-  await userStore.getUserInfo(true)
+  // 用户信息（含权限节点）已由路由守卫在进入前加载，这里不再重复请求
   // 依据路由参数与权限解析目标模块并加载其数据（URL 无参数/非法时回退首个可见模块并规范化 URL）
   tabResolved = true
   await applyRoute(resolveTab(), true)
@@ -980,6 +1012,60 @@ const classSearchKeyword = ref('')
 const expandedClassId = ref<number | null>(null)
 const classMembers = ref<ClassMemberInfo[]>([])
 const selectedAdminKickIds = ref<number[]>([])
+
+// 新建班级弹窗（平台管理员可在任意学校下建班）
+const createClassDialog = reactive({
+  visible: false,
+  submitting: false,
+  form: {
+    schoolId: undefined as number | undefined,
+    className: '',
+    description: ''
+  }
+})
+
+const openCreateClassDialog = async () => {
+  // 学校下拉选项按需加载，避免未进入过筛选时下拉为空
+  if (classSchoolOptions.value.length === 0) {
+    await loadClassSchoolOptions()
+  }
+  // 连续打开时保留上次未提交的草稿；已选学校的情况下不覆盖
+  createClassDialog.submitting = false
+  createClassDialog.visible = true
+}
+
+const submitCreateClass = async () => {
+  const { schoolId, className, description } = createClassDialog.form
+  if (!schoolId) {
+    ElMessage.warning('请选择班级所属学校')
+    return
+  }
+  if (!className.trim()) {
+    ElMessage.warning('请输入班级名称')
+    return
+  }
+  createClassDialog.submitting = true
+  try {
+    const result = await post<{ id: number }>('/class/create', {
+      schoolId,
+      className: className.trim(),
+      description: description.trim()
+    })
+    if (result.code === 200) {
+      ElMessage.success('班级创建成功')
+      createClassDialog.visible = false
+      createClassDialog.form.className = ''
+      createClassDialog.form.description = ''
+      // 回到第一页并刷新，确保新班级可见
+      classPage.value = 1
+      loadClasses()
+    } else {
+      ElMessage.error(result.message)
+    }
+  } finally {
+    createClassDialog.submitting = false
+  }
+}
 
 const loadClasses = async () => {
   const params: Record<string, unknown> = {
@@ -1268,13 +1354,7 @@ const batchKickFromAdmin = async (classId: number) => {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }
 
-/* 通过申请前的确认提示 */
-.confirm-hint {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.7;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
-}
+/* .confirm-hint 审核确认提示样式见全局 style.css（多页共用） */
 
 .status-tag {
   padding: 2px 10px;
@@ -1487,24 +1567,46 @@ const batchKickFromAdmin = async (classId: number) => {
     min-width: 0;
   }
 
+  /* 手机端页签改为多行换行（6 个页签横排放不下），消除横向滚动条。
+     EP 的下划线激活条在多行下无法定位，故隐藏，改用激活项自身高亮 */
   .admin-tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: visible;
   }
 
   .admin-tabs :deep(.el-tabs__header) {
-    min-width: max-content;
+    min-width: 0;
+    flex-wrap: wrap;
   }
 
-  /* 手机端页签可横向滚动，自定义指示器位于滚动容器外会与页签错位，
-     故隐藏它并恢复 Element Plus 原生下划线激活条（随滚动自动对齐） */
-  .admin-indicator {
+  .admin-tabs :deep(.el-tabs__nav-wrap),
+  .admin-tabs :deep(.el-tabs__nav-scroll),
+  .admin-tabs :deep(.el-tabs__nav) {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .admin-tabs :deep(.el-tabs__nav) {
+    flex-wrap: wrap;
+    width: 100%;
+    float: none;
+    transform: none !important;
+  }
+
+  /* 自定义滑动指示器与 EP 下划线在多行布局下都会错位，一并隐藏；
+     换行后也不需要 EP 的左右滚动箭头 */
+  .admin-indicator,
+  .admin-tabs :deep(.el-tabs__active-bar),
+  .admin-tabs :deep(.el-tabs__nav-prev),
+  .admin-tabs :deep(.el-tabs__nav-next) {
     display: none;
   }
 
-  .admin-tabs :deep(.el-tabs__active-bar) {
-    display: block;
-    background-color: var(--primary-color);
+  /* 激活态改用激活项自身高亮，替代无法跨行的滑动指示器。
+     高亮直接画在页签背景上（不用伪元素 + z-index，避免层叠隐患） */
+  .admin-tabs :deep(.el-tabs__item.is-active) {
+    color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.14);
+    border-radius: 8px;
   }
 
   .user-list-card {

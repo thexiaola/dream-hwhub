@@ -224,9 +224,11 @@ public class ClassServiceImpl implements ClassService {
     public ClassInfo createClass(Integer schoolId, String className, String description) {
         User currentUser = userLookup.requireCurrentUser();
 
-        // 班级必须归属学校，且只有该学校的老师（含学校管理员）才能创建班级
+        // 班级必须归属学校。默认只有该学校的老师（含学校管理员）才能创建；
+        // 拥有 class:create 权限者（平台管理员 OP 恒有）可在任意学校下创建。
         schoolService.requireSchoolExists(schoolId);
-        if (!schoolService.isSchoolTeacher(schoolId, currentUser.getId())) {
+        boolean canCreateAnywhere = userLookup.hasPermission(currentUser, PermissionNodes.CLASS_CREATE);
+        if (!canCreateAnywhere && !schoolService.isSchoolTeacher(schoolId, currentUser.getId())) {
             throw new BusinessException(BusinessErrorCode.NOT_SCHOOL_TEACHER, "只有学校老师才能创建班级", null);
         }
 

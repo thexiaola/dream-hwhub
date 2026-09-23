@@ -303,13 +303,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
-import { SCHOOL_ROLE_ADMIN, type PageResult, type SchoolDetail, type SchoolJoinApplication, type SchoolMember } from '@/types/school'
+import type { PageResult } from '@/types'
+import { SCHOOL_ROLE_ADMIN, type SchoolDetail, type SchoolJoinApplication, type SchoolMember } from '@/types/school'
 import { formatDateTime as formatDate } from '@/utils/format'
+import { useConfirmBeforeApprove } from '@/composables/useConfirmBeforeApprove'
+import { applicationStatusText as statusText, applicationStatusClass as statusClass } from '@/utils/status'
 
 const route = useRoute()
 const router = useRouter()
@@ -328,10 +331,7 @@ const canManage = computed(
 const activeTab = ref<'applications' | 'members'>('applications')
 const allowJoinWithoutApproval = ref(false)
 
-const statusText = (status: number) =>
-  ({ 0: '待审核', 1: '已通过', 2: '已拒绝' })[status] ?? '未知'
-const statusClass = (status: number) =>
-  ({ 0: 'pending', 1: 'approved', 2: 'rejected' })[status] ?? 'pending'
+// 申请状态文案/样式后缀与 AdminPanel 共用（见 utils/status）
 
 const loadSchool = async () => {
   loading.value = true
@@ -421,30 +421,11 @@ const reviewTitle = computed(() => {
   return batch ? `批量${action} ${reviewDialog.applicationIds.length} 条申请` : `${action}申请`
 })
 
-// 通过申请前是否需要二次确认：前端偏好，存本地
-const CONFIRM_APPROVE_KEY = 'schoolReviewConfirmBeforeApprove'
-
-// 隐私模式下 localStorage 可能不可写，失败时回退到默认值
-const readConfirmBeforeApprove = (): boolean => {
-  try {
-    return localStorage.getItem(CONFIRM_APPROVE_KEY) !== '0'
-  } catch {
-    return true
-  }
-}
-
-const confirmBeforeApprove = ref(readConfirmBeforeApprove())
+// 通过申请前是否需要二次确认：前端偏好，与 AdminPanel 共用（见 useConfirmBeforeApprove）
+const confirmBeforeApprove = useConfirmBeforeApprove()
 
 // 审核请求进行中：关闭二次确认时没有弹窗可反馈，靠它禁用行内按钮避免重复提交
 const reviewSubmitting = ref(false)
-
-watch(confirmBeforeApprove, (value: boolean) => {
-  try {
-    localStorage.setItem(CONFIRM_APPROVE_KEY, value ? '1' : '0')
-  } catch {
-    // 存储不可用时仅本次会话生效
-  }
-})
 
 const loadApplications = async () => {
   const params: Record<string, unknown> = { pageNum: appPage.value, pageSize: 10 }
@@ -735,21 +716,7 @@ onMounted(loadSchool)
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.65);
 }
 
-.flag {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.flag.auto {
-  color: #67c23a;
-  background: rgba(103, 194, 58, 0.15);
-}
-
-.flag.manual {
-  color: #e6a23c;
-  background: rgba(230, 162, 60, 0.15);
-}
+/* .flag 加入审核标记样式见全局 style.css（多页共用） */
 
 .identity-card {
   min-width: 220px;
@@ -794,13 +761,7 @@ onMounted(loadSchool)
   transform: translateY(-1px);
 }
 
-/* 通过申请前的确认提示 */
-.confirm-hint {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.7;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
-}
+/* .confirm-hint 审核确认提示样式见全局 style.css（多页共用） */
 
 .batch-actions {
   display: flex;
@@ -809,13 +770,20 @@ onMounted(loadSchool)
   margin-left: auto;
 }
 
+/* 本页筛选栏嵌在 el-card 内，全局 .filter-bar 的“浮起白色卡片”外观（近白渐变 +
+   内白高光）叠在浅灰卡面上过亮。这里改为中性内凹浅底 + 细描边，与卡面同调 */
 .filter-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+  padding: 8px 12px;
   flex-wrap: wrap;
+  border-radius: 12px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
+  box-shadow: none;
 }
 
 .status-tag {

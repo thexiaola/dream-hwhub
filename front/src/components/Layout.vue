@@ -1,63 +1,27 @@
 <template>
   <div class="layout">
+    <!-- ===== 顶部导航栏：全宽、优先级最高（学校选择 / 主题 / 个人信息） ===== -->
     <header class="header">
       <div class="header-left">
         <div class="logo">
           <BookOpen class="logo-icon" :size="24" />
           <span class="logo-text">作业管理系统</span>
         </div>
-        <div
-          class="nav-tabs"
-          ref="navTabsRef"
-          @pointerdown="startDrag"
-          @click.capture="onClickCapture"
+        <!-- 当前学校 + 本人在该校身份（如「北京大学（教师）」）；点击可切换学校 -->
+        <el-select
+          v-if="schoolOptions.length > 0"
+          :model-value="schoolStore.currentSchoolId"
+          class="header-school-select"
+          placeholder="选择学校"
+          @update:model-value="schoolStore.setCurrentSchool"
         >
-          <!-- 激活项背景块：可按住拖动，松开后吸附到最近的选项卡 -->
-          <span
-            v-show="indicatorVisible"
-            class="nav-indicator"
-            :class="{ 'is-dragging': indicatorDragging }"
-            :style="indicatorStyle"
+          <el-option
+            v-for="school in schoolOptions"
+            :key="school.id"
+            :label="schoolLabel(school)"
+            :value="school.id"
           />
-          <button
-            :ref="tabRefSetters.student"
-            class="nav-tab"
-            :class="{ active: activeTab === 'student' }"
-            @click="switchTab('student')"
-          >
-            <GraduationCap :size="18" />
-            我听的课
-          </button>
-          <button
-            v-if="canEnterTeacherArea"
-            :ref="tabRefSetters.teacher"
-            class="nav-tab"
-            :class="{ active: activeTab === 'teacher' }"
-            @click="switchTab('teacher')"
-          >
-            <Presentation :size="18" />
-            我教的课
-          </button>
-          <button
-            :ref="tabRefSetters.school"
-            class="nav-tab"
-            :class="{ active: activeTab === 'school' }"
-            @click="switchTab('school')"
-          >
-            <School :size="18" />
-            我的学校
-          </button>
-          <button
-            v-if="isAdmin"
-            :ref="tabRefSetters.admin"
-            class="nav-tab"
-            :class="{ active: activeTab === 'admin' }"
-            @click="switchTab('admin')"
-          >
-            <Shield :size="18" />
-            管理面板
-          </button>
-        </div>
+        </el-select>
       </div>
       <div class="header-right">
         <ThemeToggle />
@@ -82,14 +46,99 @@
         </el-dropdown>
       </div>
     </header>
-    <main class="main-content">
-      <!-- 页面切换：淡出淡入配合位移与缩放，接近 PowerPoint 平滑过渡的观感 -->
-      <router-view v-slot="{ Component, route: currentRoute }">
-        <transition name="page-morph" mode="out-in">
-          <component :is="Component" :key="currentRoute.meta.viewKey || currentRoute.path" />
-        </transition>
-      </router-view>
-    </main>
+
+    <!-- ===== 主体：左侧导航栏 + 内容区 ===== -->
+    <div class="layout-body">
+      <aside class="sidebar" :class="{ 'is-collapsed': collapsed }">
+        <!-- 顶部：用户头像 + 昵称 + 身份 -->
+        <div class="sidebar-user">
+          <UserAvatar
+            :avatar="userStore.userInfo?.avatar"
+            :size="40"
+            :alt="userStore.userInfo?.username"
+          />
+          <div v-if="!collapsed" class="sidebar-user-meta">
+            <span class="sidebar-user-name">{{ userStore.userInfo?.username || '未登录' }}</span>
+            <span class="sidebar-user-role">{{ roleText }}</span>
+          </div>
+        </div>
+
+        <!-- 导航项：激活高亮块可按住拖动，松开吸附到最近项 -->
+        <div
+          class="side-nav"
+          ref="navTabsRef"
+          @pointerdown="startDrag"
+          @click.capture="onClickCapture"
+        >
+          <span
+            v-show="indicatorVisible"
+            class="side-indicator"
+            :class="{ 'is-dragging': indicatorDragging }"
+            :style="indicatorStyle"
+          />
+          <button
+            :ref="tabRefSetters.student"
+            class="side-nav-item"
+            :class="{ active: activeTab === 'student' }"
+            :title="collapsed ? '我听的课' : undefined"
+            @click="switchTab('student')"
+          >
+            <GraduationCap :size="18" />
+            <span v-if="!collapsed" class="side-nav-label">我听的课</span>
+          </button>
+          <button
+            v-if="canEnterTeacherArea"
+            :ref="tabRefSetters.teacher"
+            class="side-nav-item"
+            :class="{ active: activeTab === 'teacher' }"
+            :title="collapsed ? '我教的课' : undefined"
+            @click="switchTab('teacher')"
+          >
+            <Presentation :size="18" />
+            <span v-if="!collapsed" class="side-nav-label">我教的课</span>
+          </button>
+          <button
+            :ref="tabRefSetters.school"
+            class="side-nav-item"
+            :class="{ active: activeTab === 'school' }"
+            :title="collapsed ? '我的学校' : undefined"
+            @click="switchTab('school')"
+          >
+            <School :size="18" />
+            <span v-if="!collapsed" class="side-nav-label">我的学校</span>
+          </button>
+          <button
+            v-if="isAdmin"
+            :ref="tabRefSetters.admin"
+            class="side-nav-item"
+            :class="{ active: activeTab === 'admin' }"
+            :title="collapsed ? '管理面板' : undefined"
+            @click="switchTab('admin')"
+          >
+            <Shield :size="18" />
+            <span v-if="!collapsed" class="side-nav-label">管理面板</span>
+          </button>
+        </div>
+
+        <!-- 底部：收起 / 展开导航 -->
+        <button
+          class="sidebar-collapse"
+          :title="collapsed ? '展开导航' : '收起导航'"
+          @click="collapsed = !collapsed"
+        >
+          <component :is="collapsed ? ChevronsRight : ChevronsLeft" :size="18" />
+        </button>
+      </aside>
+
+      <main class="main-content">
+        <!-- 页面切换：淡出淡入配合位移与缩放，接近 PowerPoint 平滑过渡的观感 -->
+        <router-view v-slot="{ Component, route: currentRoute }">
+          <transition name="page-morph" mode="out-in">
+            <component :is="Component" :key="currentRoute.meta.viewKey || currentRoute.path" />
+          </transition>
+        </router-view>
+      </main>
+    </div>
 
     <!-- 手机端底部导航 -->
     <nav class="mobile-tab-bar">
@@ -146,8 +195,12 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { useSchoolStore } from '@/stores/school'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import { useDraggableIndicator } from '@/composables/useDraggableIndicator'
-import { BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield, School } from '@lucide/vue'
+import {
+  BookOpen, GraduationCap, Presentation, User, ChevronDown, LogOut, Shield, School,
+  ChevronsLeft, ChevronsRight
+} from '@lucide/vue'
 
 type NavTab = 'student' | 'teacher' | 'school' | 'admin'
 
@@ -160,7 +213,29 @@ const isAdmin = computed(() => userStore.isAdmin)
 const canEnterTeacherArea = computed(() => userStore.isOp || schoolStore.isSchoolTeacher)
 const activeTab = ref<NavTab>('student')
 
-// 导航激活块的定位：随选中选项卡移动，可按住拖动
+// 侧边栏收起状态：收起后只留图标，为内容区让出宽度
+const collapsed = ref(false)
+
+// 顶部「选择学校」下拉的选项：我加入的学校（教职工与学生共用）
+const schoolOptions = computed(() => schoolStore.mySchools ?? [])
+
+// 学校选项文案：学校全称 + 本人在该校身份，如「北京大学（教师）」
+// 按角色码映射而非直接用后端 myRole，使措辞与侧边栏、个人中心统一为「教师」
+const SCHOOL_ROLE_TEXT: Record<number, string> = { 2: '学校管理员', 1: '教师', 0: '学生' }
+
+const schoolLabel = (school: { schoolName: string; myRoleCode?: number | null }) => {
+  const role = school.myRoleCode != null ? SCHOOL_ROLE_TEXT[school.myRoleCode] : undefined
+  return role ? `${school.schoolName}（${role}）` : school.schoolName
+}
+
+// 侧边栏展示的身份标签
+const roleText = computed(() => {
+  if (userStore.isOp) return '平台管理员'
+  if (schoolStore.isSchoolTeacher) return '教师'
+  return '学生'
+})
+
+// 导航激活块的定位：随选中项移动，可按住拖动
 const navTabsRef = ref<HTMLElement | null>(null)
 const tabElements = new Map<string, HTMLElement>()
 let resizeObserver: ResizeObserver | null = null
@@ -181,7 +256,7 @@ const tabRefSetters = {
   admin: (el: unknown) => setTabRef('admin', el)
 }
 
-// 当前可见选项卡的视觉顺序，拖拽吸附与命中测试都以此为准
+// 当前可见导航项的视觉顺序，拖拽吸附与命中测试都以此为准
 const tabOrder = computed<NavTab[]>(() => {
   const keys: NavTab[] = ['student']
   if (canEnterTeacherArea.value) keys.push('teacher')
@@ -199,7 +274,7 @@ const getTabs = () => {
   return result
 }
 
-// 各选项卡对应的目标路径
+// 各导航项对应的目标路径
 const navPath = (tab: NavTab): string =>
   tab === 'student'
     ? '/student/courses'
@@ -209,11 +284,11 @@ const navPath = (tab: NavTab): string =>
         ? '/school'
         : '/admin/panel'
 
-// 当前是否已处于该选项卡对应的路由下。
-// 用前缀匹配而非全等：如管理面板子路由为 /admin/panel/:tab，仍应视为已在该选项卡
+// 当前是否已处于该项对应的路由下。
+// 用前缀匹配而非全等：如管理面板子路由为 /admin/panel/:tab，仍应视为已在该项
 const isOnTab = (tab: NavTab): boolean => route.path === navPath(tab) || route.path.startsWith(`/${tab}`)
 
-// 点击选项卡：写入历史，便于后退
+// 点击导航项：写入历史，便于后退
 const switchTab = (tab: NavTab) => {
   activeTab.value = tab
   if (!isOnTab(tab)) {
@@ -221,7 +296,7 @@ const switchTab = (tab: NavTab) => {
   }
 }
 
-// 拖拽经过选项卡：实时跳转；用 replace 避免快速掠过时刷出多条历史
+// 拖拽经过导航项：实时跳转；用 replace 避免快速掠过时刷出多条历史
 const previewTab = (tab: NavTab) => {
   if (activeTab.value === tab) return
   activeTab.value = tab
@@ -235,19 +310,25 @@ const { dragging: indicatorDragging, position: indicatorPosition, visible: indic
     container: navTabsRef,
     getTabs,
     activeKey: () => activeTab.value,
+    // 侧边栏为竖直排布
+    axis: 'y',
     // 拖拽经过即实时跳转
     onCross: key => previewTab(key as NavTab),
-    // 松开吸附到最近的选项卡
+    // 松开吸附到最近的导航项
     onSettle: key => switchTab(key as NavTab)
   })
 
 const indicatorStyle = computed(() => {
   const pos = indicatorPosition.value
   if (!pos) return {}
-  return { transform: `translateX(${pos.left}px)`, width: `${pos.width}px` }
+  return {
+    transform: `translate(${pos.left}px, ${pos.top}px)`,
+    width: `${pos.width}px`,
+    height: `${pos.height}px`
+  }
 })
 
-// 切换选项卡或隐藏/显示入口（如学校身份变化）后重新定位
+// 切换导航项或隐藏/显示入口（如学校身份变化）后重新定位
 watch(activeTab, () => nextTick(syncToActive))
 watch(canEnterTeacherArea, () => nextTick(syncToActive))
 watch(isAdmin, () => nextTick(syncToActive))
@@ -273,7 +354,7 @@ onMounted(async () => {
   await nextTick()
   syncToActive()
 
-  // 容器尺寸变化（窗口缩放、字体加载、选项卡增减）时重新定位
+  // 容器尺寸变化（窗口缩放、字体加载、导航项增减）时重新定位
   resizeObserver = new ResizeObserver(handleResize)
   if (navTabsRef.value) {
     resizeObserver.observe(navTabsRef.value)
@@ -288,7 +369,8 @@ onMounted(async () => {
     activeTab.value = 'student'
   }
 
-  // 拉取学校身份：决定「我教的课」入口是否展示，以及教师页面的高亮
+  // 拉取学校列表：顶部「选择学校」下拉需要它（教职工与学生共用），
+  // 「我教的课」入口是否展示也取决于此。请求在 store 内做了并发去重。
   await schoolStore.fetchMySchools()
   if (route.path.startsWith('/teacher') && canEnterTeacherArea.value) {
     activeTab.value = 'teacher'
@@ -308,15 +390,18 @@ onUnmounted(() => {
   min-height: 100vh;
 }
 
+/* ===== 顶部导航栏：全宽、优先级最高 ===== */
 .header {
+  position: relative;
+  z-index: 10;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
   height: 64px;
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
-  border-bottom: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
 }
 
 .header-left {
@@ -345,64 +430,16 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.nav-tabs {
-  position: relative;
-  display: flex;
-  gap: 8px;
-}
-
-/* 激活项背景块：位置与宽度过渡交给 transform/width 动画 */
-.nav-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  box-sizing: border-box;
-  border: 1px solid rgba(102, 126, 234, 0.4);
-  border-radius: 8px;
-  background: rgba(102, 126, 234, 0.2);
-  pointer-events: none;
-  transition:
-    transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1),
-    width 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-/* 拖拽中：位移紧跟指针（transform 不设过渡），仅宽度平滑过渡，
-   使滑块在掠过不同宽度的选项卡时尺寸变化有动画而非生硬跳变 */
-.nav-indicator.is-dragging {
-  transition: width 0.18s ease;
-}
-
-.nav-tab {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: transparent;
-  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
-  border-radius: 8px;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.nav-tab:hover {
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
-  color: var(--fg);
-}
-
-.nav-tab.active {
-  border-color: transparent;
-  background: transparent;
-  color: #667eea;
-}
-
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+/* 顶部「当前学校（身份）」下拉：显示学校全称 + 身份，名称过长时省略 */
+.header-school-select {
+  width: 240px;
+  max-width: 40vw;
 }
 
 .user-info {
@@ -434,8 +471,169 @@ onUnmounted(() => {
   color: inherit;
 }
 
+/* ===== 主体：左导航 + 内容 ===== */
+.layout-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* 左侧导航栏：品牌色渐变，形式参照超星平台 */
+.sidebar {
+  position: relative;
+  z-index: 1;
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px 12px;
+  background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+  transition: width 0.25s ease;
+}
+
+.sidebar.is-collapsed {
+  width: 68px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* 顶部：用户头像 + 昵称 + 身份 */
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  margin-bottom: 12px;
+}
+
+.sidebar.is-collapsed .sidebar-user {
+  justify-content: center;
+  padding: 6px;
+}
+
+/* 头像在渐变底上加深色环，保证边界清晰 */
+.sidebar-user :deep(.user-avatar) {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.sidebar-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-role {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.side-nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 激活项背景块：位置与尺寸过渡交给 transform/width/height 动画 */
+.side-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  transition:
+    transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1),
+    width 0.38s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* 拖拽中：位移紧跟指针（transform 不设过渡），仅尺寸平滑过渡 */
+.side-indicator.is-dragging {
+  transition:
+    width 0.18s ease,
+    height 0.18s ease;
+}
+
+.side-nav-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar.is-collapsed .side-nav-item {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.side-nav-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.side-nav-item.active {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.side-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 底部：收起 / 展开导航 */
+.sidebar-collapse {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-collapse:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ===== 内容区 ===== */
 .main-content {
   flex: 1;
+  min-width: 0;
   padding: 24px;
   overflow-y: auto;
 }
@@ -466,8 +664,8 @@ onUnmounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .page-morph-enter-active,
   .page-morph-leave-active,
-  .nav-indicator,
-  .nav-indicator.is-dragging {
+  .side-indicator,
+  .side-indicator.is-dragging {
     transition: none;
   }
 
@@ -517,25 +715,39 @@ onUnmounted(() => {
   color: #667eea;
 }
 
-/* 手机端适配 */
+/* 手机端适配：隐藏侧边栏，改用底部导航 */
 @media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
   .header {
     padding: 0 12px;
     height: 56px;
   }
 
+  /* 顶部栏空间紧张：logo 收成图标，让左侧「当前学校（身份）」下拉占据剩余宽度 */
   .header-left {
-    gap: 12px;
     flex: 1;
     min-width: 0;
+    gap: 8px;
   }
 
   .logo-text {
-    font-size: 14px;
+    display: none;
   }
 
-  .nav-tabs {
-    display: none;
+  .header-right {
+    flex: 0 0 auto;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .header-school-select {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    max-width: none;
   }
 
   .user-name {

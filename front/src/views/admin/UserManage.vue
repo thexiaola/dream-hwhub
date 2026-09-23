@@ -207,13 +207,7 @@ import { invalidateAvatarCache } from '@/utils/attachment'
 import UserAvatar from '@/components/UserAvatar.vue'
 import PermissionNodeTree from './PermissionNodeTree.vue'
 import type { AdminUser, AdminUserForm, PermissionGroup, PermissionNodeGroup } from '@/types/admin'
-
-interface PageResult<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
-}
+import type { PageResult } from '@/types'
 
 const userStore = useUserStore()
 
@@ -628,9 +622,12 @@ const submitPermission = async () => {
 }
 
 onMounted(() => {
+  // 只加载本模块的用户列表；权限组/节点数据待打开「权限分配」弹窗时再按需拉取
   loadUsers()
-  loadMeta()
 })
+
+// 供父级在每次进入本页签时触发刷新（仅刷新本模块数据）
+defineExpose({ reload: loadUsers })
 </script>
 
 <style scoped>
@@ -738,22 +735,7 @@ onMounted(() => {
   overflow-y: auto;
 }
 
-.admin-table {
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
-  --el-table-text-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
-  --el-table-header-text-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
-  --el-table-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
-}
-
-.admin-table :deep(.el-table__inner-wrapper::before) {
-  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
-}
-
-.admin-table :deep(.el-table__row:hover > td) {
-  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05) !important;
-}
+/* .admin-table 表格主题化样式见全局 style.css（多页共用） */
 
 :deep(.el-checkbox__label) {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);

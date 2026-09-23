@@ -90,6 +90,7 @@ public final class PermissionRegistry {
                     new Node(PermissionNodes.PERMISSION_USER_ASSIGN, "分配用户节点", "为用户单独授予权限节点"))),
             new Group("class", "班级管理", List.of(
                     new Node(PermissionNodes.CLASS_VIEW_ALL, "查看全部班级", "查看平台上所有班级"),
+                    new Node(PermissionNodes.CLASS_CREATE, "创建班级", "在任意学校下创建班级"),
                     new Node(PermissionNodes.CLASS_UPDATE, "管理任意班级", "修改任意班级信息"),
                     new Node(PermissionNodes.CLASS_DISSOLVE, "解散任意班级", "解散非自己创建的班级"),
                     new Node(PermissionNodes.CLASS_MEMBER_KICK, "踢出班级成员", "从任意班级踢出成员"),

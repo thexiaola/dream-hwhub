@@ -6,21 +6,8 @@
         <p class="subtitle">查看你作为学生加入的课程</p>
       </div>
       <div class="header-right">
-        <el-select
-          v-if="schoolOptions.length > 0"
-          :model-value="schoolStore.currentSchoolId"
-          class="school-select"
-          placeholder="选择学校"
-          @update:model-value="schoolStore.setCurrentSchool"
-        >
-          <el-option
-            v-for="school in schoolOptions"
-            :key="school.id"
-            :label="school.schoolName"
-            :value="school.id"
-          />
-        </el-select>
-        <span v-else class="school-empty-tip">
+        <!-- 选择学校已上移到顶部导航栏（全局）；此处仅在没有学校时给出提示 -->
+        <span v-if="schoolOptions.length === 0" class="school-empty-tip">
           <School :size="16" />
           尚未加入任何学校
         </span>
@@ -394,11 +381,6 @@ onMounted(async () => {
   margin-right: 12px;
 }
 
-.school-select {
-  width: 180px;
-  margin-right: 12px;
-}
-
 .school-empty-tip {
   display: inline-flex;
   align-items: center;
@@ -673,12 +655,7 @@ onMounted(async () => {
     width: 100%;
   }
 
-  /* 学校选择器占满整行，其余按钮平分剩余空间 */
-  .school-select {
-    width: 100%;
-    margin-right: 0;
-  }
-
+  /* 其余按钮平分剩余空间 */
   .school-empty-tip {
     width: 100%;
     margin-right: 0;

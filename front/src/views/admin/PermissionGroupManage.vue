@@ -271,6 +271,9 @@ onMounted(() => {
   loadGroups()
   loadNodes()
 })
+
+// 供父级在每次进入本页签时触发刷新
+defineExpose({ reload: () => { loadGroups(); loadNodes() } })
 </script>
 
 <style scoped>
@@ -309,20 +312,5 @@ onMounted(() => {
   margin-left: 10px;
 }
 
-.admin-table {
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
-  --el-table-text-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
-  --el-table-header-text-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
-  --el-table-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
-}
-
-.admin-table :deep(.el-table__inner-wrapper::before) {
-  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
-}
-
-.admin-table :deep(.el-table__row:hover > td) {
-  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05) !important;
-}
+/* .admin-table 表格主题化样式见全局 style.css（多页共用） */
 </style>

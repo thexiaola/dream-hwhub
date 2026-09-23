@@ -16,6 +16,9 @@ export const useSchoolStore = defineStore('school', () => {
   // 我加入的学校列表；null 表示尚未获取过
   const mySchools = ref<SchoolDetail[] | null>(null)
 
+  // 进行中的请求：供并发调用复用，避免同一时刻重复请求 /school/mine
+  let inFlight: Promise<boolean> | null = null
+
   // 当前所在学校 ID，null 表示未选择或未加入任何学校
   const currentSchoolId = ref<number | null>(readStoredSchoolId())
 
@@ -42,16 +45,25 @@ export const useSchoolStore = defineStore('school', () => {
     if (!force && mySchools.value) {
       return true
     }
-    try {
-      const result = await get<SchoolDetail[]>('/school/mine')
-      if (result.code === 200) {
-        mySchools.value = result.data ?? []
-        return true
-      }
-    } catch {
-      // 请求失败时保留上一次结果，由调用方按最保守方式处理
+    // 已有请求在途时复用其结果：顶部「选择学校」与页面会在挂载时同时触发
+    if (!force && inFlight) {
+      return inFlight
     }
-    return false
+    inFlight = (async () => {
+      try {
+        const result = await get<SchoolDetail[]>('/school/mine')
+        if (result.code === 200) {
+          mySchools.value = result.data ?? []
+          return true
+        }
+      } catch {
+        // 请求失败时保留上一次结果，由调用方按最保守方式处理
+      } finally {
+        inFlight = null
+      }
+      return false
+    })()
+    return inFlight
   }
 
   // 当前学校失效（退出学校 / 学校被解散 / 换账号）时回退到列表首个学校

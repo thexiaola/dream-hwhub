@@ -9,6 +9,9 @@ export interface TabGeometry {
   height: number
 }
 
+/** 指示器的主轴方向：x-水平（顶部导航、分段控件），y-竖直（侧边栏导航） */
+export type IndicatorAxis = 'x' | 'y'
+
 export interface UseDraggableIndicatorOptions {
   /** 定位容器：指示器与 tab 坐标都相对它计算，也是命中测试的坐标系 */
   container: Ref<HTMLElement | null>
@@ -16,6 +19,8 @@ export interface UseDraggableIndicatorOptions {
   getTabs: () => { key: string; el: HTMLElement }[]
   /** 当前激活项 key；未拖拽时指示器吸附到它 */
   activeKey: () => string
+  /** 主轴方向，默认 'x' */
+  axis?: IndicatorAxis
   /** 拖拽中滑块中心进入某个 tab 时实时回调（用于实时切换激活项） */
   onCross?: (key: string) => void
   /** 松开鼠标并吸附到最近 tab 时回调 */
@@ -30,8 +35,10 @@ const CLICK_SUPPRESS_MS = 250
 /**
  * 可拖拽的激活指示器：按住高亮块拖动使其跟随指针，松开后吸附到最近 tab。
  * 文字保持不动，只有指示器位移；由使用方根据 position 渲染指示器。
+ * 通过 axis 支持水平/竖直两种排布。
  */
 export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
+  const isVertical = (options.axis ?? 'x') === 'y'
   const dragging = ref(false)
   // 静止位置（跟随 activeKey）与拖拽中的位置分开存放，避免拖拽被 activeKey 变化打断
   const resting = ref<TabGeometry | null>(null)
@@ -39,6 +46,10 @@ export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
 
   const position = computed(() => (dragging.value ? dragGeo.value : resting.value))
   const visible = computed(() => !!position.value)
+
+  // 主轴上的起点与尺寸（竖直时取 top/height，水平时取 left/width）
+  const mainStart = (g: TabGeometry) => (isVertical ? g.top : g.left)
+  const mainSize = (g: TabGeometry) => (isVertical ? g.height : g.width)
 
   // 容器当前的「布局 → 视觉」缩放比：页面进出场动画含 scale，getBoundingClientRect
   // 会返回缩放后的值，而 CSS 的 px 是布局值，故需按 offsetWidth 换算回布局坐标系
@@ -76,7 +87,7 @@ export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
   let moved = false
   let startX = 0
   let startY = 0
-  // 指针在滑块内的抓取偏移：拖动时保持指针落在滑块的同一相对位置
+  // 指针在主轴上相对滑块起点的抓取偏移：拖动时保持该相对位置
   let grabOffset = 0
   let crossedKey: string | null = null
   let suppressClick = false
@@ -86,7 +97,7 @@ export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
     let best = tabs[0]
     let bestDist = Infinity
     for (const tab of tabs) {
-      const dist = Math.abs(tab.left + tab.width / 2 - center)
+      const dist = Math.abs(mainStart(tab) + mainSize(tab) / 2 - center)
       if (dist < bestDist) {
         bestDist = dist
         best = tab
@@ -96,8 +107,9 @@ export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
   }
 
   /** 指针所在的 tab；不在任何 tab 内时取中心最近者 */
-  const tabAtPointer = (pointerX: number, tabs: TabGeometry[]) =>
-    tabs.find(t => pointerX >= t.left && pointerX <= t.left + t.width) ?? nearestTab(pointerX, tabs)
+  const tabAtPointer = (pointerMain: number, tabs: TabGeometry[]) =>
+    tabs.find(t => pointerMain >= mainStart(t) && pointerMain <= mainStart(t) + mainSize(t)) ??
+    nearestTab(pointerMain, tabs)
 
   const onMove = (event: PointerEvent) => {
     if (!pressed) return
@@ -111,26 +123,24 @@ export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
     const tabs = measureTabs()
     if (!container || tabs.length === 0) return
 
-    // 指针位置换算到容器坐标系，滑块跟随指针（保持抓取偏移）
+    // 指针位置换算到容器坐标系
     const base = container.getBoundingClientRect()
-    const pointerX = event.clientX - base.left
+    const pointerMain = isVertical
+      ? (event.clientY - base.top) / layoutScale(container)
+      : (event.clientX - base.left) / layoutScale(container)
 
     // 尺寸随指针所在 tab 动态变化，而非固定大小
-    const target = tabAtPointer(pointerX, tabs)
-    const width = target.width
+    const target = tabAtPointer(pointerMain, tabs)
+    const targetSize = mainSize(target)
     const first = tabs[0]
     const last = tabs[tabs.length - 1]
-    const minLeft = first.left
-    const maxLeft = Math.max(minLeft, last.left + last.width - width)
-    const left = Math.min(Math.max(pointerX - grabOffset, minLeft), maxLeft)
+    const minMain = mainStart(first)
+    const maxMain = Math.max(minMain, mainStart(last) + mainSize(last) - targetSize)
+    const mainPos = Math.min(Math.max(pointerMain - grabOffset, minMain), maxMain)
 
-    dragGeo.value = {
-      key: target.key,
-      left,
-      top: target.top,
-      width,
-      height: target.height
-    }
+    dragGeo.value = isVertical
+      ? { key: target.key, left: target.left, top: mainPos, width: target.width, height: targetSize }
+      : { key: target.key, left: mainPos, top: target.top, width: targetSize, height: target.height }
 
     // 实时切换：指针进入某个 tab 时切换过去
     if (options.onCross && target.key !== crossedKey) {
@@ -166,7 +176,7 @@ export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
     if (wasDragging && settle && geo) {
       const tabs = measureTabs()
       if (tabs.length > 0) {
-        options.onSettle?.(nearestTab(geo.left + geo.width / 2, tabs).key)
+        options.onSettle?.(nearestTab(mainStart(geo) + mainSize(geo) / 2, tabs).key)
       }
     }
 
@@ -202,8 +212,8 @@ export function useDraggableIndicator(options: UseDraggableIndicatorOptions) {
     moved = false
     startX = event.clientX
     startY = event.clientY
-    // 记录抓取偏移：指针相对滑块左边缘的位置，拖动时保持该相对位置
-    grabOffset = pointerX - geo.left
+    // 记录主轴上的抓取偏移：拖动时保持指针落在滑块的同一相对位置
+    grabOffset = (isVertical ? pointerY : pointerX) - mainStart(geo)
     crossedKey = options.activeKey()
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)

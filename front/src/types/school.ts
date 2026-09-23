@@ -1,11 +1,3 @@
-/** 分页结果 */
-export interface PageResult<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
-}
-
 /** 学校简要信息 */
 export interface School {
   id: number

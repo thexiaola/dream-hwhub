@@ -144,7 +144,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, School } from '@lucide/vue'
 import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
-import type { PageResult, School as SchoolInfo, SchoolDetail } from '@/types/school'
+import type { PageResult } from '@/types'
+import type { School as SchoolInfo, SchoolDetail } from '@/types/school'
 import { formatDateOnly as formatDate } from '@/utils/format'
 
 const userStore = useUserStore()
@@ -308,6 +309,9 @@ const submitAdmin = async () => {
 }
 
 onMounted(loadSchools)
+
+// 供父级在每次进入本页签时触发刷新
+defineExpose({ reload: loadSchools })
 </script>
 
 <style scoped>
@@ -370,21 +374,7 @@ onMounted(loadSchools)
   overflow-wrap: anywhere;
 }
 
-.flag {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.flag.auto {
-  color: #67c23a;
-  background: rgba(103, 194, 58, 0.15);
-}
-
-.flag.manual {
-  color: #e6a23c;
-  background: rgba(230, 162, 60, 0.15);
-}
+/* .flag 加入审核标记样式见全局 style.css（多页共用） */
 
 /* 操作区：独立成一块高亮面板，与左侧信息区拉开层次 */
 .card-actions {
