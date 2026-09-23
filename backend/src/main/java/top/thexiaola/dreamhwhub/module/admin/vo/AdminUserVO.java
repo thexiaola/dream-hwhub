@@ -25,6 +25,9 @@ public class AdminUserVO {
     // 手机号
     private String phone;
 
+    // 头像文件相对路径，空表示未设置
+    private String avatar;
+
     // 是否平台管理员（OP）
     private Boolean isOp;
 

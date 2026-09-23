@@ -322,6 +322,34 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  /* 手机端页头纵向堆叠，操作区另起一行，避免与标题左右挤压 */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .header-left h2 {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-right .el-button {
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
+
   .course-grid {
     grid-template-columns: 1fr;
   }

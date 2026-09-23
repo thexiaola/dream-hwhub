@@ -49,6 +49,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final ClassInvitationMapper classInvitationMapper;
     private final PermissionService permissionService;
     private final PasswordUtil passwordUtil;
+    private final top.thexiaola.dreamhwhub.support.storage.AvatarStorageService avatarStorageService;
 
     /**
      * 模糊匹配片段
@@ -64,7 +65,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     public Page<AdminUserVO> listUsers(AdminUserSearchRequest request, Integer pageNum, Integer pageSize) {
         QueryWrapper<User> query = new QueryWrapper<>();
         // 只查询展示所需字段，不把密码等敏感列带到内存
-        query.select("id", "username", "email", "phone", "is_op", "is_banned", "ban_reason",
+        query.select("id", "username", "email", "phone", "avatar", "is_op", "is_banned", "ban_reason",
                 "register_time", "last_login_time");
 
         // 按 CNKI 语义分组：连续的「并且」归为一组，组间用「或者」，整体在数据库中执行
@@ -245,6 +246,39 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     @Override
+    public AdminUserVO updateUserAvatar(Integer userId, org.springframework.web.multipart.MultipartFile file) {
+        User user = requireUser(userId);
+        String oldAvatar = user.getAvatar();
+        String newAvatar = avatarStorageService.save(file, user.getId());
+
+        try {
+            user.setAvatar(newAvatar);
+            userMapper.updateById(user);
+        } catch (RuntimeException e) {
+            // 入库失败时清理刚写入的文件，避免残留孤儿文件
+            avatarStorageService.delete(newAvatar);
+            throw e;
+        }
+
+        avatarStorageService.delete(oldAvatar);
+        log.info("Admin updated avatar of user {} (id: {})", user.getUsername(), user.getId());
+        return toVO(userMapper.selectById(user.getId()));
+    }
+
+    @Override
+    public AdminUserVO removeUserAvatar(Integer userId) {
+        User user = requireUser(userId);
+        String oldAvatar = user.getAvatar();
+        // updateById 默认忽略 null 字段，需用 UpdateWrapper 显式把 avatar 置空
+        userMapper.update(null, new UpdateWrapper<User>()
+                .eq("id", user.getId())
+                .set("avatar", null));
+        avatarStorageService.delete(oldAvatar);
+        log.info("Admin removed avatar of user {} (id: {})", user.getUsername(), user.getId());
+        return toVO(userMapper.selectById(user.getId()));
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Integer userId) {
         User user = requireUser(userId);
@@ -374,6 +408,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         vo.setUsername(user.getUsername());
         vo.setEmail(user.getEmail());
         vo.setPhone(user.getPhone());
+        vo.setAvatar(user.getAvatar());
         vo.setIsOp(Boolean.TRUE.equals(user.getIsOp()));
         vo.setIsBanned(Boolean.TRUE.equals(user.getIsBanned()));
         vo.setBanReason(user.getBanReason());

@@ -1,9 +1,11 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
@@ -16,6 +18,7 @@ import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
+import top.thexiaola.dreamhwhub.support.storage.AvatarStorageService;
 
 import static top.thexiaola.dreamhwhub.module.login.service.impl.LoginUserServiceImpl.getUser;
 
@@ -26,6 +29,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
     private final UserMapper userMapper;
     private final EmailService emailService;
     private final PasswordUtil passwordUtil;
+    private final AvatarStorageService avatarStorageService;
 
     @Override
     public User modifyUserInfo(ModifyUserInfoRequest modifyUserInfoRequest) {
@@ -37,7 +41,9 @@ public class ModifyUserServiceImpl implements ModifyUserService {
 
         // 新字段数据
         String newUsername = modifyUserInfoRequest.getUsername();
-        String newPhone = modifyUserInfoRequest.getPhone();
+        // 手机号留空（null 或纯空白）表示删除手机号
+        String rawPhone = modifyUserInfoRequest.getPhone();
+        String newPhone = (rawPhone == null || rawPhone.trim().isEmpty()) ? null : rawPhone.trim();
 
         // 用户名不区分大小写唯一（排除自己）
         QueryWrapper<User> usernameQueryWrapper = new QueryWrapper<>();
@@ -47,16 +53,58 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         if (existingUsernameUser != null) {
             throw new BusinessException(BusinessErrorCode.USERNAME_EXISTS, "用户名已存在", null);
         }
-        
-        user.setUsername(newUsername);
-        user.setPhone(newPhone);
 
-        // 更新数据库
-        userMapper.updateById(user);
+        // updateById 默认忽略 null 字段，手机号需删除时必须用 UpdateWrapper 显式置空
+        userMapper.update(null, new UpdateWrapper<User>()
+                .eq("id", user.getId())
+                .set("username", newUsername)
+                .set("phone", newPhone));
 
         return userMapper.selectById(user.getId());
     }
-    
+
+    @Override
+    public User modifyUserAvatar(MultipartFile file) {
+        User user = UserUtils.getCurrentUser();
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        String oldAvatar = user.getAvatar();
+        String newAvatar = avatarStorageService.save(file, user.getId());
+
+        try {
+            user.setAvatar(newAvatar);
+            userMapper.updateById(user);
+        } catch (RuntimeException e) {
+            // 入库失败时清理刚写入的文件，避免残留孤儿文件
+            avatarStorageService.delete(newAvatar);
+            throw e;
+        }
+
+        // 更新成功后再删除旧头像文件
+        avatarStorageService.delete(oldAvatar);
+        log.info("User {} updated avatar to {}", user.getUsername(), newAvatar);
+        return userMapper.selectById(user.getId());
+    }
+
+    @Override
+    public User removeUserAvatar() {
+        User user = UserUtils.getCurrentUser();
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+
+        String oldAvatar = user.getAvatar();
+        // updateById 默认忽略 null 字段，需用 UpdateWrapper 显式把 avatar 置空
+        userMapper.update(null, new UpdateWrapper<User>()
+                .eq("id", user.getId())
+                .set("avatar", null));
+        avatarStorageService.delete(oldAvatar);
+        log.info("User {} removed avatar", user.getUsername());
+        return userMapper.selectById(user.getId());
+    }
+
     @Override
     public User modifyUserEmail(ModifyEmailRequest modifyEmailRequest) {
         // 获取当前用户

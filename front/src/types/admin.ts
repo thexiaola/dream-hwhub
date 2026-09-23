@@ -26,6 +26,8 @@ export interface AdminUser {
   username: string
   email: string
   phone?: string
+  /** 头像文件相对路径，空表示未设置 */
+  avatar?: string | null
   isOp: boolean
   isBanned: boolean
   banReason?: string | null

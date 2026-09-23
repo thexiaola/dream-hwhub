@@ -1,7 +1,10 @@
 <template>
   <div class="group-manage">
-    <div class="filter-bar">
-      <el-button v-if="canAdd" type="primary" plain @click="openCreate">新建权限组</el-button>
+    <div class="group-toolbar">
+      <el-button v-if="canAdd" type="primary" plain @click="openCreate">
+        <Plus :size="16" />
+        新建权限组
+      </el-button>
       <span class="hint">权限节点由系统内置定义，权限组用于把一组节点打包授予用户</span>
     </div>
 
@@ -93,6 +96,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import PermissionNodeTree from './PermissionNodeTree.vue'
+import { Plus } from '@lucide/vue'
 import type { PermissionGroup, PermissionNodeGroup } from '@/types/admin'
 
 const userStore = useUserStore()
@@ -270,8 +274,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 工具栏：动作按钮 + 说明文字，与下方表格左对齐铺满整行，
+   不使用筛选卡片外观，避免窄卡片悬在宽表格上方显得突兀 */
+.group-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
 .hint {
   font-size: 13px;
+  line-height: 1.5;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
 }
 

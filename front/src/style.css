@@ -277,6 +277,14 @@
     0 12px 28px -18px rgba(102, 126, 234, 0.45);
   --segment-track: rgba(102, 126, 234, 0.08);
 
+  /* 卡片操作栏 (.xxx-actions)：与信息区区分的浅色底 + 分隔线，弱化为“可操作区” */
+  --action-bar-bg: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.07) 0%,
+    rgba(102, 126, 234, 0.03) 100%
+  );
+  --action-bar-border: rgba(102, 126, 234, 0.16);
+
   /* 前景色：--r-fg/--g-fg/--b-fg 为 RGB 分量（已 @property 注册可插值），
      供 rgba(var(--r-fg), var(--g-fg), var(--b-fg), X) 使用；--fg 为实色前景；
      --fg-on-accent 用于渐变/主色面上的文字（恒白） */
@@ -331,6 +339,28 @@
   --el-button-text-color: var(--text-primary);
   --el-button-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
   --el-button-border-color: var(--border-color);
+
+  /* 按钮主题令牌：渐变底与危险色在此定义亮色一套，深色主题整组替换，
+     使所有按钮在切换主题时颜色都发生变化 */
+  --btn-primary-bg: linear-gradient(135deg, #667eea, #764ba2);
+  --btn-primary-disabled-bg: rgba(102, 126, 234, 0.14);
+  --btn-primary-disabled-text: rgba(102, 126, 234, 0.65);
+  --btn-danger-solid-bg: #f56c6c;
+  --btn-danger-solid-disabled-bg: #fab6b6;
+  --btn-danger-solid-disabled-text: #ffffff;
+  --btn-danger-text: #f56c6c;
+  --btn-danger-plain-bg: #fef0f0;
+  --btn-danger-plain-border: #fab6b6;
+  --btn-danger-plain-disabled-bg: #fef0f0;
+  --btn-danger-plain-disabled-border: #fde2e2;
+  --btn-danger-plain-disabled-text: #fab6b6;
+  --btn-danger-strong-bg: linear-gradient(135deg, #ef4444, #dc2626);
+  --btn-danger-deep-bg: linear-gradient(135deg, #ef4444, #b91c1c);
+  --btn-danger-warn-bg: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.95),
+    rgba(185, 28, 28, 0.95)
+  );
   color-scheme: light;
 }
 
@@ -353,6 +383,14 @@ html[data-theme="dark"] {
     0 1px 2px rgba(0, 0, 0, 0.4),
     0 20px 44px -26px rgba(0, 0, 0, 0.85);
   --segment-track: rgba(0, 0, 0, 0.25);
+
+  /* 卡片操作栏 (.xxx-actions)：暗色下改用极浅白底 + 白描边，与信息区拉开层次 */
+  --action-bar-bg: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  --action-bar-border: rgba(255, 255, 255, 0.12);
 
   --r-fg: 255;
   --g-fg: 255;
@@ -402,6 +440,29 @@ html[data-theme="dark"] {
   --el-button-text-color: var(--text-primary);
   --el-button-bg-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
   --el-button-border-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2);
+  /* 弹层底色（el-select 下拉等）：EP 默认 overlay 为纯白，深色下会形成白底浅字 */
+  --el-bg-color-overlay: var(--bg-elevated);
+
+  /* 按钮主题令牌：深色下整组替换为提亮/降饱和的一套，与亮色形成明确差异 */
+  --btn-primary-bg: linear-gradient(135deg, #7d90f4, #9066c8);
+  --btn-primary-disabled-bg: rgba(125, 144, 244, 0.16);
+  --btn-primary-disabled-text: rgba(160, 178, 250, 0.7);
+  --btn-danger-solid-bg: #ef5350;
+  --btn-danger-solid-disabled-bg: rgba(239, 68, 68, 0.25);
+  --btn-danger-solid-disabled-text: rgba(248, 113, 113, 0.65);
+  --btn-danger-text: #f87171;
+  --btn-danger-plain-bg: rgba(239, 68, 68, 0.12);
+  --btn-danger-plain-border: rgba(239, 68, 68, 0.4);
+  --btn-danger-plain-disabled-bg: rgba(239, 68, 68, 0.06);
+  --btn-danger-plain-disabled-border: rgba(239, 68, 68, 0.18);
+  --btn-danger-plain-disabled-text: rgba(239, 68, 68, 0.45);
+  --btn-danger-strong-bg: linear-gradient(135deg, #f87171, #e04b4b);
+  --btn-danger-deep-bg: linear-gradient(135deg, #f87171, #dc2626);
+  --btn-danger-warn-bg: linear-gradient(
+    135deg,
+    rgba(248, 113, 113, 0.95),
+    rgba(220, 38, 38, 0.95)
+  );
   color-scheme: dark;
 }
 
@@ -540,38 +601,196 @@ textarea:not(.el-input__inner):not(.el-textarea__inner):focus {
 }
 
 .el-button--primary {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  ) !important;
+  background: var(--btn-primary-bg) !important;
   border: none !important;
   color: var(--fg-on-accent) !important;
 }
 
+/* 渐变底无法靠 background-color 变化体现 hover，用亮度提升 */
+.el-button--primary:not(.is-disabled):hover,
+.el-button--primary:not(.is-disabled):focus {
+  filter: brightness(1.08);
+}
+
+/* 禁用态：渐变会被禁用底色压掉，这里显式给出低饱和底 + 同色系文字 */
+.el-button--primary.is-disabled,
+.el-button--primary.is-disabled:hover,
+.el-button--primary.is-disabled:focus {
+  background: var(--btn-primary-disabled-bg) !important;
+  color: var(--btn-primary-disabled-text) !important;
+  border: none !important;
+}
+
+/* danger 实心：亮色为原红，深色提亮；禁用/文字/链接态一并跟随主题 */
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link) {
+  background: var(--btn-danger-solid-bg) !important;
+  border-color: var(--btn-danger-solid-bg) !important;
+  color: var(--fg-on-accent) !important;
+}
+
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link):not(.is-disabled):hover,
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link):not(.is-disabled):focus {
+  filter: brightness(1.08);
+}
+
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link).is-disabled,
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link).is-disabled:hover {
+  background: var(--btn-danger-solid-disabled-bg) !important;
+  border-color: var(--btn-danger-solid-disabled-bg) !important;
+  color: var(--btn-danger-solid-disabled-text) !important;
+}
+
+.el-button--danger.is-text,
+.el-button--danger.is-link {
+  color: var(--btn-danger-text) !important;
+}
+
+.el-button--danger.is-text:not(.is-disabled):hover,
+.el-button--danger.is-link:not(.is-disabled):hover {
+  color: var(--btn-danger-text) !important;
+  filter: brightness(1.15);
+}
+
+/* danger plain：亮暗两套底色/描边/文字 */
+.el-button--danger.is-plain {
+  background: var(--btn-danger-plain-bg) !important;
+  border-color: var(--btn-danger-plain-border) !important;
+  color: var(--btn-danger-text) !important;
+}
+
+.el-button--danger.is-plain:not(.is-disabled):hover,
+.el-button--danger.is-plain:not(.is-disabled):focus {
+  background: var(--btn-danger-solid-bg) !important;
+  border-color: var(--btn-danger-solid-bg) !important;
+  color: var(--fg-on-accent) !important;
+}
+
+.el-button--danger.is-plain.is-disabled,
+.el-button--danger.is-plain.is-disabled:hover {
+  background: var(--btn-danger-plain-disabled-bg) !important;
+  border-color: var(--btn-danger-plain-disabled-border) !important;
+  color: var(--btn-danger-plain-disabled-text) !important;
+  cursor: not-allowed;
+}
+
 /* =========================================================
-   暗色模式：danger plain 按钮适配
-   EP 默认 plain 底取 --el-color-danger-light-9（近白），
-   在暗色页面上会形成“白块”，此处限定暗色下改为半透明红。
+   其余语义色按钮（warning / success / info）
+   仅在深色主题覆盖 Element Plus 按钮变量，亮色沿用默认值，
+   使这些类型在主题切换时同样产生颜色变化。
    ========================================================= */
-html[data-theme="dark"] .el-button--danger.is-plain {
-  background: rgba(239, 68, 68, 0.12) !important;
-  border-color: rgba(239, 68, 68, 0.4) !important;
-  color: var(--danger-title) !important;
+html[data-theme="dark"]
+  .el-button--warning:not(.is-plain):not(.is-text):not(.is-link) {
+  --el-button-bg-color: #ebb563;
+  --el-button-border-color: #ebb563;
+  --el-button-hover-bg-color: #f0c37e;
+  --el-button-hover-border-color: #f0c37e;
+  --el-button-disabled-bg-color: rgba(235, 181, 99, 0.4);
+  --el-button-disabled-border-color: rgba(235, 181, 99, 0.4);
 }
 
-html[data-theme="dark"] .el-button--danger.is-plain:hover,
-html[data-theme="dark"] .el-button--danger.is-plain:focus {
-  background: rgba(239, 68, 68, 0.3) !important;
-  border-color: rgba(239, 68, 68, 0.65) !important;
-  color: #ffffff !important;
+html[data-theme="dark"] .el-button--warning.is-plain,
+html[data-theme="dark"] .el-button--warning.is-text,
+html[data-theme="dark"] .el-button--warning.is-link {
+  --el-button-text-color: #ebb563;
+  --el-button-bg-color: rgba(230, 162, 60, 0.12);
+  --el-button-border-color: rgba(230, 162, 60, 0.4);
+  --el-button-hover-bg-color: rgba(230, 162, 60, 0.28);
+  --el-button-hover-border-color: rgba(230, 162, 60, 0.6);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-disabled-text-color: rgba(235, 181, 99, 0.5);
+  --el-button-disabled-bg-color: rgba(230, 162, 60, 0.07);
+  --el-button-disabled-border-color: rgba(230, 162, 60, 0.18);
 }
 
-html[data-theme="dark"] .el-button--danger.is-plain.is-disabled,
-html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
-  background: rgba(239, 68, 68, 0.05) !important;
-  border-color: rgba(239, 68, 68, 0.15) !important;
-  color: rgba(239, 68, 68, 0.4) !important;
+html[data-theme="dark"]
+  .el-button--success:not(.is-plain):not(.is-text):not(.is-link) {
+  --el-button-bg-color: #85ce61;
+  --el-button-border-color: #85ce61;
+  --el-button-hover-bg-color: #9bda7d;
+  --el-button-hover-border-color: #9bda7d;
+  --el-button-disabled-bg-color: rgba(133, 206, 97, 0.4);
+  --el-button-disabled-border-color: rgba(133, 206, 97, 0.4);
+}
+
+html[data-theme="dark"] .el-button--success.is-plain,
+html[data-theme="dark"] .el-button--success.is-text,
+html[data-theme="dark"] .el-button--success.is-link {
+  --el-button-text-color: #85ce61;
+  --el-button-bg-color: rgba(103, 194, 58, 0.12);
+  --el-button-border-color: rgba(103, 194, 58, 0.4);
+  --el-button-hover-bg-color: rgba(103, 194, 58, 0.28);
+  --el-button-hover-border-color: rgba(103, 194, 58, 0.6);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-disabled-text-color: rgba(133, 206, 97, 0.5);
+  --el-button-disabled-bg-color: rgba(103, 194, 58, 0.07);
+  --el-button-disabled-border-color: rgba(103, 194, 58, 0.18);
+}
+
+html[data-theme="dark"]
+  .el-button--info:not(.is-plain):not(.is-text):not(.is-link) {
+  --el-button-bg-color: #a6a9ad;
+  --el-button-border-color: #a6a9ad;
+  --el-button-hover-bg-color: #b8bbbf;
+  --el-button-hover-border-color: #b8bbbf;
+  --el-button-disabled-bg-color: rgba(166, 169, 173, 0.4);
+  --el-button-disabled-border-color: rgba(166, 169, 173, 0.4);
+}
+
+html[data-theme="dark"] .el-button--info.is-plain,
+html[data-theme="dark"] .el-button--info.is-text,
+html[data-theme="dark"] .el-button--info.is-link {
+  --el-button-text-color: #a6a9ad;
+  --el-button-bg-color: rgba(144, 147, 153, 0.12);
+  --el-button-border-color: rgba(144, 147, 153, 0.4);
+  --el-button-hover-bg-color: rgba(144, 147, 153, 0.28);
+  --el-button-hover-border-color: rgba(144, 147, 153, 0.6);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-disabled-text-color: rgba(166, 169, 173, 0.5);
+  --el-button-disabled-bg-color: rgba(144, 147, 153, 0.07);
+  --el-button-disabled-border-color: rgba(144, 147, 153, 0.18);
+}
+
+/* EP 的 plain/text/link 禁用态直接取 --el-color-*-light-9/8/5，不读上面的按钮变量，
+   这里按语义色显式覆盖禁用态，保证深色下不再是亮色底 */
+html[data-theme="dark"] .el-button--warning.is-plain.is-disabled,
+html[data-theme="dark"] .el-button--warning.is-text.is-disabled,
+html[data-theme="dark"] .el-button--warning.is-link.is-disabled {
+  background-color: rgba(230, 162, 60, 0.07) !important;
+  border-color: rgba(230, 162, 60, 0.18) !important;
+  color: rgba(235, 181, 99, 0.5) !important;
+}
+
+html[data-theme="dark"] .el-button--success.is-plain.is-disabled,
+html[data-theme="dark"] .el-button--success.is-text.is-disabled,
+html[data-theme="dark"] .el-button--success.is-link.is-disabled {
+  background-color: rgba(103, 194, 58, 0.07) !important;
+  border-color: rgba(103, 194, 58, 0.18) !important;
+  color: rgba(133, 206, 97, 0.5) !important;
+}
+
+html[data-theme="dark"] .el-button--info.is-plain.is-disabled,
+html[data-theme="dark"] .el-button--info.is-text.is-disabled,
+html[data-theme="dark"] .el-button--info.is-link.is-disabled {
+  background-color: rgba(144, 147, 153, 0.07) !important;
+  border-color: rgba(144, 147, 153, 0.18) !important;
+  color: rgba(166, 169, 173, 0.5) !important;
+}
+
+/* =========================================================
+   批量操作按钮组 (.batch-actions)
+   用于学校/班级申请列表的「批量通过 / 批量拒绝」。
+   仅负责布局与间距，配色统一由上方全局按钮规则按主题提供。
+   ========================================================= */
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* flex 的 gap 已提供间距，抵消 el-button 相邻时的默认外边距 */
+.batch-actions .el-button + .el-button {
+  margin-left: 0;
 }
 
 .el-card {
@@ -870,11 +1089,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .dark-dialog .el-button--primary {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: var(--btn-primary-bg);
   border: none;
 }
 
@@ -1580,14 +1795,14 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .dark-picker .el-button--primary.el-picker-panel__btn {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  background: var(--btn-primary-bg) !important;
   color: var(--fg-on-accent) !important;
   border: none !important;
 }
 
 .dark-picker .el-button--primary.el-picker-panel__btn:hover {
   filter: brightness(1.1);
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  background: var(--btn-primary-bg) !important;
 }
 
 /* — 时间选择器（datetime 模式） — */
@@ -1875,7 +2090,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .dark-picker .el-picker-panel__footer .el-button--primary {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  background: var(--btn-primary-bg) !important;
   color: var(--fg-on-accent) !important;
   border: none !important;
 }
@@ -2071,7 +2286,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .el-time-panel__btn.confirm {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  background: var(--btn-primary-bg) !important;
   color: var(--fg-on-accent) !important;
   border: none !important;
 }
@@ -2270,7 +2485,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 .el-overlay-message-box.danger-message-box
   .el-message-box__btns
   .el-button--primary {
-  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  background: var(--btn-danger-deep-bg) !important;
   color: var(--fg-on-accent) !important;
   border: none !important;
 }
@@ -2377,11 +2592,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 .el-overlay-message-box.danger-warning-message-box
   .el-message-box__btns
   .el-button--primary {
-  background: linear-gradient(
-    135deg,
-    rgba(239, 68, 68, 0.95),
-    rgba(185, 28, 28, 0.95)
-  ) !important;
+  background: var(--btn-danger-warn-bg) !important;
   color: var(--fg-on-accent) !important;
   border: none !important;
 }
@@ -2527,7 +2738,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .el-message-box__btns .el-button--primary {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  background: var(--btn-primary-bg) !important;
   border: none !important;
   color: var(--fg-on-accent) !important;
 }
@@ -2537,7 +2748,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .el-message-box__btns .el-button--danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  background: var(--btn-danger-strong-bg) !important;
   border: none !important;
   color: var(--fg-on-accent) !important;
 }
@@ -2738,7 +2949,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .danger-dialog .el-button--primary {
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  background: var(--btn-danger-strong-bg) !important;
   border: none !important;
   color: var(--fg-on-accent) !important;
 }
@@ -2764,7 +2975,7 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
 }
 
 .danger-dialog .el-button--danger {
-  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  background: var(--btn-danger-deep-bg) !important;
   border: none !important;
   color: var(--fg-on-accent) !important;
 }
@@ -3129,4 +3340,11 @@ html[data-theme="dark"] .el-button--danger.is-plain.is-disabled:hover {
   .filter-bar {
     padding: 8px 12px;
   }
+}
+
+/* 拖拽激活指示器期间：全程显示抓取光标、禁止选中文字 */
+body.indicator-dragging,
+body.indicator-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
 }

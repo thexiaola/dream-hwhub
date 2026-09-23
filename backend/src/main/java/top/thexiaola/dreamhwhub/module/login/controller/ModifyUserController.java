@@ -3,8 +3,10 @@ package top.thexiaola.dreamhwhub.module.login.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
@@ -36,6 +38,43 @@ public class ModifyUserController {
             log.info("User ({}) modify user info successful", userInfo);
             return ResponseEntity.ok(ApiResponse.success(userResponse, "信息修改成功"));
         } catch (BusinessException e) {
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
+        }
+    }
+
+    /**
+     * 上传并更新当前用户头像
+     */
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<UserResponse>> modifyUserAvatar(
+            @RequestParam("file") MultipartFile file) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User user = modifyUserService.modifyUserAvatar(file);
+            UserResponse userResponse = userResponseMapper.toUserResponse(user);
+            log.info("User ({}) updated avatar successfully", LogUtil.getUserInfoString(ip, user));
+            return ResponseEntity.ok(ApiResponse.success(userResponse, "头像已更新"));
+        } catch (BusinessException e) {
+            String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
+            log.warn("User ({}) failed to update avatar: {}", userInfo, e.getMessage());
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
+        }
+    }
+
+    /**
+     * 清除当前用户头像
+     */
+    @DeleteMapping("/avatar")
+    public ResponseEntity<ApiResponse<UserResponse>> removeUserAvatar() {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User user = modifyUserService.removeUserAvatar();
+            UserResponse userResponse = userResponseMapper.toUserResponse(user);
+            log.info("User ({}) removed avatar successfully", LogUtil.getUserInfoString(ip, user));
+            return ResponseEntity.ok(ApiResponse.success(userResponse, "头像已清除"));
+        } catch (BusinessException e) {
+            String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
+            log.warn("User ({}) failed to remove avatar: {}", userInfo, e.getMessage());
             return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }

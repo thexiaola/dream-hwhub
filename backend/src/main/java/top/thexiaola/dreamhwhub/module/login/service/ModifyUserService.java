@@ -5,6 +5,7 @@ import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface ModifyUserService {
     /**
@@ -14,6 +15,21 @@ public interface ModifyUserService {
      * @return 修改结果
      */
     User modifyUserInfo(ModifyUserInfoRequest modifyUserInfoRequest);
+
+    /**
+     * 更新当前用户头像
+     *
+     * @param file 头像文件
+     * @return 更新后的用户对象
+     */
+    User modifyUserAvatar(MultipartFile file);
+
+    /**
+     * 清除当前用户头像
+     *
+     * @return 更新后的用户对象
+     */
+    User removeUserAvatar();
     
     /**
      * 修改用户邮箱

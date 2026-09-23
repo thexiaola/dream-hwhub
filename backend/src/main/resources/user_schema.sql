@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS user (
     username VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户名',
     email VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '邮箱',
     phone VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '手机号',
+    avatar VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '头像文件相对路径（attachments/avatar 下），空表示未设置',
     password VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码',
     is_op BIT(1) NOT NULL DEFAULT 0 COMMENT '是否平台管理员(OP)：1-拥有全部权限，0-普通用户',
     is_banned BIT(1) NOT NULL DEFAULT 0 COMMENT '是否被封禁：0-正常，1-封禁',

@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.module.admin.dto.*;
 import top.thexiaola.dreamhwhub.module.admin.service.AdminUserService;
@@ -81,6 +83,31 @@ public class AdminUserController {
         adminUserService.deleteUser(userId);
         log.info("User {} deleted user {}", LogUtil.getUserInfo(currentUser), userId);
         return ApiResponse.success(null, "用户已删除");
+    }
+
+    /**
+     * 修改指定用户的头像
+     */
+    @PostMapping(value = "/{userId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(PermissionNodes.USER_EDIT)
+    public ApiResponse<AdminUserVO> updateUserAvatar(@PathVariable(value = "userId") Integer userId,
+            @RequestParam("file") MultipartFile file) {
+        User currentUser = UserUtils.getCurrentUser();
+        AdminUserVO updated = adminUserService.updateUserAvatar(userId, file);
+        log.info("User {} updated avatar of user {}", LogUtil.getUserInfo(currentUser), updated.getUsername());
+        return ApiResponse.success(updated, "头像已更新");
+    }
+
+    /**
+     * 清除指定用户的头像
+     */
+    @DeleteMapping("/{userId}/avatar")
+    @RequirePermission(PermissionNodes.USER_EDIT)
+    public ApiResponse<AdminUserVO> removeUserAvatar(@PathVariable(value = "userId") Integer userId) {
+        User currentUser = UserUtils.getCurrentUser();
+        AdminUserVO updated = adminUserService.removeUserAvatar(userId);
+        log.info("User {} removed avatar of user {}", LogUtil.getUserInfo(currentUser), updated.getUsername());
+        return ApiResponse.success(updated, "头像已清除");
     }
 
     /**

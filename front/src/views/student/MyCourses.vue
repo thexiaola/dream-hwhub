@@ -650,6 +650,55 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
+  /* 手机端页头改为纵向堆叠：标题独占一行，操作区另起一行自动换行，避免左右挤压 */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .header-left h2 {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* 学校选择器占满整行，其余按钮平分剩余空间 */
+  .school-select {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .school-empty-tip {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .invite-badge {
+    flex: 1;
+    margin-right: 0;
+  }
+
+  .invite-badge :deep(.el-button) {
+    width: 100%;
+  }
+
+  .header-right > .el-button {
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
+
   .course-grid {
     grid-template-columns: 1fr;
   }

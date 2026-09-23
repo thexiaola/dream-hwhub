@@ -11,7 +11,7 @@ import java.util.Set;
  * 用户信息查询响应 DTO（不含 token，token 仅在登录时返回）
  */
 @Data
-@JsonPropertyOrder({"id", "username", "email", "phone", "isOp", "permissions", "isBanned", "registerTime", "lastLoginTime"})
+@JsonPropertyOrder({"id", "username", "email", "phone", "avatar", "isOp", "permissions", "isBanned", "registerTime", "lastLoginTime"})
 public class UserInfoResponse {
 
     // 用户编号
@@ -25,6 +25,9 @@ public class UserInfoResponse {
 
     // 手机号
     private String phone;
+
+    // 头像文件相对路径，空表示未设置
+    private String avatar;
 
     // 是否平台管理员（OP）
     private Boolean isOp;

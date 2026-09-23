@@ -416,4 +416,32 @@ onMounted(loadMySchools)
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
 }
+
+@media (max-width: 768px) {
+  /* 手机端页头纵向堆叠，操作按钮另起一行占满宽度 */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .header-right {
+    display: flex;
+  }
+
+  .header-right .el-button {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .school-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
+

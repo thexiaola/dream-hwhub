@@ -54,6 +54,11 @@
     </div>
 
     <el-table v-loading="loading" :data="users" class="admin-table">
+      <el-table-column label="头像" width="72">
+        <template #default="{ row }">
+          <UserAvatar :avatar="row.avatar" :size="36" :alt="row.username" />
+        </template>
+      </el-table-column>
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="username" label="用户名" min-width="110" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
@@ -110,6 +115,33 @@
       class="dark-dialog"
     >
       <el-form :model="formDialog.form" label-width="90px">
+        <!-- 头像：仅编辑已有用户时可改，新增用户暂无头像 -->
+        <el-form-item v-if="!formDialog.isCreate" label="头像">
+          <div class="avatar-edit">
+            <UserAvatar :avatar="formDialog.avatar" :size="56" :alt="formDialog.form.username" />
+            <div class="avatar-edit-actions">
+              <el-button size="small" text type="primary" :loading="avatarUploading" @click="triggerAvatarPick">
+                上传头像
+              </el-button>
+              <el-button
+                v-if="formDialog.avatar"
+                size="small"
+                text
+                :disabled="avatarUploading"
+                @click="removeAvatar"
+              >
+                清除
+              </el-button>
+            </div>
+            <input
+              ref="avatarInputRef"
+              class="avatar-input"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/bmp,image/webp"
+              @change="onAvatarSelected"
+            />
+          </div>
+        </el-form-item>
         <el-form-item label="用户名">
           <el-input v-model="formDialog.form.username" placeholder="3-16 位字母、数字、下划线" maxlength="16" />
         </el-form-item>
@@ -169,8 +201,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { del, get, post, put } from '@/utils/http'
+import { del, get, post, put, postForm } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
+import { invalidateAvatarCache } from '@/utils/attachment'
+import UserAvatar from '@/components/UserAvatar.vue'
 import PermissionNodeTree from './PermissionNodeTree.vue'
 import type { AdminUser, AdminUserForm, PermissionGroup, PermissionNodeGroup } from '@/types/admin'
 
@@ -242,6 +276,8 @@ const formDialog = reactive({
   isCreate: true,
   submitting: false,
   editingId: 0,
+  /** 被编辑用户的当前头像路径（新增用户时为空） */
+  avatar: null as string | null,
   form: emptyForm()
 })
 
@@ -328,9 +364,11 @@ const openCreate = () => {
   // 上一次处于编辑状态时切回新建需清空表单；连续新建则保留上次未提交的草稿
   if (formDialog.editingId !== 0) {
     formDialog.form = emptyForm()
+    formDialog.avatar = null
   }
   formDialog.isCreate = true
   formDialog.editingId = 0
+  formDialog.avatar = null
   formDialog.visible = true
 }
 
@@ -343,10 +381,84 @@ const openEdit = (row: AdminUser) => {
       phone: row.phone ?? '',
       password: ''
     }
+    formDialog.avatar = row.avatar ?? null
   }
   formDialog.isCreate = false
   formDialog.editingId = row.id
   formDialog.visible = true
+}
+
+// ========== 头像（管理员端） ==========
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+const avatarUploading = ref(false)
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024
+
+const triggerAvatarPick = () => {
+  if (avatarUploading.value) return
+  avatarInputRef.value?.click()
+}
+
+const onAvatarSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || !formDialog.editingId) return
+
+  if (!file.type.startsWith('image/')) {
+    ElMessage.warning('请选择图片文件')
+    return
+  }
+  if (file.size > AVATAR_MAX_SIZE) {
+    ElMessage.warning('头像大小不能超过 5MB')
+    return
+  }
+
+  avatarUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await postForm<AdminUser>(`/admin/users/${formDialog.editingId}/avatar`, formData)
+    if (res.code === 200 && res.data) {
+      invalidateAvatarCache(formDialog.avatar)
+      formDialog.avatar = res.data.avatar ?? null
+      ElMessage.success(res.message || '头像已更新')
+      loadUsers()
+    } else {
+      ElMessage.error(res.message || '头像上传失败')
+    }
+  } catch {
+    ElMessage.error('头像上传失败，请稍后再试')
+  } finally {
+    avatarUploading.value = false
+  }
+}
+
+const removeAvatar = async () => {
+  if (!formDialog.editingId) return
+  try {
+    await ElMessageBox.confirm('确认清除该用户的头像？', '提示', {
+      confirmButtonText: '确认清除',
+      cancelButtonText: '取消'
+    })
+  } catch {
+    return
+  }
+  avatarUploading.value = true
+  try {
+    const res = await del<AdminUser>(`/admin/users/${formDialog.editingId}/avatar`)
+    if (res.code === 200 && res.data) {
+      invalidateAvatarCache(formDialog.avatar)
+      formDialog.avatar = res.data.avatar ?? null
+      ElMessage.success(res.message || '头像已清除')
+      loadUsers()
+    } else {
+      ElMessage.error(res.message || '清除失败')
+    }
+  } catch {
+    ElMessage.error('清除失败，请稍后再试')
+  } finally {
+    avatarUploading.value = false
+  }
 }
 
 const submitForm = async () => {
@@ -645,5 +757,28 @@ onMounted(() => {
 
 :deep(.el-checkbox__label) {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+}
+
+/* 编辑弹窗内的头像区域：预览 + 上传/清除操作 */
+.avatar-edit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.avatar-edit-actions .el-button {
+  padding: 0;
+  height: auto;
+}
+
+/* 隐藏原生文件输入，由按钮触发选择 */
+.avatar-input {
+  display: none;
 }
 </style>

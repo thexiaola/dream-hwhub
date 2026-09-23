@@ -18,28 +18,26 @@
 
     <div class="school-list">
       <div v-for="school in schools" :key="school.id" class="school-card">
-        <div class="card-header">
-          <div class="card-title">
+        <div class="card-main">
+          <div class="card-head">
             <h4>{{ school.schoolName }}</h4>
             <span :class="['flag', school.allowJoinWithoutApproval ? 'auto' : 'manual']">
               {{ school.allowJoinWithoutApproval ? '免审核加入' : '需管理员审核' }}
             </span>
           </div>
-          <span class="card-time">创建时间：{{ formatDate(school.createTime) }}</span>
-        </div>
-
-        <div class="card-body">
-          <div class="info-item">
-            <span class="label">学校ID：</span>
-            <span class="value">{{ school.id }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">成员数：</span>
-            <span class="value">{{ school.memberCount }}</span>
-          </div>
-          <div class="info-item" v-if="school.description">
-            <span class="label">描述：</span>
-            <span class="value">{{ school.description }}</span>
+          <div class="card-meta">
+            <span class="meta-item">
+              <span class="label">学校ID：</span>{{ school.id }}
+            </span>
+            <span class="meta-item">
+              <span class="label">成员数：</span>{{ school.memberCount }}
+            </span>
+            <span class="meta-item">
+              <span class="label">创建时间：</span>{{ formatDate(school.createTime) }}
+            </span>
+            <span v-if="school.description" class="meta-item meta-desc">
+              <span class="label">描述：</span>{{ school.description }}
+            </span>
           </div>
         </div>
 
@@ -326,30 +324,50 @@ onMounted(loadSchools)
   gap: 12px;
 }
 
+/* 学校卡片：左侧信息 + 右侧操作，单行紧凑排列，学校较多时更省纵向空间 */
 .school-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 10px;
-  padding: 16px;
+  padding: 12px 16px;
   background: var(--bg-elevated);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+.card-main {
+  flex: 1;
+  min-width: 0;
 }
 
-.card-title {
+.card-head {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.card-title h4 {
+.card-head h4 {
   margin: 0;
   font-size: 15px;
+}
+
+.card-meta {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+}
+
+.card-meta .label {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
+}
+
+.meta-desc {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .flag {
@@ -368,28 +386,16 @@ onMounted(loadSchools)
   background: rgba(230, 162, 60, 0.15);
 }
 
-.card-time {
-  font-size: 12px;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
-}
-
-.card-body {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-}
-
-.info-item .label {
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
-}
-
+/* 操作区：独立成一块高亮面板，与左侧信息区拉开层次 */
 .card-actions {
-  margin-top: 12px;
   display: flex;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--action-bar-bg);
+  border: 1px solid var(--action-bar-border);
 }
 
 .empty-state {
@@ -416,5 +422,24 @@ onMounted(loadSchools)
   margin: 4px 0 0;
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+}
+
+/* 窄屏下改为纵向堆叠，避免操作按钮被挤压 */
+@media (max-width: 768px) {
+  .school-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .card-actions {
+    flex-wrap: wrap;
+  }
+
+  .card-actions .el-button {
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
 }
 </style>

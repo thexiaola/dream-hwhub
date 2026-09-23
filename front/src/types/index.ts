@@ -10,6 +10,8 @@ export interface UserInfo {
   username: string
   email: string
   phone?: string
+  /** 头像文件相对路径，空表示未设置 */
+  avatar?: string | null
   /** 是否为平台管理员（OP），拥有全部权限节点 */
   isOp?: boolean
   /** 生效的权限节点（OP 为全部节点） */

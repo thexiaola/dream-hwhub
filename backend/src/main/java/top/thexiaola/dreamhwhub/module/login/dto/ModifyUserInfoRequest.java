@@ -18,8 +18,8 @@ public class ModifyUserInfoRequest {
     @Pattern(regexp = "^[A-Za-z0-9].*[A-Za-z0-9]$", message = "用户名不能以下划线开头或结尾")
     private String username;
     
-    // 手机号（兼容国外手机号，允许数字、+、-、空格、括号）
+    // 手机号（兼容国外手机号，允许数字、+、-、空格、括号；留空表示删除手机号）
     @Size(max = 20, message = "手机号长度不能超过 20 位")
-    @Pattern(regexp = "^[+]?[0-9()\\-\\s]+$", message = "手机号格式不正确，请检查后重新输入")
+    @Pattern(regexp = "^$|^[+]?[0-9()\\-\\s]+$", message = "手机号格式不正确，请检查后重新输入")
     private String phone;
 }

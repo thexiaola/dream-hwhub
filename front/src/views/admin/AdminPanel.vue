@@ -4,7 +4,20 @@
       <h2>管理面板</h2>
     </div>
 
-    <el-tabs v-model="activeTab" class="admin-tabs" @tab-change="handleTabChange">
+    <div
+      class="admin-tabs-host"
+      ref="tabsHostRef"
+      @pointerdown="onPointerDown"
+      @click.capture="onClickCapture"
+    >
+      <!-- 激活高亮块：可按住拖动，松开后吸附到最近的页签 -->
+      <span
+        v-show="indicatorVisible"
+        class="admin-indicator"
+        :class="{ 'is-dragging': indicatorDragging }"
+        :style="indicatorStyle"
+      />
+      <el-tabs v-model="activeTab" class="admin-tabs" @tab-change="handleTabChange">
       <!-- 加入班级申请 -->
       <el-tab-pane v-if="canApproveJoin" label="加入班级申请" name="join">
         <div class="filter-bar">
@@ -12,12 +25,12 @@
             <SlidersHorizontal :size="14" />
             状态
           </span>
-          <el-radio-group v-model="joinFilter" @change="loadJoinApplications">
-            <el-radio-button :value="-1">全部</el-radio-button>
-            <el-radio-button :value="0">待审核</el-radio-button>
-            <el-radio-button :value="1">已通过</el-radio-button>
-            <el-radio-button :value="2">已拒绝</el-radio-button>
-          </el-radio-group>
+          <SlideSegmented
+            v-model="joinFilter"
+            :options="statusFilterOptions"
+            aria-label="加入班级申请状态"
+            @change="loadJoinApplications"
+          />
         </div>
 
         <div class="application-list">
@@ -226,12 +239,12 @@
             <SlidersHorizontal :size="14" />
             状态
           </span>
-          <el-radio-group v-model="schoolJoinFilter" @change="reloadSchoolJoinApplications">
-            <el-radio-button :value="-1">全部</el-radio-button>
-            <el-radio-button :value="0">待审核</el-radio-button>
-            <el-radio-button :value="1">已通过</el-radio-button>
-            <el-radio-button :value="2">已拒绝</el-radio-button>
-          </el-radio-group>
+          <SlideSegmented
+            v-model="schoolJoinFilter"
+            :options="statusFilterOptions"
+            aria-label="学校加入申请状态"
+            @change="reloadSchoolJoinApplications"
+          />
           <el-select
             v-model="schoolJoinSchoolId"
             placeholder="全部学校"
@@ -382,7 +395,8 @@
       <el-tab-pane v-if="canViewSchools" label="学校管理" name="schools" lazy>
         <SchoolManage />
       </el-tab-pane>
-    </el-tabs>
+      </el-tabs>
+    </div>
 
     <!-- 审核对话框 -->
     <el-dialog v-model="reviewDialog.visible" :title="reviewDialog.approved ? '通过申请' : '拒绝申请'" width="450px" class="dark-dialog">
@@ -449,15 +463,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { get, put, del } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { FileText, ShieldAlert, SlidersHorizontal } from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
+import { useDraggableIndicator } from '@/composables/useDraggableIndicator'
 import UserManage from './UserManage.vue'
 import PermissionGroupManage from './PermissionGroupManage.vue'
 import SchoolManage from './SchoolManage.vue'
+import SlideSegmented from '@/components/SlideSegmented.vue'
 import type { School as SchoolInfo } from '@/types/school'
 import { formatDateTime as formatDate } from '@/utils/format'
 
@@ -483,7 +499,16 @@ interface PageResult<T> {
 
 type AdminTab = 'join' | 'classes' | 'users' | 'groups' | 'schools' | 'schoolJoin'
 
+const ADMIN_TABS: readonly AdminTab[] = ['join', 'classes', 'users', 'groups', 'schools', 'schoolJoin']
+const isAdminTab = (value: unknown): value is AdminTab =>
+  typeof value === 'string' && (ADMIN_TABS as readonly string[]).includes(value)
+
+// 当前页签：由路由 /admin/panel/:tab 驱动，权限就绪后解析
 const activeTab = ref<AdminTab>('join')
+
+const router = useRouter()
+const route = useRoute()
+const userStore = useUserStore()
 
 // 按权限节点控制各页签可见性
 const canApproveJoin = computed(() => userStore.hasPermission('class:approve_join'))
@@ -520,17 +545,19 @@ watch(confirmBeforeApprove, (value: boolean) => {
 })
 
 const visibleTabs = computed<AdminTab[]>(() => {
+  // 顺序与模板中 el-tab-pane 的书写顺序保持一致（决定了「首个可见页签」）
   const tabs: AdminTab[] = []
   if (canApproveJoin.value) tabs.push('join')
   if (canViewAllClasses.value) tabs.push('classes')
   if (canViewUsers.value) tabs.push('users')
+  if (canViewSchools.value) tabs.push('schoolJoin')
   if (canViewPermissions.value) tabs.push('groups')
   if (canViewSchools.value) tabs.push('schools')
-  if (canViewSchools.value) tabs.push('schoolJoin')
   return tabs
 })
 
-const handleTabChange = (name: string | number) => {
+// 页签对应的数据加载：点击、拖拽、直接访问链接都走这里，避免重复实现
+const runTabLoad = (name: AdminTab) => {
   if (name === 'join') {
     loadJoinApplications()
   } else if (name === 'classes') {
@@ -547,14 +574,120 @@ const handleTabChange = (name: string | number) => {
   }
 }
 
-const router = useRouter()
+// 读取路由 /admin/panel/:tab 中的模块名
+const tabFromRoute = (): AdminTab | null => {
+  const raw = route.params.tab
+  const single = Array.isArray(raw) ? raw[0] : raw
+  return isAdminTab(single) ? single : null
+}
 
-const userStore = useUserStore()
+// 权限就绪前（onMounted 解析完成前）不响应路由/权限变化，避免误判
+let tabResolved = false
+
+// 根据路由参数与当前权限解析出有效模块；无参数/非法/无权限时回退到首个可见模块
+const resolveTab = (): AdminTab => {
+  const fromRoute = tabFromRoute()
+  if (fromRoute && visibleTabs.value.includes(fromRoute)) return fromRoute
+  return visibleTabs.value[0] ?? 'join'
+}
+
+// 应用某个模块：更新高亮、必要时规范化 URL、按需加载数据
+const applyRoute = async (target: AdminTab, load: boolean) => {
+  activeTab.value = target
+  if (route.params.tab !== target) {
+    await router.replace({ name: 'AdminPanel', params: { tab: target } })
+  }
+  if (load) runTabLoad(target)
+  await nextTick()
+  syncToActive()
+}
+
+// 点击页签：el-tabs 已通过 v-model 更新 activeTab，这里加载数据并推入历史（可后退）
+const handleTabChange = (name: string | number) => {
+  if (!isAdminTab(name)) return
+  runTabLoad(name)
+  if (route.params.tab !== name) {
+    router.push({ name: 'AdminPanel', params: { tab: name } })
+  }
+  nextTick(syncToActive)
+}
+
+// 拖拽激活指示器：宿主容器承载指示器，页签几何相对它测量
+const tabsHostRef = ref<HTMLElement | null>(null)
+let tabsResizeObserver: ResizeObserver | null = null
+
+// 按 DOM 视觉顺序取可拖拽的页签（id 形如 tab-<name>），跳过禁用项
+const getTabs = () => {
+  const host = tabsHostRef.value
+  if (!host) return [] as { key: string; el: HTMLElement }[]
+  return Array.from(host.querySelectorAll<HTMLElement>('.el-tabs__nav .el-tabs__item'))
+    .filter(el => !el.classList.contains('is-disabled'))
+    .map(el => ({ key: el.id.replace(/^tab-/, ''), el }))
+}
+
+// 拖拽经过页签时实时切换：更新高亮、加载数据并同步 URL
+const activateTab = (name: AdminTab) => {
+  if (activeTab.value === name) return
+  activeTab.value = name
+  runTabLoad(name)
+  if (route.params.tab !== name) {
+    router.replace({ name: 'AdminPanel', params: { tab: name } })
+  }
+  nextTick(syncToActive)
+}
+
+const {
+  dragging: indicatorDragging,
+  position: indicatorPosition,
+  visible: indicatorVisible,
+  syncToActive,
+  startDrag,
+  onClickCapture
+} = useDraggableIndicator({
+  container: tabsHostRef,
+  getTabs,
+  activeKey: () => activeTab.value,
+  onCross: key => activateTab(key as AdminTab)
+})
+
+// 手机端页签可横向滚动，而自定义指示器位于滚动容器之外，滚动时会与页签错位；
+// 故手机端停用拖拽、隐藏自定义指示器，改回 Element Plus 原生下划线激活条（随滚动对齐）
+const isNarrowViewport = () => window.matchMedia('(max-width: 768px)').matches
+
+const onPointerDown = (event: PointerEvent) => {
+  if (isNarrowViewport()) return
+  startDrag(event)
+}
+
+// 指示器相对页签上下内缩，避免直角底边压住底部基线
+const INDICATOR_INSET_Y = 4
+
+const indicatorStyle = computed(() => {
+  const pos = indicatorPosition.value
+  if (!pos) return {}
+  return {
+    transform: `translate(${pos.left}px, ${pos.top + INDICATOR_INSET_Y}px)`,
+    width: `${pos.width}px`,
+    height: `${pos.height - INDICATOR_INSET_Y * 2}px`
+  }
+})
+
+// 切换页签或可见页签集合变化（权限就绪）后重新定位
+watch(activeTab, () => nextTick(syncToActive))
+watch(visibleTabs, () => nextTick(syncToActive))
 
 const joinApplications = ref<ClassJoinApplication[]>([])
 const joinFilter = ref(-1)
 const joinPage = ref(1)
 const joinTotal = ref(0)
+
+// 审核状态筛选：加入班级申请与学校加入申请共用同一组选项
+const statusFilterOptions = [
+  { label: '全部', value: -1 },
+  { label: '待审核', value: 0 },
+  { label: '已通过', value: 1 },
+  { label: '已拒绝', value: 2 }
+]
 
 const reviewDialog = ref({
   visible: false,
@@ -617,19 +750,49 @@ const submitReview = async () => {
 onMounted(async () => {
   // 强制刷新一次用户信息，确保权限节点为最新（权限变更后无需重新登录）
   await userStore.getUserInfo(true)
-  // 默认定位到当前用户有权限查看的第一个页签
+  // 依据路由参数与权限解析目标模块并加载其数据（URL 无参数/非法时回退首个可见模块并规范化 URL）
+  tabResolved = true
+  await applyRoute(resolveTab(), true)
+
+  // 页签渲染完成后再定位指示器，并在容器尺寸变化时重新定位
+  await nextTick()
+  syncToActive()
+  tabsResizeObserver = new ResizeObserver(() => nextTick(syncToActive))
+  if (tabsHostRef.value) {
+    tabsResizeObserver.observe(tabsHostRef.value)
+  }
+})
+
+// 直接访问/前进后退切换模块：URL 变化时同步高亮并加载对应数据
+watch(
+  () => route.params.tab,
+  () => {
+    if (!tabResolved) return
+    const target = resolveTab()
+    if (target !== activeTab.value) {
+      runTabLoad(target)
+    }
+    activeTab.value = target
+    if (route.params.tab !== target) {
+      router.replace({ name: 'AdminPanel', params: { tab: target } })
+    }
+    nextTick(syncToActive)
+  }
+)
+
+// 权限就绪后可见页签集合变化（如权限变更）时，若当前模块已不可见则回退
+watch(visibleTabs, () => {
+  if (!tabResolved) return
   if (!visibleTabs.value.includes(activeTab.value)) {
-    activeTab.value = visibleTabs.value[0] ?? 'join'
+    applyRoute(resolveTab(), true)
+  } else {
+    nextTick(syncToActive)
   }
-  if (activeTab.value === 'join') {
-    loadJoinApplications()
-  } else if (activeTab.value === 'classes') {
-    loadClassSchoolOptions()
-    loadClasses()
-  } else if (activeTab.value === 'schoolJoin') {
-    loadClassSchoolOptions()
-    loadSchoolJoinApplications()
-  }
+})
+
+onUnmounted(() => {
+  tabsResizeObserver?.disconnect()
+  tabsResizeObserver = null
 })
 
 interface ClassInfoSimple {
@@ -1000,8 +1163,55 @@ const batchKickFromAdmin = async (classId: number) => {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.95);
 }
 
+/* 承载可拖拽激活块的定位容器 */
+.admin-tabs-host {
+  position: relative;
+}
+
+/* 激活高亮块：按住可拖动，松开吸附到最近页签；文字本身保持不动。
+   与顶部导航一致，做成四角全圆的胶囊 + 描边，纵向内缩以避开底部基线 */
+.admin-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  border: 1px solid rgba(102, 126, 234, 0.4);
+  border-radius: 8px;
+  background: rgba(102, 126, 234, 0.2);
+  pointer-events: none;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1),
+    width 0.32s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* 拖拽中：位移紧跟指针（transform 不设过渡），仅宽高平滑过渡，
+   使滑块掠过不同宽度的页签时尺寸变化有动画而非生硬跳变 */
+.admin-indicator.is-dragging {
+  transition:
+    width 0.18s ease,
+    height 0.18s ease;
+}
+
+/* 用自定义指示器取代 Element Plus 默认的下划线激活条 */
+.admin-tabs :deep(.el-tabs__active-bar) {
+  display: none;
+}
+
 .admin-tabs :deep(.el-tabs__item) {
+  position: relative;
+  z-index: 2;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
+}
+
+/* EP 默认让首尾页签贴边（首项 padding-left:0、末项 padding-right:0），
+   那是为下划线样式对齐准备的；换成圆角高亮块后文字会贴到块边缘，
+   这里统一左右内边距，使每个高亮块内的文字都有对称留白 */
+.admin-tabs :deep(.el-tabs__item:nth-child(2)),
+.admin-tabs :deep(.el-tabs__item:last-child) {
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .admin-tabs :deep(.el-tabs__item.is-active) {
@@ -1010,10 +1220,6 @@ const batchKickFromAdmin = async (classId: number) => {
 
 .admin-tabs :deep(.el-tabs__item:hover) {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
-}
-
-.admin-tabs :deep(.el-tabs__active-bar) {
-  background-color: #667eea;
 }
 
 .admin-tabs :deep(.el-tabs__nav-wrap::after) {
@@ -1110,10 +1316,17 @@ const batchKickFromAdmin = async (classId: number) => {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
 }
 
+/* 卡片操作栏：独立于信息区的浅色操作条，与上方信息拉开层次 */
 .app-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--action-bar-bg);
+  border: 1px solid var(--action-bar-border);
 }
 
 .empty-state {
@@ -1135,10 +1348,17 @@ const batchKickFromAdmin = async (classId: number) => {
   margin-top: 24px;
 }
 
+/* 卡片操作栏：独立于信息区的浅色操作条，与上方信息拉开层次 */
 .class-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--action-bar-bg);
+  border: 1px solid var(--action-bar-border);
 }
 
 .class-members {
@@ -1206,45 +1426,6 @@ const batchKickFromAdmin = async (classId: number) => {
   padding: 16px;
 }
 
-/* el-radio-button 做成凹槽轨道内的分段控件：
-   边界由外层 .el-radio-group 的 background 提供，按钮自身不再描边，
-   避免 Element Plus 默认 outline 在浮起卡片上形成灰色硬线。 */
-.filter-bar :deep(.el-radio-button__inner) {
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  border-radius: 8px !important;
-  padding: 7px 16px !important;
-  font-size: 13px !important;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.62) !important;
-  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.filter-bar :deep(.el-radio-button:not(.is-active) .el-radio-button__inner:hover) {
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.06) !important;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9) !important;
-}
-
-/* 键盘聚焦时保留可见的焦点指示 */
-.filter-bar :deep(.el-radio-button__original-radio:focus-visible + .el-radio-button__inner) {
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.55) !important;
-}
-
-.filter-bar :deep(.el-radio-button.is-active .el-radio-button__inner),
-.filter-bar :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
-  color: var(--fg-on-accent) !important;
-  font-weight: 600;
-  box-shadow: 0 2px 8px -2px rgba(102, 126, 234, 0.65) !important;
-}
-
-.filter-bar :deep(.el-radio-button.is-disabled .el-radio-button__inner) {
-  background: transparent !important;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.25) !important;
-  cursor: not-allowed;
-}
-
 .admin-tabs :deep(.el-pagination .el-pagination__total),
 .admin-tabs :deep(.el-pagination button:disabled),
 .admin-tabs :deep(.el-pagination .btn-prev),
@@ -1283,15 +1464,6 @@ const batchKickFromAdmin = async (classId: number) => {
     -webkit-overflow-scrolling: touch;
   }
 
-  .filter-bar :deep(.el-radio-group) {
-    min-width: max-content;
-  }
-
-  .filter-bar :deep(.el-radio-button__inner) {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
-  }
-
   .application-list {
     gap: 12px;
   }
@@ -1324,8 +1496,26 @@ const batchKickFromAdmin = async (classId: number) => {
     min-width: max-content;
   }
 
+  /* 手机端页签可横向滚动，自定义指示器位于滚动容器外会与页签错位，
+     故隐藏它并恢复 Element Plus 原生下划线激活条（随滚动自动对齐） */
+  .admin-indicator {
+    display: none;
+  }
+
+  .admin-tabs :deep(.el-tabs__active-bar) {
+    display: block;
+    background-color: var(--primary-color);
+  }
+
   .user-list-card {
     padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-indicator,
+  .admin-indicator.is-dragging {
+    transition: none;
   }
 }
 </style>

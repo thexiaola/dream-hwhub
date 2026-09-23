@@ -88,10 +88,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Profile.vue')
       },
       {
-        path: 'admin/panel',
+        // 管理面板各模块用独立链接：/admin/panel/:tab（tab 省略时回退到首个有权限的模块）
+        // viewKey 固定，切换模块时复用同一页面实例，不整页重挂载
+        path: 'admin/panel/:tab?',
         name: 'AdminPanel',
         component: () => import('@/views/admin/AdminPanel.vue'),
-        meta: { requiresAdmin: true }
+        meta: { requiresAdmin: true, viewKey: 'admin-panel' }
       }
     ]
   }

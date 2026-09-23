@@ -39,6 +39,10 @@ public class User implements Serializable {
     @TableField("phone")
     private String phone;
 
+    // 头像文件相对路径（attachments/avatar 下），空表示未设置
+    @TableField("avatar")
+    private String avatar;
+
     //密码(BCrypt哈希值)
     // 密码（BCrypt 哈希）：仅允许反序列化接收，禁止序列化输出到任何响应；也禁止进入 toString
     @TableField("password")

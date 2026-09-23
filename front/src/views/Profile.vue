@@ -10,8 +10,21 @@
     <el-card class="profile-card" shadow="never">
       <template #header>
         <div class="profile-header">
-          <div class="avatar">
-            <User :size="48" />
+          <div class="avatar-wrapper">
+            <UserAvatar
+              :avatar="userStore.userInfo?.avatar"
+              :size="64"
+              :alt="userStore.userInfo?.username"
+              clickable
+              @click="triggerAvatarPick"
+            />
+            <input
+              ref="avatarInputRef"
+              class="avatar-input"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/bmp,image/webp"
+              @change="onAvatarSelected"
+            />
           </div>
           <div class="user-info">
             <h3>{{ userStore.userInfo?.username }}</h3>
@@ -21,6 +34,20 @@
                 {{ roleText }}
               </el-tag>
             </p>
+            <div class="avatar-actions">
+              <el-button size="small" text type="primary" :loading="avatarUploading" @click="triggerAvatarPick">
+                {{ userStore.userInfo?.avatar ? '更换头像' : '上传头像' }}
+              </el-button>
+              <el-button
+                v-if="userStore.userInfo?.avatar"
+                size="small"
+                text
+                :disabled="avatarUploading"
+                @click="removeAvatar"
+              >
+                清除头像
+              </el-button>
+            </div>
           </div>
         </div>
       </template>
@@ -39,13 +66,10 @@
               <el-input v-model="infoForm.username" placeholder="请输入用户昵称" maxlength="16" show-word-limit />
             </el-form-item>
             <el-form-item label="手机号" prop="phone">
-              <el-input v-model="infoForm.phone" placeholder="可选，数字 / + - ( ) 空格" maxlength="20" />
+              <el-input v-model="infoForm.phone" placeholder="可选，留空即删除手机号" maxlength="20" />
             </el-form-item>
             <el-form-item label="当前邮箱">
               <el-input v-model="currentEmail" disabled />
-            </el-form-item>
-            <el-form-item label="账号角色">
-              <el-input :model-value="roleText" disabled />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="infoLoading" @click="submitInfo">
@@ -209,6 +233,12 @@
               <span class="summary-value">{{ userStore.userInfo?.id ?? '—' }}</span>
             </div>
             <div class="summary-row">
+              <span class="summary-label">账号角色</span>
+              <span class="summary-value">
+                <el-tag size="small" :type="roleTagType" effect="dark" round>{{ roleText }}</el-tag>
+              </span>
+            </div>
+            <div class="summary-row">
               <span class="summary-label">手机号</span>
               <span class="summary-value">{{ userStore.userInfo?.phone || '未绑定' }}</span>
             </div>
@@ -266,8 +296,10 @@ import { useUserStore } from '@/stores/user'
 import type { UserInfo } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { put, post } from '@/utils/http'
+import { put, post, postForm, del } from '@/utils/http'
 import { formatDateTime } from '@/utils/format'
+import { invalidateAvatarCache } from '@/utils/attachment'
+import UserAvatar from '@/components/UserAvatar.vue'
 import {
   AlertTriangle,
   Check,
@@ -279,7 +311,6 @@ import {
   LogOut,
   MailCheck,
   Save,
-  User,
 } from '@lucide/vue'
 
 const router = useRouter()
@@ -374,6 +405,78 @@ const fillInfoForm = () => {
 
 fillInfoForm()
 
+// ========== 头像 ==========
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+const avatarUploading = ref(false)
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024
+
+const triggerAvatarPick = () => {
+  if (avatarUploading.value) return
+  avatarInputRef.value?.click()
+}
+
+const onAvatarSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  // 无论成功与否都重置，便于再次选择同一个文件
+  input.value = ''
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    ElMessage.warning('请选择图片文件')
+    return
+  }
+  if (file.size > AVATAR_MAX_SIZE) {
+    ElMessage.warning('头像大小不能超过 5MB')
+    return
+  }
+
+  avatarUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await postForm<UserInfo>('/users/modify/avatar', formData)
+    if (res.code === 200 && res.data) {
+      // 头像路径已变化，清除旧图缓存后再写入新信息
+      invalidateAvatarCache(userStore.userInfo?.avatar)
+      userStore.setUserInfo(res.data)
+      ElMessage.success(res.message || '头像已更新')
+    } else {
+      ElMessage.error(res.message || '头像上传失败')
+    }
+  } catch {
+    ElMessage.error('头像上传失败，请稍后再试')
+  } finally {
+    avatarUploading.value = false
+  }
+}
+
+const removeAvatar = async () => {
+  try {
+    await ElMessageBox.confirm('确认清除当前头像？', '提示', {
+      confirmButtonText: '确认清除',
+      cancelButtonText: '取消',
+    })
+  } catch {
+    return
+  }
+  avatarUploading.value = true
+  try {
+    const res = await del<UserInfo>('/users/modify/avatar')
+    if (res.code === 200 && res.data) {
+      invalidateAvatarCache(userStore.userInfo?.avatar)
+      userStore.setUserInfo(res.data)
+      ElMessage.success(res.message || '头像已清除')
+    } else {
+      ElMessage.error(res.message || '清除失败')
+    }
+  } catch {
+    ElMessage.error('清除失败，请稍后再试')
+  } finally {
+    avatarUploading.value = false
+  }
+}
+
 const infoRules: FormRules = {
   username: [
     { required: true, message: '请输入用户昵称', trigger: 'blur' },
@@ -401,9 +504,10 @@ const submitInfo = async () => {
   }
   infoLoading.value = true
   try {
+    // 手机号提交原值（含空字符串）：后端留空即删除手机号
     const payload = {
       username: infoForm.username,
-      phone: infoForm.phone || undefined,
+      phone: infoForm.phone ?? '',
     } as Record<string, unknown>
     const res = await put<UserInfo>('/users/modify/info', payload)
     if (res.code === 200 && res.data) {
@@ -738,16 +842,26 @@ const handleLogout = async () => {
   gap: 16px;
 }
 
-.avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+.avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* 隐藏原生文件输入，由头像/按钮触发选择 */
+.avatar-input {
+  display: none;
+}
+
+.avatar-actions {
+  margin-top: 6px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--fg-on-accent);
-  flex-shrink: 0;
+  gap: 4px;
+}
+
+.avatar-actions .el-button {
+  padding: 0;
+  height: auto;
 }
 
 .user-info h3 {

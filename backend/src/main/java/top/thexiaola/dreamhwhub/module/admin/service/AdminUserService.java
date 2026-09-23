@@ -43,6 +43,23 @@ public interface AdminUserService {
     AdminUserVO updateUser(Integer userId, AdminUpdateUserRequest request);
 
     /**
+     * 修改指定用户的头像
+     *
+     * @param userId 用户 ID
+     * @param file   头像文件
+     * @return 更新后的用户
+     */
+    AdminUserVO updateUserAvatar(Integer userId, org.springframework.web.multipart.MultipartFile file);
+
+    /**
+     * 清除指定用户的头像
+     *
+     * @param userId 用户 ID
+     * @return 更新后的用户
+     */
+    AdminUserVO removeUserAvatar(Integer userId);
+
+    /**
      * 删除用户及其权限、班级成员数据
      *
      * @param userId 用户 ID
