@@ -89,14 +89,14 @@ public class MessagePolicyServiceImpl implements MessagePolicyService {
 
     @Override
     public MessagePolicyInfo getSchoolPolicy(Integer schoolId) {
-        requireSchoolExists(schoolId);
+        // requireSchoolExists 已查出学校，直接复用，避免重复回库
+        School school = requireSchoolExists(schoolId);
         User currentUser = userLookup.requireCurrentUser();
         // 生效策略需该校学校管理员或平台管理员可读；其余成员也能看到「是否好友可发」的提示，故放宽为校内成员可读
         // 但展示用信息不含敏感内容，直接返回生效值即可
         MessagePolicyInfo global = getGlobalPolicy();
-        School school = schoolMapper.selectById(schoolId);
-        Integer overrideLimit = school != null ? school.getStrangerMessageLimit() : null;
-        Integer overrideHours = school != null ? school.getStrangerMessageResetHours() : null;
+        Integer overrideLimit = school.getStrangerMessageLimit();
+        Integer overrideHours = school.getStrangerMessageResetHours();
         boolean overridden = overrideLimit != null || overrideHours != null;
         int limit = overrideLimit != null ? overrideLimit : global.getStrangerLimit();
         int hours = overrideHours != null ? overrideHours : global.getResetHours();

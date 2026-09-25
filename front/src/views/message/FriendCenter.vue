@@ -156,14 +156,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Inbox, MessageCircle, Search, UserPlus, Users } from '@lucide/vue'
 import { del, get, post, put } from '@/utils/http'
 import { useSchoolStore } from '@/stores/school'
-import { useFriendStore } from '@/stores/friend'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { formatDateTime as formatDate } from '@/utils/format'
 import type { AddableUserInfo, FriendInfo, FriendRequestInfo } from '@/types/friend'
 
 const router = useRouter()
 const schoolStore = useSchoolStore()
-const friendStore = useFriendStore()
 
 const schoolOptions = computed(() => schoolStore.mySchools ?? [])
 const schoolId = ref<number | null>(schoolStore.currentSchoolId ?? null)
@@ -191,10 +189,8 @@ const loadRequests = async () => {
   loading.requests = true
   const result = await get<FriendRequestInfo[]>('/friends/requests', { schoolId: schoolId.value })
   loading.requests = false
-  if (result.code === 200) {
-    requests.value = result.data ?? []
-    friendStore.setPendingCount(schoolId.value, requests.value.length)
-  } else ElMessage.error(result.message)
+  if (result.code === 200) requests.value = result.data ?? []
+  else ElMessage.error(result.message)
 }
 
 const loadAddable = async () => {

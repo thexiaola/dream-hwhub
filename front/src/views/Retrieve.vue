@@ -199,7 +199,7 @@ const sendCode = async () => {
     } else {
       ElMessage.error(result.message || '发送失败，请稍后重试')
     }
-  } catch (error) {
+  } catch {
     ElMessage.error('发送失败，请检查网络后重试')
   } finally {
     sending.value = false
@@ -248,7 +248,7 @@ const resetPassword = async () => {
     } else {
       ElMessage.error(result.message || '密码重置失败')
     }
-  } catch (error) {
+  } catch {
     ElMessage.error('密码重置失败')
   } finally {
     loading.value = false

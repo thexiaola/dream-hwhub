@@ -7,7 +7,7 @@
     <div
       class="admin-tabs-host"
       ref="tabsHostRef"
-      @pointerdown="onPointerDown"
+      @pointerdown="startDrag"
       @click.capture="onClickCapture"
     >
       <!-- 激活高亮块：可按住拖动，松开后吸附到最近的页签 -->
@@ -650,6 +650,11 @@ const activateTab = (name: AdminTab) => {
   nextTick(syncToActive)
 }
 
+// 手机端页签换行成多行（6 个页签单行排不下），此时对水平与竖直两个方向都做拖拽吸附；
+// 宽屏为单行横向排布，只沿水平轴拖动。
+const isNarrowViewport = () => window.matchMedia('(max-width: 768px)').matches
+const indicatorAxis = (): 'x' | 'both' => (isNarrowViewport() ? 'both' : 'x')
+
 const {
   dragging: indicatorDragging,
   position: indicatorPosition,
@@ -661,17 +666,9 @@ const {
   container: tabsHostRef,
   getTabs,
   activeKey: () => activeTab.value,
+  axis: indicatorAxis,
   onCross: key => activateTab(key as AdminTab)
 })
-
-// 手机端页签可横向滚动，而自定义指示器位于滚动容器之外，滚动时会与页签错位；
-// 故手机端停用拖拽、隐藏自定义指示器，改回 Element Plus 原生下划线激活条（随滚动对齐）
-const isNarrowViewport = () => window.matchMedia('(max-width: 768px)').matches
-
-const onPointerDown = (event: PointerEvent) => {
-  if (isNarrowViewport()) return
-  startDrag(event)
-}
 
 // 指示器相对页签上下内缩，避免直角底边压住底部基线
 const INDICATOR_INSET_Y = 4
@@ -705,7 +702,6 @@ const statusFilterOptions = [
 
 const reviewDialog = ref({
   visible: false,
-  type: '' as 'join',
   applicationId: 0,
   approved: false,
   comment: ''
@@ -733,7 +729,6 @@ const openReviewDialog = (applicationId: number, approved: boolean) => {
   const comment = reviewDialog.value.applicationId === applicationId ? reviewDialog.value.comment : ''
   reviewDialog.value = {
     visible: true,
-    type: 'join',
     applicationId,
     approved,
     comment
@@ -1104,11 +1099,9 @@ const dissolveClass = async (classId: number, className: string) => {
 }
 
 // ========== 危险操作（解散课堂）：确认文案 + 统一身份二次验证 ==========
-const dangerSubmitting = ref(false)
 const pendingDissolve = ref<{ classId: number; className: string }>({ classId: 0, className: '' })
 
 const clearDangerInputs = () => {
-  dangerSubmitting.value = false
   pendingDissolve.value = { classId: 0, className: '' }
 }
 
@@ -1125,7 +1118,6 @@ const doDissolveClass = async () => {
     clearDangerInputs()
     return
   }
-  dangerSubmitting.value = true
   try {
     const result = await del(`/class/${classId}`, { confirmText }, undefined, headers)
     if (result.code === 200) {
@@ -1141,8 +1133,6 @@ const doDissolveClass = async () => {
     }
   } catch {
     ElMessage.error('解散失败，请重试')
-  } finally {
-    dangerSubmitting.value = false
   }
 }
 
@@ -1548,21 +1538,18 @@ const batchKickFromAdmin = async (classId: number) => {
     transform: none !important;
   }
 
-  /* 自定义滑动指示器与 EP 下划线在多行布局下都会错位，一并隐藏；
-     换行后也不需要 EP 的左右滚动箭头 */
-  .admin-indicator,
+  /* 页签换行后不再需要 EP 的左右滚动箭头；EP 的下划线激活条无法跨行定位，也一并隐藏。
+     自定义滑动指示器保留：多行布局下改为二维拖动（见 indicatorAxis 'both'） */
   .admin-tabs :deep(.el-tabs__active-bar),
   .admin-tabs :deep(.el-tabs__nav-prev),
   .admin-tabs :deep(.el-tabs__nav-next) {
     display: none;
   }
 
-  /* 激活态改用激活项自身高亮，替代无法跨行的滑动指示器。
-     高亮直接画在页签背景上（不用伪元素 + z-index，避免层叠隐患） */
-  .admin-tabs :deep(.el-tabs__item.is-active) {
-    color: var(--primary-color);
-    background: rgba(102, 126, 234, 0.14);
-    border-radius: 8px;
+  /* 触摸拖动高亮块时需要屏蔽浏览器滚动/缩放手势，否则会被识别为页面滑动。
+     仅作用于页签头部：宿主容器同时还包着内容区，加在其上会让整页无法滚动 */
+  .admin-tabs :deep(.el-tabs__header) {
+    touch-action: none;
   }
 
   .user-list-card {

@@ -3104,6 +3104,17 @@ html[data-theme="dark"] .el-button--info.is-link.is-disabled {
   background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08) !important;
 }
 
+/* 下拉菜单中的高危操作项（如「删除」）：常态即为红色，悬浮时用红色底强化警示 */
+.el-dropdown-menu .el-dropdown-menu__item.danger-item {
+  color: var(--danger-strong) !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item.danger-item:not(.is-disabled):hover,
+.el-dropdown-menu .el-dropdown-menu__item.danger-item:not(.is-disabled).focus {
+  background: var(--danger-bg-strong) !important;
+  color: var(--danger-strong) !important;
+}
+
 /* =========================================================
    全局手机端响应式适配 (max-width: 768px)
    ========================================================= */
@@ -3440,12 +3451,12 @@ body.indicator-dragging * {
   text-align: center;
 }
 
-/* 手机端：固定操作列的固定宽度（最大 340px）会超出窄屏视口，
-   将其宽度限制为 min(240px, 62vw)，既保证始终不超过视口，又给信息列留出空间；
+/* 手机端：固定操作列的固定宽度（最大 200px）会占用窄屏视口，
+   将其宽度限制为 min(200px, 62vw)，既保证始终不超过视口，又给信息列留出空间；
    按钮超出时自动换行。 */
 @media (max-width: 768px) {
   .admin-table colgroup col:last-child {
-    width: min(240px, 62vw) !important;
+    width: min(200px, 62vw) !important;
   }
 }
 

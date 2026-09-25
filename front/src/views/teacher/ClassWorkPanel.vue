@@ -134,6 +134,7 @@
             v-model:file-list="attachmentFiles"
             :auto-upload="false"
             multiple
+            :limit="20"
             :on-exceed="handleAttachmentExceed"
             :on-remove="handleAttachmentRemove"
             :on-change="handleAttachmentChange"

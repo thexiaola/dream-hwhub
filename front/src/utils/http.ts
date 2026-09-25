@@ -64,9 +64,7 @@ instance.interceptors.request.use(
 )
 
 instance.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse>) => {
-    return response
-  },
+  undefined,
   (error) => {
     if (error.response) {
       const status = error.response.status

@@ -43,7 +43,7 @@
         <div class="info-item">
           <UserCheck :size="16" />
           <span class="label">已交：</span>
-          <span class="value">{{ submittedCount }} 人</span>
+          <span class="value">{{ total }} 人</span>
         </div>
         <div class="info-item">
           <UserX :size="16" />
@@ -84,7 +84,7 @@
     </el-card>
 
     <el-tabs v-model="activeTab" class="submissions-tabs" @tab-change="handleTabChange">
-      <el-tab-pane :label="`已交 (${submittedCount})`" name="submitted">
+      <el-tab-pane :label="`已交 (${total})`" name="submitted">
         <div class="submission-list" v-loading="loading">
           <div v-for="sub in submissions" :key="sub.id" class="submission-item">
             <div class="submission-header">
@@ -476,7 +476,6 @@ const activeTab = ref("submitted");
 const pageNum = ref(1);
 const pageSize = 10;
 const total = ref(0);
-const submittedCount = ref(0);
 const unsubmittedCount = ref(0);
 
 /** 是否为考试 */
@@ -536,7 +535,6 @@ const loadSubmissions = async () => {
     if (result.code === 200 && result.data) {
       submissions.value = result.data.records || [];
       total.value = result.data.total || 0;
-      submittedCount.value = result.data.total || 0;
     }
   } catch {
     ElMessage.error("加载提交列表失败");

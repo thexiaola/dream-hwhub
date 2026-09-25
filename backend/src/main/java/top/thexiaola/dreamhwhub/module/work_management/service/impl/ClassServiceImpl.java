@@ -89,26 +89,26 @@ public class ClassServiceImpl implements ClassService {
             // 删除作业附件
             QueryWrapper<WorkAttachment> attQuery = new QueryWrapper<>();
             attQuery.in("work_id", workIds);
-            int attachmentCount = workAttachmentMapper.delete(attQuery);
+            workAttachmentMapper.delete(attQuery);
 
             // 删除作业信息
-            int workCount = workMapper.delete(workQuery);
+            workMapper.delete(workQuery);
         }
 
         // 3. 删除班级成员记录
         QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("class_id", classId);
-        int memberCount = classMemberMapper.delete(memberQuery);
+        classMemberMapper.delete(memberQuery);
 
         // 4. 删除班级用户邀请记录
         QueryWrapper<ClassUserInvitation> userInvitationQuery = new QueryWrapper<>();
         userInvitationQuery.eq("class_id", classId);
-        int userInvitationCount = classUserInvitationMapper.delete(userInvitationQuery);
+        classUserInvitationMapper.delete(userInvitationQuery);
 
         // 5. 删除教师审核邀请记录
         QueryWrapper<ClassTeacherApproval> teacherApprovalQuery = new QueryWrapper<>();
         teacherApprovalQuery.eq("class_id", classId);
-        int teacherApprovalCount = classTeacherApprovalMapper.delete(teacherApprovalQuery);
+        classTeacherApprovalMapper.delete(teacherApprovalQuery);
 
         // 6. 最后删除班级信息
         classInfoMapper.deleteById(classId);
@@ -275,28 +275,18 @@ public class ClassServiceImpl implements ClassService {
         // 3. 硬删除所有提交附件记录
         QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
         attQuery.in("submission_id", submissionIds);
-        int attachmentCount = workSubmissionAttachmentMapper.delete(attQuery);
+        workSubmissionAttachmentMapper.delete(attQuery);
 
         // 4. 硬删除所有提交记录
-        int submissionCount = workSubmissionMapper.delete(submissionQuery);
+        workSubmissionMapper.delete(submissionQuery);
     }
 
 
     // ===== 以下为拆出的协作组件的委托实现 =====
 
     @Override
-    public boolean isOrdinaryTeacher(Integer classId, Integer userId) {
-        return classAccessResolver.isOrdinaryTeacher(classId, userId);
-    }
-
-    @Override
     public boolean isTeacher(Integer classId, Integer userId) {
         return classAccessResolver.isTeacher(classId, userId);
-    }
-
-    @Override
-    public boolean isStudent(Integer classId, Integer userId) {
-        return classAccessResolver.isStudent(classId, userId);
     }
 
     @Override
@@ -354,11 +344,6 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize) {
         return classQueryService.getClassMembers(classId, pageNum, pageSize);
-    }
-
-    @Override
-    public List<ClassMemberResponse> getAllClassMembers(Integer classId) {
-        return classQueryService.getAllClassMembers(classId);
     }
 
     @Override
@@ -479,10 +464,5 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public void reviewClassTakeover(Integer applicationId, Boolean approved, String comment) {
         classTakeoverService.reviewTakeover(applicationId, approved, comment);
-    }
-
-    @Override
-    public boolean isClassFrozen(Integer classId) {
-        return classAccessResolver.isClassFrozen(classInfoMapper.selectById(classId));
     }
 }

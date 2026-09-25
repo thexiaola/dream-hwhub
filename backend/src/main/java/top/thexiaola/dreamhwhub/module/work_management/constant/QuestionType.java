@@ -37,13 +37,6 @@ public final class QuestionType {
     }
 
     /**
-     * 是否需要老师手动评分（主观题与附加题）
-     */
-    public static boolean isSubjective(String type) {
-        return SUBJECTIVE.equals(type) || EXTRA.equals(type);
-    }
-
-    /**
      * 是否可自动评判
      */
     public static boolean isAutoGradable(String type) {

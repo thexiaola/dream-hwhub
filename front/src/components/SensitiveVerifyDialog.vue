@@ -6,7 +6,7 @@
     class="sensitive-verify-dialog"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
-    @close="onClose"
+    @close="cancelVerification"
   >
     <p class="sv-tip">
       为保障账号安全，{{ operationName ? `「${operationName}」` : '该操作' }}需要验证你的身份。
@@ -46,7 +46,7 @@
     </div>
 
     <template #footer>
-      <el-button @click="onCancel">取消</el-button>
+      <el-button @click="cancelVerification">取消</el-button>
       <el-button type="primary" @click="onConfirm">确认</el-button>
     </template>
   </el-dialog>
@@ -87,10 +87,6 @@ const onConfirm = () => {
   }
   confirmVerification()
 }
-
-const onCancel = () => cancelVerification()
-
-const onClose = () => cancelVerification()
 </script>
 
 <style scoped>

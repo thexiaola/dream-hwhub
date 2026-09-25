@@ -8,9 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.thexiaola.dreamhwhub.common.api.ApiResponse;
-import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
-import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkQuestionService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
@@ -33,7 +31,6 @@ public class WorkQuestionController {
 
     private final WorkQuestionService workQuestionService;
     private final WorkService workService;
-    private final ClassService classService;
 
     /**
      * 查询某作业的题目（按调用者身份返回：教师含参考答案，学生不含）
@@ -41,23 +38,16 @@ public class WorkQuestionController {
     @GetMapping(value = "/{workId}/questions")
     public ResponseEntity<ApiResponse<List<?>>> getWorkQuestions(@PathVariable(value = "workId") Integer workId) {
         String ip = LogUtil.getCurrentClientIp();
-        try {
-            User currentUser = UserUtils.getCurrentUser();
-            String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+        User currentUser = UserUtils.getCurrentUser();
+        String userInfo = LogUtil.getUserInfoString(ip, currentUser);
 
-            // 复用作业查询做权限校验（仅本班成员或该班老师可查看）
-            WorkResponse work = workService.getWorkById(workId);
-            Integer classId = work.getClassId();
+        // 复用作业查询做权限校验（仅本班成员或该班老师可查看）；教师侧查询时已随详情填充题目
+        WorkResponse work = workService.getWorkById(workId);
+        List<?> questions = work.getQuestions() != null
+                ? work.getQuestions()
+                : workQuestionService.listForStudent(workId);
 
-            if (classService.isTeacher(classId, currentUser.getId())) {
-                log.info("User ({}) queried work questions (teacher), workId: {}", userInfo, workId);
-                return ResponseEntity.ok(ApiResponse.success(workQuestionService.listForTeacher(workId)));
-            }
-            log.info("User ({}) queried work questions (student), workId: {}", userInfo, workId);
-            return ResponseEntity.ok(ApiResponse.success(workQuestionService.listForStudent(workId)));
-        } catch (BusinessException e) {
-            log.warn("User query work questions failed: {}", e.getMessage());
-            throw e;
-        }
+        log.info("User ({}) queried work questions, workId: {}", userInfo, workId);
+        return ResponseEntity.ok(ApiResponse.success(questions));
     }
 }

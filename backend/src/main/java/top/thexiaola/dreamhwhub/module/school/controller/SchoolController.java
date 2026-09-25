@@ -80,7 +80,7 @@ public class SchoolController {
     public ApiResponse<SchoolJoinApplicationResponse> joinSchool(
             @PathVariable(value = "schoolId") Integer schoolId,
             @Valid @RequestBody JoinSchoolRequest request) {
-        if (schoolId == null || schoolId <= 0) {
+        if (schoolId <= 0) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "学校ID无效", null);
         }
         User currentUser = UserUtils.getCurrentUser();

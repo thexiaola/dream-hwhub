@@ -75,7 +75,7 @@ public class JwtUtil {
     /**
      * 从Token中解析Claims
      */
-    public Claims parseToken(String token) {
+    private Claims parseToken(String token) {
         try {
             return Jwts.parser()
                     .verifyWith(getSigningKey())
@@ -114,22 +114,6 @@ public class JwtUtil {
     }
 
     /**
-     * 从Token中获取用户ID
-     */
-    public Integer getUserIdFromToken(String token) {
-        Claims claims = parseToken(token);
-        return claims.get("userId", Integer.class);
-    }
-
-    /**
-     * 从Token中获取用户名
-     */
-    public String getUsernameFromToken(String token) {
-        Claims claims = parseToken(token);
-        return claims.getSubject();
-    }
-
-    /**
      * 验证Token是否有效
      */
     public boolean validateToken(String token) {
@@ -139,18 +123,6 @@ public class JwtUtil {
         } catch (Exception e) {
             log.warn("Token validation failed: {}", e.getMessage());
             return false;
-        }
-    }
-
-    /**
-     * 检查Token是否过期
-     */
-    public boolean isTokenExpired(String token) {
-        try {
-            Claims claims = parseToken(token);
-            return claims.getExpiration().before(new Date());
-        } catch (Exception e) {
-            return true;
         }
     }
 }

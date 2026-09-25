@@ -64,27 +64,4 @@ public class XssValidator {
             }
         }
     }
-
-    /**
-     * 清理字符串中的潜在XSS代码（可选，用于显示时）
-     *
-     * @param input 原始字符串
-     * @return 清理后的字符串
-     */
-    public static String sanitize(String input) {
-        if (input == null || input.isEmpty()) {
-            return input;
-        }
-
-        String result = input;
-        
-        // 转义HTML特殊字符
-        result = result.replace("&", "&amp;");
-        result = result.replace("<", "&lt;");
-        result = result.replace(">", "&gt;");
-        result = result.replace("\"", "&quot;");
-        result = result.replace("'", "&#39;");
-        
-        return result;
-    }
 }

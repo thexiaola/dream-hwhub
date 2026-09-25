@@ -150,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ChevronUp, ChevronDown, Trash2, X, Plus, FileQuestion } from '@lucide/vue'
 import type { QuestionType, WorkQuestionVO } from '@/types/work'
 import { isObjectiveType } from '@/types/work'
@@ -159,7 +159,6 @@ import {
   createDraft,
   defaultOptions,
   draftFromVO,
-  nextUid,
   type DraftQuestion,
 } from './questionDraft'
 
@@ -199,25 +198,7 @@ const addTypes: { value: QuestionType; label: string }[] = [
   { value: 'extra', label: '附加' },
 ]
 
-const totalScore = ref(0)
-watch(
-  drafts,
-  () => {
-    totalScore.value = drafts.value.reduce((sum, q) => sum + (q.score || 0), 0)
-  },
-  { deep: true, immediate: true },
-)
-
-const emit = defineEmits<{
-  /** 题目集合变化时通知父组件（用于校验/提交） */
-  (e: 'change', drafts: DraftQuestion[]): void
-}>()
-
-watch(
-  drafts,
-  () => emit('change', drafts.value),
-  { deep: true },
-)
+const totalScore = computed(() => drafts.value.reduce((sum, q) => sum + (q.score || 0), 0))
 
 const addQuestion = (type: QuestionType) => {
   drafts.value.push(createDraft(type))
@@ -258,7 +239,7 @@ const removeFill = (q: DraftQuestion, ai: number) => {
   q.fillAnswers.splice(ai, 1)
 }
 
-defineExpose({ drafts, nextUid })
+defineExpose({ drafts })
 </script>
 
 <style scoped>

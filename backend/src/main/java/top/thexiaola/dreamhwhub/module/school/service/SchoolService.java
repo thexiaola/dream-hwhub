@@ -260,14 +260,6 @@ public interface SchoolService {
     boolean isSchoolMember(Integer schoolId, Integer userId);
 
     /**
-     * 查询用户加入的全部学校成员记录（用于判定其作为老师的学校集合）
-     *
-     * @param userId 用户 ID
-     * @return 成员记录列表，非成员返回空列表
-     */
-    List<SchoolMember> getMembershipsByUserId(Integer userId);
-
-    /**
      * 查询用户加入的学校成员记录（可按角色下限过滤）
      *
      * @param userId      用户 ID

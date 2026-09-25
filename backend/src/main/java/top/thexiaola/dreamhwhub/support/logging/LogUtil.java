@@ -110,36 +110,6 @@ public class LogUtil {
     }
 
     /**
-     * 获取格式化的用户信息字符串（自动获取当前请求信息）
-     * @return 格式化的用户信息字符串
-     */
-    public static String getUserInfoString() {
-        return getUserInfoString(getCurrentClientIp(), null);
-    }
-
-    /**
-     * 获取带用户信息的操作日志格式
-     * @param operation 操作描述
-     * @param user 用户对象
-     * @return 格式化的操作日志
-     */
-    public static String getOperationLog(String operation, User user) {
-        String ip = getCurrentClientIp();
-        String userInfo = getUserInfoString(ip, user);
-        return String.format("%s - %s", operation, userInfo);
-    }
-
-    /**
-     * 获取带用户信息的成功操作日志
-     * @param operation 操作描述
-     * @param user 用户对象
-     * @return 格式化的成功操作日志
-     */
-    public static String getSuccessLog(String operation, User user) {
-        return getOperationLog(operation + " successfully", user);
-    }
-
-    /**
      * 获取带用户信息的失败操作日志
      * @param operation 操作描述
      * @param reason 失败原因

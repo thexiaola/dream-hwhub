@@ -1,7 +1,6 @@
 package top.thexiaola.dreamhwhub.module.work_management.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -10,12 +9,6 @@ import lombok.Data;
  */
 @Data
 public class UpdateClassRequest {
-
-    /**
-     * 班级 ID
-     */
-    @NotNull(message = "班级 ID 不能为空")
-    private Integer classId;
 
     /**
      * 班级名称

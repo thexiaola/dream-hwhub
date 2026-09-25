@@ -138,8 +138,8 @@ public class PermissionServiceImpl implements PermissionService {
         return nodes.stream().anyMatch(owned::contains);
     }
 
-    @Override
-    public List<PermissionGroup> listGroups() {
+    /** 查询全部权限组（供本类内部组装 VO 使用） */
+    private List<PermissionGroup> listGroups() {
         QueryWrapper<PermissionGroup> query = new QueryWrapper<>();
         query.orderByAsc("id");
         return permissionGroupMapper.selectList(query);
@@ -194,8 +194,8 @@ public class PermissionServiceImpl implements PermissionService {
                 .toList();
     }
 
-    @Override
-    public PermissionGroup getGroup(Integer groupId) {
+    /** 查询权限组（供本类内部组装 VO 使用，不存在返回 null） */
+    private PermissionGroup getGroup(Integer groupId) {
         if (groupId == null) {
             return null;
         }
@@ -350,8 +350,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (groupIds.isEmpty()) {
             return List.of();
         }
-        List<PermissionGroup> groups = permissionGroupMapper.selectByIds(groupIds);
-        return groups == null ? List.of() : groups;
+        return permissionGroupMapper.selectByIds(groupIds);
     }
 
     @Override

@@ -208,12 +208,9 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以删除作业", null);
         }
 
-        // 计算当前状态
-        Integer currentStatus = calculateWorkStatus(workInfo);
-        
         // 级联删除所有关联数据
         cascadeDeleteWork(workId);
-        
+
     }
 
     @Override

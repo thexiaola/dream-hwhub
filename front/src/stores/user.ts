@@ -111,11 +111,8 @@ export const useUserStore = defineStore('user', () => {
     return { code: result.code, message: result.message, data: result.data }
   }
 
-  window.addEventListener('auth-expired', () => {
-    token.value = ''
-    userInfo.value = null
-    useSchoolStore().clear()
-  })
+  // 登录过期（http 拦截器在派发事件前已移除 localStorage 的 token）：清空全部本地会话状态
+  window.addEventListener('auth-expired', clearLocal)
 
   return {
     userInfo,

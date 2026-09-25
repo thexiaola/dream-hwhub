@@ -356,15 +356,26 @@ const navPath = (tab: NavTab): string => {
   }
 }
 
+// 各导航项对应的路由前缀，用于判断「当前是否已在该项下」。
+// 「私信」为 kebab-case 的 /private-messages，须显式列出；其与「站内信 /messages」
+// 前缀不同，互不误判。
+const tabRoutePrefix: Record<NavTab, string> = {
+  courses: '/courses',
+  messages: '/messages',
+  friends: '/friends',
+  privateMessages: '/private-messages',
+  school: '/school',
+  admin: '/admin'
+}
+
 // 当前是否已处于该项对应的路由下。
 // 用前缀匹配而非全等：「课程」下含 /courses/student 与 /courses/teacher 两个子页；
-// 管理面板子路由为 /admin/panel/:tab，同样应视为已在该项。
-// 注意「私信 /private-messages」与「站内信 /messages」前缀不同，互不误判。
-const isOnTab = (tab: NavTab): boolean =>
-  route.path === navPath(tab)
-  || route.path.startsWith(`/${tab}`)
-  // 驼峰键（privateMessages）对应的路由是 kebab-case，需单独匹配
-  || route.path.startsWith('/private-messages')
+// 学校详情、管理面板子路由等同样应视为已在该项。前缀必须按 tab 逐项取，
+// 否则任一 tab 都会误判成「已在该页」而吞掉点击跳转。
+const isOnTab = (tab: NavTab): boolean => {
+  const prefix = tabRoutePrefix[tab]
+  return route.path === prefix || route.path.startsWith(`${prefix}/`)
+}
 
 // 点击导航项：写入历史，便于后退
 const switchTab = (tab: NavTab) => {

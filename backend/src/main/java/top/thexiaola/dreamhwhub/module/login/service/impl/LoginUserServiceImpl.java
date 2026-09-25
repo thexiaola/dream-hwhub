@@ -1,7 +1,6 @@
 package top.thexiaola.dreamhwhub.module.login.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,7 @@ public class LoginUserServiceImpl implements LoginUserService {
     private final PasswordUtil passwordUtil;
 
     @Override
-    public User login(LoginRequest loginRequest, HttpServletRequest request) {
+    public User login(LoginRequest loginRequest) {
         String operation = "User login";
             
         User user = findByAccount(loginRequest.getAccount());

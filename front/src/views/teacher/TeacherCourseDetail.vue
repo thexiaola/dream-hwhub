@@ -252,7 +252,6 @@ const goBack = () => {
 // ========== 危险操作（解散课堂）：确认文案 + 统一身份二次验证 ==========
 const showDangerConfirmTextDialog = ref(false);
 const dangerConfirmText = ref("");
-const dangerSubmitting = ref(false);
 
 const expectedConfirmText = computed(() => {
   const name = course.value?.className ?? "";
@@ -261,7 +260,6 @@ const expectedConfirmText = computed(() => {
 
 const clearDangerInputs = () => {
   dangerConfirmText.value = "";
-  dangerSubmitting.value = false;
   showDangerConfirmTextDialog.value = false;
 };
 
@@ -291,7 +289,6 @@ const confirmTextDialogNext = async () => {
     clearDangerInputs();
     return;
   }
-  dangerSubmitting.value = true;
   try {
     const result = await del(
       `/class/${classId}`,
@@ -308,8 +305,6 @@ const confirmTextDialogNext = async () => {
     }
   } catch {
     ElMessage.error("解散失败，请重试");
-  } finally {
-    dangerSubmitting.value = false;
   }
 };
 

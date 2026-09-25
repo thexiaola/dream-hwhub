@@ -106,7 +106,7 @@ public class ClassController {
                         @Valid @RequestBody UpdateClassRequest request) {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfo(currentUser);
-                log.info("User {} requesting to update class info, ID: {}", userInfo, request.getClassId());
+                log.info("User {} requesting to update class info, ID: {}", userInfo, classId);
                 ClassDetailResponse updatedClass = classService.updateClassInfo(classId, request.getClassName(),
                                 request.getDescription());
                 log.info("User {} updated class info successfully", userInfo);

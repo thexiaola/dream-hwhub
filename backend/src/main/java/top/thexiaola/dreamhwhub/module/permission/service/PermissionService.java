@@ -59,13 +59,6 @@ public interface PermissionService {
     boolean hasAnyPermission(Integer userId, Collection<String> nodes);
 
     /**
-     * 查询全部权限组
-     *
-     * @return 权限组列表
-     */
-    List<PermissionGroup> listGroups();
-
-    /**
      * 查询全部权限组（含所含节点与组内用户数，供管理端直接返回）
      *
      * @return 权限组 VO 列表
@@ -79,14 +72,6 @@ public interface PermissionService {
      * @return 权限组 VO 列表
      */
     List<PermissionGroupVO> getUserGroupVOs(Integer userId);
-
-    /**
-     * 查询权限组
-     *
-     * @param groupId 权限组 ID
-     * @return 权限组，不存在返回 null
-     */
-    PermissionGroup getGroup(Integer groupId);
 
     /**
      * 查询权限组 VO（含所含节点与组内用户数）

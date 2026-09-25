@@ -88,7 +88,7 @@ class LoginUserControllerTest {
         String mockToken = "mock.jwt.token";
 
         // Mock 行为
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenReturn(mockUser);
         Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
                 .thenReturn(userResponse);
@@ -117,7 +117,7 @@ class LoginUserControllerTest {
         loginRequest.setPassword("wrongpassword");
 
         // Mock 抛出业务异常
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenThrow(new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS));
 
         // 执行测试并验证
@@ -140,7 +140,7 @@ class LoginUserControllerTest {
         loginRequest.setPassword("password123");
 
         // Mock 抛出账号封禁异常
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenThrow(new BusinessException(BusinessErrorCode.USER_BANNED));
 
         // 执行测试并验证
@@ -225,7 +225,7 @@ class LoginUserControllerTest {
 
         String mockToken = "mock.jwt.token";
 
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenReturn(mockUser);
         Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
                 .thenReturn(userResponse);
@@ -262,7 +262,7 @@ class LoginUserControllerTest {
 
         String mockToken = "mock.jwt.token";
 
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenReturn(mockUser);
         Mockito.when(userMapper.toUserResponse(Mockito.any(User.class)))
                 .thenReturn(userResponse);
@@ -289,7 +289,7 @@ class LoginUserControllerTest {
         loginRequest.setAccount("' OR '1'='1"); // SQL注入
         loginRequest.setPassword("password123");
 
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenThrow(new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS));
 
         mockMvc.perform(post("/api/users/login")
@@ -308,7 +308,7 @@ class LoginUserControllerTest {
         loginRequest.setAccount("<script>alert(1)</script>"); // XSS
         loginRequest.setPassword("password123");
 
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenThrow(new BusinessException(BusinessErrorCode.INVALID_CREDENTIALS));
 
         mockMvc.perform(post("/api/users/login")
@@ -328,7 +328,7 @@ class LoginUserControllerTest {
         loginRequest.setPassword("password123");
 
         // Mock service返回null，导致Controller中出现NPE
-        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class), Mockito.any()))
+        Mockito.when(loginUserService.login(Mockito.any(LoginRequest.class)))
                 .thenReturn(null);
 
         mockMvc.perform(post("/api/users/login")

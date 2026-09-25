@@ -191,11 +191,9 @@ public class AccountDeletionServiceImpl implements AccountDeletionService {
         workSubmissionCleaner.cleanupClassSubmissions(classIds, userId);
 
         // 删除成员记录：一次性删除其在所有学校与所有班级的记录
-        if (!schoolIds.isEmpty()) {
-            QueryWrapper<SchoolMember> deleteSchoolMembers = new QueryWrapper<>();
-            deleteSchoolMembers.eq("user_id", userId);
-            schoolMemberMapper.delete(deleteSchoolMembers);
-        }
+        QueryWrapper<SchoolMember> deleteSchoolMembers = new QueryWrapper<>();
+        deleteSchoolMembers.eq("user_id", userId);
+        schoolMemberMapper.delete(deleteSchoolMembers);
         QueryWrapper<ClassMember> deleteClassMembers = new QueryWrapper<>();
         deleteClassMembers.eq("user_id", userId);
         classMemberMapper.delete(deleteClassMembers);

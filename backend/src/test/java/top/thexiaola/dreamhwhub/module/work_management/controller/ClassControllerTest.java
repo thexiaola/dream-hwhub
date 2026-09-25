@@ -182,7 +182,6 @@ class ClassControllerTest {
     @DisplayName("测试更新班级信息 - 成功")
     void testUpdateClassInfo_Success() throws Exception {
         UpdateClassRequest request = new UpdateClassRequest();
-        request.setClassId(1);
         request.setClassName("新班级名");
         request.setDescription("新描述");
 

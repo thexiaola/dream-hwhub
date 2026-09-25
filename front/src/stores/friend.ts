@@ -9,8 +9,6 @@ import { get } from '@/utils/http'
 export const useFriendStore = defineStore('friend', () => {
   // 学校 ID -> 未读私信数
   const unreadBySchool = ref<Record<number, number>>({})
-  // 学校 ID -> 待处理好友申请数
-  const pendingBySchool = ref<Record<number, number>>({})
 
   const totalUnread = computed(() =>
     Object.values(unreadBySchool.value).reduce((sum, n) => sum + n, 0)
@@ -18,9 +16,6 @@ export const useFriendStore = defineStore('friend', () => {
 
   const unreadOf = (schoolId?: number | null): number =>
     schoolId == null ? totalUnread.value : unreadBySchool.value[schoolId] ?? 0
-
-  const pendingOf = (schoolId?: number | null): number =>
-    schoolId == null ? 0 : pendingBySchool.value[schoolId] ?? 0
 
   /** 拉取各学校未读私信数 */
   const fetchUnread = async (): Promise<void> => {
@@ -38,12 +33,6 @@ export const useFriendStore = defineStore('friend', () => {
     }
   }
 
-  /** 记录某学校的待处理好友申请数（由好友页设置） */
-  const setPendingCount = (schoolId: number | null, count: number): void => {
-    if (schoolId == null) return
-    pendingBySchool.value = { ...pendingBySchool.value, [schoolId]: count }
-  }
-
   /** 本地把某学校（或全部）的未读清零（读完会话后调用） */
   const clearUnread = (schoolId?: number | null): void => {
     if (schoolId == null) {
@@ -57,10 +46,9 @@ export const useFriendStore = defineStore('friend', () => {
 
   const clear = (): void => {
     unreadBySchool.value = {}
-    pendingBySchool.value = {}
   }
 
   window.addEventListener('auth-expired', clear)
 
-  return { unreadBySchool, pendingBySchool, totalUnread, unreadOf, pendingOf, fetchUnread, setPendingCount, clearUnread, clear }
+  return { unreadBySchool, totalUnread, unreadOf, fetchUnread, clearUnread, clear }
 })

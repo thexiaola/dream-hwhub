@@ -104,5 +104,5 @@ function toggle(): void {
 }
 
 export function useTheme() {
-  return { theme, isDark, toggle }
+  return { isDark, toggle }
 }

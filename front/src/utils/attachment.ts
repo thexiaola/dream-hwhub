@@ -35,14 +35,6 @@ export async function openAttachmentPreview(
   }
 }
 
-/** 格式化文件大小：B / KB / MB */
-export function formatFileSize(size?: number | null): string {
-  if (!size && size !== 0) return ''
-  if (size < 1024) return `${size}B`
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)}KB`
-  return `${(size / 1024 / 1024).toFixed(2)}MB`
-}
-
 /**
  * 头像内容缓存：同一路径只向后端拉取一次，缓存的是不可变的 Blob。
  *

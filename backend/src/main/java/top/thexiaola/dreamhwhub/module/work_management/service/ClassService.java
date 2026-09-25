@@ -17,11 +17,6 @@ public interface ClassService {
     void batchSetAssistantTeachers(Integer classId, List<Integer> studentUserIds);
 
     /**
-     * 检查用户是否是普通班级管理员（非创建者）
-     */
-    boolean isOrdinaryTeacher(Integer classId, Integer userId);
-
-    /**
      * 批量将学生踢出班级（班级管理员/平台管理员专用）
      */
     void batchKickStudentsFromClass(Integer classId, List<Integer> studentUserIds);
@@ -84,11 +79,6 @@ public interface ClassService {
     List<Integer> getMemberClassIds(Integer userId);
 
     /**
-     * 检查用户在指定班级是否是学生
-     */
-    boolean isStudent(Integer classId, Integer userId);
-
-    /**
      * 判断用户是否可以提交作业：
      * 普通成员（role=0）或班级管理员（role=1）可以提交，创建者不可提交
      */
@@ -144,11 +134,6 @@ public interface ClassService {
      * 获取班级成员列表（分页）
      */
     Page<ClassMemberResponse> getClassMembers(Integer classId, Integer pageNum, Integer pageSize);
-
-    /**
-     * 获取班级所有成员列表（不分页）
-     */
-    List<ClassMemberResponse> getAllClassMembers(Integer classId);
 
     /**
      * 创建班级（创建者自动成为班级管理员）
@@ -284,12 +269,4 @@ public interface ClassService {
      * @param comment       审核意见
      */
     void reviewClassTakeover(Integer applicationId, Boolean approved, String comment);
-
-    /**
-     * 判断班级是否已冻结（创建者教师身份被解除）
-     *
-     * @param classId 班级 ID
-     * @return true-已冻结
-     */
-    boolean isClassFrozen(Integer classId);
 }

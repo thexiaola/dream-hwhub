@@ -23,6 +23,7 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
 import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
+import top.thexiaola.dreamhwhub.support.sql.SqlLikeUtil;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -62,11 +63,11 @@ public class SiteMessageServiceImpl implements SiteMessageService {
             query.eq("is_read", request.getIsRead());
         }
         if (StrUtil.isNotBlank(request.getKeyword())) {
-            String kw = escapeLike(request.getKeyword().trim());
+            String pattern = SqlLikeUtil.containsPattern(request.getKeyword().trim());
             // 标题 / 内容 / 班级名任一命中即可
-            query.and(w -> w.apply("title LIKE {0} ESCAPE '!'", "%" + kw + "%")
-                    .or().apply("content LIKE {0} ESCAPE '!'", "%" + kw + "%")
-                    .or().apply("class_name LIKE {0} ESCAPE '!'", "%" + kw + "%"));
+            query.and(w -> w.apply("title LIKE {0} ESCAPE '!'", pattern)
+                    .or().apply("content LIKE {0} ESCAPE '!'", pattern)
+                    .or().apply("class_name LIKE {0} ESCAPE '!'", pattern));
         }
         query.orderByDesc("create_time").orderByDesc("id");
 
@@ -224,12 +225,5 @@ public class SiteMessageServiceImpl implements SiteMessageService {
                         m.getReadTime(),
                         m.getCreateTime()))
                 .toList();
-    }
-
-    /**
-     * 转义 LIKE 通配符，避免用户输入的 %、_、! 被当作通配符（配合 SQL 的 ESCAPE '!'）
-     */
-    private String escapeLike(String value) {
-        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 }

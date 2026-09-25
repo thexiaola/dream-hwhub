@@ -38,9 +38,8 @@ public class UpdateWorkRequest {
     private String description;
 
     /**
-     * 截止时间
+     * 截止时间（null 表示清除截止时间，即永久有效）
      */
-    @NotNull(message = "截止时间不能为空")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime deadline;
 

@@ -142,7 +142,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             } catch (Exception e) {
                 // 如果事务失败，清理已上传的文件
                 cleanupUploadedFiles(savedAttachments);
-                status.setRollbackOnly();
                 throw e;
             }
         });
@@ -467,13 +466,12 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
         submission.setStatus(1); // 重置为已提交状态
         submission.setUpdateTime(LocalDateTime.now());
-        workSubmissionMapper.updateById(submission);
 
         // 4. 含题目的作业：整体替换逐题作答并重新自动评判（客观题）
         if (workInfo != null) {
             saveAnswers(submission, workInfo, answers, Boolean.TRUE);
-            workSubmissionMapper.updateById(submission);
         }
+        workSubmissionMapper.updateById(submission);
 
         // 5. 构建响应（包含更新后的附件列表）
         WorkSubmissionSubmitResponse response = submissionSubmitResponseMapper.toSubmitResponse(submission);
@@ -1201,8 +1199,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
 
         // 10. 创建ZIP文件并写入
         try (ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
-            int fileCount = 0;
-
             for (WorkSubmission submission : submissions) {
                 List<WorkSubmissionAttachment> attachments = attachmentsBySubmission.get(submission.getId());
                 if (attachments == null || attachments.isEmpty()) {
@@ -1252,7 +1248,6 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                                     zipOut.write(buffer, 0, bytesRead);
                                 }
                             }
-                            fileCount++;
                         } else {
                             log.warn("File not found: {}", attachment.getFilePath());
                         }

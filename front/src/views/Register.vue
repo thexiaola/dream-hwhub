@@ -236,7 +236,7 @@ const handleRegister = async () => {
     } else {
       ElMessage.error(result.message)
     }
-  } catch (error) {
+  } catch {
     ElMessage.error('注册失败')
   } finally {
     loading.value = false

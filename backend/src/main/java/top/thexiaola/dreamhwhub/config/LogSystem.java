@@ -114,7 +114,7 @@ public class LogSystem extends RollingPolicyBase {
             startupCount = calculateStartupCount();
             currentFileIndex = 1;
         } else {
-            currentFileIndex++;
+            // 从当前索引起扫描空位：已被占用的文件名会被跳过
             currentFileIndex = findNextAvailableFileIndex();
             log.info("Same-day rolling, new file index: {}", currentFileIndex);
         }
@@ -209,18 +209,5 @@ public class LogSystem extends RollingPolicyBase {
         }
             
         return nextStartupCount;
-    }
-
-    /**
-     * 获取当前日志系统状态信息
-     *
-     * @return 状态信息字符串
-     */
-    public String getStatusInfo() {
-        return String.format(
-                "Unified log system status - Current date: %s, Startup count: %d, File index: %d, Current file: %s",
-                currentDate, startupCount, currentFileIndex,
-                String.format("%s/log_%s_%d_%d.log", LOGS_DIR, currentDate, startupCount, currentFileIndex)
-        );
     }
 }

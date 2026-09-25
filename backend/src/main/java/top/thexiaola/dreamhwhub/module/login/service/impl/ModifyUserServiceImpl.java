@@ -290,7 +290,8 @@ public class ModifyUserServiceImpl implements ModifyUserService {
         if (dbUser == null) {
             throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
         }
-        if (request == null || request.getVerifyByPassword() == null || request.getVerifyByEmailCode() == null) {
+        // @Valid @RequestBody 的 body 必填，请求对象本身不会为 null，这里只需校验开关字段
+        if (request.getVerifyByPassword() == null || request.getVerifyByEmailCode() == null) {
             throw new BusinessException(BusinessErrorCode.SECURITY_VERIFICATION_SETTING_INVALID,
                     "请同时指定密码验证与邮箱验证码验证的开关", null);
         }

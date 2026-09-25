@@ -27,10 +27,9 @@ public class AnswerGrader {
     /**
      * 自动评判结果
      *
-     * @param correct  是否答对（null 表示无法自动评判）
-     * @param gradable 是否可自动评判
+     * @param correct 是否答对（null 表示无法自动评判）
      */
-    public record Result(Boolean correct, boolean gradable) {
+    public record Result(Boolean correct) {
     }
 
     /**
@@ -49,7 +48,7 @@ public class AnswerGrader {
      */
     public Result grade(WorkQuestion question, Object studentAnswer) {
         if (question == null || !canAutoGrade(question)) {
-            return new Result(null, false);
+            return new Result(null);
         }
         String type = question.getQuestionType();
         String correctRaw = question.getCorrectAnswer();
@@ -57,16 +56,16 @@ public class AnswerGrader {
         try {
             return switch (type) {
                 case QuestionType.SINGLE, QuestionType.JUDGE ->
-                        new Result(judgeChoice(correctRaw, studentAnswer, type), true);
+                        new Result(judgeChoice(correctRaw, studentAnswer, type));
                 case QuestionType.MULTIPLE ->
-                        new Result(judgeMultiple(correctRaw, studentAnswer), true);
+                        new Result(judgeMultiple(correctRaw, studentAnswer));
                 case QuestionType.FILL ->
-                        new Result(judgeFill(correctRaw, studentAnswer), true);
-                default -> new Result(null, false);
+                        new Result(judgeFill(correctRaw, studentAnswer));
+                default -> new Result(null);
             };
         } catch (Exception e) {
             log.warn("Auto grade failed for question {}: {}", question.getId(), e.getMessage());
-            return new Result(false, true);
+            return new Result(false);
         }
     }
 

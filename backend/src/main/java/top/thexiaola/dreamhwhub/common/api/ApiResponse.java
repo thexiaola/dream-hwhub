@@ -23,10 +23,6 @@ public class ApiResponse<T> {
         return new ApiResponse<>(200, message, data);
     }
 
-    public static <T> ApiResponse<T> success() {
-        return new ApiResponse<>(200, "成功", null);
-    }
-
     public static <T> ApiResponse<T> error(Integer code, String message) {
         return new ApiResponse<>(code, message, null);
     }

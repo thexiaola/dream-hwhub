@@ -585,13 +585,7 @@ const loadQuestions = async () => {
 const initAnswerMap = () => {
   const map: Record<number, string | string[]> = {}
   for (const q of questions.value) {
-    if (q.questionType === 'multiple') {
-      map[q.id] = []
-    } else if (q.questionType === 'judge') {
-      map[q.id] = ''
-    } else {
-      map[q.id] = ''
-    }
+    map[q.id] = q.questionType === 'multiple' ? [] : ''
   }
   answerMap.value = map
 }

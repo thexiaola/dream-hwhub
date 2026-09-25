@@ -1,6 +1,5 @@
 package top.thexiaola.dreamhwhub.module.login.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,12 +39,12 @@ public class LoginUserController {
     private final top.thexiaola.dreamhwhub.support.security.SensitiveOperationSettingsService sensitiveOperationSettingsService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request,
+    public ResponseEntity<ApiResponse<UserResponse>> login(
             @Valid @RequestBody LoginRequest loginRequest) {
         String ip = LogUtil.getCurrentClientIp();
 
         try {
-            User user = loginUserService.login(loginRequest, request);
+            User user = loginUserService.login(loginRequest);
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
             userResponse.setPermissions(permissionService.getPermissionNodes(user.getId()));
             userResponse.setDisabledVerificationOperations(

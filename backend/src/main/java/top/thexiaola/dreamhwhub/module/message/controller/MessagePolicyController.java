@@ -1,6 +1,5 @@
 package top.thexiaola.dreamhwhub.module.message.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +41,7 @@ public class MessagePolicyController {
      */
     @PutMapping
     public ApiResponse<MessagePolicyInfo> updateGlobalPolicy(
-            @Valid @RequestBody UpdateMessagePolicyRequest request) {
+            @RequestBody UpdateMessagePolicyRequest request) {
         User currentUser = UserUtils.getCurrentUser();
         MessagePolicyInfo policy = messagePolicyService.updateGlobalPolicy(
                 request.getStrangerLimit(), request.getResetHours());

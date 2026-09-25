@@ -392,68 +392,6 @@ public class FileUploadValidator {
     }
 
     /**
-     * 获取安全的上传目录路径
-     *
-     * @param subDirectory 子目录名称（可选）
-     * @return 绝对路径
-     */
-    public static String getSecureUploadPath(String subDirectory) {
-        ensureUploadDirectoryExists();
-
-        if (subDirectory != null && !subDirectory.isEmpty()) {
-            // 清理子目录名称中的危险字符
-            String safeSubDir = subDirectory.replaceAll("[^a-zA-Z0-9_-]", "_");
-            Path uploadPath = Paths.get(UPLOAD_BASE_DIR, safeSubDir);
-
-            try {
-                Files.createDirectories(uploadPath);
-                return uploadPath.normalize().toString();
-            } catch (Exception e) {
-                log.error("Failed to create upload directory: {}", uploadPath, e);
-                throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR,
-                        "无法创建上传目录", null);
-            }
-        }
-
-        return Paths.get(UPLOAD_BASE_DIR).normalize().toString();
-    }
-
-    /**
-     * 确保上传目录存在
-     */
-    private static void ensureUploadDirectoryExists() {
-        Path uploadDir = Paths.get(UPLOAD_BASE_DIR);
-        try {
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-                log.info("Created secure upload directory: {}", UPLOAD_BASE_DIR);
-            }
-        } catch (Exception e) {
-            log.error("Failed to create upload directory: {}", UPLOAD_BASE_DIR, e);
-            throw new BusinessException(BusinessErrorCode.SYSTEM_ERROR,
-                    "无法初始化上传目录", null);
-        }
-    }
-
-    /**
-     * 获取允许的文件扩展名列表
-     *
-     * @return 允许的扩展名集合
-     */
-    public static Set<String> getAllowedExtensions() {
-        return ALLOWED_EXTENSIONS;
-    }
-
-    /**
-     * 获取默认的最大文件大小限制
-     *
-     * @return 最大文件大小（字节）
-     */
-    public static long getDefaultMaxFileSize() {
-        return DEFAULT_MAX_FILE_SIZE;
-    }
-
-    /**
      * 验证文件魔数（防止扩展名欺骗攻击）
      * 通过读取文件头部字节来验证文件真实类型是否与扩展名匹配
      *

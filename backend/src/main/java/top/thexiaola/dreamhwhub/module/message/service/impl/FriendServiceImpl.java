@@ -21,6 +21,7 @@ import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.mapper.SchoolMemberMapper;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
 import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
+import top.thexiaola.dreamhwhub.support.sql.SqlLikeUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -139,11 +140,11 @@ public class FriendServiceImpl implements FriendService {
         QueryWrapper<SchoolMember> memberQuery = new QueryWrapper<>();
         memberQuery.eq("school_id", schoolId).ne("user_id", currentUser.getId());
         if (StrUtil.isNotBlank(keyword)) {
-            String kw = escapeLike(keyword.trim());
-            memberQuery.and(w -> w.apply("real_name LIKE {0} ESCAPE '!'", "%" + kw + "%")
-                    .or().apply("staff_no LIKE {0} ESCAPE '!'", "%" + kw + "%")
+            String pattern = SqlLikeUtil.containsPattern(keyword.trim());
+            memberQuery.and(w -> w.apply("real_name LIKE {0} ESCAPE '!'", pattern)
+                    .or().apply("staff_no LIKE {0} ESCAPE '!'", pattern)
                     .or().apply("user_id IN (SELECT id FROM user WHERE username LIKE {0} ESCAPE '!')",
-                            "%" + kw + "%"));
+                            pattern));
         }
         memberQuery.orderByAsc("id");
         List<SchoolMember> members = schoolMemberMapper.selectList(memberQuery);
@@ -307,10 +308,5 @@ public class FriendServiceImpl implements FriendService {
             return Objects.equals(relation.getRequesterId(), me) ? "pending_out" : "pending_in";
         }
         return "none";
-    }
-
-    /** 转义 LIKE 通配符（配合 SQL 的 ESCAPE '!'） */
-    private String escapeLike(String value) {
-        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 }

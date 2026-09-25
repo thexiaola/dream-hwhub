@@ -109,7 +109,7 @@ const handleLogin = async () => {
       ElMessage.error(result.message)
       form.value.password = ''
     }
-  } catch (error) {
+  } catch {
     ElMessage.error('登录失败')
     form.value.password = ''
   } finally {

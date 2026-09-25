@@ -55,11 +55,11 @@ public class GlobalExceptionHandler {
             // 权限不足或不是班级成员返回 403
             httpStatus = HttpStatus.FORBIDDEN;
             returnCode = 403;
-        } else if (code == 401 || code == 3001 || code == 3002 || code == 3003 || code == 3004) {
+        } else if (code == 3001 || code == 3002 || code == 3003 || code == 3004) {
             // 未登录或认证失败返回 401
             httpStatus = HttpStatus.UNAUTHORIZED;
             returnCode = 401;
-        } else if (code == 404 || code == 8501 || code == 7001 || code == 7004) {
+        } else if (code == 8501 || code == 7001 || code == 7004) {
             // 资源不存在返回 404（班级、作业、提交记录）
             httpStatus = HttpStatus.NOT_FOUND;
             returnCode = 404;
@@ -73,16 +73,11 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 处理参数校验异常 (JSR-303)
+     * 处理参数校验异常 (JSR-303)，MethodArgumentNotValidException 是 BindException 的子类
      */
     @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class })
-    public ResponseEntity<ApiResponse<Void>> handleValidationException(Exception e) {
-        String message = "请求参数校验失败";
-        if (e instanceof MethodArgumentNotValidException validException) {
-            message = Objects.requireNonNull(validException.getFieldError()).getDefaultMessage();
-        } else if (e instanceof BindException bindException) {
-            message = Objects.requireNonNull(bindException.getFieldError()).getDefaultMessage();
-        }
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(BindException e) {
+        String message = Objects.requireNonNull(e.getFieldError()).getDefaultMessage();
         log.info("Validation exception: {}", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, message));
     }

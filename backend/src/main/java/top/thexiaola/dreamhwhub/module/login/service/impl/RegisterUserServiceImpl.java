@@ -99,24 +99,19 @@ public class RegisterUserServiceImpl implements RegisterUserService {
         }
     }
 
-    /**
-     * 验证注册验证码（需要匹配 username、email）
-     */
-    @Override
-    public boolean verifyEmailCode(String email, String code, String username) {
+    /** 验证注册验证码（需要匹配 username、email），仅注册流程内部使用 */
+    private boolean verifyEmailCode(String email, String code, String username) {
         return emailService.verifyRegistrationCode(email, code, username);
     }
 
-    @Override
-    public boolean isUsernameExists(String username) {
+    private boolean isUsernameExists(String username) {
         // 用户名不区分大小写唯一：TheXiaoLa 占用后，thexiaola/Thexiaola 等均视为重复
         return userMapper.selectCount(
                 new QueryWrapper<User>().apply("LOWER(username) = LOWER({0})", username)
         ) > 0;
     }
 
-    @Override
-    public boolean isEmailExists(String email) {
+    private boolean isEmailExists(String email) {
         return userMapper.selectCount(
                 new QueryWrapper<User>().eq("email", email)
         ) > 0;

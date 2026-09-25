@@ -49,11 +49,15 @@
         </el-button>
         <el-button type="primary" @click="search">检索</el-button>
         <el-button @click="resetSearch">清空</el-button>
-        <el-button v-if="canAdd" type="primary" plain @click="openCreate">新增用户</el-button>
       </div>
     </div>
 
-    <el-table v-loading="loading" :data="users" class="admin-table">
+    <div class="table-toolbar">
+      <el-button v-if="canAdd" type="primary" plain @click="openCreate">新增用户</el-button>
+    </div>
+
+    <!-- user-table：配合下方样式，在手机端收回被全局规则钉在 200px 的末列宽度 -->
+    <el-table v-loading="loading" :data="users" class="admin-table user-table">
       <el-table-column label="头像" width="72">
         <template #default="{ row }">
           <UserAvatar :avatar="row.avatar" :size="36" :alt="row.username" />
@@ -80,19 +84,66 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="340" fixed="right" align="center">
+      <!-- 操作列：宽屏外显高频操作（编辑/权限/封禁）+「更多」；窄屏仅外显「编辑」，
+           其余收入「更多」（触发钮收成竖点图标），列宽与单元格内边距同步收窄 -->
+      <el-table-column
+        label="操作"
+        :width="isNarrow ? 76 : 240"
+        fixed="right"
+        align="center"
+        class-name="ops-col"
+        label-class-name="ops-col"
+      >
         <template #default="{ row }">
-          <el-button v-if="canEdit" size="small" text @click="openEdit(row)">编辑</el-button>
-          <el-button v-if="canAssign" size="small" text @click="openPermission(row)">权限</el-button>
-          <el-button v-if="canBan" size="small" text @click="toggleBan(row)">
-            {{ row.isBanned ? '解封' : '封禁' }}
-          </el-button>
-          <el-button v-if="canSetOp" size="small" text @click="toggleOp(row)">
-            {{ row.isOp ? '取消管理员' : '设为管理员' }}
-          </el-button>
-          <el-button v-if="canDelete" size="small" text type="danger" @click="removeUser(row)">
-            删除
-          </el-button>
+          <div class="row-actions">
+            <el-button v-if="canEdit" size="small" text @click="openEdit(row)">编辑</el-button>
+            <el-button v-if="canAssign && !isNarrow" size="small" text @click="openPermission(row)">权限</el-button>
+            <el-button v-if="canBan && !isNarrow" size="small" text @click="toggleBan(row)">
+              {{ row.isBanned ? '解封' : '封禁' }}
+            </el-button>
+            <el-dropdown
+              v-if="canSetOp || canDelete || (isNarrow && (canAssign || canBan))"
+              trigger="click"
+              size="small"
+              @command="(command: string) => onRowCommand(command, row)"
+            >
+              <el-button
+                size="small"
+                text
+                class="more-trigger"
+                title="更多"
+                aria-label="更多"
+              >
+                <template v-if="isNarrow">
+                  <el-icon class="more-only-icon"><EllipsisVertical /></el-icon>
+                </template>
+                <template v-else>
+                  更多<el-icon class="more-icon"><ChevronDown /></el-icon>
+                </template>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item v-if="isNarrow && canAssign" command="permission">
+                    权限
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="isNarrow && canBan" command="toggleBan">
+                    {{ row.isBanned ? '解封' : '封禁' }}
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="canSetOp" command="toggleOp">
+                    {{ row.isOp ? '取消管理员' : '设为管理员' }}
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    v-if="canDelete"
+                    command="remove"
+                    divided
+                    class="danger-item"
+                  >
+                    删除
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -199,13 +250,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, postForm } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import { confirmDangerousOperation, requireSensitiveVerification } from '@/composables/useSensitiveVerification'
 import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import { invalidateAvatarCache } from '@/utils/attachment'
+import { ChevronDown, EllipsisVertical } from '@lucide/vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import PermissionNodeTree from './PermissionNodeTree.vue'
 import type { AdminUser, AdminUserForm, PermissionGroup, PermissionNodeGroup } from '@/types/admin'
@@ -221,6 +273,16 @@ const canSetOp = computed(() => userStore.hasPermission('user:setop'))
 const canAssign = computed(() =>
   userStore.hasAnyPermission(['permission:group:assign', 'permission:user:assign'])
 )
+
+// 操作列随视口收缩：窄屏（手机端断点 768px，与全局一致）仅外显「编辑」，
+// 其余操作收入「更多」下拉；监听变化使旋转/拉伸窗口时自动切换
+const narrowQuery = window.matchMedia('(max-width: 768px)')
+const isNarrow = ref(narrowQuery.matches)
+const onNarrowChange = (event: MediaQueryListEvent) => {
+  isNarrow.value = event.matches
+}
+onMounted(() => narrowQuery.addEventListener('change', onNarrowChange))
+onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
 const loading = ref(false)
 const users = ref<AdminUser[]>([])
@@ -655,6 +717,19 @@ const submitPermission = async () => {
   }
 }
 
+/** 「更多」下拉的分发入口：窄屏下所有次高频操作（权限/封禁）与低频操作都经此路由 */
+const onRowCommand = (command: string, row: AdminUser) => {
+  if (command === 'permission') {
+    openPermission(row)
+  } else if (command === 'toggleBan') {
+    toggleBan(row)
+  } else if (command === 'toggleOp') {
+    toggleOp(row)
+  } else if (command === 'remove') {
+    removeUser(row)
+  }
+}
+
 onMounted(() => {
   // 只加载本模块的用户列表；权限组/节点数据待打开「权限分配」弹窗时再按需拉取
   loadUsers()
@@ -720,10 +795,69 @@ defineExpose({ reload: loadUsers })
   padding-left: 130px;
 }
 
+/* 工具行：动作按钮与检索卡片分开，与下方表格左对齐铺满整行 */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+/* 操作列：高频操作 + 「更多」下拉横向居中排布，空间不足时自动换行；
+   文本按钮压掉默认外边距与内边距，使窄列宽下仍保持单行（窄屏仅剩两枚按钮） */
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+
+.row-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
+.row-actions :deep(.el-button) {
+  padding: 0 7px;
+}
+
+/* 「更多」文字按钮内的下拉箭头：与文字基线对齐，随按钮颜色变化 */
+.more-icon {
+  margin-left: 2px;
+  font-size: 12px;
+}
+
+/* 窄屏下「更多」收成竖点图标按钮：省出列宽给信息列 */
+.more-only-icon {
+  font-size: 16px;
+}
+
+/* 窄屏操作列 76px：默认单元格左右各 12px 内边距放不下两枚按钮，压到 2px。
+   全局手机端规则给 .el-button 钉了 8px 14px !important，会把这两枚文本按钮顶胖，
+   故此处以更高选择器优先级的 !important 豁免，恢复紧凑尺寸 */
+@media (max-width: 768px) {
+  /* 全局规则把 .admin-table 末列统一钉在 min(200px,62vw)，本表窄屏仅外显
+     「编辑 + 竖点」，用更高选择器优先级收回 76px，让出的宽度给信息列 */
+  .user-table :deep(colgroup col:last-child) {
+    width: 76px !important;
+  }
+
+  .admin-table :deep(.ops-col .cell) {
+    padding: 0 2px;
+  }
+
+  .row-actions :deep(.el-button) {
+    padding: 0 7px !important;
+  }
+
+  .row-actions :deep(.more-trigger) {
+    padding: 0 5px !important;
+  }
 }
 
 .group-name {

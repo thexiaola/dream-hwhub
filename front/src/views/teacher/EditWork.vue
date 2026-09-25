@@ -71,6 +71,7 @@
             v-model:file-list="attachmentFiles"
             :auto-upload="false"
             multiple
+            :limit="20"
             :on-exceed="handleAttachmentExceed"
             :on-remove="handleAttachmentRemove"
             :on-change="handleAttachmentChange"
@@ -168,7 +169,7 @@ const buildDeadline = (): string => {
 
 watch([formDate, formTime], () => {
   form.value.deadline = buildDeadline()
-}, { immediate: false })
+})
 
 const attachmentFiles = ref<UploadUserFile[]>([])
 const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024

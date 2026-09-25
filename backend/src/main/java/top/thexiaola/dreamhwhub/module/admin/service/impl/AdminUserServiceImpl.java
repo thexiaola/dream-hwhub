@@ -25,6 +25,7 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
 import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
+import top.thexiaola.dreamhwhub.support.sql.SqlLikeUtil;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -162,7 +163,7 @@ public class AdminUserServiceImpl implements AdminUserService {
      */
     private void addColumnPredicate(QueryWrapper<User> wrapper, String column, boolean equalsMatch, String value) {
         String operator = equalsMatch ? EXACT_MATCH : LIKE_FUZZY;
-        wrapper.apply(column + " " + operator, equalsMatch ? value : likePattern(value));
+        wrapper.apply(column + " " + operator, equalsMatch ? value : SqlLikeUtil.containsPattern(value));
     }
 
     /**
@@ -174,17 +175,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private void addSubQueryPredicate(QueryWrapper<User> wrapper, String subQueryPattern,
                                       boolean equalsMatch, String value) {
         String operator = equalsMatch ? EXACT_MATCH : LIKE_FUZZY;
-        wrapper.apply(String.format(subQueryPattern, operator), equalsMatch ? value : likePattern(value));
-    }
-
-    /**
-     * 转义 LIKE 通配符并补上前后模糊匹配的通配符，避免用户输入的 %、_、! 被当作通配符
-     */
-    private String likePattern(String value) {
-        return "%" + value.trim()
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_") + "%";
+        wrapper.apply(String.format(subQueryPattern, operator), equalsMatch ? value : SqlLikeUtil.containsPattern(value));
     }
 
     @Override

@@ -7,14 +7,9 @@ import lombok.Getter;
  */
 @Getter
 public enum BusinessErrorCode {
-    // 成功
-    SUCCESS(0, "操作成功"),
-    
     // 验证码相关错误
     VERIFICATION_CODE_INVALID(1001, "验证码无效"),
-    VERIFICATION_CODE_EXPIRED(1002, "验证码已过期"),
-    VERIFICATION_CODE_NOT_FOUND(1003, "验证码不存在"),
-    
+
     // 注册相关错误
     USERNAME_EXISTS(2002, "用户名已被占用"),
     EMAIL_EXISTS(2003, "邮箱已被占用"),
@@ -29,13 +24,11 @@ public enum BusinessErrorCode {
     ACCOUNT_DELETION_FORBIDDEN(3005, "账号注销受阻"),
     
     // 邮件相关错误
-    EMAIL_SEND_FAILED(4001, "邮件发送失败"),
     EMAIL_SERVER_NOT_CONFIGURED(4003, "邮件服务器未配置"),
     EMAIL_SENDING_FAILED(4004, "邮件发送失败"),
-    
+
     // 系统错误
     SYSTEM_ERROR(5000, "系统错误"),
-    DATABASE_ERROR(5001, "数据库操作失败"),
     
     // 修改邮箱错误
     SAME_EMAIL(6003, "新邮箱不能与原邮箱相同"),
@@ -65,8 +58,6 @@ public enum BusinessErrorCode {
     SUBMISSION_NOT_FOUND(7004, "提交记录不存在"),
     SUBMISSION_ALREADY_GRADED(7005, "作业已被批改，不能修改"),
     SCORE_OUT_OF_RANGE(7006, "分数超过作业总分"),
-    /** 题目不存在 */
-    QUESTION_NOT_FOUND(7007, "题目不存在"),
     /** 题型不合法 */
     QUESTION_TYPE_INVALID(7008, "题型不合法"),
     /** 作答与题目不匹配或缺失 */
@@ -77,27 +68,19 @@ public enum BusinessErrorCode {
     EXAM_SESSION_NOT_FOUND(7011, "考试尚未开始，请先进入考试"),
     /** 考试会话已结束（已交卷或超时） */
     EXAM_SESSION_FINISHED(7012, "考试已结束"),
-    /** 考试时长已用尽 */
-    EXAM_TIME_UP(7013, "考试时间已到"),
-    /** 考试状态不允许当前操作 */
-    EXAM_STATUS_ERROR(7014, "考试状态不允许该操作"),
     /** 非法违规类型 */
     EXAM_VIOLATION_INVALID(7015, "违规类型不合法"),
-    
+
     // 文件上传相关错误
     FILE_UPLOAD_FAILED(8001, "文件上传失败"),
     FILE_TYPE_NOT_ALLOWED(8002, "不允许的文件类型"),
-    FILE_SIZE_EXCEEDED(8003, "文件大小超过限制"),
-    FILE_IS_INFECTED(8004, "文件可能包含病毒"),
     INVALID_FILE_PATH(8005, "非法的文件路径"),
-    
+
     // 班级管理相关错误
     CLASS_NOT_FOUND(8501, "班级不存在"),
-    CLASS_DISSOLVED(8502, "班级已解散"),
     ALREADY_IN_CLASS(8503, "你已经在该班级中"),
     NOT_IN_CLASS(8504, "你不是该班级的成员"),
     CREATOR_CANNOT_LEAVE(8505, "创建者不能退出班级"),
-    DUPLICATE_STUDENT_NO(8506, "该学号在班级中已被占用"),
     /** 班级已冻结：创建者教师身份被解除，暂不接受管理操作与新成员加入 */
     CLASS_FROZEN(8507, "该班级的老师已失去教师身份，班级暂不可管理"),
     /** 仅班级已冻结时才可申请接管 */
@@ -146,26 +129,5 @@ public enum BusinessErrorCode {
     BusinessErrorCode(int code, String message) {
         this.code = code;
         this.message = message;
-    }
-
-    /**
-     * 根据错误码获取枚举
-     */
-    public static BusinessErrorCode fromCode(int code) {
-        for (BusinessErrorCode errorCode : values()) {
-            if (errorCode.getCode() == code) {
-                return errorCode;
-            }
-        }
-        return SYSTEM_ERROR;
-    }
-
-    /**
-     * 判断是否为验证码相关错误
-     */
-    public static boolean isVerificationCodeError(BusinessErrorCode errorCode) {
-        return errorCode == VERIFICATION_CODE_INVALID || 
-               errorCode == VERIFICATION_CODE_EXPIRED || 
-               errorCode == VERIFICATION_CODE_NOT_FOUND;
     }
 }

@@ -864,8 +864,8 @@ const submitEmail = async () => {
       afterCode: emailForm.afterCode,
     })
     if (res.code === 200) {
+      // 接口返回完整用户信息，直接写入 store，无需再刷新一次
       if (res.data) userStore.setUserInfo(res.data)
-      await userStore.refreshUserInfo()
       ElMessage.success(res.message || '邮箱修改成功')
       resetEmailForm()
     } else {

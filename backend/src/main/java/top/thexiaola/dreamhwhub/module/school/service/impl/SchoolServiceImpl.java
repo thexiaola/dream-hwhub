@@ -28,6 +28,7 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplicati
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassUserInvitation;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
+import top.thexiaola.dreamhwhub.support.sql.SqlLikeUtil;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassJoinApplicationMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassUserInvitationMapper;
@@ -93,13 +94,6 @@ public class SchoolServiceImpl implements SchoolService {
             return;
         }
         throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有学校管理员可以执行该操作", null);
-    }
-
-    /**
-     * 转义 LIKE 通配符，避免用户输入的 %、_、! 被当作通配符（配合 SQL 中的 ESCAPE '!'）
-     */
-    private String escapeLike(String value) {
-        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     /**
@@ -695,7 +689,7 @@ public class SchoolServiceImpl implements SchoolService {
         // 避免先取出全部成员记录再在内存里筛选
         if (StrUtil.isNotBlank(keyword)) {
             memberQuery.apply("school_id IN (SELECT id FROM school WHERE school_name LIKE {0} ESCAPE '!')",
-                    "%" + escapeLike(keyword.trim()) + "%");
+                    SqlLikeUtil.containsPattern(keyword.trim()));
         }
         memberQuery.orderByDesc("join_time");
         List<SchoolMember> members = schoolMemberMapper.selectList(memberQuery);
@@ -1261,16 +1255,6 @@ public class SchoolServiceImpl implements SchoolService {
     @Override
     public boolean isSchoolMember(Integer schoolId, Integer userId) {
         return getMemberOrNull(schoolId, userId) != null;
-    }
-
-    @Override
-    public List<SchoolMember> getMembershipsByUserId(Integer userId) {
-        if (userId == null) {
-            return Collections.emptyList();
-        }
-        QueryWrapper<SchoolMember> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
-        return schoolMemberMapper.selectList(queryWrapper);
     }
 
     @Override

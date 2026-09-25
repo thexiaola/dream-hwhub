@@ -137,9 +137,9 @@ public class EmailServiceImpl implements EmailService {
      */
     private void sendVerificationCodeInternal(String email, String username, boolean isModify, boolean isRetrieve,
                                               boolean isSensitive) {
-        // 检查发送频率限制
+        // 检查发送频率限制（非 null 表示仍在冷却期内，剩余秒数至少为 1）
         Long remainingTime = checkSendFrequency(email);
-        if (remainingTime != null && remainingTime > 0) {
+        if (remainingTime != null) {
             throw new BusinessException(BusinessErrorCode.EMAIL_SENDING_FAILED, "验证码已发送，请在" + remainingTime + "秒后再次尝试", remainingTime);
         }
         

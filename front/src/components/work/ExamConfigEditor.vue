@@ -102,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ExamConfig } from '@/types/work'
 
 const props = defineProps<{
@@ -112,8 +113,8 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: ExamConfig): void
 }>()
 
-/** 当前配置（受控） */
-const model = props.modelValue
+/** 当前配置（受控）：用 computed 跟随父组件替换的对象引用，避免读到初始快照 */
+const model = computed(() => props.modelValue)
 
 const update = (patch: Partial<ExamConfig>) => {
   emit('update:modelValue', { ...props.modelValue, ...patch })

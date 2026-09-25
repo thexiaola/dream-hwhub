@@ -134,22 +134,4 @@ public final class PermissionRegistry {
     public static boolean exists(String node) {
         return node != null && ALL_NODES.contains(node);
     }
-
-    /**
-     * 获取某个分组下的全部权限节点
-     *
-     * @param groupKey 分组标识，如 class
-     * @return 该分组下的权限节点集合，分组不存在时返回空集合
-     */
-    public static Set<String> groupNodes(String groupKey) {
-        Set<String> nodes = new LinkedHashSet<>();
-        for (Group group : GROUPS) {
-            if (group.getKey().equals(groupKey)) {
-                for (Node node : group.getNodes()) {
-                    nodes.add(node.getNode());
-                }
-            }
-        }
-        return Set.copyOf(nodes);
-    }
 }

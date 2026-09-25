@@ -17,11 +17,6 @@ import java.util.List;
 public class QuestionItem {
 
     /**
-     * 题目 ID（更新已有题目时携带，新增时为空）
-     */
-    private Integer id;
-
-    /**
      * 题型
      */
     @NotBlank(message = "题型不能为空")

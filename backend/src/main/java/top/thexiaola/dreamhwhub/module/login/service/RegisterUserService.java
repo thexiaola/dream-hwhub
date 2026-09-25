@@ -21,27 +21,4 @@ public interface RegisterUserService {
      * @param username 用户名
      */
     void sendEmailCode(String email, String username);
-
-    /**
-     * 验证邮箱验证码（需要匹配 username、email）
-     * @param email 邮箱地址
-     * @param code 验证码
-     * @param username 用户名
-     * @return 是否验证通过
-     */
-    boolean verifyEmailCode(String email, String code, String username);
-
-    /**
-     * 检查用户名是否已存在（用户名唯一）
-     * @param username 用户名
-     * @return 是否存在
-     */
-    boolean isUsernameExists(String username);
-
-    /**
-     * 检查邮箱是否已存在
-     * @param email 邮箱
-     * @return 是否存在
-     */
-    boolean isEmailExists(String email);
 }

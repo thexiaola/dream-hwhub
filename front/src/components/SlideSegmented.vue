@@ -11,7 +11,7 @@
   >
     <!-- 选中项背景块：随选项滑动，也可按住拖拽，松开吸附到最近的选项 -->
     <span
-      v-show="indicatorVisible"
+      v-show="indicatorPositioned"
       class="slide-segmented__indicator"
       :class="{ 'is-ready': ready, 'is-dragging': indicatorDragging }"
       :style="indicatorStyle"
@@ -105,8 +105,6 @@ const {
   // 松开吸附到最近的选项
   onSettle: key => selectByIndex(Number(key))
 })
-
-const indicatorVisible = computed(() => indicatorPositioned.value)
 
 const indicatorStyle = computed(() => {
   const pos = indicatorPosition.value

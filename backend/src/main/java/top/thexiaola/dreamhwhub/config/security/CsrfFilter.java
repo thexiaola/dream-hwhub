@@ -161,15 +161,13 @@ public class CsrfFilter implements Filter {
     
     /**
      * 常量时间字符串比较,防止时序攻击
+     * （expected 来自 generateCsrfToken 恒非空，actual 在进入校验前已判空）
      */
     private boolean constantTimeEquals(String expected, String actual) {
-        if (expected == null || actual == null) {
-            return false;
-        }
         if (expected.length() != actual.length()) {
             return false;
         }
-        
+
         int result = 0;
         for (int i = 0; i < expected.length(); i++) {
             result |= expected.charAt(i) ^ actual.charAt(i);

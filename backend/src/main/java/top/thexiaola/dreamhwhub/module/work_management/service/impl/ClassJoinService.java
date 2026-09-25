@@ -489,15 +489,10 @@ public class ClassJoinService {
 
         classInvitationMapper.insert(invitation);
 
-        // 转换为VO返回
-        User inviter = userMapper.selectById(currentUser.getId());
-        String inviterName = inviter != null ? inviter.getUsername() : "未知";
-
-        User invitee = userMapper.selectById(targetUser.getId());
-        String inviteeName = invitee != null ? invitee.getUsername() : "未知";
-
-        // ClassInfo classInfo already defined above
-        String className = classInfo != null ? classInfo.getClassName() : "未知";
+        // 转换为VO返回（inviter/invitee 实体在上面已查出，无需回库重查）
+        String inviterName = currentUser.getUsername() != null ? currentUser.getUsername() : "未知";
+        String inviteeName = targetUser.getUsername() != null ? targetUser.getUsername() : "未知";
+        String className = classInfo.getClassName();
 
         return new InvitationResponse(
                 invitation.getId(),

@@ -35,7 +35,6 @@
               <el-button
                 type="primary"
                 size="small"
-                :loading="takeoverSubmittingId === item.classId"
                 @click="goToCourse(item.classId)"
               >
                 查看并接管
@@ -143,7 +142,6 @@ const createForm = ref({
 
 // 可接管的班级（原老师失去教师身份而冻结），接管入口
 const takeoverCandidates = ref<ClassTakeoverInfo[]>([])
-const takeoverSubmittingId = ref<number | null>(null)
 
 const loadTakeoverCandidates = async () => {
   const result = await get<ClassTakeoverInfo[]>('/class/takeover/available')
