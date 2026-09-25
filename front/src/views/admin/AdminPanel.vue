@@ -1182,6 +1182,9 @@ const batchKickFromAdmin = async (classId: number) => {
 
 <style scoped>
 .admin-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
   padding-bottom: 24px;
 }
 
@@ -1198,6 +1201,37 @@ const batchKickFromAdmin = async (classId: number) => {
 /* 承载可拖拽激活块的定位容器 */
 .admin-tabs-host {
   position: relative;
+  /* 面板 → 页签全链撑满：列表少时（如空状态）在剩余空间内垂直居中；
+     内容超出时链条按内容自然增高，页面滚动行为不变 */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.admin-tabs-host :deep(.el-tabs) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.admin-tabs-host :deep(.el-tabs__header) {
+  flex-shrink: 0;
+}
+
+.admin-tabs-host :deep(.el-tabs__content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.admin-tabs-host :deep(.el-tab-pane) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* 激活高亮块：按住可拖动，松开吸附到最近页签；文字本身保持不动。
@@ -1259,6 +1293,14 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .application-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.class-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1356,9 +1398,11 @@ const batchKickFromAdmin = async (classId: number) => {
 }
 
 .empty-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 40px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.4);
 }

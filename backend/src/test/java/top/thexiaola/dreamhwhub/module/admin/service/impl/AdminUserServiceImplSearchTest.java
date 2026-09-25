@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,6 +59,10 @@ class AdminUserServiceImplSearchTest {
     @InjectMocks
     private AdminUserServiceImpl adminUserService;
 
+    /** 泛型捕获器由 Mockito 注入，捕获下推给 selectPage 的 Wrapper */
+    @Captor
+    private ArgumentCaptor<QueryWrapper<User>> wrapperCaptor;
+
     /**
      * 执行一次检索并取回实际下推给数据库的 Wrapper
      */
@@ -65,9 +70,8 @@ class AdminUserServiceImplSearchTest {
         doReturn(new Page<User>()).when(userMapper).selectPage(any(), any());
         adminUserService.listUsers(requestOf(conditions), 1, 10);
 
-        ArgumentCaptor<QueryWrapper<User>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
-        verify(userMapper).selectPage(any(), captor.capture());
-        QueryWrapper<User> wrapper = captor.getValue();
+        verify(userMapper).selectPage(any(), wrapperCaptor.capture());
+        QueryWrapper<User> wrapper = wrapperCaptor.getValue();
         // 取一次 SQL 片段，后续断言读 SQL 文本才拿得到内容
         wrapper.getCustomSqlSegment();
         return wrapper;
@@ -252,9 +256,8 @@ class AdminUserServiceImplSearchTest {
         doReturn(new Page<User>()).when(userMapper).selectPage(any(), any());
         adminUserService.listUsers(requestOf(null), 1, 10);
 
-        ArgumentCaptor<QueryWrapper<User>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
-        verify(userMapper).selectPage(any(), captor.capture());
-        String sql = captor.getValue().getCustomSqlSegment();
+        verify(userMapper).selectPage(any(), wrapperCaptor.capture());
+        String sql = wrapperCaptor.getValue().getCustomSqlSegment();
         assertFalse(sql.contains("WHERE"), "不应产生筛选条件，实际 SQL: " + sql);
         assertEquals(0, countOf(sql, "#{"), "实际 SQL: " + sql);
     }

@@ -795,10 +795,11 @@ defineExpose({ reload: loadUsers })
   padding-left: 130px;
 }
 
-/* 工具行：动作按钮与检索卡片分开，与下方表格左对齐铺满整行 */
+/* 工具行：动作按钮与检索卡片分开，铺满整行，动作按钮靠右（表格右上方） */
 .table-toolbar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   margin-bottom: 16px;
 }
 

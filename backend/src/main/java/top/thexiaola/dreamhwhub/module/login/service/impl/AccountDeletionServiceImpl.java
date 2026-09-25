@@ -27,7 +27,6 @@ import top.thexiaola.dreamhwhub.module.school.constant.SchoolMemberRole;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolJoinApplication;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.mapper.SchoolJoinApplicationMapper;
-import top.thexiaola.dreamhwhub.module.school.mapper.SchoolMapper;
 import top.thexiaola.dreamhwhub.module.school.mapper.SchoolMemberMapper;
 import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
@@ -74,7 +73,6 @@ public class AccountDeletionServiceImpl implements AccountDeletionService {
     private final ClassTeacherApprovalMapper classTeacherApprovalMapper;
     private final ClassTakeoverApplicationMapper classTakeoverApplicationMapper;
 
-    private final SchoolMapper schoolMapper;
     private final SchoolMemberMapper schoolMemberMapper;
     private final SchoolJoinApplicationMapper schoolJoinApplicationMapper;
 

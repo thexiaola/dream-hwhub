@@ -349,7 +349,16 @@ defineExpose({ reload: loadSchools })
   margin-bottom: 16px;
 }
 
+/* 模块根随面板页签撑满：列表少时（如空状态）在剩余空间内垂直居中 */
+.school-manage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .school-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -416,9 +425,11 @@ defineExpose({ reload: loadSchools })
 }
 
 .empty-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 40px 0;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);

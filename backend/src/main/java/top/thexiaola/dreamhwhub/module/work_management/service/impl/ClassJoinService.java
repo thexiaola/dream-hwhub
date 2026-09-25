@@ -491,7 +491,6 @@ public class ClassJoinService {
 
         // 转换为VO返回（inviter/invitee 实体在上面已查出，无需回库重查）
         String inviterName = currentUser.getUsername() != null ? currentUser.getUsername() : "未知";
-        String inviteeName = targetUser.getUsername() != null ? targetUser.getUsername() : "未知";
         String className = classInfo.getClassName();
 
         return new InvitationResponse(

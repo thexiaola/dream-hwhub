@@ -325,6 +325,40 @@ watch(() => schoolStore.currentSchoolId, id => {
   min-height: 0;
 }
 
+/* 卡片体 → 页签 → 页签面板全链撑满：列表少时（如空状态）在剩余空间内垂直居中；
+   内容超出时链条按内容自然增高，页面滚动行为不变 */
+.content-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-card :deep(.el-tabs) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-card :deep(.el-tabs__header) {
+  flex-shrink: 0;
+}
+
+.content-card :deep(.el-tabs__content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-card :deep(.el-tab-pane) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .tab-count,
 .tab-badge {
   margin-left: 6px;
@@ -347,6 +381,7 @@ watch(() => schoolStore.currentSchoolId, id => {
 }
 
 .friend-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;

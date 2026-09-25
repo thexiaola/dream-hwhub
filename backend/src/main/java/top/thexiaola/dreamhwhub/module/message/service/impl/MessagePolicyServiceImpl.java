@@ -91,7 +91,8 @@ public class MessagePolicyServiceImpl implements MessagePolicyService {
     public MessagePolicyInfo getSchoolPolicy(Integer schoolId) {
         // requireSchoolExists 已查出学校，直接复用，避免重复回库
         School school = requireSchoolExists(schoolId);
-        User currentUser = userLookup.requireCurrentUser();
+        // 策略信息仅对已登录用户开放
+        userLookup.requireCurrentUser();
         // 生效策略需该校学校管理员或平台管理员可读；其余成员也能看到「是否好友可发」的提示，故放宽为校内成员可读
         // 但展示用信息不含敏感内容，直接返回生效值即可
         MessagePolicyInfo global = getGlobalPolicy();
@@ -108,7 +109,8 @@ public class MessagePolicyServiceImpl implements MessagePolicyService {
     @Transactional(rollbackFor = Exception.class)
     public MessagePolicyInfo updateSchoolPolicy(Integer schoolId, Integer strangerLimit, Integer resetHours) {
         User currentUser = userLookup.requireCurrentUser();
-        School school = requireSchoolExists(schoolId);
+        // 学校不存在时抛 NOT_FOUND，拦截无效的 schoolId
+        requireSchoolExists(schoolId);
         // 学校管理员或平台管理员可设置本校覆盖；平台管理员经 school:update 放行
         if (!userLookup.hasPermission(currentUser, PermissionNodes.SCHOOL_UPDATE)
                 && !schoolService.isSchoolManager(schoolId, currentUser.getId())) {
