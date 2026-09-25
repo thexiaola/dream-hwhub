@@ -32,6 +32,11 @@ public class SubmitWorkRequest {
     private List<MultipartFile> attachments;
 
     /**
+     * 逐题作答（含题目的作业使用）：客观题将在提交时自动评判记分
+     */
+    private List<AnswerItem> answers;
+
+    /**
      * 自定义校验：XSS防护
      */
     public void validate() {

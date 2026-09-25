@@ -54,6 +54,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -117,6 +118,13 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     /**
+     * 转义 LIKE 通配符，避免用户输入的 %、_、! 被当作通配符（配合 SQL 中的 ESCAPE '!'）
+     */
+    private String escapeLike(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
+    }
+
+    /**
      * 校验学工号在同一学校内未被占用
      *
      * @param excludeUserId 需要排除的用户 ID，无则传 null
@@ -176,6 +184,67 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     /**
+     * 批量统计多所学校的成员构成（一次 GROUP BY school_id, role）。
+     *
+     * @param schoolIds 学校 ID 集合
+     * @return 学校 ID -> [成员总数, 学校管理员数, 老师数, 学生数]
+     */
+    private Map<Integer, long[]> countMemberRolesBySchools(Collection<Integer> schoolIds) {
+        Map<Integer, long[]> result = new HashMap<>();
+        if (schoolIds == null || schoolIds.isEmpty()) {
+            return result;
+        }
+        QueryWrapper<SchoolMember> query = new QueryWrapper<>();
+        query.in("school_id", schoolIds)
+                .select("school_id", "role", "COUNT(*) AS cnt")
+                .groupBy("school_id", "role");
+        for (Map<String, Object> row : schoolMemberMapper.selectMaps(query)) {
+            Object schoolId = row.get("school_id");
+            Object role = row.get("role");
+            Object cnt = row.get("cnt");
+            if (!(schoolId instanceof Number sid) || !(cnt instanceof Number count)) {
+                continue;
+            }
+            long[] arr = result.computeIfAbsent(sid.intValue(), k -> new long[4]);
+            arr[0] += count.longValue();
+            if (role instanceof Number r) {
+                switch (r.intValue()) {
+                    case SchoolMemberRole.ADMIN -> arr[1] += count.longValue();
+                    case SchoolMemberRole.TEACHER -> arr[2] += count.longValue();
+                    case SchoolMemberRole.STUDENT -> arr[3] += count.longValue();
+                    default -> { }
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 批量统计多所学校的班级数（一次 GROUP BY school_id）。
+     *
+     * @param schoolIds 学校 ID 集合
+     * @return 学校 ID -> 班级数
+     */
+    private Map<Integer, Long> countClassesBySchools(Collection<Integer> schoolIds) {
+        Map<Integer, Long> result = new HashMap<>();
+        if (schoolIds == null || schoolIds.isEmpty()) {
+            return result;
+        }
+        QueryWrapper<ClassInfo> query = new QueryWrapper<>();
+        query.in("school_id", schoolIds)
+                .select("school_id", "COUNT(*) AS cnt")
+                .groupBy("school_id");
+        for (Map<String, Object> row : classInfoMapper.selectMaps(query)) {
+            Object schoolId = row.get("school_id");
+            Object cnt = row.get("cnt");
+            if (schoolId instanceof Number sid && cnt instanceof Number count) {
+                result.put(sid.intValue(), count.longValue());
+            }
+        }
+        return result;
+    }
+
+    /**
      * 构建学校详情响应
      */
     private SchoolDetailResponse buildDetail(School school, User currentUser) {
@@ -230,10 +299,127 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     /**
+     * 批量构建学校详情（用于「我的学校」列表）：
+     * 成员统计、班级数、我的成员身份、我最新申请、待审核数均批量取回，避免逐校查询。
+     *
+     * @param schools     学校列表（调用者已按同一用户过滤）
+     * @param currentUser 当前用户
+     * @return 学校详情列表（顺序与入参一致）
+     */
+    private List<SchoolDetailResponse> buildDetails(List<School> schools, User currentUser) {
+        if (schools.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Integer> schoolIds = schools.stream().map(School::getId).toList();
+
+        Map<Integer, long[]> roleStats = countMemberRolesBySchools(schoolIds);
+        Map<Integer, Long> classCounts = countClassesBySchools(schoolIds);
+        Map<Integer, Boolean> takeoverAutoMap = getClassTakeoverAutoApprove(schoolIds);
+
+        // 我在这些学校的成员身份（一次取回，以 schoolId 为键）
+        Map<Integer, SchoolMember> myMemberMap = loadMyMembershipsBySchools(currentUser.getId(), schoolIds);
+
+        // 我未加入的学校：一次取回最新申请，按学校建索引
+        Map<Integer, SchoolJoinApplication> myApplicationMap = new HashMap<>();
+        Set<Integer> noMemberSchoolIds = schoolIds.stream()
+                .filter(id -> !myMemberMap.containsKey(id))
+                .collect(Collectors.toSet());
+        if (!noMemberSchoolIds.isEmpty()) {
+            QueryWrapper<SchoolJoinApplication> appQuery = new QueryWrapper<>();
+            appQuery.eq("applicant_id", currentUser.getId())
+                    .in("school_id", noMemberSchoolIds)
+                    .orderByDesc("create_time");
+            for (SchoolJoinApplication app : schoolJoinApplicationMapper.selectList(appQuery)) {
+                myApplicationMap.putIfAbsent(app.getSchoolId(), app);
+            }
+        }
+
+        // 我作为管理员的学校（用于给出待审核数）：权限节点只判定一次，避免逐校查库；
+        // 一次聚合各校待审核数
+        boolean isSchoolUpdateAdmin = userLookup.hasPermission(currentUser, PermissionNodes.SCHOOL_UPDATE);
+        Set<Integer> manageableSchoolIds = schools.stream()
+                .filter(s -> canManageSchool(isSchoolUpdateAdmin, myMemberMap.get(s.getId())))
+                .map(School::getId)
+                .collect(Collectors.toSet());
+        Map<Integer, Long> pendingCountMap = countPendingApplicationsBySchools(manageableSchoolIds);
+
+        List<SchoolDetailResponse> result = new ArrayList<>(schools.size());
+        for (School school : schools) {
+            long[] stats = roleStats.getOrDefault(school.getId(), new long[4]);
+            SchoolMember myMember = myMemberMap.get(school.getId());
+            SchoolJoinApplication myApplication = myApplicationMap.get(school.getId());
+            result.add(new SchoolDetailResponse(
+                    school.getId(),
+                    school.getSchoolName(),
+                    school.getDescription(),
+                    school.getAllowJoinWithoutApproval(),
+                    takeoverAutoMap.getOrDefault(school.getId(), true),
+                    stats[0],
+                    stats[1],
+                    stats[2],
+                    stats[3],
+                    classCounts.getOrDefault(school.getId(), 0L),
+                    school.getCreateTime(),
+                    myMember != null,
+                    myMember != null ? myMember.getRole() : null,
+                    myMember != null ? SchoolMemberRole.nameOf(myMember.getRole()) : null,
+                    myMember != null ? myMember.getStaffNo() : null,
+                    myMember != null ? myMember.getRealName() : null,
+                    myApplication != null ? myApplication.getStatus() : null,
+                    pendingCountMap.get(school.getId()),
+                    myApplication != null ? myApplication.getReviewComment() : null));
+        }
+        return result;
+    }
+
+    /**
+     * 批量统计多所学校的待审核加入申请数（一次 GROUP BY school_id）
+     */
+    private Map<Integer, Long> countPendingApplicationsBySchools(Collection<Integer> schoolIds) {
+        Map<Integer, Long> result = new HashMap<>();
+        if (schoolIds == null || schoolIds.isEmpty()) {
+            return result;
+        }
+        QueryWrapper<SchoolJoinApplication> query = new QueryWrapper<>();
+        query.in("school_id", schoolIds)
+                .eq("status", 0)
+                .select("school_id", "COUNT(*) AS cnt")
+                .groupBy("school_id");
+        for (Map<String, Object> row : schoolJoinApplicationMapper.selectMaps(query)) {
+            Object schoolId = row.get("school_id");
+            Object cnt = row.get("cnt");
+            if (schoolId instanceof Number sid && cnt instanceof Number count) {
+                result.put(sid.intValue(), count.longValue());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 批量查询用户在指定的多所学校中的成员记录，返回以 schoolId 为键的映射。
+     */
+    private Map<Integer, SchoolMember> loadMyMembershipsBySchools(Integer userId, Collection<Integer> schoolIds) {
+        if (userId == null || schoolIds == null || schoolIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        QueryWrapper<SchoolMember> query = new QueryWrapper<>();
+        query.eq("user_id", userId).in("school_id", schoolIds);
+        return schoolMemberMapper.selectList(query).stream()
+                .collect(Collectors.toMap(SchoolMember::getSchoolId, m -> m, (a, b) -> a));
+    }
+
+    /**
      * 是否可管理该校：拥有学校管理权限（平台管理员），或在该校担任学校管理员
      */
     private boolean canManageSchool(User user, SchoolMember myMember) {
-        if (userLookup.hasPermission(user, PermissionNodes.SCHOOL_UPDATE)) {
+        return canManageSchool(userLookup.hasPermission(user, PermissionNodes.SCHOOL_UPDATE), myMember);
+    }
+
+    /**
+     * 是否可管理该校（权限节点已由调用方判定，避免批量场景逐校查库）
+     */
+    private boolean canManageSchool(boolean hasSchoolUpdatePermission, SchoolMember myMember) {
+        if (hasSchoolUpdatePermission) {
             return true;
         }
         return myMember != null && Objects.equals(myMember.getRole(), SchoolMemberRole.ADMIN);
@@ -357,20 +543,6 @@ public class SchoolServiceImpl implements SchoolService {
                 member.getJoinTime());
     }
 
-    /**
-     * 将学校实体转换为简要响应对象
-     */
-    private SchoolVO toSchoolVO(School school) {
-        return new SchoolVO(
-                school.getId(),
-                school.getSchoolName(),
-                school.getDescription(),
-                school.getAllowJoinWithoutApproval(),
-                isClassTakeoverAutoApprove(school.getId()),
-                countMembers(school.getId(), null),
-                school.getCreateTime());
-    }
-
     @Override
     public Page<SchoolVO> listSchools(String keyword, Integer pageNum, Integer pageSize) {
         QueryWrapper<School> queryWrapper = new QueryWrapper<>();
@@ -380,8 +552,22 @@ public class SchoolServiceImpl implements SchoolService {
         queryWrapper.orderByDesc("create_time");
 
         Page<School> schoolPage = schoolMapper.selectPage(new Page<>(pageNum, pageSize), queryWrapper);
-        List<SchoolVO> records = schoolPage.getRecords().stream()
-                .map(this::toSchoolVO)
+        List<School> schools = schoolPage.getRecords();
+
+        // 成员数与接管策略一次性批量取回，避免逐校查询（N+1）
+        List<Integer> schoolIds = schools.stream().map(School::getId).toList();
+        Map<Integer, long[]> roleStats = countMemberRolesBySchools(schoolIds);
+        Map<Integer, Boolean> takeoverAutoMap = getClassTakeoverAutoApprove(schoolIds);
+
+        List<SchoolVO> records = schools.stream()
+                .map(school -> new SchoolVO(
+                        school.getId(),
+                        school.getSchoolName(),
+                        school.getDescription(),
+                        school.getAllowJoinWithoutApproval(),
+                        takeoverAutoMap.getOrDefault(school.getId(), true),
+                        roleStats.getOrDefault(school.getId(), new long[4])[0],
+                        school.getCreateTime()))
                 .toList();
 
         Page<SchoolVO> page = new Page<>(pageNum, pageSize, schoolPage.getTotal());
@@ -430,7 +616,9 @@ public class SchoolServiceImpl implements SchoolService {
         User currentUser = userLookup.requireCurrentUser();
         getSchoolOrThrow(schoolId);
 
-        if (!userLookup.hasPermission(currentUser, PermissionNodes.SCHOOL_DISSOLVE)) {
+        // 解散学校仅限平台管理员：school:dissolve 是「可授予的权限节点」，
+        // 若只校验节点，被授予该节点的学校管理员也能解散，因此这里强制要求 OP 身份
+        if (!userLookup.isPlatformAdmin(currentUser)) {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有平台管理员可以解散学校", null);
         }
 
@@ -516,7 +704,7 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
-    public List<SchoolDetailResponse> getMySchools(Integer minRoleCode) {
+    public List<SchoolDetailResponse> getMySchools(Integer minRoleCode, String keyword) {
         User currentUser = userLookup.requireCurrentUser();
 
         QueryWrapper<SchoolMember> memberQuery = new QueryWrapper<>();
@@ -524,6 +712,12 @@ public class SchoolServiceImpl implements SchoolService {
         // 角色下限下推到数据库，用于取「我可建班的学校」等子集
         if (minRoleCode != null) {
             memberQuery.ge("role", minRoleCode);
+        }
+        // 学校名称关键字下推到数据库：用子查询命中我加入且名称匹配的学校，
+        // 避免先取出全部成员记录再在内存里筛选
+        if (StrUtil.isNotBlank(keyword)) {
+            memberQuery.apply("school_id IN (SELECT id FROM school WHERE school_name LIKE {0} ESCAPE '!')",
+                    "%" + escapeLike(keyword.trim()) + "%");
         }
         memberQuery.orderByDesc("join_time");
         List<SchoolMember> members = schoolMemberMapper.selectList(memberQuery);
@@ -537,12 +731,13 @@ public class SchoolServiceImpl implements SchoolService {
         Map<Integer, School> schoolMap = schoolMapper.selectList(schoolQuery).stream()
                 .collect(Collectors.toMap(School::getId, s -> s));
 
-        return members.stream()
+        // 按「我的学校」列表顺序收集学校实体，统计与身份信息一次性批量构建（避免逐校查询）
+        List<School> schools = members.stream()
                 .map(SchoolMember::getSchoolId)
                 .map(schoolMap::get)
                 .filter(Objects::nonNull)
-                .map(school -> buildDetail(school, currentUser))
                 .toList();
+        return buildDetails(schools, currentUser);
     }
 
     @Override
@@ -657,11 +852,23 @@ public class SchoolServiceImpl implements SchoolService {
         getSchoolOrThrow(schoolId);
         requireSchoolManager(currentUser, schoolId);
 
+        // 一次批量取出待审核申请，避免在循环里逐个 selectById（N 次往返）；
+        // 去重后逐个处理，重复 ID 不会重复审核
+        List<Integer> applicationIds = request.getApplicationIds() == null
+                ? List.of()
+                : new ArrayList<>(new LinkedHashSet<>(request.getApplicationIds()));
+        if (applicationIds.isEmpty()) {
+            return new BatchReviewResult(0, 0);
+        }
+        Map<Integer, SchoolJoinApplication> applicationMap = schoolJoinApplicationMapper
+                .selectByIds(applicationIds).stream()
+                .collect(Collectors.toMap(SchoolJoinApplication::getId, a -> a));
+
         boolean approved = Boolean.TRUE.equals(request.getApproved());
         int handled = 0;
         int skipped = 0;
-        for (Integer applicationId : request.getApplicationIds()) {
-            SchoolJoinApplication application = schoolJoinApplicationMapper.selectById(applicationId);
+        for (Integer applicationId : applicationIds) {
+            SchoolJoinApplication application = applicationMap.get(applicationId);
             // 跳过不属于该校或已被处理过的申请
             if (application == null || !Objects.equals(application.getSchoolId(), schoolId)
                     || !Integer.valueOf(0).equals(application.getStatus())) {
@@ -705,11 +912,22 @@ public class SchoolServiceImpl implements SchoolService {
     public BatchReviewResult batchApproveAllJoinApplications(BatchApproveSchoolJoinRequest request) {
         User currentUser = userLookup.requireCurrentUser();
 
+        // 一次批量取出申请，避免在循环里逐个 selectById（N 次往返）
+        List<Integer> applicationIds = request.getApplicationIds() == null
+                ? List.of()
+                : new ArrayList<>(new LinkedHashSet<>(request.getApplicationIds()));
+        if (applicationIds.isEmpty()) {
+            return new BatchReviewResult(0, 0);
+        }
+        Map<Integer, SchoolJoinApplication> applicationMap = schoolJoinApplicationMapper
+                .selectByIds(applicationIds).stream()
+                .collect(Collectors.toMap(SchoolJoinApplication::getId, a -> a));
+
         boolean approved = Boolean.TRUE.equals(request.getApproved());
         int handled = 0;
         int skipped = 0;
-        for (Integer applicationId : request.getApplicationIds()) {
-            SchoolJoinApplication application = schoolJoinApplicationMapper.selectById(applicationId);
+        for (Integer applicationId : applicationIds) {
+            SchoolJoinApplication application = applicationMap.get(applicationId);
             // 只处理仍处于待审核的申请，其余跳过
             if (application == null || !Integer.valueOf(0).equals(application.getStatus())) {
                 skipped++;
@@ -952,15 +1170,17 @@ public class SchoolServiceImpl implements SchoolService {
             }
         }
 
-        for (ClassInfo classInfo : classes) {
-            workSubmissionCleaner.cleanupClassSubmissions(classInfo.getId(), userId);
+        List<Integer> classIds = classes.stream().map(ClassInfo::getId).toList();
 
-            QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
-            memberQuery.eq("class_id", classInfo.getId()).eq("user_id", userId);
-            classMemberMapper.delete(memberQuery);
-        }
+        // 一次清理该用户在这些班级的全部作业提交（不按班级循环）
+        workSubmissionCleaner.cleanupClassSubmissions(classIds, userId);
 
-        return classes.stream().map(ClassInfo::getId).toList();
+        // 一次删除其在这些班级的成员记录（单条 SQL）
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.in("class_id", classIds).eq("user_id", userId);
+        classMemberMapper.delete(memberQuery);
+
+        return classIds;
     }
 
     /**
@@ -1025,6 +1245,21 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
+    public Map<Integer, Boolean> getClassTakeoverAutoApprove(Collection<Integer> schoolIds) {
+        if (schoolIds == null || schoolIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        QueryWrapper<School> query = new QueryWrapper<>();
+        query.in("id", schoolIds).select("id", "auto_approve_class_takeover");
+        Map<Integer, Boolean> result = new HashMap<>();
+        for (School school : schoolMapper.selectList(query)) {
+            // 缺省（历史数据为 null）视为自动同意
+            result.put(school.getId(), !Boolean.FALSE.equals(school.getAutoApproveClassTakeover()));
+        }
+        return result;
+    }
+
+    @Override
     public void requireSchoolExists(Integer schoolId) {
         getSchoolOrThrow(schoolId);
     }
@@ -1046,12 +1281,31 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
+    public boolean isSchoolMember(Integer schoolId, Integer userId) {
+        return getMemberOrNull(schoolId, userId) != null;
+    }
+
+    @Override
     public List<SchoolMember> getMembershipsByUserId(Integer userId) {
         if (userId == null) {
             return Collections.emptyList();
         }
         QueryWrapper<SchoolMember> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_id", userId);
+        return schoolMemberMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public List<SchoolMember> getMembershipsByUserId(Integer userId, Integer minRoleCode) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+        QueryWrapper<SchoolMember> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        // 角色下限下推到数据库，避免取出全部成员记录后再在内存里过滤
+        if (minRoleCode != null) {
+            queryWrapper.ge("role", minRoleCode);
+        }
         return schoolMemberMapper.selectList(queryWrapper);
     }
 

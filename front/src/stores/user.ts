@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { UserInfo, RegisterRequest } from '@/types'
-import { post, get } from '@/utils/http'
+import { post, get, del } from '@/utils/http'
 import { useSchoolStore } from '@/stores/school'
 
 export const useUserStore = defineStore('user', () => {
@@ -54,6 +54,15 @@ export const useUserStore = defineStore('user', () => {
     } catch {
       return null
     }
+  }
+
+  // 注销账号（不可逆）：凭登录密码验证身份；成功后后端已删除账号，本地清除会话
+  const deleteAccount = async (password: string): Promise<{ code: number; message: string }> => {
+    const res = await del('/users/account', { password })
+    if (res.code === 200) {
+      clearLocal()
+    }
+    return { code: res.code, message: res.message }
   }
 
   const register = async (data: RegisterRequest): Promise<{ code: number; message: string }> => {
@@ -119,6 +128,7 @@ export const useUserStore = defineStore('user', () => {
     hasAnyPermission,
     login,
     logout,
+    deleteAccount,
     clearLocal,
     register,
     getUserInfo,

@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,8 +22,13 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.ClassTakeoverResponse;
 import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -105,7 +111,7 @@ public class ClassTakeoverService {
             transferOwnership(classInfo, currentUser.getId());
         }
 
-        return toResponse(application, classInfo, autoApprove);
+        return toResponse(application, classInfo);
     }
 
     /**
@@ -122,7 +128,7 @@ public class ClassTakeoverService {
         if (application == null) {
             return null;
         }
-        return toResponse(application, classInfoMapper.selectById(classId), null);
+        return toResponse(application, classInfoMapper.selectById(classId));
     }
 
     /**
@@ -134,67 +140,72 @@ public class ClassTakeoverService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有学校管理员可以查看接管申请", null);
         }
 
-        // 该校下的班级
+        // 该校下的班级（一次取回，供批量转换取班级名与所属学校）
         QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
-        classQuery.eq("school_id", schoolId).select("id");
-        List<Integer> classIds = classInfoMapper.selectList(classQuery).stream()
-                .map(ClassInfo::getId)
-                .toList();
-        if (classIds.isEmpty()) {
+        classQuery.eq("school_id", schoolId);
+        Map<Integer, ClassInfo> classMap = classInfoMapper.selectList(classQuery).stream()
+                .collect(Collectors.toMap(ClassInfo::getId, c -> c));
+        if (classMap.isEmpty()) {
             return Collections.emptyList();
         }
 
         QueryWrapper<ClassTakeoverApplication> query = new QueryWrapper<>();
-        query.in("class_id", classIds);
+        query.in("class_id", classMap.keySet());
         if (status != null) {
             query.eq("status", status);
         }
         query.orderByDesc("create_time");
-        return takeoverMapper.selectList(query).stream()
-                .map(app -> toResponse(app, classInfoMapper.selectById(app.getClassId()), null))
-                .toList();
+        return toResponses(takeoverMapper.selectList(query), classMap);
     }
 
     /**
      * 当前用户可接管的冻结班级（本人是所属学校老师的那些）
+     * <p>
+     * 所有筛选条件（我所在学校、班级已冻结、非我创建、我未申请过）全部下推数据库，
+     * 避免先取出全部班级再在内存里过滤。
      */
     public List<ClassTakeoverResponse> listAvailableTakeovers() {
         User currentUser = userLookup.requireCurrentUser();
 
-        // 我作为老师/学校管理员加入的学校
-        List<SchoolMember> memberships = schoolService.getMembershipsByUserId(currentUser.getId()).stream()
-                .filter(m -> m.getRole() != null && m.getRole() >= 1)
+        // 我作为老师/学校管理员加入的学校（角色下限下推到数据库）
+        List<Integer> schoolIds = schoolService.getMembershipsByUserId(currentUser.getId(), 1).stream()
+                .map(SchoolMember::getSchoolId)
+                .distinct()
                 .toList();
-        if (memberships.isEmpty()) {
+        if (schoolIds.isEmpty()) {
             return Collections.emptyList();
         }
-        List<Integer> schoolIds = memberships.stream().map(SchoolMember::getSchoolId).distinct().toList();
 
+        // 冻结判定与后端 isClassFrozen 完全一致，直接等价改写为 SQL：
+        // 创建者非平台管理员，且创建者在该班所属学校已不是老师（role < 1 或已非成员）
         QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
-        classQuery.in("school_id", schoolIds);
+        classQuery.in("school_id", schoolIds)
+                .ne("owner_id", currentUser.getId())
+                .apply("NOT EXISTS (SELECT 1 FROM user u WHERE u.id = class_info.owner_id AND u.is_op = 1)")
+                .apply("NOT EXISTS (SELECT 1 FROM school_member sm WHERE sm.school_id = class_info.school_id "
+                        + "AND sm.user_id = class_info.owner_id AND sm.role >= 1)")
+                // 我已提交待审核申请的班级，不再重复展示
+                .apply("NOT EXISTS (SELECT 1 FROM class_takeover_application ta WHERE ta.class_id = class_info.id "
+                        + "AND ta.applicant_id = {0} AND ta.status = 0)", currentUser.getId());
         List<ClassInfo> classes = classInfoMapper.selectList(classQuery);
+        if (classes.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        // 我已提交待审核申请的班级，不再重复展示
-        QueryWrapper<ClassTakeoverApplication> myPendingQuery = new QueryWrapper<>();
-        myPendingQuery.eq("applicant_id", currentUser.getId()).eq("status", 0).select("class_id");
-        Set<Integer> myPendingClassIds = takeoverMapper.selectList(myPendingQuery).stream()
-                .map(ClassTakeoverApplication::getClassId)
-                .collect(Collectors.toSet());
-
-        return classes.stream()
-                // 冻结、且我不是创建者、且尚未申请
-                .filter(classAccessResolver::isClassFrozen)
-                .filter(c -> !Objects.equals(c.getOwnerId(), currentUser.getId()))
-                .filter(c -> !myPendingClassIds.contains(c.getId()))
-                .map(c -> {
-                    ClassTakeoverApplication placeholder = new ClassTakeoverApplication();
-                    placeholder.setClassId(c.getId());
-                    placeholder.setApplicantId(currentUser.getId());
-                    placeholder.setStatus(0);
-                    placeholder.setCreateTime(LocalDateTime.now());
-                    return toResponse(placeholder, c, null);
-                })
-                .toList();
+        // 以当前用户为「拟申请人」构造占位申请，批量转响应（一次补齐用户名与学校身份）
+        LocalDateTime now = LocalDateTime.now();
+        List<ClassTakeoverApplication> placeholders = new ArrayList<>(classes.size());
+        Map<Integer, ClassInfo> classMap = new HashMap<>();
+        for (ClassInfo c : classes) {
+            ClassTakeoverApplication placeholder = new ClassTakeoverApplication();
+            placeholder.setClassId(c.getId());
+            placeholder.setApplicantId(currentUser.getId());
+            placeholder.setStatus(0);
+            placeholder.setCreateTime(now);
+            placeholders.add(placeholder);
+            classMap.put(c.getId(), c);
+        }
+        return toResponses(placeholders, classMap);
     }
 
     /**
@@ -262,57 +273,109 @@ public class ClassTakeoverService {
         classInfo.setOwnerId(newOwnerId);
         classInfoMapper.updateById(classInfo);
 
-        // 该班其余待处理接管申请一并作废，避免重复转移
-        QueryWrapper<ClassTakeoverApplication> others = new QueryWrapper<>();
-        others.eq("class_id", classId).eq("status", 0).ne("applicant_id", newOwnerId);
-        List<ClassTakeoverApplication> pending = takeoverMapper.selectList(others);
-        for (ClassTakeoverApplication app : pending) {
-            app.setStatus(2);
-            app.setReviewTime(LocalDateTime.now());
-            app.setReviewComment("班级已被其他老师接管");
-            takeoverMapper.updateById(app);
-        }
+        // 该班其余待处理接管申请一并作废，避免重复转移。
+        // 一次 SQL 批量置为已拒绝，避免逐条 updateById
+        UpdateWrapper<ClassTakeoverApplication> others = new UpdateWrapper<>();
+        others.eq("class_id", classId)
+                .eq("status", 0)
+                .ne("applicant_id", newOwnerId)
+                .set("status", 2)
+                .set("review_time", LocalDateTime.now())
+                .set("review_comment", "班级已被其他老师接管");
+        takeoverMapper.update(null, others);
 
         log.info("Class {} ownership transferred to user {}", classId, newOwnerId);
     }
 
-    private ClassTakeoverResponse toResponse(ClassTakeoverApplication application, ClassInfo classInfo,
-            Boolean autoApprove) {
-        ClassTakeoverResponse response = new ClassTakeoverResponse();
-        response.setId(application.getId());
-        response.setClassId(application.getClassId());
-        response.setApplicantId(application.getApplicantId());
-        response.setStatus(application.getStatus());
-        response.setReviewerId(application.getReviewerId());
-        response.setReviewTime(application.getReviewTime());
-        response.setReviewComment(application.getReviewComment());
-        response.setCreateTime(application.getCreateTime());
+    /** 单条申请转响应（用于单个查询场景） */
+    private ClassTakeoverResponse toResponse(ClassTakeoverApplication application, ClassInfo classInfo) {
+        Map<Integer, ClassInfo> classMap = classInfo == null
+                ? Collections.emptyMap()
+                : Map.of(classInfo.getId(), classInfo);
+        return toResponses(List.of(application), classMap).get(0);
+    }
 
-        if (classInfo != null) {
-            response.setClassName(classInfo.getClassName());
+    /**
+     * 批量把接管申请转为响应：一次取回全部申请人/审核人用户名，按学校批量取回申请人学校身份，
+     * 避免逐条查询（N+1）。
+     *
+     * @param applications 申请列表
+     * @param classMap     班级 ID -> 班级信息（用于取班级名与班级所属学校）
+     */
+    private List<ClassTakeoverResponse> toResponses(List<ClassTakeoverApplication> applications,
+            Map<Integer, ClassInfo> classMap) {
+        if (applications.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        User applicant = application.getApplicantId() != null
-                ? userMapper.selectById(application.getApplicantId())
-                : null;
-        if (applicant != null) {
-            response.setApplicantUsername(applicant.getUsername());
+        // 批量取回涉及的用户（申请人 + 审核人）
+        Set<Integer> userIds = new HashSet<>();
+        for (ClassTakeoverApplication app : applications) {
+            if (app.getApplicantId() != null) {
+                userIds.add(app.getApplicantId());
+            }
+            if (app.getReviewerId() != null) {
+                userIds.add(app.getReviewerId());
+            }
         }
-        if (application.getReviewerId() != null) {
-            User reviewer = userMapper.selectById(application.getReviewerId());
-            if (reviewer != null) {
-                response.setReviewerUsername(reviewer.getUsername());
+        Map<Integer, User> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : userMapper.selectByIds(userIds).stream().collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+
+        // 申请人的学校内身份：按「班级所属学校」批量取回（同一学校一次查询）
+        Map<Integer, Set<Integer>> schoolToApplicants = new HashMap<>();
+        for (ClassTakeoverApplication app : applications) {
+            ClassInfo classInfo = classMap.get(app.getClassId());
+            if (classInfo == null || classInfo.getSchoolId() == null || app.getApplicantId() == null) {
+                continue;
+            }
+            schoolToApplicants.computeIfAbsent(classInfo.getSchoolId(), k -> new HashSet<>())
+                    .add(app.getApplicantId());
+        }
+        Map<String, SchoolMember> memberMap = new HashMap<>();
+        for (Map.Entry<Integer, Set<Integer>> entry : schoolToApplicants.entrySet()) {
+            for (SchoolMember m : schoolService.getMembersByUserIds(entry.getKey(), entry.getValue()).values()) {
+                memberMap.put(entry.getKey() + ":" + m.getUserId(), m);
             }
         }
 
-        // 申请人学校身份（姓名与学工号）
-        if (classInfo != null && classInfo.getSchoolId() != null && application.getApplicantId() != null) {
-            SchoolMember schoolMember = schoolService.getMember(classInfo.getSchoolId(), application.getApplicantId());
-            if (schoolMember != null) {
-                response.setApplicantName(schoolMember.getRealName());
-                response.setApplicantNo(schoolMember.getStaffNo());
+        List<ClassTakeoverResponse> result = new ArrayList<>(applications.size());
+        for (ClassTakeoverApplication application : applications) {
+            ClassTakeoverResponse response = new ClassTakeoverResponse();
+            response.setId(application.getId());
+            response.setClassId(application.getClassId());
+            response.setApplicantId(application.getApplicantId());
+            response.setStatus(application.getStatus());
+            response.setReviewerId(application.getReviewerId());
+            response.setReviewTime(application.getReviewTime());
+            response.setReviewComment(application.getReviewComment());
+            response.setCreateTime(application.getCreateTime());
+
+            ClassInfo classInfo = classMap.get(application.getClassId());
+            if (classInfo != null) {
+                response.setClassName(classInfo.getClassName());
             }
+
+            User applicant = application.getApplicantId() == null ? null : userMap.get(application.getApplicantId());
+            if (applicant != null) {
+                response.setApplicantUsername(applicant.getUsername());
+            }
+            if (application.getReviewerId() != null) {
+                User reviewer = userMap.get(application.getReviewerId());
+                if (reviewer != null) {
+                    response.setReviewerUsername(reviewer.getUsername());
+                }
+            }
+
+            // 申请人学校身份（姓名与学工号）
+            if (classInfo != null && classInfo.getSchoolId() != null && application.getApplicantId() != null) {
+                SchoolMember member = memberMap.get(classInfo.getSchoolId() + ":" + application.getApplicantId());
+                if (member != null) {
+                    response.setApplicantName(member.getRealName());
+                    response.setApplicantNo(member.getStaffNo());
+                }
+            }
+            result.add(response);
         }
-        return response;
+        return result;
     }
 }

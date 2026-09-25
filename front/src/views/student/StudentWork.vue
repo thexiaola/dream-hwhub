@@ -105,6 +105,45 @@
           <h4>{{ mySubmission.status === 3 ? '教师评语（打回原因）' : '教师评语' }}</h4>
           <p>{{ mySubmission.comment }}</p>
         </div>
+        <div v-if="mySubmission.answers?.length" class="questions-result-block">
+          <h4>逐题作答与得分</h4>
+          <div
+            v-for="(a, ai) in mySubmission.answers"
+            :key="a.questionId"
+            class="result-question-item"
+            :class="correctnessClass(a)"
+          >
+            <div class="rq-head">
+              <span class="rq-no">第 {{ ai + 1 }} 题</span>
+              <span class="rq-type">{{ a.questionTypeName || typeLabel(a.questionType) }}</span>
+              <span class="rq-score">
+                <template v-if="a.score !== null && a.score !== undefined">
+                  {{ a.score }} / {{ a.fullScore }} 分
+                </template>
+                <template v-else>待评分（满分 {{ a.fullScore }}）</template>
+              </span>
+              <span v-if="a.isCorrect === true" class="rq-flag correct">正确</span>
+              <span v-else-if="a.isCorrect === false" class="rq-flag wrong">错误</span>
+            </div>
+            <p class="rq-content">{{ a.content }}</p>
+            <div class="rq-answer">
+              <span class="rq-label">我的作答：</span>
+              <span class="rq-value">{{ formatAnswer(a.answer, a.questionType) || '未作答' }}</span>
+            </div>
+            <div v-if="showCorrect(a)" class="rq-correct">
+              <span class="rq-label">参考答案：</span>
+              <span class="rq-value correct-text">{{ formatAnswer(a.correctAnswer, a.questionType) }}</span>
+            </div>
+            <div v-if="a.analysis" class="rq-analysis">
+              <span class="rq-label">解析：</span>
+              <span class="rq-value">{{ a.analysis }}</span>
+            </div>
+            <div v-if="a.comment" class="rq-teacher-comment">
+              <span class="rq-label">本题评语：</span>
+              <span class="rq-value">{{ a.comment }}</span>
+            </div>
+          </div>
+        </div>
         <div v-if="mySubmission.submissionContent" class="content-section">
           <h4>提交内容</h4>
           <p class="content-text">{{ mySubmission.submissionContent }}</p>
@@ -176,6 +215,89 @@
           class="edit-alert"
         />
         <el-form label-position="top" class="submission-form">
+          <div v-if="questions.length" class="questions-answer-block">
+            <h4 class="questions-title">题目作答</h4>
+            <div
+              v-for="(q, qi) in questions"
+              :key="q.id"
+              class="answer-question-item"
+            >
+              <div class="aq-head">
+                <span class="aq-no">第 {{ qi + 1 }} 题</span>
+                <span class="aq-type">{{ q.questionTypeName || typeLabel(q.questionType) }}</span>
+                <span class="aq-score">（{{ q.score }} 分）</span>
+              </div>
+              <p class="aq-content">{{ q.content }}</p>
+
+              <!-- 单选 -->
+              <el-radio-group
+                v-if="q.questionType === 'single'"
+                :model-value="strAnswer(q.id)"
+                class="aq-options"
+                @update:model-value="(v: string | number | boolean | undefined) => setStrAnswer(q.id, v)"
+              >
+                <el-radio
+                  v-for="opt in q.options"
+                  :key="opt.key"
+                  :value="opt.key"
+                  class="aq-option"
+                >
+                  <span class="opt-key">{{ opt.key }}.</span> {{ opt.text }}
+                </el-radio>
+              </el-radio-group>
+
+              <!-- 多选 -->
+              <el-checkbox-group
+                v-else-if="q.questionType === 'multiple'"
+                :model-value="arrAnswer(q.id)"
+                class="aq-options"
+                @update:model-value="(v: (string | number)[]) => setArrAnswer(q.id, v)"
+              >
+                <el-checkbox
+                  v-for="opt in q.options"
+                  :key="opt.key"
+                  :value="opt.key"
+                  class="aq-option"
+                >
+                  <span class="opt-key">{{ opt.key }}.</span> {{ opt.text }}
+                </el-checkbox>
+              </el-checkbox-group>
+
+              <!-- 判断题 -->
+              <el-radio-group
+                v-else-if="q.questionType === 'judge'"
+                :model-value="strAnswer(q.id)"
+                class="aq-options"
+                @update:model-value="(v: string | number | boolean | undefined) => setStrAnswer(q.id, v)"
+              >
+                <el-radio value="true" class="aq-option">正确</el-radio>
+                <el-radio value="false" class="aq-option">错误</el-radio>
+              </el-radio-group>
+
+              <!-- 填空题 -->
+              <el-input
+                v-else-if="q.questionType === 'fill'"
+                :model-value="strAnswer(q.id)"
+                placeholder="请输入答案"
+                class="aq-input"
+                @update:model-value="(v: string) => setStrAnswer(q.id, v)"
+              />
+
+              <!-- 主观题 / 附加题 -->
+              <el-input
+                v-else
+                :model-value="strAnswer(q.id)"
+                type="textarea"
+                :rows="4"
+                maxlength="4096"
+                show-word-limit
+                placeholder="请输入作答内容"
+                class="aq-input"
+                @update:model-value="(v: string) => setStrAnswer(q.id, v)"
+              />
+            </div>
+          </div>
+
           <el-form-item label="提交内容">
             <el-input
               v-model="content"
@@ -294,6 +416,8 @@ import {
   XCircle,
 } from '@lucide/vue'
 import { formatDateTime as formatDate, formatFileSize as formatSize } from '@/utils/format'
+import type { AnswerItem, WorkAnswerVO, WorkQuestionStudentVO } from '@/types/work'
+import { QUESTION_TYPE_LABEL } from '@/types/work'
 
 interface AttachmentInfo {
   id: number
@@ -315,6 +439,7 @@ interface WorkDetail {
   allowLateSubmit: boolean
   status: number
   isPinned: boolean
+  hasQuestions?: boolean
   attachments?: AttachmentInfo[]
   publisherName?: string | null
   publisherStudentName?: string | null
@@ -331,6 +456,8 @@ interface MySubmission {
   gradeTime?: string | null
   status: number
   isLate: boolean
+  hasQuestions?: boolean
+  answers?: WorkAnswerVO[]
   createTime: string
   updateTime?: string
   attachments?: AttachmentInfo[]
@@ -348,6 +475,53 @@ const content = ref('')
 const newFiles = ref<UploadUserFile[]>([])
 const existingAttachments = ref<AttachmentInfo[]>([])
 const removedIds = ref<number[]>([])
+
+/** 题目列表（学生侧，不含参考答案） */
+const questions = ref<WorkQuestionStudentVO[]>([])
+/** 逐题作答：questionId -> 作答值（单选/判断-字符串，多选-字符串数组，填空/主观-字符串） */
+const answerMap = ref<Record<number, string | string[]>>({})
+
+/** 取字符串型作答案（单选/判断/填空/主观） */
+const strAnswer = (qid: number): string => {
+  const v = answerMap.value[qid]
+  return typeof v === 'string' ? v : ''
+}
+/** 取数组型作答（多选） */
+const arrAnswer = (qid: number): string[] => {
+  const v = answerMap.value[qid]
+  return Array.isArray(v) ? v : []
+}
+const setStrAnswer = (qid: number, v: string | number | boolean | undefined) => {
+  answerMap.value[qid] = v == null ? '' : String(v)
+}
+const setArrAnswer = (qid: number, v: (string | number)[]) => {
+  answerMap.value[qid] = (v || []).map(String)
+}
+
+const typeLabel = (t: string) => QUESTION_TYPE_LABEL[t as keyof typeof QUESTION_TYPE_LABEL] || t
+
+/** 展示答案文本（多选数组用「、」连接） */
+const formatAnswer = (val: unknown, type: string): string => {
+  if (val === null || val === undefined || val === '') return ''
+  if (type === 'judge') {
+    const s = String(val).toLowerCase()
+    if (s === 'true' || s === '1' || s === '对') return '正确'
+    if (s === 'false' || s === '0' || s === '错') return '错误'
+    return String(val)
+  }
+  if (Array.isArray(val)) return val.map(String).join('、')
+  return String(val)
+}
+
+/** 是否展示参考答案（教师侧或学生提交被批改后由后端下发的 correctAnswer 决定） */
+const showCorrect = (a: WorkAnswerVO): boolean =>
+  a.correctAnswer !== null && a.correctAnswer !== undefined && a.correctAnswer !== ''
+
+const correctnessClass = (a: WorkAnswerVO): string => {
+  if (a.isCorrect === true) return 'is-correct'
+  if (a.isCorrect === false) return 'is-wrong'
+  return ''
+}
 
 const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
 
@@ -394,6 +568,82 @@ const loadWork = async () => {
   } else {
     ElMessage.error(result.message)
   }
+}
+
+/** 加载题目（学生侧，不含参考答案）；纯文本作业返回空数组 */
+const loadQuestions = async () => {
+  const result = await get<WorkQuestionStudentVO[]>(`/works/${route.params.id}/questions`)
+  if (result.code === 200) {
+    questions.value = result.data || []
+    initAnswerMap()
+  }
+}
+
+/** 依据题目初始化作答映射（多选为数组，其余为字符串） */
+const initAnswerMap = () => {
+  const map: Record<number, string | string[]> = {}
+  for (const q of questions.value) {
+    if (q.questionType === 'multiple') {
+      map[q.id] = []
+    } else if (q.questionType === 'judge') {
+      map[q.id] = ''
+    } else {
+      map[q.id] = ''
+    }
+  }
+  answerMap.value = map
+}
+
+/** 将已有作答回填到作答映射（修改提交场景） */
+const applySubmissionAnswers = (sub: MySubmission | null) => {
+  if (!sub || !Array.isArray(sub.answers) || !questions.value.length) return
+  const map: Record<number, string | string[]> = {}
+  for (const q of questions.value) {
+    const saved = sub.answers.find((a) => a.questionId === q.id)
+    if (q.questionType === 'multiple') {
+      map[q.id] = Array.isArray(saved?.answer) ? (saved!.answer as unknown[]).map(String) : []
+    } else if (q.questionType === 'judge') {
+      const v = saved?.answer
+      map[q.id] = v === true || v === 'true' ? 'true' : v === false || v === 'false' ? 'false' : ''
+    } else {
+      map[q.id] = saved?.answer != null ? String(saved.answer) : ''
+    }
+  }
+  answerMap.value = map
+}
+
+/** 组装逐题作答为提交载荷 */
+const buildAnswers = (): AnswerItem[] => {
+  return questions.value.map((q) => {
+    const raw = answerMap.value[q.id]
+    let answer: unknown = raw
+    if (q.questionType === 'judge') {
+      answer = raw === 'true' ? true : raw === 'false' ? false : null
+    }
+    return { questionId: q.id, answer }
+  })
+}
+
+/** 校验题目作答（仅校验客观题是否作答，主观题允许空） */
+const validateAnswers = (): boolean => {
+  for (let i = 0; i < questions.value.length; i++) {
+    const q = questions.value[i]
+    const raw = answerMap.value[q.id]
+    const empty =
+      raw === null ||
+      raw === undefined ||
+      raw === '' ||
+      (Array.isArray(raw) && raw.length === 0)
+    if (q.questionType === 'judge' && empty) {
+      ElMessage.warning(`第 ${i + 1} 题：请选择答案`)
+      return false
+    }
+    if (q.questionType !== 'subjective' && q.questionType !== 'extra' && empty) {
+      ElMessage.warning(`第 ${i + 1} 题：请完成作答`)
+      return false
+    }
+  }
+  return true
 }
 
 const loadSubmission = async () => {
@@ -465,6 +715,8 @@ const startEditing = () => {
   existingAttachments.value = [...(mySubmission.value.attachments || [])]
   removedIds.value = []
   newFiles.value = []
+  // 回填原逐题作答
+  applySubmissionAnswers(mySubmission.value)
   editing.value = true
 }
 
@@ -474,6 +726,8 @@ const cancelEditing = () => {
   newFiles.value = []
   existingAttachments.value = []
   removedIds.value = []
+  // 作答复位到题目初始状态
+  initAnswerMap()
 }
 
 const buildAttachments = (formData: FormData) => {
@@ -487,8 +741,13 @@ const buildAttachments = (formData: FormData) => {
 const handleSubmit = async () => {
   const hasNewFile = newFiles.value.some((f) => f.raw)
   const hasKeptFile = editing.value && existingAttachments.value.length > removedIds.value.length
-  if (!content.value.trim() && !hasNewFile && !hasKeptFile) {
+  const hasQuestions = questions.value.length > 0
+  if (!hasQuestions && !content.value.trim() && !hasNewFile && !hasKeptFile) {
     ElMessage.warning('请填写提交内容或上传附件')
+    return
+  }
+  // 含题目的作业：校验逐题作答
+  if (hasQuestions && !validateAnswers()) {
     return
   }
   submitting.value = true
@@ -497,6 +756,9 @@ const handleSubmit = async () => {
     if (editing.value && mySubmission.value) {
       const formData = new FormData()
       formData.append('submissionContent', content.value)
+      if (hasQuestions) {
+        formData.append('answers', JSON.stringify(buildAnswers()))
+      }
       buildAttachments(formData)
       for (const id of removedIds.value) {
         formData.append('removedAttachmentIds', String(id))
@@ -507,6 +769,9 @@ const handleSubmit = async () => {
       formData.append('workId', String(route.params.id))
       if (content.value.trim()) {
         formData.append('submissionContent', content.value)
+      }
+      if (hasQuestions) {
+        formData.append('answers', JSON.stringify(buildAnswers()))
       }
       buildAttachments(formData)
       result = await postForm('/submissions', formData)
@@ -554,6 +819,7 @@ const goBack = () => {
 
 onMounted(async () => {
   await loadWork()
+  await loadQuestions()
   await loadSubmission()
 })
 </script>
@@ -795,6 +1061,201 @@ onMounted(async () => {
   gap: 8px;
   font-size: 13px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
+}
+
+/* ===== 题目作答区 ===== */
+.questions-answer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.questions-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+  margin: 0;
+}
+
+.answer-question-item {
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aq-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.aq-no {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.aq-type {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(102, 126, 234, 0.14);
+  color: #667eea;
+}
+
+.aq-score {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.aq-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.aq-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.aq-option {
+  margin-right: 0;
+  height: auto;
+  white-space: normal;
+}
+
+.aq-option :deep(.el-radio__label),
+.aq-option :deep(.el-checkbox__label) {
+  white-space: normal;
+  line-height: 1.5;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+}
+
+.opt-key {
+  font-weight: 600;
+}
+
+.aq-input {
+  width: 100%;
+}
+
+/* ===== 逐题成绩展示 ===== */
+.questions-result-block {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.questions-result-block h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.8);
+  margin: 0;
+}
+
+.result-question-item {
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
+  border-left: 3px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result-question-item.is-correct {
+  border-left-color: #22c55e;
+}
+
+.result-question-item.is-wrong {
+  border-left-color: #ef4444;
+}
+
+.rq-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rq-no {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.rq-type {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(102, 126, 234, 0.14);
+  color: #667eea;
+}
+
+.rq-score {
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75);
+  font-weight: 500;
+}
+
+.rq-flag {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.rq-flag.correct {
+  background: rgba(34, 197, 94, 0.16);
+  color: #22c55e;
+}
+
+.rq-flag.wrong {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ef4444;
+}
+
+.rq-content {
+  font-size: 14px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.rq-answer,
+.rq-correct,
+.rq-analysis,
+.rq-teacher-comment {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.rq-label {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.rq-value {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+  word-break: break-word;
+}
+
+.rq-value.correct-text {
+  color: #22c55e;
+  font-weight: 500;
 }
 
 /* 统一的附件条目卡片（已上传附件与新选文件共用） */

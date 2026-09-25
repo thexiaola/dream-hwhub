@@ -77,6 +77,66 @@ public class WorkInfo implements Serializable {
     private Boolean isPinned = false;
 
     /**
+     * 是否含结构化题目：true-含题目（学生逐题作答），false-仅文本作业
+     */
+    @TableField("has_questions")
+    private Boolean hasQuestions = false;
+
+    /**
+     * 类型：homework-作业，exam-考试
+     */
+    @TableField("work_type")
+    private String workType = "homework";
+
+    /**
+     * 考试时长（分钟）；从学生开考时刻计时，为空则仅以截止时间为准
+     */
+    @TableField("exam_duration_minutes")
+    private Integer examDurationMinutes;
+
+    /**
+     * 是否开启反作弊
+     */
+    @TableField("anti_cheat_enabled")
+    private Boolean antiCheatEnabled = false;
+
+    /**
+     * 反作弊-字体映射：题干文字以打乱字体渲染，复制得到乱码
+     */
+    @TableField("anti_cheat_font")
+    private Boolean antiCheatFont = false;
+
+    /**
+     * 反作弊-强制全屏：离开全屏即记违规
+     */
+    @TableField("anti_cheat_fullscreen")
+    private Boolean antiCheatFullscreen = false;
+
+    /**
+     * 反作弊-禁止复制粘贴
+     */
+    @TableField("anti_cheat_no_copy")
+    private Boolean antiCheatNoCopy = false;
+
+    /**
+     * 反作弊-切屏/失焦检测
+     */
+    @TableField("anti_cheat_detect_leave")
+    private Boolean antiCheatDetectLeave = false;
+
+    /**
+     * 违规次数上限：达到后自动交卷；为空表示不限制
+     */
+    @TableField("anti_cheat_max_violations")
+    private Integer antiCheatMaxViolations;
+
+    /**
+     * 题目乱序：true-为学生随机打乱题序
+     */
+    @TableField("shuffle_questions")
+    private Boolean shuffleQuestions = false;
+
+    /**
      * 发布时间
      */
     @TableField("publish_time")

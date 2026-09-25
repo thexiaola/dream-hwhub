@@ -6,8 +6,8 @@
           <ArrowLeft :size="18" />
         </el-button>
         <div>
-          <h2>编辑作业</h2>
-          <p class="subtitle">修改作业信息</p>
+          <h2>{{ isExam ? '编辑考试' : '编辑作业' }}</h2>
+          <p class="subtitle">{{ isExam ? '修改考试信息与反作弊设置' : '修改作业信息' }}</p>
         </div>
       </div>
       <div class="header-right">
@@ -17,18 +17,18 @@
     </div>
     <el-card class="content-card dark-dialog" v-loading="pageLoading">
       <el-form :model="form" :rules="rules" ref="formRef" class="create-form" label-width="100px">
-        <el-form-item label="作业标题" prop="title">
+        <el-form-item :label="isExam ? '考试标题' : '作业标题'" prop="title">
           <el-input
             v-model="form.title"
-            placeholder="请输入作业标题"
+            :placeholder="isExam ? '请输入考试标题' : '请输入作业标题'"
             class="form-input"
           />
         </el-form-item>
-        <el-form-item label="作业描述" prop="description">
+        <el-form-item :label="isExam ? '考试说明' : '作业描述'" prop="description">
           <el-input
             v-model="form.description"
             type="textarea"
-            placeholder="请输入作业描述"
+            :placeholder="isExam ? '请输入考试说明' : '请输入作业描述'"
             :autosize="{ minRows: 10, maxRows: 24 }"
             resize="vertical"
             class="form-input"
@@ -63,6 +63,9 @@
             />
           </div>
         </el-form-item>
+        <el-form-item v-if="isExam" label="考试设置">
+          <ExamConfigEditor v-model="examConfig" />
+        </el-form-item>
         <el-form-item label="作业附件">
           <el-upload
             v-model:file-list="attachmentFiles"
@@ -88,19 +91,28 @@
         <el-form-item label="允许逾期提交">
           <el-switch v-model="form.allowLateSubmit" />
         </el-form-item>
+        <el-form-item label="题目">
+          <div class="questions-wrap">
+            <QuestionEditor ref="questionEditorRef" v-model="savedQuestions" />
+          </div>
+        </el-form-item>
       </el-form>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { UploadUserFile } from 'element-plus'
 import { Paperclip, Upload, ArrowLeft } from '@lucide/vue'
 import { get, putForm } from '@/utils/http'
 import { openAttachmentPreview } from '@/utils/attachment'
+import QuestionEditor from '@/components/work/QuestionEditor.vue'
+import ExamConfigEditor from '@/components/work/ExamConfigEditor.vue'
+import { draftToPayload, validateDraft, type DraftQuestion } from '@/components/work/questionDraft'
+import type { ExamConfig, WorkQuestionVO } from '@/types/work'
 
 const router = useRouter()
 const route = useRoute()
@@ -111,6 +123,10 @@ const loading = ref(false)
 const removedAttachmentIds = ref<number[]>([])
 const existingAttachmentMap = new Map<number, number>()
 
+// 已保存的题目（用于编辑回填）与出题编辑器引用
+const savedQuestions = ref<WorkQuestionVO[]>([])
+const questionEditorRef = ref<InstanceType<typeof QuestionEditor> | null>(null)
+
 const form = ref({
   title: '',
   description: '',
@@ -118,6 +134,24 @@ const form = ref({
   deadline: '',
   allowLateSubmit: true
 })
+
+/** 任务类型（编辑已有作业/考试时由后端返回决定，不可更改） */
+const workType = ref<'homework' | 'exam'>('homework')
+const isExam = computed(() => workType.value === 'exam')
+
+/** 默认反作弊配置 */
+const createDefaultExamConfig = (): ExamConfig => ({
+  durationMinutes: null,
+  enabled: false,
+  fontScramble: false,
+  forceFullscreen: false,
+  noCopy: false,
+  detectLeave: false,
+  maxViolations: null,
+  shuffleQuestions: false,
+})
+
+const examConfig = ref<ExamConfig>(createDefaultExamConfig())
 
 const formDate = ref('')
 const formTime = ref('')
@@ -201,6 +235,18 @@ const loadWork = async () => {
       form.value.description = data.description || ''
       form.value.totalScore = data.totalScore || 100
       form.value.allowLateSubmit = data.allowLateSubmit ?? true
+      // 任务类型与考试配置回填
+      workType.value = data.workType === 'exam' ? 'exam' : 'homework'
+      examConfig.value = {
+        durationMinutes: data.examDurationMinutes ?? null,
+        enabled: Boolean(data.antiCheatEnabled),
+        fontScramble: Boolean(data.antiCheatFont),
+        forceFullscreen: Boolean(data.antiCheatFullscreen),
+        noCopy: Boolean(data.antiCheatNoCopy),
+        detectLeave: Boolean(data.antiCheatDetectLeave),
+        maxViolations: data.antiCheatMaxViolations ?? null,
+        shuffleQuestions: Boolean(data.shuffleQuestions),
+      }
       if (data.deadline) {
         const dt = data.deadline.replace(' ', 'T')
         const [d, t] = dt.split('T')
@@ -220,6 +266,8 @@ const loadWork = async () => {
           } as UploadUserFile
         })
       }
+      // 回填已保存的题目
+      savedQuestions.value = Array.isArray(data.questions) ? data.questions : []
     } else {
       ElMessage.error(result.message || '加载作业失败')
       goBack()
@@ -238,6 +286,15 @@ const submitForm = async () => {
     ElMessage.warning('请选择截止时间')
     return
   }
+  // 校验题目
+  const drafts: DraftQuestion[] = questionEditorRef.value?.drafts ?? []
+  for (let i = 0; i < drafts.length; i++) {
+    const err = validateDraft(drafts[i], i)
+    if (err) {
+      ElMessage.warning(err)
+      return
+    }
+  }
   loading.value = true
   try {
     const formData = new FormData()
@@ -247,6 +304,14 @@ const submitForm = async () => {
     formData.append('deadline', deadline)
     formData.append('totalScore', String(form.value.totalScore))
     formData.append('allowLateSubmit', String(form.value.allowLateSubmit))
+    // 始终显式提交题目（空数组表示清除题目、退回纯文本作业）
+    formData.append('questionsProvided', 'true')
+    formData.append('questionsJson', JSON.stringify(drafts.map(draftToPayload)))
+    // 考试：显式提交考试配置
+    if (isExam.value) {
+      formData.append('examConfigProvided', 'true')
+      formData.append('examConfigJson', JSON.stringify(examConfig.value))
+    }
     if (removedAttachmentIds.value.length > 0) {
       removedAttachmentIds.value.forEach(id => {
         formData.append('removedAttachmentIds', String(id))
@@ -346,6 +411,14 @@ onMounted(() => {
 
 .score-input {
   width: 220px;
+}
+
+.questions-wrap {
+  width: 100%;
+}
+
+.create-form :deep(.el-form-item__content) {
+  min-width: 0;
 }
 
 .score-input :deep(.el-input__wrapper) {

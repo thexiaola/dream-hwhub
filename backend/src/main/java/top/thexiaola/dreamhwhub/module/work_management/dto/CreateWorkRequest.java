@@ -63,6 +63,22 @@ public class CreateWorkRequest {
     private List<MultipartFile> attachments;
 
     /**
+     * 结构化题目列表（可选）：填写后学生将逐题作答，客观题自动评判。
+     * 为空时表示纯文本作业（与原行为一致）。
+     */
+    private List<QuestionItem> questions;
+
+    /**
+     * 类型（可选）：homework-作业（默认），exam-考试
+     */
+    private String workType;
+
+    /**
+     * 考试配置（workType=exam 时生效）：限时与反作弊设置
+     */
+    private ExamConfigDto examConfig;
+
+    /**
      * 自定义校验：XSS防护和时间逻辑校验
      */
     public void validate() {

@@ -6,6 +6,19 @@
         <p class="subtitle">学工号与姓名随学校确定，加入班级前需先加入对应学校</p>
       </div>
       <div class="header-right">
+        <el-input
+          v-model="searchKeyword"
+          class="school-search"
+          placeholder="搜索学校名称"
+          clearable
+          @clear="applySearch"
+          @keyup.enter="applySearch"
+        >
+          <template #prefix>
+            <Search :size="16" />
+          </template>
+        </el-input>
+        <el-button type="primary" @click="applySearch">搜索</el-button>
         <el-button @click="openBrowseDialog">
           <Plus :size="18" />
           加入学校
@@ -19,8 +32,17 @@
           v-for="school in mySchools"
           :key="school.id"
           class="school-card"
+          :class="{ 'is-admin': school.myRoleCode === SCHOOL_ROLE_ADMIN }"
           @click="goToSchool(school.id)"
         >
+          <!-- 我是该校管理员的醒目标注：右上角角标 -->
+          <span
+            v-if="school.myRoleCode === SCHOOL_ROLE_ADMIN"
+            class="admin-ribbon"
+          >
+            <ShieldCheck :size="13" />
+            我是管理员
+          </span>
           <div class="card-header">
             <div class="school-icon">
               <School :size="24" />
@@ -39,11 +61,23 @@
             </div>
           </div>
           <div class="card-footer">
-            <span :class="['role-badge', school.myRoleCode === 2 ? 'admin' : 'member']">
+            <span :class="['role-badge', school.myRoleCode === SCHOOL_ROLE_ADMIN ? 'admin' : 'member']">
               {{ school.myRole }}
             </span>
             <span class="member-count">{{ school.memberCount }} 名成员</span>
           </div>
+          <!-- 仅该学校的学校管理员可见管理入口；其余成员只看到基础信息 -->
+          <el-button
+            v-if="school.myRoleCode === SCHOOL_ROLE_ADMIN"
+            class="card-manage-btn"
+            size="small"
+            type="primary"
+            plain
+            @click.stop="openManageDialog(school)"
+          >
+            <Settings :size="14" />
+            管理学校
+          </el-button>
         </div>
       </div>
       <div v-if="mySchools.length === 0" class="empty-state">
@@ -125,25 +159,50 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Plus, School } from '@lucide/vue'
+import { Plus, School, Search, Settings, ShieldCheck } from '@lucide/vue'
 import { get, post } from '@/utils/http'
 import { useSchoolStore } from '@/stores/school'
 import type { PageResult } from '@/types'
-import type { School as SchoolInfo, SchoolDetail, SchoolJoinApplication } from '@/types/school'
+import { SCHOOL_ROLE_ADMIN, type School as SchoolInfo, type SchoolDetail, type SchoolJoinApplication } from '@/types/school'
 
 const router = useRouter()
 const schoolStore = useSchoolStore()
 
 const mySchools = ref<SchoolDetail[]>([])
+// 搜索关键字：提交给后端做数据库筛选（前端不再二次过滤）
+const searchKeyword = ref('')
+
+// 学校管理：跳转到独立管理页（仅该学校的学校管理员可见入口）。
+// 原先在右侧抽屉里呈现管理控制台过于拥挤，改为整页 /school/:id/manage。
+const openManageDialog = (school: SchoolDetail) => {
+  router.push(`/school/${school.id}/manage`)
+}
 
 const loadMySchools = async () => {
-  // 以 school store 为准，避免同一接口重复请求
-  const loaded = await schoolStore.fetchMySchools(true)
-  if (loaded) {
-    mySchools.value = schoolStore.mySchools ?? []
-  } else {
-    ElMessage.error('学校列表加载失败，请稍后重试')
+  const keyword = searchKeyword.value.trim()
+  if (!keyword) {
+    // 无关键字：用全局学校列表（含缓存），避免同一接口重复请求
+    const loaded = await schoolStore.fetchMySchools(true)
+    if (loaded) {
+      mySchools.value = schoolStore.mySchools ?? []
+    } else {
+      ElMessage.error('学校列表加载失败，请稍后重试')
+    }
+    return
   }
+  // 有关键字：直接向后端查询，由数据库按学校名称筛选后返回；
+  // 不写入全局 store，避免污染顶部「选择学校」等依赖完整列表的地方
+  const result = await get<SchoolDetail[]>('/school/mine', { keyword })
+  if (result.code === 200) {
+    mySchools.value = result.data ?? []
+  } else {
+    ElMessage.error(result.message)
+  }
+}
+
+// 点击搜索 / 回车 / 清空：带上当前关键字重新查询
+const applySearch = () => {
+  loadMySchools()
 }
 
 const goToSchool = (id: number) => {
@@ -269,6 +328,25 @@ onMounted(loadMySchools)
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
 }
 
+/* 页头右侧：搜索框 + 加入学校按钮，同一行右对齐 */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.school-search {
+  width: 220px;
+}
+
+/* 搜索框内的放大镜前缀图标 */
+.school-search :deep(.el-input__prefix) {
+  display: flex;
+  align-items: center;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+}
+
 .school-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -276,6 +354,7 @@ onMounted(loadMySchools)
 }
 
 .school-card {
+  position: relative;
   border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 10px;
   padding: 16px;
@@ -286,6 +365,39 @@ onMounted(loadMySchools)
 .school-card:hover {
   border-color: rgba(102, 126, 234, 0.5);
   transform: translateY(-2px);
+}
+
+/* 我是该校管理员：描边加粗高亮 + 略深底色，与普通成员学校一眼区分 */
+.school-card.is-admin {
+  border-color: rgba(102, 126, 234, 0.6);
+  background: rgba(102, 126, 234, 0.06);
+}
+
+.school-card.is-admin:hover {
+  border-color: rgba(102, 126, 234, 0.8);
+}
+
+/* 右上角「我是管理员」角标 */
+.admin-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #fff;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+/* 管理员卡片标题为角标让位，避免遮挡学校名 */
+.school-card.is-admin .card-header {
+  padding-right: 96px;
 }
 
 .card-header {
@@ -353,6 +465,12 @@ onMounted(loadMySchools)
 .member-count {
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+/* 学校管理员专属的管理入口：整行按钮，与上方信息区拉开层次 */
+.card-manage-btn {
+  width: 100%;
+  margin-top: 12px;
 }
 
 .empty-state {
@@ -445,10 +563,19 @@ onMounted(loadMySchools)
 
   .header-right {
     display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* 手机端搜索框独占一行，两个按钮平分剩余宽度 */
+  .school-search {
+    width: 100%;
   }
 
   .header-right .el-button {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     margin-left: 0;
   }
 

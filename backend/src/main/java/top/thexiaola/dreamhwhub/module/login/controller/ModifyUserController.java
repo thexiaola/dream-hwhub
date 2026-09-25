@@ -151,4 +151,40 @@ public class ModifyUserController {
             return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
+
+    /**
+     * 查询当前用户的危险操作安全验证设置
+     */
+    @GetMapping("/security-verification")
+    public ResponseEntity<ApiResponse<SecurityVerificationSettings>> getSecurityVerification() {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(modifyUserService.getSecurityVerificationSettings()));
+        } catch (BusinessException e) {
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
+        }
+    }
+
+    /**
+     * 更新当前用户的危险操作安全验证设置
+     * <p>
+     * 变更本身是危险操作：**每个被改动的开关都必须用该方式自身的凭据验证身份**——
+     * 改动了密码验证 → 须携带登录密码；改动了邮箱验证码验证 → 须携带邮箱验证码；
+     * 两者都改动则两者都须提供。凭据随请求体提交，由服务层校验。
+     */
+    @PutMapping("/security-verification")
+    public ResponseEntity<ApiResponse<SecurityVerificationSettings>> updateSecurityVerification(
+            @Valid @RequestBody UpdateSecurityVerificationRequest request) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User currentUser = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+            SecurityVerificationSettings result = modifyUserService.updateSecurityVerificationSettings(request);
+            log.info("User ({}) updated security verification settings", userInfo);
+            return ResponseEntity.ok(ApiResponse.success(result, "安全验证设置已更新"));
+        } catch (BusinessException e) {
+            String userInfo = LogUtil.getUserInfoString(ip, UserUtils.getCurrentUser());
+            log.warn("User ({}) failed to update security verification settings: {}", userInfo, e.getMessage());
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
+        }
+    }
 }

@@ -42,6 +42,9 @@
         </div>
 
         <div class="card-actions">
+          <el-button size="small" type="primary" @click="openManageDialog(school)">
+            管理
+          </el-button>
           <el-button v-if="canAssign" size="small" type="primary" plain @click="openAdminDialog(school)">
             指派学校管理员
           </el-button>
@@ -140,19 +143,24 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { Plus, School } from '@lucide/vue'
 import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
+import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
 import type { PageResult } from '@/types'
 import type { School as SchoolInfo, SchoolDetail } from '@/types/school'
 import { formatDateOnly as formatDate } from '@/utils/format'
 
+const router = useRouter()
 const userStore = useUserStore()
 
 const canCreate = computed(() => userStore.hasPermission('school:create'))
 const canUpdate = computed(() => userStore.hasPermission('school:update'))
-const canDissolve = computed(() => userStore.hasPermission('school:dissolve'))
+// 解散学校仅平台管理员可操作：school:dissolve 是可授予的权限节点，
+// 若按节点判定，被授予该节点的学校管理员也会看到按钮却点不动（后端强制校验 OP 身份）
+const canDissolve = computed(() => userStore.isOp)
 const canAssign = computed(() => userStore.hasPermission('school:admin:assign'))
 
 const schools = ref<SchoolInfo[]>([])
@@ -245,16 +253,15 @@ const submitForm = async () => {
 }
 
 const dissolve = async (school: SchoolInfo) => {
-  try {
-    await ElMessageBox.confirm(
-      `解散后「${school.schoolName}」的成员关系与加入申请都会被清除，确定继续吗？`,
-      '解散学校',
-      { type: 'warning', confirmButtonText: '确定解散', cancelButtonText: '取消' }
-    )
-  } catch {
-    return
-  }
-  const result = await del(`/admin/schools/${school.id}`)
+  // 解散学校属平台管理员高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: '解散学校',
+    message: `解散「${school.schoolName}」后，该校的成员关系、加入申请等数据将被永久清除，此操作不可恢复。确定继续？`,
+    confirmText: '确定解散',
+    operationName: '解散学校',
+  })
+  if (!headers) return
+  const result = await del(`/admin/schools/${school.id}`, undefined, undefined, headers)
   if (result.code === 200) {
     ElMessage.success('学校已解散')
     loadSchools()
@@ -287,13 +294,23 @@ const submitAdmin = async () => {
     ElMessage.warning('请输入用户账号')
     return
   }
+  // 指派/取消学校管理员属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: adminDialog.assigned ? '指派学校管理员' : '取消学校管理员',
+    message: adminDialog.assigned
+      ? `确认将「${adminDialog.userAccount.trim()}」指派为「${adminDialog.schoolName}」的学校管理员？学校管理员可审核加入申请、管理成员与身份。`
+      : `确认取消「${adminDialog.userAccount.trim()}」的学校管理员身份？`,
+    confirmText: '确认',
+    operationName: adminDialog.assigned ? '指派学校管理员' : '取消学校管理员',
+  })
+  if (!headers) return
   adminDialog.submitting = true
   const result = await put(`/admin/schools/${adminDialog.schoolId}/admin`, {
     userAccount: adminDialog.userAccount.trim(),
     assigned: adminDialog.assigned,
     staffNo: adminDialog.staffNo.trim(),
     realName: adminDialog.realName.trim()
-  })
+  }, undefined, headers)
   adminDialog.submitting = false
   if (result.code === 200) {
     ElMessage.success(adminDialog.assigned ? '已指派为学校管理员' : '已取消学校管理员身份')
@@ -309,6 +326,13 @@ const submitAdmin = async () => {
 }
 
 onMounted(loadSchools)
+
+// ===== 学校管理：跳转到独立管理页 =====
+// 原先在右侧抽屉里呈现管理控制台过于拥挤，改为跳转到整页 /school/:id/manage。
+// 该页复用 SchoolManagePanel（加入申请 / 成员管理 / 接管申请 / 私信策略）。
+const openManageDialog = (school: SchoolInfo) => {
+  router.push(`/school/${school.id}/manage`)
+}
 
 // 供父级在每次进入本页签时触发刷新
 defineExpose({ reload: loadSchools })
@@ -426,9 +450,10 @@ defineExpose({ reload: loadSchools })
     flex-wrap: wrap;
   }
 
+  /* 按钮按内容宽度平铺换行；min-width:0 会把按钮压到比文字窄导致文字溢出 */
   .card-actions .el-button {
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: max-content;
     margin-left: 0;
   }
 }

@@ -66,261 +66,25 @@
       </div>
     </el-card>
 
-    <el-card class="content-card" v-if="canManage">
-      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-        <el-tab-pane name="applications">
-          <template #label>
-            加入申请
-            <el-badge
-              v-if="(school?.pendingApplicationCount ?? 0) > 0"
-              :value="school?.pendingApplicationCount"
-              class="tab-badge"
-            />
-          </template>
-          <div class="filter-bar">
-            <el-radio-group v-model="appFilter" @change="reloadApplications">
-              <el-radio-button :value="-1">全部</el-radio-button>
-              <el-radio-button :value="0">待审核</el-radio-button>
-              <el-radio-button :value="1">已通过</el-radio-button>
-              <el-radio-button :value="2">已拒绝</el-radio-button>
-            </el-radio-group>
-            <el-switch
-              v-model="allowJoinWithoutApproval"
-              active-text="免审核加入"
-              inactive-text="需审核"
-              @change="submitJoinApproval"
-            />
-            <div class="batch-actions">
-              <el-switch
-                v-model="confirmBeforeApprove"
-                size="small"
-                active-text="通过前二次确认"
-              />
-              <el-button
-                type="primary"
-                size="small"
-                :disabled="selectedApplications.length === 0"
-                @click="openBatchReview(true)"
-              >
-                批量通过
-              </el-button>
-              <el-button
-                type="danger"
-                size="small"
-                :disabled="selectedApplications.length === 0"
-                @click="openBatchReview(false)"
-              >
-                批量拒绝
-              </el-button>
-            </div>
+    <!-- 学校管理入口：仅真正的学校管理员可见。
+         管理控制台已独立成整页 /school/:id/manage，这里只放一个入口，避免在详情页
+         内嵌一大块管理面板。平台管理员请在「管理面板 → 学校管理」中对任意学校进行管理。 -->
+    <el-card class="content-card manage-entry-card" v-if="canManage">
+      <div class="manage-entry">
+        <div class="manage-entry-info">
+          <div class="manage-entry-title">
+            <Settings :size="18" />
+            <span>学校管理</span>
           </div>
-
-          <el-table
-            :data="applications"
-            style="width: 100%"
-            @selection-change="handleAppSelection"
-          >
-            <el-table-column type="selection" width="45" :selectable="isPendingRow" />
-            <el-table-column prop="applicantUsername" label="账号" min-width="120" />
-            <el-table-column prop="applicantName" label="姓名" min-width="100">
-              <template #default="{ row }">{{ row.applicantName || '-' }}</template>
-            </el-table-column>
-            <el-table-column prop="applicantNo" label="学工号" min-width="120">
-              <template #default="{ row }">{{ row.applicantNo || '-' }}</template>
-            </el-table-column>
-            <el-table-column label="状态" width="90">
-              <template #default="{ row }">
-                <span :class="['status-tag', statusClass(row.status)]">{{ statusText(row.status) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="申请时间" min-width="150">
-              <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
-            </el-table-column>
-            <el-table-column label="审核人" min-width="100">
-              <template #default="{ row }">{{ row.reviewerName || '-' }}</template>
-            </el-table-column>
-            <el-table-column label="审核时间" min-width="150">
-              <template #default="{ row }">
-                {{ row.reviewTime ? formatDate(row.reviewTime) : '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="审核意见" min-width="140">
-              <template #default="{ row }">{{ row.reviewComment || '-' }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="150" fixed="right">
-              <template #default="{ row }">
-                <template v-if="row.status === 0">
-                  <el-button
-                    size="small"
-                    type="primary"
-                    text
-                    :loading="reviewSubmitting"
-                    :disabled="reviewSubmitting"
-                    @click="openReview(row, true)"
-                  >
-                    通过
-                  </el-button>
-                  <el-button
-                    size="small"
-                    type="danger"
-                    text
-                    :disabled="reviewSubmitting"
-                    @click="openReview(row, false)"
-                  >
-                    拒绝
-                  </el-button>
-                </template>
-                <span v-else class="muted">{{ row.reviewComment || '-' }}</span>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <div class="pagination" v-if="appTotal > 0">
-            <el-pagination
-              v-model:current-page="appPage"
-              :page-size="10"
-              :total="appTotal"
-              layout="prev, pager, next"
-              @current-change="loadApplications"
-            />
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="成员管理" name="members">
-          <div class="filter-bar">
-            <el-input
-              v-model="memberKeyword"
-              placeholder="搜索姓名 / 学工号 / 账号"
-              style="width: 260px"
-              clearable
-              @clear="loadMembers"
-              @keyup.enter="loadMembers"
-            />
-            <el-button type="primary" @click="loadMembers">搜索</el-button>
-          </div>
-
-          <el-table :data="members" style="width: 100%">
-            <el-table-column prop="username" label="账号" min-width="120" />
-            <el-table-column prop="realName" label="姓名" min-width="100" />
-            <el-table-column prop="staffNo" label="学工号" min-width="120" />
-            <el-table-column label="角色" width="110">
-              <template #default="{ row }">
-                <span :class="['role-tag', row.roleCode === 2 ? 'admin' : row.roleCode === 1 ? 'teacher' : 'student']">
-                  {{ row.role }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column label="加入时间" min-width="150">
-              <template #default="{ row }">{{ formatDate(row.joinTime) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="300" fixed="right">
-              <template #default="{ row }">
-                <template v-if="row.roleCode !== 2">
-                  <el-button size="small" text @click="toggleTeacher(row)">
-                    {{ row.roleCode === 1 ? '设为学生' : '设为老师' }}
-                  </el-button>
-                </template>
-                <el-button size="small" text @click="openIdentityDialog(row)">改姓名学工号</el-button>
-                <el-button
-                  v-if="row.roleCode !== 2 && row.userId !== currentUserId"
-                  size="small"
-                  type="danger"
-                  text
-                  @click="removeMember(row)"
-                >
-                  移出学校
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <div class="pagination" v-if="memberTotal > 0">
-            <el-pagination
-              v-model:current-page="memberPage"
-              :page-size="10"
-              :total="memberTotal"
-              layout="prev, pager, next"
-              @current-change="loadMembers"
-            />
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane name="takeovers">
-          <template #label>
-            接管申请
-            <el-badge
-              v-if="pendingTakeoverCount > 0"
-              :value="pendingTakeoverCount"
-              class="tab-badge"
-            />
-          </template>
-          <div class="filter-bar">
-            <el-radio-group v-model="takeoverFilter" @change="loadTakeovers">
-              <el-radio-button :value="-1">全部</el-radio-button>
-              <el-radio-button :value="0">待审核</el-radio-button>
-              <el-radio-button :value="1">已通过</el-radio-button>
-              <el-radio-button :value="2">已拒绝</el-radio-button>
-            </el-radio-group>
-            <el-switch
-              v-model="autoApproveClassTakeover"
-              active-text="自动同意接管"
-              inactive-text="需管理员审核"
-              @change="submitTakeoverSetting"
-            />
-          </div>
-
-          <p class="takeover-tip">
-            当班级创建者失去教师身份时，该班级将暂不可管理且不再接纳新学生，本校老师可申请接管。
-            开启「自动同意接管」后，老师申请即立即生效；关闭则需在此审核。
+          <p class="manage-entry-desc">
+            审核加入申请、管理成员与身份、处理班级接管、设置学校私信策略
           </p>
-
-          <el-table :data="takeovers" style="width: 100%">
-            <el-table-column prop="className" label="班级" min-width="140" />
-            <el-table-column prop="applicantUsername" label="账号" min-width="120">
-              <template #default="{ row }">{{ row.applicantUsername || '-' }}</template>
-            </el-table-column>
-            <el-table-column prop="applicantName" label="姓名" min-width="100">
-              <template #default="{ row }">{{ row.applicantName || '-' }}</template>
-            </el-table-column>
-            <el-table-column prop="applicantNo" label="学工号" min-width="120">
-              <template #default="{ row }">{{ row.applicantNo || '-' }}</template>
-            </el-table-column>
-            <el-table-column label="状态" width="90">
-              <template #default="{ row }">
-                <span :class="['status-tag', statusClass(row.status)]">{{ statusText(row.status) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="申请时间" min-width="150">
-              <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="170" fixed="right">
-              <template #default="{ row }">
-                <template v-if="row.status === 0">
-                  <el-button
-                    size="small"
-                    type="primary"
-                    text
-                    :loading="takeoverReviewSubmitting"
-                    @click="reviewTakeover(row, true)"
-                  >
-                    同意
-                  </el-button>
-                  <el-button
-                    size="small"
-                    type="danger"
-                    text
-                    :loading="takeoverReviewSubmitting"
-                    @click="reviewTakeover(row, false)"
-                  >
-                    拒绝
-                  </el-button>
-                </template>
-                <span v-else class="reviewed-note">{{ row.reviewComment || '-' }}</span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-      </el-tabs>
+        </div>
+        <el-button type="primary" @click="goManage">
+          进入管理
+          <ArrowRight :size="16" />
+        </el-button>
+      </div>
     </el-card>
 
     <!-- 加入学校 -->
@@ -339,77 +103,33 @@
         <el-button type="primary" :loading="joinDialog.submitting" @click="submitJoin">提交</el-button>
       </template>
     </el-dialog>
-
-    <!-- 审核加入申请 -->
-    <el-dialog
-      v-model="reviewDialog.visible"
-      :title="reviewTitle"
-      width="440px"
-      class="dark-dialog"
-    >
-      <el-form label-width="80px">
-        <el-form-item label="审核意见">
-          <el-input v-model="reviewDialog.comment" type="textarea" :rows="3" placeholder="选填" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="reviewDialog.visible = false">取消</el-button>
-        <el-button :type="reviewDialog.approved ? 'primary' : 'danger'" @click="submitReview">
-          确认{{ reviewDialog.approved ? '通过' : '拒绝' }}
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 修改成员姓名与学工号 -->
-    <el-dialog v-model="identityDialog.visible" title="修改成员姓名 / 学工号" width="440px" class="dark-dialog">
-      <el-form :model="identityDialog" label-width="80px">
-        <el-form-item label="姓名" required>
-          <el-input v-model="identityDialog.realName" maxlength="32" />
-        </el-form-item>
-        <el-form-item label="学工号" required>
-          <el-input v-model="identityDialog.staffNo" maxlength="24" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="identityDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="identityDialog.submitting" @click="submitIdentity">保存</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { del, get, post, put } from '@/utils/http'
-import { useUserStore } from '@/stores/user'
-import type { PageResult } from '@/types'
-import { SCHOOL_ROLE_ADMIN, type SchoolDetail, type SchoolJoinApplication, type SchoolMember } from '@/types/school'
-import type { ClassTakeoverInfo } from '@/types/class'
-import { formatDateTime as formatDate } from '@/utils/format'
-import { useConfirmBeforeApprove } from '@/composables/useConfirmBeforeApprove'
-import { applicationStatusText as statusText, applicationStatusClass as statusClass } from '@/utils/status'
+import { ElMessage } from 'element-plus'
+import { ArrowRight, Settings } from '@lucide/vue'
+import { del, get, post } from '@/utils/http'
+import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
+import { SCHOOL_ROLE_ADMIN, type SchoolDetail, type SchoolJoinApplication } from '@/types/school'
 
 const route = useRoute()
 const router = useRouter()
-const userStore = useUserStore()
 
 const schoolId = Number(route.params.id)
 const school = ref<SchoolDetail | null>(null)
 const loading = ref(false)
 
-const currentUserId = computed(() => userStore.userInfo?.id ?? 0)
+// 仅真正的学校管理员可在个人视角管理本校；
+// 平台管理员即便持有 school:update，也统一从「管理面板 → 学校管理」进入，避免个人页出现全局管理界面
+const canManage = computed(() => school.value?.myRoleCode === SCHOOL_ROLE_ADMIN)
 
-const canManage = computed(
-  () => school.value?.myRoleCode === SCHOOL_ROLE_ADMIN || userStore.hasPermission('school:update')
-)
-
-const activeTab = ref<'applications' | 'members' | 'takeovers'>('applications')
-const allowJoinWithoutApproval = ref(false)
-const autoApproveClassTakeover = ref(true)
-
-// 申请状态文案/样式后缀与 AdminPanel 共用（见 utils/status）
+// 进入独立的学校管理页（整页管理控制台）
+const goManage = () => {
+  router.push(`/school/${schoolId}/manage`)
+}
 
 const loadSchool = async () => {
   loading.value = true
@@ -417,77 +137,8 @@ const loadSchool = async () => {
   loading.value = false
   if (result.code === 200) {
     school.value = result.data
-    allowJoinWithoutApproval.value = result.data?.allowJoinWithoutApproval ?? false
-    autoApproveClassTakeover.value = result.data?.autoApproveClassTakeover !== false
-    if (canManage.value) {
-      loadApplications()
-      loadMembers()
-      loadTakeovers()
-    }
   } else {
     ElMessage.error(result.message)
-  }
-}
-
-// ===== 班级接管（学校管理员）=====
-
-const takeoverFilter = ref(-1)
-const takeovers = ref<ClassTakeoverInfo[]>([])
-const takeoverReviewSubmitting = ref(false)
-
-const pendingTakeoverCount = computed(
-  () => takeovers.value.filter((t) => t.status === 0).length
-)
-
-const loadTakeovers = async () => {
-  const params: Record<string, unknown> = {}
-  if (takeoverFilter.value >= 0) {
-    params.status = takeoverFilter.value
-  }
-  const result = await get<ClassTakeoverInfo[]>(`/class/takeover/school/${schoolId}`, params)
-  if (result.code === 200) {
-    takeovers.value = result.data ?? []
-  } else {
-    ElMessage.error(result.message)
-  }
-}
-
-const submitTakeoverSetting = async () => {
-  const result = await put(`/school/${schoolId}/class-takeover-approval`, {
-    autoApproveClassTakeover: autoApproveClassTakeover.value
-  })
-  if (result.code === 200) {
-    ElMessage.success('班级接管设置已更新')
-  } else {
-    ElMessage.error(result.message)
-    // 回滚开关状态
-    autoApproveClassTakeover.value = !autoApproveClassTakeover.value
-  }
-}
-
-const reviewTakeover = async (row: ClassTakeoverInfo, approved: boolean) => {
-  try {
-    await ElMessageBox.confirm(
-      approved
-        ? `同意「${row.applicantUsername}」接管班级「${row.className}」？通过后其将成为该班级创建者。`
-        : `拒绝「${row.applicantUsername}」接管班级「${row.className}」的申请？`,
-      approved ? '同意接管' : '拒绝接管',
-      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' }
-    )
-  } catch {
-    return
-  }
-  takeoverReviewSubmitting.value = true
-  try {
-    const result = await put(`/class/takeover/${row.id}/approve`, { approved, comment: '' })
-    if (result.code === 200) {
-      ElMessage.success(approved ? '已同意接管' : '已拒绝接管')
-      loadTakeovers()
-    } else {
-      ElMessage.error(result.message)
-    }
-  } finally {
-    takeoverReviewSubmitting.value = false
   }
 }
 
@@ -532,287 +183,18 @@ const submitJoin = async () => {
   }
 }
 
-// ===== 加入申请审核 =====
+// ===== 退出学校 =====
 
-const applications = ref<SchoolJoinApplication[]>([])
-// 默认只看待审核
-const appFilter = ref(0)
-const appPage = ref(1)
-const appTotal = ref(0)
-const selectedApplications = ref<SchoolJoinApplication[]>([])
-
-const handleAppSelection = (rows: SchoolJoinApplication[]) => {
-  selectedApplications.value = rows
-}
-
-// 只有待审核的申请可以勾选（已处理的不允许再审核）
-const isPendingRow = (row: SchoolJoinApplication) => row.status === 0
-
-const reviewDialog = reactive({
-  visible: false,
-  submitting: false,
-  applicationIds: [] as number[],
-  approved: false,
-  comment: ''
-})
-
-// 单条与批量共用同一个弹窗，标题按数量区分
-const reviewTitle = computed(() => {
-  const batch = reviewDialog.applicationIds.length > 1
-  const action = reviewDialog.approved ? '通过' : '拒绝'
-  return batch ? `批量${action} ${reviewDialog.applicationIds.length} 条申请` : `${action}申请`
-})
-
-// 通过申请前是否需要二次确认：前端偏好，与 AdminPanel 共用（见 useConfirmBeforeApprove）
-const confirmBeforeApprove = useConfirmBeforeApprove()
-
-// 审核请求进行中：关闭二次确认时没有弹窗可反馈，靠它禁用行内按钮避免重复提交
-const reviewSubmitting = ref(false)
-
-const loadApplications = async () => {
-  const params: Record<string, unknown> = { pageNum: appPage.value, pageSize: 10 }
-  if (appFilter.value >= 0) {
-    params.status = appFilter.value
-  }
-  const result = await get<PageResult<SchoolJoinApplication>>(`/school/${schoolId}/applications`, params)
-  if (result.code === 200) {
-    applications.value = result.data!.records
-    appTotal.value = result.data!.total
-  } else {
-    ElMessage.error(result.message)
-  }
-}
-
-// 切换状态筛选后回到第一页再查询
-const reloadApplications = () => {
-  appPage.value = 1
-  loadApplications()
-}
-
-const openReview = (row: SchoolJoinApplication, approved: boolean) => {
-  if (approved && !confirmBeforeApprove.value) {
-    // 关闭二次确认时，通过操作直接提交
-    submitReview({ applicationIds: [row.id], approved: true, comment: '' })
-    return
-  }
-  // 重新打开同一条申请时保留未提交的审核意见
-  if (reviewDialog.applicationIds.length !== 1 || reviewDialog.applicationIds[0] !== row.id) {
-    reviewDialog.comment = ''
-  }
-  reviewDialog.visible = true
-  reviewDialog.submitting = false
-  reviewDialog.applicationIds = [row.id]
-  reviewDialog.approved = approved
-}
-
-const openBatchReview = (approved: boolean) => {
-  if (selectedApplications.value.length === 0) {
-    return
-  }
-  const applicationIds = selectedApplications.value.map(row => row.id)
-  if (approved && !confirmBeforeApprove.value) {
-    submitReview({ applicationIds, approved: true, comment: '' })
-    return
-  }
-  reviewDialog.visible = true
-  reviewDialog.submitting = false
-  // 批量审核针对的是另一组申请，不沿用单条审核时未提交的意见
-  reviewDialog.comment = ''
-  reviewDialog.applicationIds = applicationIds
-  reviewDialog.approved = approved
-}
-
-interface ReviewTarget {
-  applicationIds: number[]
-  approved: boolean
-  comment: string
-}
-
-const submitReview = async (target?: ReviewTarget) => {
-  const applicationIds = target?.applicationIds ?? reviewDialog.applicationIds
-  const approved = target?.approved ?? reviewDialog.approved
-  const comment = target?.comment ?? reviewDialog.comment
-  if (applicationIds.length === 0) {
-    return
-  }
-
-  const isBatch = applicationIds.length > 1
-  const url = isBatch
-    ? `/school/${schoolId}/applications/batch-approve`
-    : `/school/${schoolId}/applications/approve`
-  // 通过申请无需说明原因，只有拒绝时才提交意见
-  const payload: Record<string, unknown> = { approved }
-  if (!approved) {
-    payload.comment = comment.trim()
-  }
-  if (isBatch) {
-    payload.applicationIds = applicationIds
-  } else {
-    payload.applicationId = applicationIds[0]
-  }
-
-  reviewSubmitting.value = true
-  reviewDialog.submitting = true
-  try {
-    const result = await put(url, payload)
-    if (result.code === 200) {
-      ElMessage.success(isBatch ? result.message : approved ? '已通过' : '已拒绝')
-      reviewDialog.visible = false
-      reviewDialog.comment = ''
-      reviewDialog.applicationIds = []
-      selectedApplications.value = []
-      appPage.value = 1
-      loadApplications()
-      loadMembers()
-      loadSchool()
-    } else {
-      ElMessage.error(result.message)
-    }
-  } finally {
-    // 网络异常时也要复位，否则行内按钮会一直处于禁用态
-    reviewDialog.submitting = false
-    reviewSubmitting.value = false
-  }
-}
-
-const submitJoinApproval = async () => {
-  const result = await put(`/school/${schoolId}/join-approval`, {
-    allowJoinWithoutApproval: allowJoinWithoutApproval.value
-  })
-  if (result.code === 200) {
-    ElMessage.success('加入学校设置已更新')
-  } else {
-    ElMessage.error(result.message)
-    loadSchool()
-  }
-}
-
-// ===== 成员管理 =====
-
-const members = ref<SchoolMember[]>([])
-const memberKeyword = ref('')
-const memberPage = ref(1)
-const memberTotal = ref(0)
-
-const loadMembers = async () => {
-  const params: Record<string, unknown> = { pageNum: memberPage.value, pageSize: 10 }
-  if (memberKeyword.value.trim()) {
-    params.keyword = memberKeyword.value.trim()
-  }
-  const result = await get<PageResult<SchoolMember>>(`/school/${schoolId}/members`, params)
-  if (result.code === 200) {
-    members.value = result.data!.records
-    memberTotal.value = result.data!.total
-  } else {
-    ElMessage.error(result.message)
-  }
-}
-
-const toggleTeacher = async (row: SchoolMember) => {
-  const targetRole = row.roleCode === 1 ? 0 : 1
-  const result = await put(`/school/${schoolId}/members/role`, {
-    userId: row.userId,
-    role: targetRole
-  })
-  if (result.code === 200) {
-    ElMessage.success(targetRole === 1 ? '已设为老师' : '已设为学生')
-    loadMembers()
-  } else {
-    ElMessage.error(result.message)
-  }
-}
-
-const identityDialog = reactive({
-  visible: false,
-  submitting: false,
-  userId: 0,
-  realName: '',
-  staffNo: ''
-})
-
-const openIdentityDialog = (row: SchoolMember) => {
-  // 重新打开同一位成员时保留未提交的修改
-  if (identityDialog.userId !== row.userId) {
-    identityDialog.realName = row.realName ?? ''
-    identityDialog.staffNo = row.staffNo ?? ''
-  }
-  identityDialog.visible = true
-  identityDialog.submitting = false
-  identityDialog.userId = row.userId
-}
-
-const submitIdentity = async () => {
-  if (!identityDialog.realName.trim()) {
-    ElMessage.warning('请填写姓名')
-    return
-  }
-  if (!identityDialog.staffNo.trim()) {
-    ElMessage.warning('请填写学工号')
-    return
-  }
-  identityDialog.submitting = true
-  const result = await put(`/school/${schoolId}/members/identity`, {
-    userId: identityDialog.userId,
-    realName: identityDialog.realName.trim(),
-    staffNo: identityDialog.staffNo.trim()
-  })
-  identityDialog.submitting = false
-  if (result.code === 200) {
-    ElMessage.success('成员姓名与学工号已更新')
-    identityDialog.visible = false
-    loadMembers()
-  } else {
-    ElMessage.error(result.message)
-  }
-}
-
-const handleTabChange = (name: string | number) => {
-  if (name === 'applications') {
-    loadApplications()
-  } else if (name === 'members') {
-    loadMembers()
-  } else if (name === 'takeovers') {
-    loadTakeovers()
-  }
-}
-
-/** 将成员移出学校（学校管理员） */
-const removeMember = async (row: SchoolMember) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认将「${row.realName || row.username}」移出学校？他将同时被移出该校的所有班级，其在班级内的作业提交也会被清理。`,
-      '移出学校',
-      { type: 'warning', confirmButtonText: '确认移出', cancelButtonText: '取消' }
-    )
-  } catch {
-    return
-  }
-  const result = await del(`/school/${schoolId}/members/${row.userId}`)
-  if (result.code === 200) {
-    ElMessage.success('成员已移出学校')
-    // 若移出的是当前页最后一条，回退一页
-    if (members.value.length === 1 && memberPage.value > 1) {
-      memberPage.value -= 1
-    }
-    loadMembers()
-    loadSchool()
-  } else {
-    ElMessage.error(result.message)
-  }
-}
-
-/** 退出学校 */
 const leaveSchool = async () => {
-  try {
-    await ElMessageBox.confirm(
-      `确认退出「${school.value?.schoolName ?? ''}」？退出后你将失去该校的成员身份，需要重新申请加入。`,
-      '退出学校',
-      { type: 'warning', confirmButtonText: '确认退出', cancelButtonText: '取消' }
-    )
-  } catch {
-    return
-  }
-  const result = await del(`/school/${schoolId}/membership`)
+  // 退出学校属敏感操作：红色警示框 + 身份二次验证（登录密码或邮箱验证码）
+  const headers = await confirmDangerousOperation({
+    title: '退出学校',
+    message: `确认退出「${school.value?.schoolName ?? ''}」？退出后你将失去该校的成员身份，需要重新申请加入。`,
+    confirmText: '确认退出',
+    operationName: '退出学校',
+  })
+  if (!headers) return
+  const result = await del(`/school/${schoolId}/membership`, undefined, undefined, headers)
   if (result.code === 200) {
     ElMessage.success('已退出学校')
     router.push('/school')
@@ -896,109 +278,54 @@ onMounted(loadSchool)
   color: var(--danger-strong);
 }
 
-/* 「加入申请」页签上的待审核数量角标 */
-.tab-badge {
-  margin-left: 6px;
-}
-
-.tab-badge :deep(.el-badge__content) {
-  transform: translateY(-1px);
-}
-
-/* .confirm-hint 审核确认提示样式见全局 style.css（多页共用） */
-
-.batch-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-/* 本页筛选栏嵌在 el-card 内，全局 .filter-bar 的“浮起白色卡片”外观（近白渐变 +
-   内白高光）叠在浅灰卡面上过亮。这里改为中性内凹浅底 + 细描边，与卡面同调 */
-.filter-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  flex-wrap: wrap;
-  border-radius: 12px;
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
-  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
-  box-shadow: none;
-}
-
-.status-tag {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.status-tag.pending {
-  color: #e6a23c;
-  background: rgba(230, 162, 60, 0.15);
-}
-
-/* 班级接管 tab：说明文字与已处理申请的审核结果 */
-.takeover-tip {
-  margin: 4px 0 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
-}
-
-.reviewed-note {
-  font-size: 12px;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
-}
-
-.status-tag.approved {
-  color: #67c23a;
-  background: rgba(103, 194, 58, 0.15);
-}
-
-.status-tag.rejected {
-  color: #f56c6c;
-  background: rgba(245, 108, 108, 0.15);
-}
-
-.role-tag {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.role-tag.admin {
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.15);
-}
-
-.role-tag.teacher {
-  color: #409eff;
-  background: rgba(64, 158, 255, 0.15);
-}
-
-.role-tag.student {
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
-  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
-}
-
-.muted {
-  font-size: 12px;
-  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
-}
-
-.pagination {
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-}
-
 .form-tip {
   margin: 0;
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+}
+
+/* 学校管理入口卡片：一段说明 + 右侧进入按钮 */
+.manage-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.manage-entry-info {
+  min-width: 0;
+}
+
+.manage-entry-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.92);
+}
+
+.manage-entry-title svg {
+  color: #667eea;
+}
+
+.manage-entry-desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.6);
+}
+
+@media (max-width: 768px) {
+  /* 手机端按钮另起一行占满宽度 */
+  .manage-entry {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .manage-entry .el-button {
+    justify-content: center;
+    width: 100%;
+  }
 }
 </style>

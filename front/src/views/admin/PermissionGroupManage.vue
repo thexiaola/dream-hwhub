@@ -33,7 +33,7 @@
           <span v-else class="muted">否</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right" align="center">
         <template #default="{ row }">
           <el-button v-if="canEdit" size="small" text @click="openEdit(row)">编辑</el-button>
           <el-button v-if="canEdit" size="small" text @click="openNodes(row)">配置节点</el-button>
@@ -92,9 +92,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
+import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
 import PermissionNodeTree from './PermissionNodeTree.vue'
 import { Plus } from '@lucide/vue'
 import type { PermissionGroup, PermissionNodeGroup } from '@/types/admin'
@@ -218,16 +219,15 @@ const submitForm = async () => {
 }
 
 const removeGroup = async (row: PermissionGroup) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除权限组「${row.name}」？组内用户将失去该组带来的权限。`,
-      '危险操作',
-      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' }
-    )
-  } catch {
-    return
-  }
-  const result = await del(`/admin/permissions/groups/${row.id}`)
+  // 删除权限组属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: '删除权限组',
+    message: `确认删除权限组「${row.name}」？组内用户将失去该组带来的权限，此操作不可恢复。`,
+    confirmText: '确认删除',
+    operationName: '删除权限组',
+  })
+  if (!headers) return
+  const result = await del(`/admin/permissions/groups/${row.id}`, undefined, undefined, headers)
   if (result.code === 200) {
     ElMessage.success('权限组已删除')
     loadGroups()
@@ -250,11 +250,19 @@ const openNodes = async (row: PermissionGroup) => {
 }
 
 const submitNodes = async () => {
+  // 设置权限组节点属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: '设置权限组节点',
+    message: `确认更新权限组「${nodesDialog.groupName}」的权限节点？变更立即对组内用户生效。`,
+    confirmText: '确认更新',
+    operationName: '设置权限组节点',
+  })
+  if (!headers) return
   nodesDialog.submitting = true
   try {
     const result = await put(`/admin/permissions/groups/${nodesDialog.groupId}/nodes`, {
       nodes: nodesDialog.nodes
-    })
+    }, undefined, headers)
     if (result.code === 200) {
       ElMessage.success('权限节点已更新')
       nodesDialog.visible = false

@@ -3186,6 +3186,11 @@ html[data-theme="dark"] .el-button--info.is-link.is-disabled {
   /* el-form: 手机端 label 居上对齐 */
   .el-form-item {
     margin-bottom: 14px !important;
+    /* 关键：label 置上需要把 form-item 由默认的 flex 横排改为纵排。
+       否则 label 被 width:100% 撑满整行后，content 会被挤成 0 宽，输入框不可见/不可用。 */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
   .el-form-item .el-form-item__label {
     float: none !important;
@@ -3434,20 +3439,52 @@ body.indicator-dragging * {
   background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05) !important;
 }
 
-/* 「操作」列（固定右侧）与信息列拉开层次：左侧分隔线 + 略深底色 */
+/* 「操作」列（固定右侧）与信息列拉开层次：左侧分隔线 + 略深底色。
+   注意：该列是 position:sticky 悬浮在可横向滚动的表体之上，底色必须不透明——
+   若用半透明色，横向滚动时下层行的文字会透过它，与操作按钮重叠。
+   故用页面底色打底，再叠一层浅色，既保证不透明、又保留“浮动强调”的层次感，
+   且随亮/暗主题自动适配。 */
 .admin-table .el-table__cell.el-table-fixed-column--right.is-first-column {
   border-left: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
-  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.02);
+  background-color: var(--bg-page);
+  background-image: linear-gradient(
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04),
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04)
+  );
 }
 
-/* 表头再深一档：需与上条同等的复合选择器（仅把元素换成 th）才不会被覆盖 */
+/* 表头再深一档：需与上条同等的复合选择器（仅把元素换成 th）才不会被 EP 自带规则覆盖；
+   同样用不透明底色打底 */
 .admin-table th.el-table__cell.el-table-fixed-column--right.is-first-column {
-  background-color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.07);
+  background-color: var(--bg-page);
+  background-image: linear-gradient(
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.09),
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.09)
+  );
+}
+
+/* 行悬浮时，通用规则会把行内 td 调成半透明，这同样会让固定操作列透出下层文字，
+   故为固定操作列单独提供不透明的高亮底色 */
+.admin-table .el-table__row:hover > td.el-table-fixed-column--right.is-first-column {
+  background-color: var(--bg-page) !important;
+  background-image: linear-gradient(
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.09),
+    rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.09)
+  ) !important;
 }
 
 /* 操作列内容水平居中（含「操作」表头文字） */
 .admin-table .el-table-fixed-column--right .cell {
   text-align: center;
+}
+
+/* 手机端：固定操作列的固定宽度（最大 340px）会超出窄屏视口，
+   将其宽度限制为 min(240px, 62vw)，既保证始终不超过视口，又给信息列留出空间；
+   按钮超出时自动换行。 */
+@media (max-width: 768px) {
+  .admin-table colgroup col:last-child {
+    width: min(240px, 62vw) !important;
+  }
 }
 
 /* 审核确认提示文案：用于 AdminPanel、SchoolDetail */

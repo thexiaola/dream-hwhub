@@ -133,8 +133,10 @@ public class EmailServiceImpl implements EmailService {
      * @param username 用户名
      * @param isModify 是否为换绑验证码
      * @param isRetrieve 是否为找回密码验证码
+     * @param isSensitive 是否为敏感操作身份验证码
      */
-    private void sendVerificationCodeInternal(String email, String username, boolean isModify, boolean isRetrieve) {
+    private void sendVerificationCodeInternal(String email, String username, boolean isModify, boolean isRetrieve,
+                                              boolean isSensitive) {
         // 检查发送频率限制
         Long remainingTime = checkSendFrequency(email);
         if (remainingTime != null && remainingTime > 0) {
@@ -153,6 +155,8 @@ public class EmailServiceImpl implements EmailService {
             compositeKey = buildRetrievePasswordKey(username, email);
         } else if (isModify) {
             compositeKey = buildModifyKey(username, email);
+        } else if (isSensitive) {
+            compositeKey = buildSensitiveOperationKey(username, email);
         } else {
             compositeKey = buildCompositeKey(username, email);
         }
@@ -167,6 +171,8 @@ public class EmailServiceImpl implements EmailService {
             mailExecutor.execute(() -> sendCodeEmailQuietly(code, () -> sendRetrievePasswordCodeEmail(email, code), email));
         } else if (isModify) {
             mailExecutor.execute(() -> sendCodeEmailQuietly(code, () -> sendModifyCodeEmail(email, code), email));
+        } else if (isSensitive) {
+            mailExecutor.execute(() -> sendCodeEmailQuietly(code, () -> sendSensitiveOperationCodeEmail(email, code), email));
         } else {
             mailExecutor.execute(() -> sendCodeEmailQuietly(code, () -> sendVerificationCodeEmail(email, code), email));
         }
@@ -195,7 +201,7 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendVerificationCode(String email, String username) {
-        sendVerificationCodeInternal(email, username, false, false);
+        sendVerificationCodeInternal(email, username, false, false, false);
     }
     
     /**
@@ -288,7 +294,7 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendModifyEmailCode(String email, String username) {
-        sendVerificationCodeInternal(email, username, true, false);
+        sendVerificationCodeInternal(email, username, true, false, false);
     }
     
     /**
@@ -310,7 +316,7 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendRetrievePasswordEmailCode(String email, String username) {
-        sendVerificationCodeInternal(email, username, false, true);
+        sendVerificationCodeInternal(email, username, false, true, false);
     }
     
     /**
@@ -319,6 +325,38 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public boolean verifyRetrievePasswordCode(String email, String code, String username) {
         return verifyCodeInternal(buildRetrievePasswordKey(username, email), code);
+    }
+
+    /**
+     * 发送「敏感操作」身份验证码
+     */
+    @Override
+    public void sendSensitiveOperationCode(String email, String username) {
+        sendVerificationCodeInternal(email, username, false, false, true);
+    }
+
+    /**
+     * 验证「敏感操作」身份验证码
+     */
+    @Override
+    public boolean verifySensitiveOperationCode(String email, String code, String username) {
+        return verifyCodeInternal(buildSensitiveOperationKey(username, email), code);
+    }
+
+    /**
+     * 构建敏感操作验证码的组合键：sensitive#username#email
+     */
+    private String buildSensitiveOperationKey(String username, String email) {
+        return "sensitive#" + username + "#" + email;
+    }
+
+    private void sendSensitiveOperationCodeEmail(String email, String code) {
+        String subject = "Dream HWHub 敏感操作身份验证码";
+        String content = String.format(
+                "您好！\n\n您正在进行一项敏感操作（如解散班级、退出学校、移出成员或管理操作），身份验证码是：%s。\n\n验证码有效期为%d分钟，请及时使用。\n\n如非本人操作，请立即修改密码并联系管理员。\n\n此邮件由系统自动发送，请勿回复。\n\nDream HWHub 团队",
+                code, expiryMinutes
+        );
+        sendEmail(email, subject, content);
     }
     
     private void sendRetrievePasswordCodeEmail(String email, String code) {

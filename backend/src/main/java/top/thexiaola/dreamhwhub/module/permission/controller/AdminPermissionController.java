@@ -14,6 +14,8 @@ import top.thexiaola.dreamhwhub.module.permission.dto.PermissionGroupSaveRequest
 import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.module.permission.vo.PermissionGroupVO;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.security.RequireSensitiveVerification;
+import top.thexiaola.dreamhwhub.support.security.SensitiveOperations;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.util.List;
@@ -81,10 +83,11 @@ public class AdminPermissionController {
     }
 
     /**
-     * 删除权限组
+     * 删除权限组（需身份二次验证）
      */
     @DeleteMapping("/groups/{groupId}")
     @RequirePermission(PermissionNodes.PERMISSION_GROUP_DELETE)
+    @RequireSensitiveVerification(value = "删除权限组", key = SensitiveOperations.PERMISSION_GROUP_DELETE)
     public ApiResponse<Void> deleteGroup(@PathVariable(value = "groupId") Integer groupId) {
         User currentUser = UserUtils.getCurrentUser();
         permissionService.deleteGroup(groupId);
@@ -93,10 +96,11 @@ public class AdminPermissionController {
     }
 
     /**
-     * 覆盖设置权限组拥有的权限节点
+     * 覆盖设置权限组拥有的权限节点（需身份二次验证）
      */
     @PutMapping("/groups/{groupId}/nodes")
     @RequirePermission(PermissionNodes.PERMISSION_GROUP_EDIT)
+    @RequireSensitiveVerification(value = "设置权限组节点", key = SensitiveOperations.PERMISSION_GROUP_SET_NODES)
     public ApiResponse<PermissionGroupVO> setGroupNodes(@PathVariable(value = "groupId") Integer groupId,
             @RequestBody AssignNodesRequest request) {
         User currentUser = UserUtils.getCurrentUser();

@@ -24,10 +24,20 @@ export interface UserInfo {
   isOp?: boolean
   /** 生效的权限节点（OP 为全部节点） */
   permissions?: string[]
+  /** 危险操作是否启用「密码验证」 */
+  verifyByPassword?: boolean
+  /** 危险操作是否启用「邮箱验证码验证」 */
+  verifyByEmailCode?: boolean
   role: 'teacher' | 'student'
   registerTime?: string
   lastLoginTime?: string
   isBanned?: boolean
+}
+
+/** 危险操作安全验证设置 */
+export interface SecurityVerificationSettings {
+  verifyByPassword: boolean
+  verifyByEmailCode: boolean
 }
 
 export interface RegisterRequest {

@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import cn.hutool.json.JSONUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,13 +12,17 @@ import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.ExamConfigDto;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PinWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.QuestionItem;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
+
+import java.util.List;
 
 /**
  * 作业管理控制器
@@ -33,9 +38,14 @@ public class WorkController {
      * 创建作业
      */
     @PostMapping(value = "", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<WorkResponse>> createWork(@Validated CreateWorkRequest request) {
+    public ResponseEntity<ApiResponse<WorkResponse>> createWork(
+            @Validated CreateWorkRequest request,
+            @RequestParam(value = "questionsJson", required = false) String questionsJson,
+            @RequestParam(value = "examConfigJson", required = false) String examConfigJson) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            request.setQuestions(parseQuestions(questionsJson));
+            request.setExamConfig(parseExamConfig(examConfigJson));
             request.validate();
 
             User currentUser = UserUtils.getCurrentUser();
@@ -59,9 +69,21 @@ public class WorkController {
     @PutMapping(value = "/{workId}", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<WorkResponse>> updateWork(
             @PathVariable(value = "workId") Integer workId,
-            @Validated UpdateWorkRequest request) {
+            @Validated UpdateWorkRequest request,
+            @RequestParam(value = "questionsJson", required = false) String questionsJson,
+            @RequestParam(value = "questionsProvided", required = false) Boolean questionsProvided,
+            @RequestParam(value = "examConfigJson", required = false) String examConfigJson,
+            @RequestParam(value = "examConfigProvided", required = false) Boolean examConfigProvided) {
         String ip = LogUtil.getCurrentClientIp();
         try {
+            // 仅当请求显式携带题目字段时才整体替换（空数组=清除题目）
+            if (Boolean.TRUE.equals(questionsProvided)) {
+                request.setQuestions(parseQuestions(questionsJson));
+            }
+            // 仅当请求显式携带考试配置时才覆盖
+            if (Boolean.TRUE.equals(examConfigProvided)) {
+                request.setExamConfig(parseExamConfig(examConfigJson));
+            }
             request.validate();
 
             request.setId(workId);
@@ -78,6 +100,41 @@ public class WorkController {
         } catch (Exception e) {
             log.error("User update work error", e);
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "请求处理失败，请稍后重试"));
+        }
+    }
+
+    /**
+     * 解析 multipart 表单携带的考试配置 JSON（可为空，表示非考试或沿用默认）
+     */
+    private ExamConfigDto parseExamConfig(String examConfigJson) {
+        if (examConfigJson == null || examConfigJson.isBlank()) {
+            return null;
+        }
+        try {
+            return JSONUtil.toBean(examConfigJson, ExamConfigDto.class);
+        } catch (Exception e) {
+            throw new BusinessException(
+                    top.thexiaola.dreamhwhub.enums.BusinessErrorCode.PARAMETER_ERROR,
+                    "考试配置数据格式不正确", null);
+        }
+    }
+
+    /**
+     * 解析 multipart 表单携带的题目 JSON 字符串为题目列表。
+     *
+     * @param questionsJson 题目 JSON（可为空，表示纯文本作业）
+     * @return 题目列表；JSON 为空白时返回空列表
+     */
+    private List<QuestionItem> parseQuestions(String questionsJson) {
+        if (questionsJson == null || questionsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return JSONUtil.toList(JSONUtil.parseArray(questionsJson), QuestionItem.class);
+        } catch (Exception e) {
+            throw new BusinessException(
+                    top.thexiaola.dreamhwhub.enums.BusinessErrorCode.PARAMETER_ERROR,
+                    "题目数据格式不正确", null);
         }
     }
 

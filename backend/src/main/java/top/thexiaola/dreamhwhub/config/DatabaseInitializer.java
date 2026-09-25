@@ -34,7 +34,7 @@ public class DatabaseInitializer {
     private final JdbcTemplate jdbcTemplate;
 
     // 需要同步的 SQL 脚本文件，新增脚本文件只需在此登记
-    private static final String[] SCHEMA_RESOURCES = {"user_schema.sql", "school_schema.sql", "class_schema.sql", "work_schema.sql", "permission_schema.sql"};
+    private static final String[] SCHEMA_RESOURCES = {"user_schema.sql", "school_schema.sql", "class_schema.sql", "work_schema.sql", "permission_schema.sql", "message_schema.sql", "friend_schema.sql"};
 
     // CREATE TABLE 语句的表名提取（兼容有无反引号、是否带 IF NOT EXISTS）
     private static final Pattern CREATE_TABLE_NAME_PATTERN = Pattern.compile(

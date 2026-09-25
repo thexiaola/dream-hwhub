@@ -80,7 +80,7 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="340" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right" align="center">
         <template #default="{ row }">
           <el-button v-if="canEdit" size="small" text @click="openEdit(row)">编辑</el-button>
           <el-button v-if="canAssign" size="small" text @click="openPermission(row)">权限</el-button>
@@ -203,6 +203,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, postForm } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
+import { confirmDangerousOperation, requireSensitiveVerification } from '@/composables/useSensitiveVerification'
 import { invalidateAvatarCache } from '@/utils/attachment'
 import UserAvatar from '@/components/UserAvatar.vue'
 import PermissionNodeTree from './PermissionNodeTree.vue'
@@ -498,16 +499,15 @@ const submitForm = async () => {
 }
 
 const removeUser = async (row: AdminUser) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除用户「${row.username}」？该操作不可恢复。`,
-      '危险操作',
-      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' }
-    )
-  } catch {
-    return
-  }
-  const result = await del(`/admin/users/${row.id}`)
+  // 删除用户属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: '删除用户',
+    message: `确认删除用户「${row.username}」？该操作不可恢复。`,
+    confirmText: '确认删除',
+    operationName: '删除用户',
+  })
+  if (!headers) return
+  const result = await del(`/admin/users/${row.id}`, undefined, undefined, headers)
   if (result.code === 200) {
     ElMessage.success('用户已删除')
     loadUsers()
@@ -518,7 +518,15 @@ const removeUser = async (row: AdminUser) => {
 
 const toggleBan = async (row: AdminUser) => {
   if (row.isBanned) {
-    const result = await put<AdminUser>(`/admin/users/${row.id}/ban`, { banned: false })
+    // 解封属高危操作：红色警示框 + 身份二次验证
+    const headers = await confirmDangerousOperation({
+      title: '解封用户',
+      message: `确认解封用户「${row.username}」？解封后该账号可重新登录。`,
+      confirmText: '确认解封',
+      operationName: '解封用户',
+    })
+    if (!headers) return
+    const result = await put<AdminUser>(`/admin/users/${row.id}/ban`, { banned: false }, undefined, headers)
     if (result.code === 200) {
       ElMessage.success('用户已解封')
       loadUsers()
@@ -528,38 +536,50 @@ const toggleBan = async (row: AdminUser) => {
     return
   }
 
+  let reason: string
   try {
     const { value } = await ElMessageBox.prompt(
       `确认封禁用户「${row.username}」？请填写封禁原因。`,
       '封禁用户',
-      { confirmButtonText: '确认封禁', cancelButtonText: '取消', inputPlaceholder: '封禁原因' }
+      {
+        confirmButtonText: '确认封禁',
+        cancelButtonText: '取消',
+        inputPlaceholder: '封禁原因',
+        // 红色警示框
+        customClass: 'danger-warning-message-box',
+        closeOnClickModal: false,
+      }
     )
-    const result = await put<AdminUser>(`/admin/users/${row.id}/ban`, { banned: true, reason: value })
-    if (result.code === 200) {
-      ElMessage.success('用户已封禁')
-      loadUsers()
-    } else {
-      ElMessage.error(result.message)
-    }
+    reason = value
   } catch {
     // 取消
+    return
+  }
+  // 封禁属高危操作，需身份二次验证
+  const headers = await requireSensitiveVerification('封禁用户')
+  if (!headers) return
+  const result = await put<AdminUser>(`/admin/users/${row.id}/ban`, { banned: true, reason }, undefined, headers)
+  if (result.code === 200) {
+    ElMessage.success('用户已封禁')
+    loadUsers()
+  } else {
+    ElMessage.error(result.message)
   }
 }
 
 const toggleOp = async (row: AdminUser) => {
   const next = !row.isOp
-  try {
-    await ElMessageBox.confirm(
-      next
-        ? `确认将「${row.username}」设为平台管理员？平台管理员拥有全部权限。`
-        : `确认取消「${row.username}」的平台管理员身份？`,
-      '提示',
-      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' }
-    )
-  } catch {
-    return
-  }
-  const result = await put<AdminUser>(`/admin/users/${row.id}/op`, { isOp: next })
+  // 变更平台管理员身份属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: next ? '设为平台管理员' : '取消平台管理员',
+    message: next
+      ? `确认将「${row.username}」设为平台管理员？平台管理员拥有全部权限。`
+      : `确认取消「${row.username}」的平台管理员身份？`,
+    confirmText: '确认',
+    operationName: next ? '设为平台管理员' : '取消平台管理员',
+  })
+  if (!headers) return
+  const result = await put<AdminUser>(`/admin/users/${row.id}/op`, { isOp: next }, undefined, headers)
   if (result.code === 200) {
     ElMessage.success(next ? '已设为平台管理员' : '已取消平台管理员身份')
     loadUsers()
@@ -597,18 +617,26 @@ const openPermission = async (row: AdminUser) => {
 }
 
 const submitPermission = async () => {
+  // 分配权限组/节点属高危操作：红色警示框 + 身份二次验证（同一次验证头复用于两次请求）
+  const headers = await confirmDangerousOperation({
+    title: '分配权限',
+    message: `确认为「${permDialog.username}」更新权限组与授权节点？权限变更立即生效，请确认无误。`,
+    confirmText: '确认更新',
+    operationName: '分配权限',
+  })
+  if (!headers) return
   permDialog.submitting = true
   try {
     const groupsResult = await put(`/admin/users/${permDialog.userId}/groups`, {
       groupIds: permDialog.groupIds
-    })
+    }, undefined, headers)
     if (groupsResult.code !== 200) {
       ElMessage.error(groupsResult.message)
       return
     }
     const nodesResult = await put(`/admin/users/${permDialog.userId}/nodes`, {
       nodes: permDialog.directNodes
-    })
+    }, undefined, headers)
     if (nodesResult.code !== 200) {
       ElMessage.error(nodesResult.message)
       return
@@ -762,5 +790,46 @@ defineExpose({ reload: loadUsers })
 /* 隐藏原生文件输入，由按钮触发选择 */
 .avatar-input {
   display: none;
+}
+
+@media (max-width: 768px) {
+  /* 条件行压缩固定宽度，输入框独占一行，避免桌面端的列宽在窄屏上溢出 */
+  .condition-row {
+    gap: 8px;
+  }
+
+  .connector-group,
+  .condition-placeholder {
+    flex: 0 0 96px;
+    width: 96px;
+  }
+
+  .field-select {
+    flex: 1 1 96px;
+    width: auto;
+    min-width: 0;
+  }
+
+  .match-select {
+    flex: 0 0 88px;
+    width: 88px;
+  }
+
+  .value-input {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  /* 操作按钮与条件行左对齐铺满，不再按桌面端缩进 */
+  .condition-actions {
+    padding-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .condition-actions .el-button {
+    flex: 1 1 auto;
+    min-width: max-content;
+    margin-left: 0;
+  }
 }
 </style>

@@ -12,18 +12,25 @@ import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.message.service.SiteMessageService;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
+import top.thexiaola.dreamhwhub.module.work_management.constant.WorkType;
 import top.thexiaola.dreamhwhub.module.work_management.dto.CreateWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.ExamConfigDto;
 import top.thexiaola.dreamhwhub.module.work_management.dto.UpdateWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAttachmentMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ExamSessionMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ExamViolationMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
+import top.thexiaola.dreamhwhub.module.work_management.service.WorkQuestionService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkService;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkQuestionVO;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkResponse;
 import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
@@ -51,11 +58,15 @@ public class WorkServiceImpl implements WorkService {
     private final WorkAttachmentMapper workAttachmentMapper;
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
+    private final ExamSessionMapper examSessionMapper;
+    private final ExamViolationMapper examViolationMapper;
     private final ClassService classService;
     private final UserMapper userMapper;
     private final UserLookupSupport userLookup;
     private final ClassInfoMapper classInfoMapper;
     private final SchoolService schoolService;
+    private final SiteMessageService siteMessageService;
+    private final WorkQuestionService workQuestionService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -81,13 +92,37 @@ public class WorkServiceImpl implements WorkService {
         workInfo.setCreateTime(LocalDateTime.now());
         workInfo.setUpdateTime(LocalDateTime.now());
 
+        // 类型与考试配置（作业默认 homework，不带反作弊）
+        applyWorkTypeAndExamConfig(workInfo, request.getWorkType(), request.getExamConfig());
+
         workMapper.insert(workInfo);
-        
+
+        // 保存结构化题目（可选）：含题目时标记 hasQuestions，学生将逐题作答、客观题自动评判
+        boolean hasQuestions = request.getQuestions() != null && !request.getQuestions().isEmpty();
+        if (hasQuestions) {
+            workQuestionService.replaceQuestions(workInfo.getId(), request.getQuestions());
+            workInfo.setHasQuestions(true);
+            workMapper.updateById(workInfo);
+        }
+
         // 保存附件（直接上传的文件）
         if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
             saveWorkAttachmentsDirectly(currentUser.getId(), workInfo.getId(), request.getAttachments());
         }
-        
+
+        // 向该班学生发站内信（按班级所属学校隔离）；通知失败不影响作业发布本身
+        try {
+            ClassInfo classInfo = classInfoMapper.selectById(workInfo.getClassId());
+            siteMessageService.notifyWorkPublished(
+                    workInfo.getClassId(),
+                    classInfo != null ? classInfo.getClassName() : null,
+                    workInfo.getId(),
+                    workInfo.getTitle(),
+                    currentUser.getId());
+        } catch (Exception e) {
+            log.warn("Failed to notify work published for work {}: {}", workInfo.getId(), e.getMessage());
+        }
+
         // 转换为WorkResponse
         return convertToWorkResponse(workInfo);
     }
@@ -142,6 +177,17 @@ public class WorkServiceImpl implements WorkService {
             workInfo.setPublishTime(request.getPublishTime());
         }
         workInfo.setUpdateTime(LocalDateTime.now());
+
+        // 类型与考试配置（仅当请求显式携带时更新）
+        if (request.getWorkType() != null || request.getExamConfig() != null) {
+            applyWorkTypeAndExamConfig(workInfo, request.getWorkType(), request.getExamConfig());
+        }
+
+        // 题目整体替换（仅当请求显式携带 questions 字段时）：空数组表示清除题目
+        if (request.getQuestions() != null) {
+            workQuestionService.replaceQuestions(workInfo.getId(), request.getQuestions());
+            workInfo.setHasQuestions(!request.getQuestions().isEmpty());
+        }
 
         workMapper.updateById(workInfo);
         
@@ -202,7 +248,12 @@ public class WorkServiceImpl implements WorkService {
         workInfo.setAttachments(getWorkAttachments(workId));
 
         // 转换为WorkResponse
-        return convertToWorkResponse(workInfo);
+        WorkResponse response = convertToWorkResponse(workInfo);
+        // 教师侧详情：填充题目明细（含参考答案），便于编辑与评阅
+        if (classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            fillQuestions(response, workId);
+        }
+        return response;
     }
 
     @Override
@@ -356,19 +407,22 @@ public class WorkServiceImpl implements WorkService {
         // 批量查询已交人数（每个作业按去重的提交人统计，排除软删除）
         final Map<Integer, Integer> submittedCountMap;
         if (!workIds.isEmpty()) {
+            // 已交人数在数据库内聚合：GROUP BY work_id + COUNT(DISTINCT submitter_id)，
+            // 避免取回全部提交行再在内存里分组去重计数
             QueryWrapper<WorkSubmission> submitCntQuery = new QueryWrapper<>();
             submitCntQuery.in("work_id", workIds)
                          .eq("is_deleted", false)
-                         .select("work_id", "submitter_id");
-            List<WorkSubmission> submittedRows = workSubmissionMapper.selectList(submitCntQuery);
-            submittedCountMap = submittedRows.stream()
-                    .collect(Collectors.groupingBy(
-                        WorkSubmission::getWorkId,
-                        Collectors.collectingAndThen(
-                            Collectors.mapping(WorkSubmission::getSubmitterId, Collectors.toSet()),
-                            Set::size
-                        )
-                    ));
+                         .select("work_id", "COUNT(DISTINCT submitter_id) AS cnt")
+                         .groupBy("work_id");
+            List<Map<String, Object>> submittedRows = workSubmissionMapper.selectMaps(submitCntQuery);
+            submittedCountMap = new HashMap<>();
+            for (Map<String, Object> row : submittedRows) {
+                Object workId = row.get("work_id");
+                Object cnt = row.get("cnt");
+                if (workId instanceof Number id && cnt instanceof Number count) {
+                    submittedCountMap.put(id.intValue(), count.intValue());
+                }
+            }
         } else {
             submittedCountMap = new HashMap<>();
         }
@@ -557,11 +611,62 @@ public class WorkServiceImpl implements WorkService {
         response.setIsPinned(workInfo.getIsPinned());
         response.setCreateTime(workInfo.getCreateTime());
         response.setUpdateTime(workInfo.getUpdateTime());
-        
+        // 列表/详情都带上「是否含题目」标记；题目明细在需要时单独填充，避免列表 N+1
+        response.setHasQuestions(Boolean.TRUE.equals(workInfo.getHasQuestions()));
+
+        // 类型与考试配置
+        response.setWorkType(workInfo.getWorkType() == null ? WorkType.HOMEWORK : workInfo.getWorkType());
+        response.setExamDurationMinutes(workInfo.getExamDurationMinutes());
+        response.setAntiCheatEnabled(Boolean.TRUE.equals(workInfo.getAntiCheatEnabled()));
+        response.setAntiCheatFont(Boolean.TRUE.equals(workInfo.getAntiCheatFont()));
+        response.setAntiCheatFullscreen(Boolean.TRUE.equals(workInfo.getAntiCheatFullscreen()));
+        response.setAntiCheatNoCopy(Boolean.TRUE.equals(workInfo.getAntiCheatNoCopy()));
+        response.setAntiCheatDetectLeave(Boolean.TRUE.equals(workInfo.getAntiCheatDetectLeave()));
+        response.setAntiCheatMaxViolations(workInfo.getAntiCheatMaxViolations());
+        response.setShuffleQuestions(Boolean.TRUE.equals(workInfo.getShuffleQuestions()));
+
         // 填充附件列表
         response.setAttachments(getWorkAttachments(workInfo.getId()));
-        
+
         return response;
+    }
+
+    /**
+     * 应用「类型 + 考试配置」到实体。
+     * <p>
+     * workType 为空时保持原值（默认 homework）；examConfig 为 null 时不改动反作弊字段。
+     * 关闭反作弊时，所有反作弊子项一律置 false，避免残留脏配置。
+     *
+     * @param workInfo   目标作业/考试实体
+     * @param workType   类型（可空）
+     * @param examConfig 考试配置（可空）
+     */
+    private void applyWorkTypeAndExamConfig(WorkInfo workInfo, String workType, ExamConfigDto examConfig) {
+        if (workType != null) {
+            workInfo.setWorkType(WorkType.isValid(workType) ? workType : WorkType.HOMEWORK);
+        } else if (workInfo.getWorkType() == null) {
+            workInfo.setWorkType(WorkType.HOMEWORK);
+        }
+
+        if (examConfig == null) {
+            return;
+        }
+        workInfo.setExamDurationMinutes(examConfig.getDurationMinutes());
+        boolean enabled = Boolean.TRUE.equals(examConfig.getEnabled());
+        workInfo.setAntiCheatEnabled(enabled);
+        workInfo.setAntiCheatFont(enabled && Boolean.TRUE.equals(examConfig.getFontScramble()));
+        workInfo.setAntiCheatFullscreen(enabled && Boolean.TRUE.equals(examConfig.getForceFullscreen()));
+        workInfo.setAntiCheatNoCopy(enabled && Boolean.TRUE.equals(examConfig.getNoCopy()));
+        workInfo.setAntiCheatDetectLeave(enabled && Boolean.TRUE.equals(examConfig.getDetectLeave()));
+        workInfo.setAntiCheatMaxViolations(enabled ? examConfig.getMaxViolations() : null);
+        workInfo.setShuffleQuestions(Boolean.TRUE.equals(examConfig.getShuffleQuestions()));
+    }
+
+    /**
+     * 为教师侧响应填充题目明细（含参考答案）
+     */
+    private void fillQuestions(WorkResponse response, Integer workId) {
+        response.setQuestions(workQuestionService.listForTeacher(workId));
     }
     
     /**
@@ -602,6 +707,9 @@ public class WorkServiceImpl implements WorkService {
             throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED, "无法创建上传目录", null);
         }
 
+        // 文件需逐个落盘（IO 无法合并），但数据库记录收集后一次性批量插入，避免逐条 insert
+        List<WorkAttachment> pending = new ArrayList<>();
+
         for (MultipartFile file : validFiles) {
             Path savedFilePath = null;
             try {
@@ -628,7 +736,7 @@ public class WorkServiceImpl implements WorkService {
                 // 注：落盘前的大小/扩展名已在前面检查过，这里是深度校验
                 FileUploadValidator.performFullSecurityCheck(savedFilePath.toString(), fileSize);
 
-                // 6. 全部校验通过后，才持久化到数据库
+                // 6. 全部校验通过后，暂存待插入的数据库记录（稍后批量插入）
                 WorkAttachment attachment = new WorkAttachment();
                 attachment.setWorkId(workId);
                 attachment.setFileName(originalFilename);
@@ -636,8 +744,7 @@ public class WorkServiceImpl implements WorkService {
                 attachment.setFileSize(fileSize);
                 attachment.setFileType(fileType);
                 attachment.setUploadTime(LocalDateTime.now());
-                workAttachmentMapper.insert(attachment);
-
+                pending.add(attachment);
 
             } catch (BusinessException e) {
                 // 任意校验失败：如果文件已经落盘，立刻物理删除后再抛异常
@@ -666,6 +773,11 @@ public class WorkServiceImpl implements WorkService {
                 throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED,
                         "文件上传失败，请稍后重试", null);
             }
+        }
+
+        // 7. 一次批量插入全部附件记录
+        if (!pending.isEmpty()) {
+            workAttachmentMapper.insert(pending);
         }
     }
     
@@ -697,25 +809,30 @@ public class WorkServiceImpl implements WorkService {
      * @param newAttachments 新增的附件文件列表
      */
     private void handleAttachmentUpdates(Integer workId, List<Integer> removedAttachmentIds, List<MultipartFile> newAttachments) {
-        // 1. 删除指定的附件
+        // 1. 删除指定的附件：一次查询取出这些附件，避免逐个 selectById
         if (CollUtil.isNotEmpty(removedAttachmentIds)) {
-            for (Integer attachmentId : removedAttachmentIds) {
-                WorkAttachment attachment = workAttachmentMapper.selectById(attachmentId);
-                if (attachment != null && attachment.getWorkId().equals(workId)) {
-                    // 物理删除文件；删除失败时抛出异常，回滚数据库记录删除，保证磁盘与数据库一致
-                    Path filePath = Paths.get(attachment.getFilePath());
-                    if (Files.exists(filePath)) {
-                        try {
-                            Files.delete(filePath);
-                        } catch (Exception e) {
-                            log.error("Failed to delete attachment file: {}", attachment.getFilePath(), e);
-                            throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED,
-                                    "附件文件删除失败：" + attachment.getFilePath(), null);
-                        }
+            QueryWrapper<WorkAttachment> removedQuery = new QueryWrapper<>();
+            removedQuery.in("id", removedAttachmentIds).eq("work_id", workId);
+            List<WorkAttachment> removed = workAttachmentMapper.selectList(removedQuery);
+
+            for (WorkAttachment attachment : removed) {
+                // 物理删除文件；删除失败时抛出异常，回滚数据库记录删除，保证磁盘与数据库一致
+                Path filePath = Paths.get(attachment.getFilePath());
+                if (Files.exists(filePath)) {
+                    try {
+                        Files.delete(filePath);
+                    } catch (Exception e) {
+                        log.error("Failed to delete attachment file: {}", attachment.getFilePath(), e);
+                        throw new BusinessException(BusinessErrorCode.FILE_UPLOAD_FAILED,
+                                "附件文件删除失败：" + attachment.getFilePath(), null);
                     }
-                    // 删除数据库记录
-                    workAttachmentMapper.deleteById(attachmentId);
                 }
+            }
+            // 一次 SQL 删除这些数据库记录
+            if (!removed.isEmpty()) {
+                QueryWrapper<WorkAttachment> deleteQuery = new QueryWrapper<>();
+                deleteQuery.in("id", removed.stream().map(WorkAttachment::getId).toList());
+                workAttachmentMapper.delete(deleteQuery);
             }
         }
         
@@ -733,31 +850,32 @@ public class WorkServiceImpl implements WorkService {
      * @param workId 作业ID
      */
     private void cascadeDeleteWork(Integer workId) {
-        // 1. 查询该作业的所有提交记录
+        // 1. 查询该作业下未删除的提交记录（仅取主键）
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
         submissionQuery.eq("work_id", workId)
-                      .eq("is_deleted", false);
-        List<WorkSubmission> submissions = workSubmissionMapper.selectList(submissionQuery);
-        
-        // 2. 软删除每个提交的附件记录
-        for (WorkSubmission submission : submissions) {
+                      .eq("is_deleted", false)
+                      .select("id");
+        List<Integer> submissionIds = workSubmissionMapper.selectList(submissionQuery).stream()
+                .map(WorkSubmission::getId)
+                .toList();
+
+        if (!submissionIds.isEmpty()) {
+            // 2. 一次 SQL 软删除这些提交的全部附件（不再逐条 updateById）
             QueryWrapper<WorkSubmissionAttachment> attQuery = new QueryWrapper<>();
-            attQuery.eq("submission_id", submission.getId())
-                   .eq("is_deleted", false);
-            List<WorkSubmissionAttachment> attachments = workSubmissionAttachmentMapper.selectList(attQuery);
-            
-            // 软删除附件记录
-            for (WorkSubmissionAttachment attachment : attachments) {
-                attachment.setIsDeleted(true);
-                workSubmissionAttachmentMapper.updateById(attachment);
-            }
-            
-            // 软删除提交记录
-            submission.setIsDeleted(true);
-            workSubmissionMapper.updateById(submission);
+            attQuery.in("submission_id", submissionIds).eq("is_deleted", false);
+            WorkSubmissionAttachment attachmentUpdate = new WorkSubmissionAttachment();
+            attachmentUpdate.setIsDeleted(true);
+            workSubmissionAttachmentMapper.update(attachmentUpdate, attQuery);
+
+            // 3. 一次 SQL 软删除这些提交记录
+            QueryWrapper<WorkSubmission> submissionUpdateQuery = new QueryWrapper<>();
+            submissionUpdateQuery.in("id", submissionIds);
+            WorkSubmission submissionUpdate = new WorkSubmission();
+            submissionUpdate.setIsDeleted(true);
+            workSubmissionMapper.update(submissionUpdate, submissionUpdateQuery);
         }
         
-        // 3. 软删除作业本身的附件记录
+        // 4. 删除作业本身的附件：先物理删文件，再删记录
         QueryWrapper<WorkAttachment> workAttQuery = new QueryWrapper<>();
         workAttQuery.eq("work_id", workId);
         List<WorkAttachment> workAttachments = workAttachmentMapper.selectList(workAttQuery);
@@ -774,7 +892,11 @@ public class WorkServiceImpl implements WorkService {
         }
         workAttachmentMapper.delete(workAttQuery);
         
-        // 4. 最后删除作业本身
+        // 5. 清理考试会话与违规记录（考试才有；非考试时无记录，为无害的空删除）
+        examViolationMapper.delete(new QueryWrapper<ExamViolation>().eq("work_id", workId));
+        examSessionMapper.delete(new QueryWrapper<ExamSession>().eq("work_id", workId));
+
+        // 6. 最后删除作业/考试本身
         workMapper.deleteById(workId);
     }
 

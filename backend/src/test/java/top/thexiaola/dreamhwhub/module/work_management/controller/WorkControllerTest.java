@@ -67,7 +67,18 @@ class WorkControllerTest {
                 workInfo.getCreateTime(),
                 workInfo.getUpdateTime(),
                 null, // attachments - 简化处理
-                0 // submittedCount - 简化处理
+                0, // submittedCount - 简化处理
+                false, // hasQuestions - 简化处理
+                "homework", // workType - 简化处理
+                null, // examDurationMinutes - 简化处理
+                false, // antiCheatEnabled - 简化处理
+                false, // antiCheatFont - 简化处理
+                false, // antiCheatFullscreen - 简化处理
+                false, // antiCheatNoCopy - 简化处理
+                false, // antiCheatDetectLeave - 简化处理
+                null, // antiCheatMaxViolations - 简化处理
+                false, // shuffleQuestions - 简化处理
+                null // questions - 简化处理
         );
     }
 

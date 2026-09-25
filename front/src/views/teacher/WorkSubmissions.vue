@@ -119,6 +119,47 @@
               <p class="content-text">{{ sub.submissionContent }}</p>
             </div>
 
+            <div class="submission-answers" v-if="sub.answers && sub.answers.length > 0">
+              <div class="content-label">
+                <ListChecks :size="14" />
+                <span>逐题作答 ({{ sub.answers.length }})</span>
+              </div>
+              <div
+                v-for="(a, ai) in sub.answers"
+                :key="a.questionId"
+                class="answer-detail-item"
+                :class="a.isCorrect === true ? 'is-correct' : a.isCorrect === false ? 'is-wrong' : ''"
+              >
+                <div class="ad-head">
+                  <span class="ad-no">第 {{ ai + 1 }} 题</span>
+                  <span class="ad-type">{{ a.questionTypeName || typeLabel(a.questionType) }}</span>
+                  <span class="ad-score">
+                    <template v-if="a.score !== null && a.score !== undefined">
+                      {{ a.score }} / {{ a.fullScore }} 分
+                    </template>
+                    <template v-else>未评分（满分 {{ a.fullScore }}）</template>
+                  </span>
+                  <span v-if="a.gradingType === 'auto'" class="ad-mode auto">自动</span>
+                  <span v-else-if="a.gradingType === 'manual'" class="ad-mode manual">手动</span>
+                  <span v-if="a.isCorrect === true" class="ad-flag correct">正确</span>
+                  <span v-else-if="a.isCorrect === false" class="ad-flag wrong">错误</span>
+                </div>
+                <p class="ad-content">{{ a.content }}</p>
+                <div class="ad-line">
+                  <span class="ad-label">学生作答：</span>
+                  <span class="ad-value">{{ formatAnswer(a.answer, a.questionType) || '未作答' }}</span>
+                </div>
+                <div class="ad-line" v-if="a.correctAnswer !== null && a.correctAnswer !== undefined && a.correctAnswer !== ''">
+                  <span class="ad-label">参考答案：</span>
+                  <span class="ad-value correct-text">{{ formatAnswer(a.correctAnswer, a.questionType) }}</span>
+                </div>
+                <div class="ad-line" v-if="a.comment">
+                  <span class="ad-label">本题评语：</span>
+                  <span class="ad-value">{{ a.comment }}</span>
+                </div>
+              </div>
+            </div>
+
             <div class="submission-attachments" v-if="sub.attachments && sub.attachments.length > 0">
               <div class="content-label">
                 <Paperclip :size="14" />
@@ -159,6 +200,17 @@
             <div class="submission-footer">
               <Clock :size="12" />
               <span>提交时间：{{ formatDate(sub.createTime) }}</span>
+              <el-button
+                v-if="sub.hasQuestions"
+                type="success"
+                size="small"
+                plain
+                class="grade-btn"
+                @click="openAnswersDialog(sub)"
+              >
+                <ListChecks :size="14" />
+                逐题评分
+              </el-button>
               <el-button
                 type="primary"
                 size="small"
@@ -203,6 +255,27 @@
         <div v-if="!unsubmittedLoading && unsubmittedStudents.length === 0" class="empty-state">
           <CheckCircle :size="32" />
           <p>全部已提交</p>
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane v-if="isExam" label="反作弊" name="violations">
+        <div class="violation-list" v-loading="violationLoading">
+          <div v-for="v in violations" :key="v.id" class="violation-item">
+            <div class="violation-student">
+              <div class="student-avatar small">
+                <User :size="14" />
+              </div>
+              <span class="v-name">{{ v.studentRealName || v.studentName || '—' }}</span>
+              <span class="v-no">{{ v.studentNo || '未填写学号' }}</span>
+            </div>
+            <span class="violation-type">{{ v.typeName }}</span>
+            <span class="violation-detail">{{ v.detail || '—' }}</span>
+            <span class="violation-time">{{ formatDate(v.occurTime) }}</span>
+          </div>
+        </div>
+        <div v-if="!violationLoading && violations.length === 0" class="empty-state">
+          <CheckCircle :size="32" />
+          <p>暂无违规记录</p>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -251,17 +324,79 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 逐题评分（主观题/附加题手动评分；也可对客观题改判） -->
+    <el-dialog
+      v-model="answersDialogVisible"
+      title="逐题评分"
+      width="720px"
+      top="6vh"
+      class="dark-dialog"
+      :close-on-click-modal="false"
+    >
+      <div v-if="gradingSubmission" class="answers-grade-wrap">
+        <p class="grade-student">
+          {{ gradingSubmission.submitterName }}（{{ gradingSubmission.submitterStudentNo || "未填写学号" }}）的提交
+        </p>
+        <div
+          v-for="(a, ai) in gradingSubmission.answers || []"
+          :key="a.questionId"
+          class="grade-answer-item"
+        >
+          <div class="ga-head">
+            <span class="ga-no">第 {{ ai + 1 }} 题</span>
+            <span class="ga-type">{{ a.questionTypeName || typeLabel(a.questionType) }}</span>
+            <span class="ga-full">满分 {{ a.fullScore }}</span>
+            <span v-if="a.isCorrect === true" class="ga-flag correct">正确</span>
+            <span v-else-if="a.isCorrect === false" class="ga-flag wrong">错误</span>
+          </div>
+          <p class="ga-content">{{ a.content }}</p>
+          <div class="ga-line">
+            <span class="ga-label">学生作答：</span>
+            <span class="ga-value">{{ formatAnswer(a.answer, a.questionType) || "未作答" }}</span>
+          </div>
+          <div class="ga-line" v-if="a.correctAnswer !== null && a.correctAnswer !== undefined && a.correctAnswer !== ''">
+            <span class="ga-label">参考答案：</span>
+            <span class="ga-value correct-text">{{ formatAnswer(a.correctAnswer, a.questionType) }}</span>
+          </div>
+          <div class="ga-inputs">
+            <el-input-number
+              v-model="answersGradeForm[a.questionId].score"
+              :min="0"
+              :max="a.fullScore ?? 0"
+              :precision="1"
+              size="small"
+              controls-position="right"
+              class="ga-score-input"
+            />
+            <el-input
+              v-model="answersGradeForm[a.questionId].comment"
+              size="small"
+              maxlength="256"
+              placeholder="本题评语（选填）"
+              class="ga-comment-input"
+            />
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="answersDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="gradingAnswers" @click="submitAnswersGrade">确认评分</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { get, put } from "@/utils/http";
 import instance from "@/utils/http";
 import { openAttachmentPreview } from "@/utils/attachment";
 import { formatDateTime, formatFileSize } from "@/utils/format";
 import { ElMessage } from "element-plus";
+import type { ExamViolationVO, WorkAnswerVO } from "@/types/work";
+import { QUESTION_TYPE_LABEL } from "@/types/work";
 import {
   ArrowLeft,
   FileText,
@@ -275,6 +410,7 @@ import {
   MessageSquare,
   CheckCircle,
   Download,
+  ListChecks,
 } from "@lucide/vue";
 
 interface WorkInfo {
@@ -283,6 +419,7 @@ interface WorkInfo {
   description: string;
   deadline: string;
   totalScore: number;
+  workType?: 'homework' | 'exam';
   attachments?: AttachmentInfo[];
 }
 
@@ -311,6 +448,8 @@ interface SubmissionInfo {
   graderName: string | null;
   status: number;
   isLate: boolean;
+  hasQuestions?: boolean;
+  answers?: WorkAnswerVO[];
   createTime: string;
   attachments: AttachmentInfo[];
 }
@@ -339,6 +478,29 @@ const pageSize = 10;
 const total = ref(0);
 const submittedCount = ref(0);
 const unsubmittedCount = ref(0);
+
+/** 是否为考试 */
+const isExam = computed(() => work.value?.workType === 'exam');
+/** 违规审计 */
+const violations = ref<ExamViolationVO[]>([]);
+const violationLoading = ref(false);
+const violationLoaded = ref(false);
+
+const loadViolations = async () => {
+  const workId = route.params.id;
+  violationLoading.value = true;
+  try {
+    const result = await get<ExamViolationVO[]>(`/exams/${workId}/violations`);
+    if (result.code === 200 && result.data) {
+      violations.value = result.data;
+      violationLoaded.value = true;
+    }
+  } catch {
+    ElMessage.error('加载违规记录失败');
+  } finally {
+    violationLoading.value = false;
+  }
+};
 
 const goBack = () => {
   if (workClassId.value) {
@@ -406,6 +568,9 @@ const handleTabChange = (tab: string) => {
   if (tab === "unsubmitted" && unsubmittedStudents.value.length === 0) {
     loadUnsubmitted();
   }
+  if (tab === "violations" && !violationLoaded.value) {
+    loadViolations();
+  }
 };
 
 const gradeDialogVisible = ref(false);
@@ -448,6 +613,71 @@ const submitGrade = async () => {
     loadSubmissions();
   } else {
     ElMessage.error(result.message || "批改失败");
+  }
+};
+
+// ===== 逐题评分 =====
+const answersDialogVisible = ref(false);
+const gradingAnswers = ref(false);
+/** questionId -> { score, comment } */
+const answersGradeForm = ref<Record<number, { score: number; comment: string }>>({});
+
+const typeLabel = (t: string) => QUESTION_TYPE_LABEL[t as keyof typeof QUESTION_TYPE_LABEL] || t;
+
+/** 展示答案文本（多选数组用「、」连接，判断题归一为中文） */
+const formatAnswer = (val: unknown, type: string): string => {
+  if (val === null || val === undefined || val === "") return "";
+  if (type === "judge") {
+    const s = String(val).toLowerCase();
+    if (s === "true" || s === "1" || s === "对") return "正确";
+    if (s === "false" || s === "0" || s === "错") return "错误";
+    return String(val);
+  }
+  if (Array.isArray(val)) return val.map(String).join("、");
+  return String(val);
+};
+
+const openAnswersDialog = async (sub: SubmissionInfo) => {
+  // 详情接口才返回逐题作答明细，先按需拉取
+  const result = await get<SubmissionInfo>(`/submissions/${sub.id}`);
+  if (result.code !== 200 || !result.data) {
+    ElMessage.error(result.message || "加载提交详情失败");
+    return;
+  }
+  gradingSubmission.value = result.data;
+  const detail = result.data;
+  const form: Record<number, { score: number; comment: string }> = {};
+  for (const a of detail.answers || []) {
+    form[a.questionId] = {
+      score: a.score ?? 0,
+      comment: a.comment ?? "",
+    };
+  }
+  answersGradeForm.value = form;
+  answersDialogVisible.value = true;
+};
+
+const submitAnswersGrade = async () => {
+  if (!gradingSubmission.value) return;
+  const answers = gradingSubmission.value.answers || [];
+  const items = answers.map((a) => ({
+    questionId: a.questionId,
+    score: answersGradeForm.value[a.questionId]?.score ?? 0,
+    comment: answersGradeForm.value[a.questionId]?.comment?.trim() || undefined,
+  }));
+  gradingAnswers.value = true;
+  const result = await put("/submissions/grade-answers", {
+    submissionId: gradingSubmission.value.id,
+    items,
+  });
+  gradingAnswers.value = false;
+  if (result.code === 200) {
+    ElMessage.success("逐题评分已保存");
+    answersDialogVisible.value = false;
+    gradingSubmission.value = null;
+    loadSubmissions();
+  } else {
+    ElMessage.error(result.message || "评分失败");
   }
 };
 
@@ -755,6 +985,164 @@ onMounted(async () => {
   border: 1px solid rgba(102, 126, 234, 0.15);
 }
 
+/* ===== 逐题作答明细（教师侧） ===== */
+.submission-answers {
+  margin-top: 12px;
+}
+
+.answer-detail-item {
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
+  border-left: 3px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.answer-detail-item.is-correct {
+  border-left-color: #22c55e;
+}
+
+.answer-detail-item.is-wrong {
+  border-left-color: #ef4444;
+}
+
+.ad-head,
+.ga-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ad-no,
+.ga-no {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.ad-type,
+.ga-type {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(102, 126, 234, 0.14);
+  color: #667eea;
+}
+
+.ad-score,
+.ga-full {
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.75);
+  font-weight: 500;
+}
+
+.ad-mode {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.ad-mode.auto {
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+}
+
+.ad-mode.manual {
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+}
+
+.ad-flag,
+.ga-flag {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.ad-flag.correct,
+.ga-flag.correct {
+  background: rgba(34, 197, 94, 0.16);
+  color: #22c55e;
+}
+
+.ad-flag.wrong,
+.ga-flag.wrong {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ef4444;
+}
+
+.ad-content,
+.ga-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.ad-line,
+.ga-line {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ad-label,
+.ga-label {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.ad-value,
+.ga-value {
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
+  word-break: break-word;
+}
+
+.correct-text {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+/* ===== 逐题评分弹窗 ===== */
+.answers-grade-wrap {
+  max-height: 66vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.grade-answer-item {
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ga-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ga-score-input {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.ga-comment-input {
+  flex: 1;
+  min-width: 0;
+}
+
 .grade-row {
   display: flex;
   align-items: flex-start;
@@ -861,6 +1249,70 @@ onMounted(async () => {
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.65);
 }
 
+/* ===== 反作弊违规审计 ===== */
+.violation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.violation-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
+  border-left: 3px solid #ef4444;
+  border-radius: 8px;
+}
+
+.violation-student {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.student-avatar.small {
+  width: 26px;
+  height: 26px;
+}
+
+.v-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.92);
+}
+
+.v-no {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.violation-type {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  white-space: nowrap;
+}
+
+.violation-detail {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.7);
+}
+
+.violation-time {
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+  white-space: nowrap;
+}
+
 /* ================================================
    el-tabs 深色主题适配
    ================================================ */
@@ -929,5 +1381,46 @@ onMounted(async () => {
 /* loading 深色 */
 .submissions-page :deep(.el-loading-spinner .circular) {
   stroke: #667eea !important;
+}
+
+@media (max-width: 768px) {
+  /* 页头纵向堆叠：标题独占一行，操作区另起一行平铺 */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .header-left h2 {
+    font-size: 20px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-right .el-button {
+    flex: 1 1 auto;
+    min-width: max-content;
+    margin-left: 0;
+  }
+
+  /* 学生信息与提交状态在窄屏下换行，状态标签不再挤压姓名区 */
+  .submission-header {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .submission-item {
+    padding: 14px 14px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 }
 </style>

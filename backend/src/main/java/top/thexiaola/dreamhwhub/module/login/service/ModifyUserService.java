@@ -4,6 +4,8 @@ import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.SecurityVerificationSettings;
+import top.thexiaola.dreamhwhub.module.login.dto.UpdateSecurityVerificationRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -73,4 +75,23 @@ public interface ModifyUserService {
      * @return 用户对象
      */
     User retrievePassword(RetrievePasswordModifyRequest retrievePasswordModifyRequest);
+
+    /**
+     * 查询当前用户的危险操作安全验证设置
+     *
+     * @return 设置（两个开关）
+     */
+    SecurityVerificationSettings getSecurityVerificationSettings();
+
+    /**
+     * 更新当前用户的危险操作安全验证设置。
+     * <p>
+     * 变更本身属于高危操作：**每个被改动的开关都必须用该方式自身的凭据验证身份**——
+     * 改动了密码验证 → 校验登录密码；改动了邮箱验证码验证 → 校验邮箱验证码；两者都改动则两者都校验。
+     * 未改动的方式无需凭据。
+     *
+     * @param request 新设置 + 对应凭据
+     * @return 更新后的设置
+     */
+    SecurityVerificationSettings updateSecurityVerificationSettings(UpdateSecurityVerificationRequest request);
 }

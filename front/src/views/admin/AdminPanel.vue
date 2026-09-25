@@ -291,6 +291,7 @@
         <el-table
           :data="schoolJoinApplications"
           v-loading="schoolJoinLoading"
+          class="admin-table"
           style="width: 100%"
           @selection-change="handleSchoolAppSelection"
         >
@@ -320,7 +321,7 @@
           <el-table-column label="审核意见" min-width="140">
             <template #default="{ row }">{{ row.reviewComment || '-' }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="150" fixed="right">
+          <el-table-column label="操作" width="150" fixed="right" align="center">
             <template #default="{ row }">
               <template v-if="row.status === 0 && canUpdateSchool">
                 <el-button
@@ -399,6 +400,11 @@
       <el-tab-pane v-if="canViewSchools" label="学校管理" name="schools" lazy>
         <SchoolManage ref="schoolManageRef" />
       </el-tab-pane>
+
+      <!-- 私信策略（全站默认，仅平台管理员） -->
+      <el-tab-pane v-if="isOp" label="私信策略" name="policy" lazy>
+        <MessagePolicyManage ref="messagePolicyRef" />
+      </el-tab-pane>
       </el-tabs>
     </div>
 
@@ -464,48 +470,6 @@
         </el-button>
       </template>
     </el-dialog>
-
-    <!-- ========== 危险操作 Step2：密码校验 ========== -->
-    <el-dialog
-      v-model="showDangerPasswordDialog"
-      title="最终确认"
-      width="460px"
-      class="dark-dialog danger-dialog"
-      :close-on-click-modal="true"
-      :close-on-press-escape="true"
-      @close="clearDangerInputs"
-    >
-      <div class="danger-content">
-        <div class="danger-icon">
-          <ShieldAlert :size="22" />
-        </div>
-        <div class="danger-info">
-          <p class="danger-title">请输入登录密码以继续</p>
-          <p class="danger-desc">
-            当前操作账号：
-            <b class="danger-strong">{{ currentAccountDisplay }}</b>
-          </p>
-        </div>
-      </div>
-      <el-input
-        v-model="dangerPassword"
-        type="password"
-        show-password
-        placeholder="请输入登录密码"
-        @keyup.enter="passwordDialogConfirm"
-      />
-      <template #footer>
-        <el-button @click="passwordDialogCancel">取消</el-button>
-        <el-button
-          type="danger"
-          :disabled="dangerPassword.length === 0"
-          :loading="dangerSubmitting"
-          @click="passwordDialogConfirm"
-        >
-          确认解散课堂
-        </el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -514,10 +478,11 @@ import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick, defin
 import { useRouter, useRoute } from 'vue-router'
 import { get, post, put, del } from '@/utils/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { FileText, Plus, ShieldAlert, SlidersHorizontal } from '@lucide/vue'
+import { FileText, Plus, SlidersHorizontal } from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
 import { useDraggableIndicator } from '@/composables/useDraggableIndicator'
 import { useConfirmBeforeApprove } from '@/composables/useConfirmBeforeApprove'
+import { confirmDangerousOperation, requireSensitiveVerification } from '@/composables/useSensitiveVerification'
 import SlideSegmented from '@/components/SlideSegmented.vue'
 import type { PageResult } from '@/types'
 import type { School as SchoolInfo } from '@/types/school'
@@ -528,6 +493,7 @@ import { applicationStatusText as getStatusText, applicationStatusClass as getSt
 const UserManage = defineAsyncComponent(() => import('./UserManage.vue'))
 const PermissionGroupManage = defineAsyncComponent(() => import('./PermissionGroupManage.vue'))
 const SchoolManage = defineAsyncComponent(() => import('./SchoolManage.vue'))
+const MessagePolicyManage = defineAsyncComponent(() => import('./MessagePolicyManage.vue'))
 
 interface ClassJoinApplication {
   id: number
@@ -542,9 +508,9 @@ interface ClassJoinApplication {
   createTime: string
 }
 
-type AdminTab = 'join' | 'classes' | 'users' | 'groups' | 'schools' | 'schoolJoin'
+type AdminTab = 'join' | 'classes' | 'users' | 'groups' | 'schools' | 'schoolJoin' | 'policy'
 
-const ADMIN_TABS: readonly AdminTab[] = ['join', 'classes', 'users', 'groups', 'schools', 'schoolJoin']
+const ADMIN_TABS: readonly AdminTab[] = ['join', 'classes', 'users', 'groups', 'schools', 'schoolJoin', 'policy']
 const isAdminTab = (value: unknown): value is AdminTab =>
   typeof value === 'string' && (ADMIN_TABS as readonly string[]).includes(value)
 
@@ -565,6 +531,8 @@ const canViewPermissions = computed(() => userStore.hasPermission('permission:vi
 const canViewSchools = computed(() => userStore.hasPermission('school:view_all'))
 // 审核（含批量）需要 school:update，避免只读角色看得到按钮却点不动
 const canUpdateSchool = computed(() => userStore.hasPermission('school:update'))
+// 全站私信策略仅平台管理员可设置
+const isOp = computed(() => userStore.isOp)
 
 // 通过申请前是否需要二次确认：前端偏好，与 SchoolDetail 共用（见 useConfirmBeforeApprove）
 const confirmBeforeApprove = useConfirmBeforeApprove()
@@ -581,6 +549,7 @@ const visibleTabs = computed<AdminTab[]>(() => {
   if (canViewSchools.value) tabs.push('schoolJoin')
   if (canViewPermissions.value) tabs.push('groups')
   if (canViewSchools.value) tabs.push('schools')
+  if (isOp.value) tabs.push('policy')
   return tabs
 })
 
@@ -589,6 +558,7 @@ const visibleTabs = computed<AdminTab[]>(() => {
 const userManageRef = ref<{ reload: () => void } | null>(null)
 const permissionGroupRef = ref<{ reload: () => void } | null>(null)
 const schoolManageRef = ref<{ reload: () => void } | null>(null)
+const messagePolicyRef = ref<{ reload: () => void } | null>(null)
 
 // 页签对应的数据加载：点击、拖拽、直接访问链接都走这里，避免重复实现
 const runTabLoad = (name: AdminTab) => {
@@ -612,6 +582,8 @@ const runTabLoad = (name: AdminTab) => {
     permissionGroupRef.value?.reload()
   } else if (name === 'schools') {
     schoolManageRef.value?.reload()
+  } else if (name === 'policy') {
+    messagePolicyRef.value?.reload()
   }
 }
 
@@ -1123,56 +1095,38 @@ const dissolveClass = async (classId: number, className: string) => {
       '危险操作',
       { confirmButtonText: '确认解散', cancelButtonText: '取消', type: 'warning', customClass: 'danger-warning-message-box' }
     )
-    pendingDissolve.value.classId = classId
-    pendingDissolve.value.className = className
-    showDangerPasswordDialog.value = true
   } catch {
-    clearDangerInputs()
+    return
   }
+  pendingDissolve.value = { classId, className }
+  await doDissolveClass()
 }
 
-// ========== 危险操作（解散课堂）两步弹窗状态 ==========
-const showDangerPasswordDialog = ref(false)
-const dangerPassword = ref('')
+// ========== 危险操作（解散课堂）：确认文案 + 统一身份二次验证 ==========
 const dangerSubmitting = ref(false)
 const pendingDissolve = ref<{ classId: number; className: string }>({ classId: 0, className: '' })
 
-const currentAccountDisplay = computed(() => {
-  const u = userStore.userInfo
-  if (!u) return '-'
-  return (u.username || u.email || '-') as string
-})
-
 const clearDangerInputs = () => {
-  dangerPassword.value = ''
   dangerSubmitting.value = false
-  showDangerPasswordDialog.value = false
   pendingDissolve.value = { classId: 0, className: '' }
 }
 
-const passwordDialogCancel = () => {
-  clearDangerInputs()
-}
-
-const passwordDialogConfirm = async () => {
-  if (!dangerPassword.value) {
-    ElMessage.warning('请输入登录密码')
-    return
-  }
+const doDissolveClass = async () => {
   if (!pendingDissolve.value.classId) {
     ElMessage.warning('请先选择要解散的课堂')
     return
   }
-  dangerSubmitting.value = true
   const classId = pendingDissolve.value.classId
   const confirmText = `我已确认要删除${pendingDissolve.value.className ?? ''}课堂`
+  // 解散课堂属敏感操作，需身份二次验证（登录密码或邮箱验证码）
+  const headers = await requireSensitiveVerification('解散课堂')
+  if (!headers) {
+    clearDangerInputs()
+    return
+  }
+  dangerSubmitting.value = true
   try {
-    const params = {
-      password: dangerPassword.value,
-      confirmText,
-    }
-    // 密码走请求体（DELETE body），避免出现在 URL/访问日志中
-    const result = await del(`/class/${classId}`, params)
+    const result = await del(`/class/${classId}`, { confirmText }, undefined, headers)
     if (result.code === 200) {
       ElMessage.success('课堂已解散')
       if (expandedClassId.value === classId) {
@@ -1192,20 +1146,20 @@ const passwordDialogConfirm = async () => {
 }
 
 const kickStudentFromAdmin = async (classId: number, userId: number) => {
-  try {
-    await ElMessageBox.confirm('确认踢出此学生？', '提示', {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消'
-    })
-    const result = await del(`/class/${classId}/members/batch`, [userId])
-    if (result.code === 200) {
-      ElMessage.success('已踢出')
-      toggleClassDetail(classId)
-    } else {
-      ElMessage.error(result.message)
-    }
-  } catch {
-    // 用户取消
+  // 踢出学生属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: '踢出学生',
+    message: '确认将该学生踢出班级？其在本班的作业提交将被清理，此操作不可恢复。',
+    confirmText: '确认踢出',
+    operationName: '踢出学生',
+  })
+  if (!headers) return
+  const result = await del(`/class/${classId}/members/batch`, { studentUserIds: [userId] }, undefined, headers)
+  if (result.code === 200) {
+    ElMessage.success('已踢出')
+    toggleClassDetail(classId)
+  } else {
+    ElMessage.error(result.message)
   }
 }
 
@@ -1214,22 +1168,21 @@ const batchKickFromAdmin = async (classId: number) => {
     ElMessage.warning('请选择要踢出的学生')
     return
   }
-  try {
-    await ElMessageBox.confirm(
-      `确认批量踢出 ${selectedAdminKickIds.value.length} 名学生？`,
-      '提示',
-      { confirmButtonText: '确认', cancelButtonText: '取消' }
-    )
-    const result = await del(`/class/${classId}/members/batch`, selectedAdminKickIds.value)
-    if (result.code === 200) {
-      ElMessage.success(`已踢出 ${selectedAdminKickIds.value.length} 名学生`)
-      selectedAdminKickIds.value = []
-      toggleClassDetail(classId)
-    } else {
-      ElMessage.error(result.message)
-    }
-  } catch {
-    // 用户取消
+  // 踢出学生属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: '批量踢出学生',
+    message: `确认批量踢出 ${selectedAdminKickIds.value.length} 名学生？其在本班的作业提交将被清理，此操作不可恢复。`,
+    confirmText: '确认踢出',
+    operationName: '批量踢出学生',
+  })
+  if (!headers) return
+  const result = await del(`/class/${classId}/members/batch`, { studentUserIds: selectedAdminKickIds.value }, undefined, headers)
+  if (result.code === 200) {
+    ElMessage.success(`已踢出 ${selectedAdminKickIds.value.length} 名学生`)
+    selectedAdminKickIds.value = []
+    toggleClassDetail(classId)
+  } else {
+    ElMessage.error(result.message)
   }
 }
 </script>

@@ -176,6 +176,8 @@ interface WorkInfo {
   publishTime: string
   publisherName?: string | null
   publisherStudentName?: string | null
+  /** 类型：homework-作业，exam-考试 */
+  workType?: 'homework' | 'exam'
 }
 
 interface SubmissionInfo {
@@ -334,6 +336,11 @@ const publisherLabel = (work: WorkInfo) => {
 }
 
 const goToWork = (workId: number) => {
+  const work = works.value.find((w) => w.id === workId)
+  if (work?.workType === 'exam') {
+    router.push(`/student/exam/${workId}`)
+    return
+  }
   router.push(`/student/work/${workId}`)
 }
 
@@ -627,6 +634,17 @@ onMounted(async () => {
   .page-header .header-right .el-button {
     width: 100%;
     min-height: 42px;
+  }
+
+  /* 信息项窄屏下换行，避免单行放不下溢出卡片 */
+  .info-section {
+    flex-wrap: wrap;
+    gap: 12px 16px;
+  }
+
+  .work-info {
+    flex-wrap: wrap;
+    gap: 6px 16px;
   }
 }
 </style>

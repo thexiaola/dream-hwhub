@@ -164,48 +164,6 @@
         </el-button>
       </template>
     </el-dialog>
-
-    <!-- ========== 危险操作 Step3：密码校验 ========== -->
-    <el-dialog
-      v-model="showDangerPasswordDialog"
-      title="最终确认"
-      width="460px"
-      class="dark-dialog danger-dialog"
-      :close-on-click-modal="true"
-      :close-on-press-escape="true"
-      @close="clearDangerInputs"
-    >
-      <div class="danger-content">
-        <div class="danger-icon">
-          <ShieldAlert :size="22" />
-        </div>
-        <div class="danger-info">
-          <p class="danger-title">请输入登录密码以继续</p>
-          <p class="danger-desc">
-            当前操作账号：
-            <b class="danger-strong">{{ currentAccountDisplay }}</b>
-          </p>
-        </div>
-      </div>
-      <el-input
-        v-model="dangerPassword"
-        type="password"
-        show-password
-        placeholder="请输入登录密码"
-        @keyup.enter="passwordDialogConfirm"
-      />
-      <template #footer>
-        <el-button @click="passwordDialogCancel">取消</el-button>
-        <el-button
-          type="danger"
-          :disabled="dangerPassword.length === 0"
-          :loading="dangerSubmitting"
-          @click="passwordDialogConfirm"
-        >
-          确认解散课堂
-        </el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -221,7 +179,6 @@ import {
   Copy,
   HandHelping,
   Plus,
-  ShieldAlert,
   Trash2,
   User,
   UserCheck,
@@ -229,6 +186,7 @@ import {
 } from "@lucide/vue";
 import { del, get, post } from "@/utils/http";
 import { useUserStore } from "@/stores/user";
+import { requireSensitiveVerification } from "@/composables/useSensitiveVerification";
 import ClassWorkPanel from "./ClassWorkPanel.vue";
 import ClassMemberPanel from "./ClassMemberPanel.vue";
 import type { CourseInfo } from "@/types/class";
@@ -290,11 +248,9 @@ const goBack = () => {
   router.push("/courses/teacher");
 };
 
-// ========== 危险操作（解散课堂）三步弹窗 ==========
+// ========== 危险操作（解散课堂）：确认文案 + 统一身份二次验证 ==========
 const showDangerConfirmTextDialog = ref(false);
-const showDangerPasswordDialog = ref(false);
 const dangerConfirmText = ref("");
-const dangerPassword = ref("");
 const dangerSubmitting = ref(false);
 
 const expectedConfirmText = computed(() => {
@@ -302,18 +258,10 @@ const expectedConfirmText = computed(() => {
   return `我已确认要删除${name}课堂`;
 });
 
-const currentAccountDisplay = computed(() => {
-  const u = userStore.userInfo;
-  if (!u) return "-";
-  return (u.username || u.email || "-") as string;
-});
-
 const clearDangerInputs = () => {
   dangerConfirmText.value = "";
-  dangerPassword.value = "";
   dangerSubmitting.value = false;
   showDangerConfirmTextDialog.value = false;
-  showDangerPasswordDialog.value = false;
 };
 
 const copyExpectedText = async () => {
@@ -329,32 +277,27 @@ const confirmTextDialogCancel = () => {
   clearDangerInputs();
 };
 
-const confirmTextDialogNext = () => {
+/** Step2 通过后：进入统一次要验证弹窗（登录密码或邮箱验证码） */
+const confirmTextDialogNext = async () => {
   if (dangerConfirmText.value !== expectedConfirmText.value) {
     ElMessage.warning("确认文案不匹配");
     return;
   }
   showDangerConfirmTextDialog.value = false;
-  showDangerPasswordDialog.value = true;
-};
-
-const passwordDialogCancel = () => {
-  clearDangerInputs();
-};
-
-const passwordDialogConfirm = async () => {
-  if (!dangerPassword.value) {
-    ElMessage.warning("请输入登录密码");
+  const headers = await requireSensitiveVerification("解散课堂");
+  if (!headers) {
+    // 用户取消身份验证，回到初始状态
+    clearDangerInputs();
     return;
   }
   dangerSubmitting.value = true;
   try {
-    const params = {
-      password: dangerPassword.value,
-      confirmText: dangerConfirmText.value,
-    };
-    // 密码走请求体（DELETE body），避免出现在 URL/访问日志中
-    const result = await del(`/class/${classId}`, params);
+    const result = await del(
+      `/class/${classId}`,
+      { confirmText: dangerConfirmText.value },
+      undefined,
+      headers,
+    );
     if (result.code === 200) {
       ElMessage.success("课堂已解散");
       clearDangerInputs();

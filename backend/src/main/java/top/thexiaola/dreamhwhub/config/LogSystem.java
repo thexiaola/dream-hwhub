@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -81,39 +80,6 @@ public class LogSystem extends RollingPolicyBase {
             startupCount = calculateStartupCount();
             currentFileIndex = 1;
             log.info("Date switch completed, new startup count: {}, file index reset to: {}", startupCount, currentFileIndex);
-        }
-    }
-
-    /**
-     * 格式化日志消息
-     */
-    private String formatLogMessage(String message, String level) {
-        return String.format("%s [%s] %s - %s",
-                DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
-                Thread.currentThread().getName(),
-                level.toUpperCase(),
-                message);
-    }
-
-    /**
-     * 写入备用日志（当主日志文件写入失败时）
-     */
-    private void writeToFallbackLog(String message, String level, Exception originalException) {
-        String fallbackFileName = String.format("%s/fallback_%s.log", LOGS_DIR, currentDate);
-        try (FileWriter writer = new FileWriter(fallbackFileName, true)) {
-            String fallbackMessage = String.format(
-                    "%s [FALLBACK] %s - Original error: %s, Message: %s%s",
-                    DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"),
-                    level.toUpperCase(),
-                    originalException.getMessage(),
-                    message,
-                    System.lineSeparator()
-            );
-            writer.write(fallbackMessage);
-            writer.flush();
-        } catch (Exception fallbackException) {
-            System.err.println("Fatal error: Unable to write to any log file - " + fallbackException.getMessage());
-            System.err.println("Original message: " + message);
         }
     }
 

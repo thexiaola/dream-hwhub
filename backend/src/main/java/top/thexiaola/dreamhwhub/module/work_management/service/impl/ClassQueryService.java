@@ -243,39 +243,52 @@ public class ClassQueryService {
 
     /**
      * 批量构建班级列表响应（复用班级信息/创建者/成员统计查询）
+     * <p>
+     * 所有关联数据（成员统计、创建者、学校名、接管策略、冻结判定）均批量取回，
+     * 不在循环里逐班查询，避免 N+1。
      *
      * @param forceTeacherRole 为 true 时所有班级的角色统一按"老师"返回（管理员视角）
      */
     private List<ClassDetailResponse> buildClassDetailResponses(
             List<Integer> classIds, Map<Integer, ClassMember> memberMap, boolean forceTeacherRole) {
         // 批量查询班级信息
-        final Map<Integer, ClassInfo> classMap;
         QueryWrapper<ClassInfo> classQuery = new QueryWrapper<>();
         classQuery.in("id", classIds);
         List<ClassInfo> classes = classInfoMapper.selectList(classQuery);
-        classMap = classes.stream().collect(Collectors.toMap(ClassInfo::getId, c -> c));
+        Map<Integer, ClassInfo> classMap = classes.stream()
+                .collect(Collectors.toMap(ClassInfo::getId, c -> c));
 
-        // 从已查询的班级信息中收集所有者ID
+        // 批量查询创建者信息
         List<Integer> ownerIds = classMap.values().stream()
                 .map(ClassInfo::getOwnerId)
                 .distinct()
                 .collect(Collectors.toList());
-
-        // 批量查询用户信息
         final Map<Integer, User> userMap;
         if (!ownerIds.isEmpty()) {
             QueryWrapper<User> userQuery = new QueryWrapper<>();
             userQuery.in("id", ownerIds);
-            List<User> users = userMapper.selectList(userQuery);
-            userMap = users.stream().collect(Collectors.toMap(User::getId, u -> u));
+            userMap = userMapper.selectList(userQuery).stream().collect(Collectors.toMap(User::getId, u -> u));
         } else {
             userMap = new HashMap<>();
         }
 
-        Map<Integer, String> schoolNameMap = schoolService.getSchoolNames(classMap.values().stream()
+        // 批量查询学校名
+        Set<Integer> schoolIds = classMap.values().stream()
                 .map(ClassInfo::getSchoolId)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toSet()));
+                .collect(Collectors.toSet());
+        Map<Integer, String> schoolNameMap = schoolService.getSchoolNames(schoolIds);
+        // 批量查询各校「接管是否自动同意」
+        Map<Integer, Boolean> takeoverAutoMap = schoolService.getClassTakeoverAutoApprove(schoolIds);
+
+        // 批量查询各班成员统计（一次 GROUP BY class_id, role，取代每班 3 次 count）
+        Map<Integer, long[]> memberStatsMap = loadMemberStats(classIds);
+
+        // 批量判定创建者是否仍具教师身份（一次取回相关学校成员）
+        Map<Integer, Boolean> ownerActiveMap = classAccessResolver.loadOwnerActiveMap(classes);
+
+        // 批量查询「我」在各班所属学校的身份（区分老师与课代表），避免逐班查询
+        Map<String, SchoolMember> selfSchoolMemberMap = loadSelfSchoolMembers(classes, memberMap);
 
         // 转换为响应对象
         return classIds.stream()
@@ -285,26 +298,21 @@ public class ClassQueryService {
                         return null;
                     }
 
-                    // 从缓存中获取创建者信息
                     User owner = userMap.get(classInfo.getOwnerId());
                     String ownerName = owner != null ? owner.getUsername() : "未知";
 
-                    // 查询成员统计（这些需要单独查询，因为涉及聚合）
-                    QueryWrapper<ClassMember> countQuery = new QueryWrapper<>();
-                    countQuery.eq("class_id", classInfo.getId());
-                    long memberCount = classMemberMapper.selectCount(countQuery);
-
-                    QueryWrapper<ClassMember> teacherQuery = new QueryWrapper<>();
-                    teacherQuery.eq("class_id", classInfo.getId()).eq("role", 1);
-                    long teacherCount = classMemberMapper.selectCount(teacherQuery);
-
-                    QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-                    studentQuery.eq("class_id", classInfo.getId()).eq("role", 0);
-                    long studentCount = classMemberMapper.selectCount(studentQuery);
+                    long[] stats = memberStatsMap.getOrDefault(classId, new long[3]);
 
                     // 确定用户角色（管理员视角统一按老师处理）
                     ClassMember selfMember = memberMap.get(classId);
-                    String role = forceTeacherRole ? "老师" : classAccessResolver.getUserRole(classInfo, selfMember);
+                    SchoolMember selfSchoolMember = selfMember == null ? null
+                            : selfSchoolMemberMap.get(classInfo.getSchoolId() + ":" + selfMember.getUserId());
+                    String role = forceTeacherRole ? "老师"
+                            : classAccessResolver.getUserRole(classInfo, selfMember, selfSchoolMember);
+
+                    // 冻结判定：创建者非平台管理员且已失去教师身份
+                    boolean ownerIsOp = owner != null && Boolean.TRUE.equals(owner.getIsOp());
+                    boolean ownerActive = ownerActiveMap.getOrDefault(classId, true);
 
                     ClassDetailResponse response = new ClassDetailResponse(
                             classInfo.getId(),
@@ -315,23 +323,82 @@ public class ClassQueryService {
                             ownerName,
                             role,
                             forceTeacherRole ? 1 : classAccessResolver.getUserRoleCode(classInfo, selfMember),
-                            memberCount,
-                            teacherCount,
-                            studentCount,
+                            stats[0],
+                            stats[1],
+                            stats[2],
                             classInfo.getDescription(),
                             classInfo.getAllowStudentInvite(),
                             classInfo.getCreateTime());
                     // 列表场景不携带「我是否可接管」的个性化判定（批量列表用管理员/成员视角），
                     // 仅给出班级是否冻结，供前端展示状态
-                    response.setFrozen(classAccessResolver.isClassFrozen(classInfo));
-                    response.setOwnerActive(classAccessResolver.isOwnerActive(classInfo));
+                    response.setFrozen(!ownerIsOp && !ownerActive);
+                    response.setOwnerActive(ownerActive);
                     response.setCanTakeover(false);
                     response.setTakeoverPending(false);
-                    response.setTakeoverAutoApprove(schoolService.isClassTakeoverAutoApprove(classInfo.getSchoolId()));
+                    response.setTakeoverAutoApprove(takeoverAutoMap.getOrDefault(classInfo.getSchoolId(), true));
                     return response;
                 })
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .toList();
+    }
+
+    /**
+     * 批量统计各班成员数/老师数/学生数：一次 GROUP BY class_id + role，返回
+     * classId -> [memberCount, teacherCount, studentCount]
+     */
+    private Map<Integer, long[]> loadMemberStats(Collection<Integer> classIds) {
+        Map<Integer, long[]> result = new HashMap<>();
+        if (classIds == null || classIds.isEmpty()) {
+            return result;
+        }
+        QueryWrapper<ClassMember> query = new QueryWrapper<>();
+        query.in("class_id", classIds)
+                .select("class_id", "role", "COUNT(*) AS cnt")
+                .groupBy("class_id", "role");
+        for (Map<String, Object> row : classMemberMapper.selectMaps(query)) {
+            Object classId = row.get("class_id");
+            Object role = row.get("role");
+            Object cnt = row.get("cnt");
+            if (!(classId instanceof Number cid) || !(cnt instanceof Number count)) {
+                continue;
+            }
+            long[] arr = result.computeIfAbsent(cid.intValue(), k -> new long[3]);
+            arr[0] += count.longValue();
+            if (role instanceof Number r) {
+                if (r.intValue() == 1) {
+                    arr[1] += count.longValue();
+                } else if (r.intValue() == 0) {
+                    arr[2] += count.longValue();
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 批量查询「我」在每个班级所属学校中的成员身份（用于区分老师与课代表）。
+     * 按学校批量取回后以 schoolId:userId 为键，避免逐班查询。
+     */
+    private Map<String, SchoolMember> loadSelfSchoolMembers(
+            List<ClassInfo> classes, Map<Integer, ClassMember> memberMap) {
+        Map<Integer, Set<Integer>> schoolToUsers = new HashMap<>();
+        for (ClassInfo classInfo : classes) {
+            if (classInfo.getSchoolId() == null) {
+                continue;
+            }
+            ClassMember selfMember = memberMap.get(classInfo.getId());
+            if (selfMember != null && selfMember.getUserId() != null) {
+                schoolToUsers.computeIfAbsent(classInfo.getSchoolId(), k -> new HashSet<>())
+                        .add(selfMember.getUserId());
+            }
+        }
+        Map<String, SchoolMember> result = new HashMap<>();
+        for (Map.Entry<Integer, Set<Integer>> entry : schoolToUsers.entrySet()) {
+            for (SchoolMember m : schoolService.getMembersByUserIds(entry.getKey(), entry.getValue()).values()) {
+                result.put(entry.getKey() + ":" + m.getUserId(), m);
+            }
+        }
+        return result;
     }
 
     /**

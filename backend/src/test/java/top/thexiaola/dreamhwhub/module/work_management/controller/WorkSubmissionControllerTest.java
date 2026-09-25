@@ -69,7 +69,9 @@ class WorkSubmissionControllerTest {
                 submission.getIsLate(),
                 submission.getCreateTime(),
                 submission.getUpdateTime(),
-                null // attachments - 简化处理
+                null, // attachments - 简化处理
+                false, // hasQuestions - 简化处理
+                null // answers - 简化处理
         );
     }
 
@@ -253,7 +255,7 @@ class WorkSubmissionControllerTest {
         response.setId(1);
 
         Mockito.when(workSubmissionService.updateSubmission(
-                Mockito.anyInt(), Mockito.anyString(), Mockito.any(), Mockito.any()))
+                Mockito.anyInt(), Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(response);
 
         mockMvc.perform(multipart("/api/submissions/1")

@@ -9,6 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.thexiaola.dreamhwhub.config.security.AuthInterceptor;
 import top.thexiaola.dreamhwhub.config.security.CsrfFilter;
 import top.thexiaola.dreamhwhub.config.security.PermissionInterceptor;
+import top.thexiaola.dreamhwhub.support.security.SensitiveVerificationInterceptor;
 
 /**
  * Web配置类，注册拦截器和过滤器
@@ -20,12 +21,15 @@ public class WebConfig implements WebMvcConfigurer {
     private final AuthInterceptor authInterceptor;
     private final CsrfFilter csrfFilter;
     private final PermissionInterceptor permissionInterceptor;
+    private final SensitiveVerificationInterceptor sensitiveVerificationInterceptor;
 
     public WebConfig(AuthInterceptor authInterceptor, CsrfFilter csrfFilter,
-                     PermissionInterceptor permissionInterceptor) {
+                     PermissionInterceptor permissionInterceptor,
+                     SensitiveVerificationInterceptor sensitiveVerificationInterceptor) {
         this.authInterceptor = authInterceptor;
         this.csrfFilter = csrfFilter;
         this.permissionInterceptor = permissionInterceptor;
+        this.sensitiveVerificationInterceptor = sensitiveVerificationInterceptor;
     }
 
     @Override
@@ -37,6 +41,10 @@ public class WebConfig implements WebMvcConfigurer {
         // 权限节点校验：仅作用于管理员后台接口，须在认证拦截器之后执行
         registry.addInterceptor(permissionInterceptor)
             .addPathPatterns("/api/admin/**");
+
+        // 敏感操作二次验证（登录密码/邮箱验证码）：须在认证拦截器之后执行
+        registry.addInterceptor(sensitiveVerificationInterceptor)
+            .addPathPatterns("/api/**");
     }
     
     /**

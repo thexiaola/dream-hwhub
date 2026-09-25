@@ -60,9 +60,9 @@ public interface ClassService {
     String leaveClass(Integer classId);
 
     /**
-     * 解散班级（仅创建者或管理员，需账号密码二次校验+确认文案）
+     * 解散班级（仅创建者或管理员，需确认文案；身份二次验证由接口层统一完成）
      */
-    void dissolveClass(Integer classId, String account, String password, String confirmText);
+    void dissolveClass(Integer classId, String confirmText);
 
     /**
      * 检查用户是否拥有该班级的管理员权限

@@ -14,6 +14,8 @@ import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.security.RequireSensitiveVerification;
+import top.thexiaola.dreamhwhub.support.security.SensitiveOperations;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.util.List;
@@ -66,6 +68,7 @@ public class ClassController {
          * 退出班级
          */
         @DeleteMapping("/{classId}/members/me")
+        @RequireSensitiveVerification(value = "退出班级", key = SensitiveOperations.CLASS_LEAVE)
         public ApiResponse<Void> leaveClass(
                         @PathVariable(value = "classId") Integer classId) {
                 String ip = LogUtil.getCurrentClientIp();
@@ -78,9 +81,10 @@ public class ClassController {
         }
 
         /**
-         * 解散班级（创建者或管理员，需二次校验：账号密码+确认文案）
+         * 解散班级（创建者或管理员，需确认文案 + 身份二次验证）
          */
         @DeleteMapping("/{classId}")
+        @RequireSensitiveVerification(value = "解散班级", key = SensitiveOperations.CLASS_DISSOLVE)
         public ApiResponse<Void> dissolveClass(
                         @PathVariable(value = "classId") Integer classId,
                         @Valid @RequestBody DissolveClassRequest request) {
@@ -88,9 +92,7 @@ public class ClassController {
                 User currentUser = UserUtils.getCurrentUser();
                 String userInfo = LogUtil.getUserInfoString(ip, currentUser);
                 log.info("User ({}) requesting to dissolve class, ID: {}", userInfo, classId);
-                // 账号直接用当前用户的用户名（唯一标识）回填，学号允许重复不可作为账号
-                String account = (currentUser != null) ? currentUser.getUsername() : null;
-                classService.dissolveClass(classId, account, request.getPassword(), request.getConfirmText());
+                classService.dissolveClass(classId, request.getConfirmText());
                 log.info("User ({}) dissolved class successfully, class ID: {}", userInfo, classId);
                 return ApiResponse.success(null);
         }
@@ -262,9 +264,10 @@ public class ClassController {
         }
 
         /**
-         * 批量将学生踢出班级（班级管理员/平台管理员专用）
+         * 批量将学生踢出班级（班级管理员/平台管理员专用，需身份二次验证）
          */
         @DeleteMapping("/{classId}/members/batch")
+        @RequireSensitiveVerification(value = "踢出学生", key = SensitiveOperations.CLASS_KICK_MEMBER)
         public ApiResponse<Void> batchKickStudents(
                         @PathVariable(value = "classId") Integer classId,
                         @Valid @RequestBody BatchKickStudentsRequest request) {
@@ -482,6 +485,7 @@ public class ClassController {
          * 转让班级所有权
          */
         @PutMapping("/{classId}/owner")
+        @RequireSensitiveVerification(value = "转让班级", key = SensitiveOperations.CLASS_TRANSFER)
         public ApiResponse<Void> transferOwnership(
                         @PathVariable(value = "classId") Integer classId,
                         @Valid @RequestBody TransferOwnershipRequest request) {

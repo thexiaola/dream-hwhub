@@ -116,6 +116,16 @@ public class WorkSubmissionResponse {
      */
     private List<AttachmentInfo> attachments;
 
+    /**
+     * 该作业是否含结构化题目
+     */
+    private Boolean hasQuestions;
+
+    /**
+     * 逐题作答与得分明细（仅提交详情返回；含题目的作业使用）
+     */
+    private List<WorkAnswerVO> answers;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

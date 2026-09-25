@@ -83,9 +83,11 @@ public interface SchoolService {
     /**
      * 查询当前用户加入的学校列表
      *
+     * @param minRoleCode 角色下限（如 1 表示只看我可建班的学校），可选
+     * @param keyword     学校名称关键字，可选；筛选在数据库中完成
      * @return 学校详情列表
      */
-    List<SchoolDetailResponse> getMySchools(Integer minRoleCode);
+    List<SchoolDetailResponse> getMySchools(Integer minRoleCode, String keyword);
 
     /**
      * 加入学校：学校免审核时直接成为成员，否则提交待审核申请
@@ -243,6 +245,15 @@ public interface SchoolService {
     boolean isClassTakeoverAutoApprove(Integer schoolId);
 
     /**
+     * 批量查询多个学校「班级接管是否自动同意」（缺省视为 true）。
+     * 一次查询取回，供班级列表等批量场景使用，避免逐校查询。
+     *
+     * @param schoolIds 学校 ID 集合
+     * @return 学校 ID 到「是否自动同意」的映射
+     */
+    Map<Integer, Boolean> getClassTakeoverAutoApprove(Collection<Integer> schoolIds);
+
+    /**
      * 查询用户在学校的成员记录
      *
      * @param schoolId 学校 ID
@@ -252,12 +263,30 @@ public interface SchoolService {
     SchoolMember getMember(Integer schoolId, Integer userId);
 
     /**
+     * 判断用户是否为某学校的成员
+     *
+     * @param schoolId 学校 ID
+     * @param userId   用户 ID
+     * @return true-是该校成员
+     */
+    boolean isSchoolMember(Integer schoolId, Integer userId);
+
+    /**
      * 查询用户加入的全部学校成员记录（用于判定其作为老师的学校集合）
      *
      * @param userId 用户 ID
      * @return 成员记录列表，非成员返回空列表
      */
     List<SchoolMember> getMembershipsByUserId(Integer userId);
+
+    /**
+     * 查询用户加入的学校成员记录（可按角色下限过滤）
+     *
+     * @param userId      用户 ID
+     * @param minRoleCode 角色下限（如 1 表示只要老师/学校管理员），可选
+     * @return 成员记录列表，非成员返回空列表
+     */
+    List<SchoolMember> getMembershipsByUserId(Integer userId, Integer minRoleCode);
 
     /**
      * 批量查询用户在指定学校的成员记录，供班级成员列表读取姓名与学工号

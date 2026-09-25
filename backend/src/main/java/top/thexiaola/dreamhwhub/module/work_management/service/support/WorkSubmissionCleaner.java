@@ -10,6 +10,7 @@ import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -33,8 +34,36 @@ public class WorkSubmissionCleaner {
      * @param userId  用户 ID
      */
     public void cleanupClassSubmissions(Integer classId, Integer userId) {
+        cleanupClassSubmissions(classId == null ? List.of() : List.of(classId), userId);
+    }
+
+    /**
+     * 软删除用户在多个班级内的全部作业提交与附件（一次 SQL 完成，不按班级循环）
+     *
+     * @param classIds 班级 ID 列表
+     * @param userId   用户 ID
+     */
+    public void cleanupClassSubmissions(Collection<Integer> classIds, Integer userId) {
+        if (userId == null) {
+            return;
+        }
+        cleanupClassSubmissions(classIds, List.of(userId));
+    }
+
+    /**
+     * 软删除多个用户在多个班级内的全部作业提交与附件（批量踢人等场景：
+     * 一次 SQL 覆盖全部学生，避免按用户循环）。
+     *
+     * @param classIds 班级 ID 列表
+     * @param userIds  用户 ID 列表
+     */
+    public void cleanupClassSubmissions(Collection<Integer> classIds, Collection<Integer> userIds) {
+        if (classIds == null || classIds.isEmpty() || userIds == null || userIds.isEmpty()) {
+            return;
+        }
+
         QueryWrapper<WorkInfo> workQuery = new QueryWrapper<>();
-        workQuery.eq("class_id", classId).select("id");
+        workQuery.in("class_id", classIds).select("id");
         List<Integer> workIds = workMapper.selectList(workQuery).stream()
                 .map(WorkInfo::getId)
                 .toList();
@@ -43,7 +72,7 @@ public class WorkSubmissionCleaner {
         }
 
         QueryWrapper<WorkSubmission> submissionQuery = new QueryWrapper<>();
-        submissionQuery.eq("submitter_id", userId)
+        submissionQuery.in("submitter_id", userIds)
                 .eq("is_deleted", false)
                 .in("work_id", workIds);
         List<Integer> submissionIds = workSubmissionMapper.selectList(submissionQuery).stream()

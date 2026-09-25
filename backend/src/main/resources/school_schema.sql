@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS `school` (
     `description` VARCHAR(500) DEFAULT NULL COMMENT '学校描述',
     `allow_join_without_approval` BIT(1) NOT NULL DEFAULT b'0' COMMENT '加入学校是否免审核：0-需学校管理员审核，1-填入学工号与姓名后直接加入',
     `auto_approve_class_takeover` BIT(1) NOT NULL DEFAULT b'1' COMMENT '班级接管是否自动同意：1-其他老师申请接管失活班级时自动通过，0-需学校管理员审核',
+    `stranger_message_limit` INT DEFAULT NULL COMMENT '本校向陌生用户发送私信的条数上限；NULL 表示继承全站默认',
+    `stranger_message_reset_hours` INT DEFAULT NULL COMMENT '本校陌生私信配额重置小时数；NULL 表示继承全站默认',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_school_name (`school_name`)

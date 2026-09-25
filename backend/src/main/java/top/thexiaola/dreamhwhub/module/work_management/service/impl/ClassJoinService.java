@@ -89,17 +89,17 @@ public class ClassJoinService {
         List<ClassUserInvitation> pendingInvitations = classUserInvitationMapper.selectList(pendingInvitationQuery);
 
         if (!pendingInvitations.isEmpty()) {
-            // 删除所有待确认的用户邀请记录
-            for (ClassUserInvitation invitation : pendingInvitations) {
-                // 先删除关联的教师审核记录（如果存在）
-                QueryWrapper<ClassTeacherApproval> approvalQuery = new QueryWrapper<>();
-                approvalQuery.eq("invitation_id", invitation.getId());
-                classTeacherApprovalMapper.delete(approvalQuery);
+            // 一次 SQL 删除这些邀请关联的教师审核记录，再一次 SQL 删除邀请记录，
+            // 避免在循环里逐条 delete（N 次往返）
+            List<Integer> invitationIds = pendingInvitations.stream()
+                    .map(ClassUserInvitation::getId)
+                    .toList();
 
-                // 再删除用户邀请记录
-                classUserInvitationMapper.deleteById(invitation.getId());
+            QueryWrapper<ClassTeacherApproval> approvalQuery = new QueryWrapper<>();
+            approvalQuery.in("invitation_id", invitationIds);
+            classTeacherApprovalMapper.delete(approvalQuery);
 
-            }
+            classUserInvitationMapper.deleteByIds(invitationIds);
         }
 
         // 创建新的用户邀请记录（等待被邀请人确认）

@@ -163,11 +163,11 @@ class ClassControllerTest {
     @DisplayName("测试解散班级 - 成功")
     void testDissolveClass_Success() throws Exception {
         Mockito.doNothing().when(classService).dissolveClass(
-                Mockito.anyInt(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+                Mockito.anyInt(), Mockito.anyString());
 
         mockMvc.perform(delete("/api/class/1")
                         .contentType("application/json")
-                        .content("{\"password\":\"test-password\",\"confirmText\":\"确认解散\"}"))
+                        .content("{\"confirmText\":\"确认解散\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

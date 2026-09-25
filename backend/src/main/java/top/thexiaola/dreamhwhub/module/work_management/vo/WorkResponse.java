@@ -105,6 +105,61 @@ public class WorkResponse {
      */
     private Integer submittedCount;
 
+    /**
+     * 是否含结构化题目
+     */
+    private Boolean hasQuestions;
+
+    /**
+     * 类型：homework-作业，exam-考试
+     */
+    private String workType;
+
+    /**
+     * 考试时长（分钟）
+     */
+    private Integer examDurationMinutes;
+
+    /**
+     * 是否开启反作弊
+     */
+    private Boolean antiCheatEnabled;
+
+    /**
+     * 反作弊-字体映射
+     */
+    private Boolean antiCheatFont;
+
+    /**
+     * 反作弊-强制全屏
+     */
+    private Boolean antiCheatFullscreen;
+
+    /**
+     * 反作弊-禁止复制粘贴
+     */
+    private Boolean antiCheatNoCopy;
+
+    /**
+     * 反作弊-切屏/失焦检测
+     */
+    private Boolean antiCheatDetectLeave;
+
+    /**
+     * 违规次数上限
+     */
+    private Integer antiCheatMaxViolations;
+
+    /**
+     * 题目乱序
+     */
+    private Boolean shuffleQuestions;
+
+    /**
+     * 题目列表（教师侧含参考答案；学生侧由学生接口单独获取，不在此返回）
+     */
+    private List<WorkQuestionVO> questions;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

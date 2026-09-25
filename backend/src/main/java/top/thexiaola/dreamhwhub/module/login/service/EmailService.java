@@ -63,6 +63,22 @@ public interface EmailService {
     boolean verifyRetrievePasswordCode(String email, String code, String username);
 
     /**
+     * 生成并发送「敏感操作」身份验证码（用于解散班级、退出学校、踢出成员、管理员高危操作等的二次验证）
+     * @param email 收件人邮箱
+     * @param username 用户名
+     */
+    void sendSensitiveOperationCode(String email, String username);
+
+    /**
+     * 验证「敏感操作」身份验证码
+     * @param email 邮箱地址
+     * @param code 验证码
+     * @param username 用户名
+     * @return 验证是否成功
+     */
+    boolean verifySensitiveOperationCode(String email, String code, String username);
+
+    /**
      * 获取验证码发送冷却时间（秒），前端用于展示倒计时
      * @return 冷却秒数
      */

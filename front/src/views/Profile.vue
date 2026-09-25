@@ -10,7 +10,7 @@
     <el-card class="profile-card" shadow="never">
       <template #header>
         <div class="profile-header">
-          <div class="avatar-wrapper">
+          <div class="avatar-wrapper" :class="{ 'is-busy': avatarUploading }">
             <UserAvatar
               :avatar="userStore.userInfo?.avatar"
               :size="64"
@@ -18,6 +18,10 @@
               clickable
               @click="triggerAvatarPick"
             />
+            <!-- 悬停遮罩：提示头像可点击更换 -->
+            <span class="avatar-overlay" aria-hidden="true">
+              <Camera :size="18" />
+            </span>
             <input
               ref="avatarInputRef"
               class="avatar-input"
@@ -35,7 +39,13 @@
               </el-tag>
             </p>
             <div class="avatar-actions">
-              <el-button size="small" text type="primary" :loading="avatarUploading" @click="triggerAvatarPick">
+              <el-button
+                size="small"
+                type="primary"
+                plain
+                :loading="avatarUploading"
+                @click="triggerAvatarPick"
+              >
                 {{ userStore.userInfo?.avatar ? '更换头像' : '上传头像' }}
               </el-button>
               <el-button
@@ -198,6 +208,60 @@
             </el-form-item>
           </el-form>
         </el-tab-pane>
+
+        <!-- ========================= 危险操作验证 ========================= -->
+        <el-tab-pane label="危险操作验证" name="security">
+          <div class="security-verification">
+            <el-alert
+              title="危险操作验证用于在执行解散班级、退出学校、踢出成员、管理员高危操作等前再次确认你的身份"
+              type="info"
+              :closable="false"
+              show-icon
+              class="profile-alert"
+            />
+
+            <div class="sv-mode-hint">
+              当前生效方式：
+              <b>{{ securityModeText }}</b>
+            </div>
+
+            <el-form label-width="150px" class="profile-form" v-loading="securityLoading">
+              <el-form-item label="密码验证">
+                <el-switch
+                  v-model="securityForm.verifyByPassword"
+                  :disabled="securitySubmitting"
+                />
+                <span class="switch-hint">使用当前账号的登录密码验证身份</span>
+              </el-form-item>
+              <el-form-item label="邮箱验证码验证">
+                <el-switch
+                  v-model="securityForm.verifyByEmailCode"
+                  :disabled="securitySubmitting || !userStore.userInfo?.email"
+                />
+                <span class="switch-hint">
+                  {{ userStore.userInfo?.email
+                    ? `向 ${userStore.userInfo.email} 发送验证码验证身份`
+                    : '当前账号未绑定邮箱，无法开启' }}
+                </span>
+              </el-form-item>
+              <el-alert
+                v-if="!securityForm.verifyByPassword && !securityForm.verifyByEmailCode"
+                title="两种方式都已关闭：危险操作将不再要求验证身份，请谨慎设置"
+                type="warning"
+                :closable="false"
+                show-icon
+                class="profile-alert"
+              />
+              <el-form-item>
+                <el-button type="primary" :loading="securitySubmitting" @click="submitSecurity">
+                  <Save :size="14" />
+                  &nbsp;保存设置
+                </el-button>
+                <el-button :disabled="securitySubmitting" @click="loadSecurity">重置</el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </el-card>
 
@@ -214,7 +278,15 @@
           <span>退出登录</span>
           <ChevronRight :size="18" />
         </button>
+        <button class="action-item danger" @click="handleDeleteAccount">
+          <UserX :size="18" />
+          <span>注销账号</span>
+          <ChevronRight :size="18" />
+        </button>
       </div>
+      <p class="danger-tip">
+        注销后账号将被永久删除，自动退出全部班级与学校，已提交的作业同步删除，且无法恢复。
+      </p>
     </el-card>
     </div><!-- /profile-main -->
 
@@ -286,22 +358,128 @@
         </el-card>
       </aside>
     </div><!-- /profile-layout -->
+
+    <!-- 注销账号确认弹窗（不可逆操作，需输入登录密码验证身份） -->
+    <el-dialog
+      v-model="deleteDialogVisible"
+      title="注销账号"
+      width="440px"
+      class="delete-account-dialog"
+      :close-on-click-modal="false"
+    >
+      <el-alert
+        type="error"
+        :closable="false"
+        show-icon
+        class="delete-warning"
+      >
+        <template #title>
+          <span class="delete-warning-title">此操作不可恢复</span>
+        </template>
+        <div class="delete-warning-body">
+          注销后，你的账号将被永久删除，并会：
+          <ul>
+            <li>自动退出全部班级与学校；</li>
+            <li>同步删除已提交的全部作业；</li>
+            <li>删除好友关系、私信与站内信；</li>
+            <li>账号相关数据无法找回。</li>
+          </ul>
+        </div>
+      </el-alert>
+      <el-form label-position="top" class="delete-form">
+        <el-form-item label="请输入登录密码以验证身份">
+          <el-input
+            v-model="deletePassword"
+            type="password"
+            placeholder="登录密码"
+            show-password
+            maxlength="48"
+            @keyup.enter="confirmDeleteAccount"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="deleteDialogVisible = false">取消</el-button>
+        <el-button
+          type="danger"
+          :loading="deletingAccount"
+          :disabled="!deletePassword"
+          @click="confirmDeleteAccount"
+        >
+          确认注销
+        </el-button>
+      </template>
+    </el-dialog>
+    <!-- 修改安全验证设置：按被改动的开关验证对应凭据 -->
+    <el-dialog
+      v-model="securityVerifyVisible"
+      title="验证身份"
+      width="460px"
+      class="dark-dialog security-verify-dialog"
+      :close-on-click-modal="false"
+    >
+      <el-alert
+        :title="securityVerifyTip"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="profile-alert"
+      />
+      <el-form label-position="top" class="delete-form">
+        <el-form-item v-if="securityPasswordChanged" label="登录密码（用于验证「密码验证」开关的改动）">
+          <el-input
+            v-model="securityPassword"
+            type="password"
+            placeholder="请输入当前账号的登录密码"
+            show-password
+            maxlength="48"
+            @keyup.enter="confirmSecurityChange"
+          />
+        </el-form-item>
+        <el-form-item v-if="securityEmailChanged" label="邮箱验证码（用于验证「邮箱验证码验证」开关的改动）">
+          <div class="code-row">
+            <el-input
+              v-model="securityEmailCode"
+              placeholder="发送到绑定邮箱的 6 位验证码"
+              maxlength="6"
+              @keyup.enter="confirmSecurityChange"
+            />
+            <el-button
+              type="primary"
+              plain
+              :disabled="securityCodeCountdown > 0 || securityCodeSending"
+              :loading="securityCodeSending"
+              @click="sendSecurityCode"
+            >
+              {{ securityCodeCountdown > 0 ? `${securityCodeCountdown}s 后重发` : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="securityVerifyVisible = false">取消</el-button>
+        <el-button type="primary" :loading="securitySubmitting" @click="confirmSecurityChange">
+          确认修改
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import type { UserInfo } from '@/types'
+import type { SecurityVerificationSettings, UserInfo } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { put, post, postForm, del } from '@/utils/http'
+import { get, put, post, postForm, del } from '@/utils/http'
 import { formatDateTime } from '@/utils/format'
 import { invalidateAvatarCache } from '@/utils/attachment'
 import UserAvatar from '@/components/UserAvatar.vue'
 import {
   AlertTriangle,
+  Camera,
   Check,
   ChevronRight,
   Circle,
@@ -311,6 +489,7 @@ import {
   LogOut,
   MailCheck,
   Save,
+  UserX,
 } from '@lucide/vue'
 
 const router = useRouter()
@@ -763,6 +942,217 @@ const handleLogout = async () => {
     ElMessage.error('登出失败，请重试')
   }
 }
+
+// ========== 注销账号 ==========
+const deleteDialogVisible = ref(false)
+const deletePassword = ref('')
+const deletingAccount = ref(false)
+
+const handleDeleteAccount = () => {
+  deletePassword.value = ''
+  deleteDialogVisible.value = true
+}
+
+const confirmDeleteAccount = async () => {
+  if (!deletePassword.value) {
+    ElMessage.warning('请输入登录密码以验证身份')
+    return
+  }
+  deletingAccount.value = true
+  try {
+    const res = await userStore.deleteAccount(deletePassword.value)
+    if (res.code === 200) {
+      deleteDialogVisible.value = false
+      ElMessage.success('账号已注销')
+      // 注销后会话已清除，跳转登录页
+      router.push('/login')
+    } else {
+      ElMessage.error(res.message || '注销失败，请稍后重试')
+    }
+  } catch {
+    ElMessage.error('注销失败，请稍后重试')
+  } finally {
+    deletingAccount.value = false
+  }
+}
+
+// ========== 危险操作验证设置 ==========
+const securityLoading = ref(false)
+const securitySubmitting = ref(false)
+const securityForm = reactive({
+  verifyByPassword: true,
+  verifyByEmailCode: false,
+})
+
+/** 已保存的开关（用于判断本次改动了哪些开关，只有改动的开关才需验证对应凭据） */
+const savedSecurity = reactive({
+  verifyByPassword: true,
+  verifyByEmailCode: false,
+})
+
+/** 当前生效方式的中文描述（对应四种组合） */
+const securityModeText = computed(() => {
+  const byPassword = securityForm.verifyByPassword
+  const byEmail = securityForm.verifyByEmailCode
+  if (!byPassword && !byEmail) return '已关闭验证（不验证身份）'
+  if (byPassword && !byEmail) return '仅密码验证'
+  if (!byPassword && byEmail) return '仅邮箱验证码验证'
+  return '密码验证 或 邮箱验证码验证（任选其一）'
+})
+
+/** 本次是否改动了「密码验证」开关 */
+const securityPasswordChanged = computed(() => securityForm.verifyByPassword !== savedSecurity.verifyByPassword)
+/** 本次是否改动了「邮箱验证码验证」开关 */
+const securityEmailChanged = computed(() => securityForm.verifyByEmailCode !== savedSecurity.verifyByEmailCode)
+/** 本次是否有任何开关被改动 */
+const securityDirty = computed(() => securityPasswordChanged.value || securityEmailChanged.value)
+
+// ===== 按改动项验证对应凭据的弹窗 =====
+const securityVerifyVisible = ref(false)
+const securityPassword = ref('')
+const securityEmailCode = ref('')
+const securityCodeSending = ref(false)
+const securityCodeCountdown = ref(0)
+let securityCodeTimer: number | null = null
+
+const clearSecurityCodeTimer = () => {
+  if (securityCodeTimer !== null) {
+    clearInterval(securityCodeTimer)
+    securityCodeTimer = null
+  }
+}
+
+const startSecurityCodeCountdown = (seconds: number) => {
+  securityCodeCountdown.value = seconds
+  clearSecurityCodeTimer()
+  securityCodeTimer = window.setInterval(() => {
+    securityCodeCountdown.value -= 1
+    if (securityCodeCountdown.value <= 0) {
+      securityCodeCountdown.value = 0
+      clearSecurityCodeTimer()
+    }
+  }, 1000)
+}
+
+const securityVerifyTip = computed(() => {
+  const parts: string[] = []
+  if (securityPasswordChanged.value) parts.push('输入登录密码以验证「密码验证」开关的改动')
+  if (securityEmailChanged.value) parts.push('输入邮箱验证码以验证「邮箱验证码验证」开关的改动')
+  return parts.join('；') + '。'
+})
+
+const loadSecurity = async () => {
+  securityLoading.value = true
+  try {
+    const res = await get<SecurityVerificationSettings>('/users/modify/security-verification')
+    if (res.code === 200 && res.data) {
+      securityForm.verifyByPassword = res.data.verifyByPassword
+      securityForm.verifyByEmailCode = res.data.verifyByEmailCode
+      savedSecurity.verifyByPassword = res.data.verifyByPassword
+      savedSecurity.verifyByEmailCode = res.data.verifyByEmailCode
+    } else {
+      ElMessage.error(res.message || '加载安全验证设置失败')
+    }
+  } catch {
+    ElMessage.error('加载安全验证设置失败')
+  } finally {
+    securityLoading.value = false
+  }
+}
+
+/** 发送用于验证「邮箱验证码验证」开关改动的验证码 */
+const sendSecurityCode = async () => {
+  if (securityCodeSending.value || securityCodeCountdown.value > 0) return
+  securityCodeSending.value = true
+  try {
+    const res = await post<number>('/users/sensitive-verification/code')
+    if (res.code === 200) {
+      ElMessage.success(res.message || '验证码已发送至绑定邮箱')
+      const cooldown = typeof res.data === 'number' && res.data > 0 ? res.data : 45
+      startSecurityCodeCountdown(cooldown)
+    } else {
+      ElMessage.error(res.message || '验证码发送失败')
+    }
+  } catch {
+    ElMessage.error('验证码发送失败，请稍后再试')
+  } finally {
+    securityCodeSending.value = false
+  }
+}
+
+/** 点击「保存设置」：先弹红色警示框确认，再按改动项弹凭据验证框 */
+const submitSecurity = async () => {
+  if (!securityDirty.value) {
+    ElMessage.info('设置未改动')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      securityForm.verifyByPassword || securityForm.verifyByEmailCode
+        ? `确认将危险操作验证方式改为：${securityModeText.value}？`
+        : '你将关闭全部危险操作验证，之后执行解散班级、退出学校、踢出成员、管理员高危操作等将不再验证身份。确认继续？',
+      '修改安全验证设置',
+      {
+        confirmButtonText: '确认修改',
+        cancelButtonText: '取消',
+        type: 'warning',
+        customClass: 'danger-warning-message-box',
+        closeOnClickModal: false,
+      },
+    )
+  } catch {
+    return
+  }
+  // 打开凭据验证弹窗（只展示被改动开关对应的凭据输入）
+  securityPassword.value = ''
+  securityEmailCode.value = ''
+  securityVerifyVisible.value = true
+}
+
+/** 校验凭据输入完整后提交更新 */
+const confirmSecurityChange = async () => {
+  if (securityPasswordChanged.value && !securityPassword.value) {
+    ElMessage.warning('请输入登录密码')
+    return
+  }
+  if (securityEmailChanged.value && !securityEmailCode.value.trim()) {
+    ElMessage.warning('请输入邮箱验证码')
+    return
+  }
+  securitySubmitting.value = true
+  try {
+    const res = await put<SecurityVerificationSettings>('/users/modify/security-verification', {
+      verifyByPassword: securityForm.verifyByPassword,
+      verifyByEmailCode: securityForm.verifyByEmailCode,
+      password: securityPasswordChanged.value ? securityPassword.value : undefined,
+      emailCode: securityEmailChanged.value ? securityEmailCode.value.trim() : undefined,
+    })
+    if (res.code === 200 && res.data) {
+      securityForm.verifyByPassword = res.data.verifyByPassword
+      securityForm.verifyByEmailCode = res.data.verifyByEmailCode
+      savedSecurity.verifyByPassword = res.data.verifyByPassword
+      savedSecurity.verifyByEmailCode = res.data.verifyByEmailCode
+      securityVerifyVisible.value = false
+      ElMessage.success('安全验证设置已更新')
+      // 同步到全局用户信息，使危险操作弹窗立即按新设置生效
+      await userStore.refreshUserInfo()
+    } else {
+      ElMessage.error(res.message || '保存失败')
+    }
+  } catch {
+    ElMessage.error('保存失败，请稍后重试')
+  } finally {
+    securitySubmitting.value = false
+  }
+}
+
+onMounted(() => {
+  loadSecurity()
+})
+
+onBeforeUnmount(() => {
+  clearSecurityCodeTimer()
+})
 </script>
 
 <style scoped>
@@ -845,6 +1235,35 @@ const handleLogout = async () => {
 .avatar-wrapper {
   position: relative;
   flex-shrink: 0;
+  border-radius: 50%;
+}
+
+/* 悬停/聚焦时在头像上浮出「相机」遮罩，提示可点击更换 */
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
+/* 上传中禁止再次触发，遮罩保持可见并给出忙碌观感 */
+.avatar-wrapper.is-busy {
+  cursor: progress;
+}
+
+.avatar-wrapper.is-busy .avatar-overlay {
+  opacity: 1;
 }
 
 /* 隐藏原生文件输入，由头像/按钮触发选择 */
@@ -853,15 +1272,10 @@ const handleLogout = async () => {
 }
 
 .avatar-actions {
-  margin-top: 6px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 4px;
-}
-
-.avatar-actions .el-button {
-  padding: 0;
-  height: auto;
+  gap: 8px;
 }
 
 .user-info h3 {
@@ -876,8 +1290,16 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
   font-size: 14px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+}
+
+/* 长邮箱在窄屏下截断显示，不把角色标签挤出卡片 */
+.account-row span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-tabs :deep(.el-tabs__nav-wrap::after) {
@@ -1031,6 +1453,27 @@ const handleLogout = async () => {
   border-radius: 10px;
 }
 
+/* ===== 危险操作验证设置 ===== */
+.security-verification {
+  padding-top: 4px;
+}
+
+.security-verification .sv-mode-hint {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.25);
+}
+
+.security-verification .switch-hint {
+  margin-left: 12px;
+  font-size: 12px;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
 .code-row {
   display: flex;
   gap: 12px;
@@ -1082,6 +1525,40 @@ const handleLogout = async () => {
 
 .danger-header-icon {
   color: #667eea;
+}
+
+/* 注销账号提示与弹窗 */
+.danger-tip {
+  margin: 12px 2px 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+}
+
+.delete-warning {
+  margin-bottom: 16px;
+}
+
+.delete-warning-title {
+  font-weight: 600;
+}
+
+.delete-warning-body {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.delete-warning-body ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.delete-warning-body li {
+  margin-bottom: 2px;
+}
+
+.delete-form {
+  margin-top: 4px;
 }
 
 /* ============ 右栏侧边卡片 ============ */

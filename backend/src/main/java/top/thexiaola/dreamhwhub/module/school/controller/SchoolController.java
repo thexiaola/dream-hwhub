@@ -23,6 +23,8 @@ import top.thexiaola.dreamhwhub.module.school.vo.SchoolJoinApplicationResponse;
 import top.thexiaola.dreamhwhub.module.school.vo.SchoolMemberResponse;
 import top.thexiaola.dreamhwhub.module.school.vo.SchoolVO;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.security.RequireSensitiveVerification;
+import top.thexiaola.dreamhwhub.support.security.SensitiveOperations;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.util.List;
@@ -56,14 +58,16 @@ public class SchoolController {
     }
 
     /**
-     * 获取我加入的学校列表
+     * 获取我加入的学校列表（可按学校名称关键字搜索，筛选在数据库中完成）
      */
     @GetMapping("/mine")
     public ApiResponse<List<SchoolDetailResponse>> getMySchools(
-            @RequestParam(value = "minRoleCode", required = false) Integer minRoleCode) {
+            @RequestParam(value = "minRoleCode", required = false) Integer minRoleCode,
+            @RequestParam(value = "keyword", required = false) String keyword) {
         User currentUser = UserUtils.getCurrentUser();
-        List<SchoolDetailResponse> schools = schoolService.getMySchools(minRoleCode);
-        log.info("User {} queried {} joined schools", LogUtil.getUserInfo(currentUser), schools.size());
+        List<SchoolDetailResponse> schools = schoolService.getMySchools(minRoleCode, keyword);
+        log.info("User {} queried {} joined schools, keyword={}",
+                LogUtil.getUserInfo(currentUser), schools.size(), keyword);
         return ApiResponse.success(schools);
     }
 
@@ -218,9 +222,10 @@ public class SchoolController {
     }
 
     /**
-     * 退出学校
+     * 退出学校（需身份二次验证）
      */
     @DeleteMapping("/{schoolId}/membership")
+    @RequireSensitiveVerification(value = "退出学校", key = SensitiveOperations.SCHOOL_LEAVE)
     public ApiResponse<Void> leaveSchool(@PathVariable(value = "schoolId") Integer schoolId) {
         User currentUser = UserUtils.getCurrentUser();
         schoolService.leaveSchool(schoolId);

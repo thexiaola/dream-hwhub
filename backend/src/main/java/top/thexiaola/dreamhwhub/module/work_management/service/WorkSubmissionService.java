@@ -2,7 +2,9 @@ package top.thexiaola.dreamhwhub.module.work_management.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletResponse;
+import top.thexiaola.dreamhwhub.module.work_management.dto.AnswerItem;
 import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.GradeAnswersRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResponse;
@@ -31,11 +33,13 @@ public interface WorkSubmissionService {
      * @param submissionContent 提交内容
      * @param attachments 新增的附件文件列表
      * @param removedAttachmentIds 要删除的附件ID列表
+     * @param answers 逐题作答（含题目的作业使用；整体替换，客观题重新自动评判）
      * @return 更新后的提交（不包含批改信息）
      */
     WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent, 
                                                    List<org.springframework.web.multipart.MultipartFile> attachments,
-                                                   List<Integer> removedAttachmentIds);
+                                                   List<Integer> removedAttachmentIds,
+                                                   List<AnswerItem> answers);
 
     /**
      * 删除提交的作业
@@ -78,6 +82,17 @@ public interface WorkSubmissionService {
      * @return 批改后的提交
      */
     WorkSubmissionResponse gradeWork(GradeWorkRequest request);
+
+    /**
+     * 逐题评分（教师专用）
+     * <p>
+     * 用于主观题/附加题手动评分，也支持对客观题手动改判覆盖自动分。
+     * 评分后按题目得分在数据库侧汇总，重算该次提交总分。
+     *
+     * @param request 逐题评分请求
+     * @return 评分后的提交（含逐题作答明细）
+     */
+    WorkSubmissionResponse gradeAnswers(GradeAnswersRequest request);
 
     /**
      * 查询某次作业的已交名单

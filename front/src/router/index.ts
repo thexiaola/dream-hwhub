@@ -63,6 +63,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/student/StudentWork.vue')
       },
       {
+        // 考试作答页：与作业详情分离，因需承载反作弊（强制全屏/切屏检测/字体映射等）
+        path: 'student/exam/:id',
+        name: 'StudentExam',
+        component: () => import('@/views/student/ExamWork.vue')
+      },
+      {
         // 不设 requiresSchoolTeacher：班级详情需允许「已失去教师身份的原创建者」
         // 进入查看冻结状态（写入操作在后端已全部拦截），准入由后端 getClassDetail
         // 与页面内 loadCourse 共同判定（成员/管理员/冻结班级的本校老师）
@@ -93,9 +99,35 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/school/SchoolDetail.vue')
       },
       {
+        // 学校管理独立页：仅平台管理员或该校学校管理员可进入（页面内二次校验）。
+        // 从「管理面板 → 学校管理」或「我的学校」的管理按钮跳转而来，避免在抽屉里
+        // 右侧窄栏呈现管理控制台造成的拥挤。
+        path: 'school/:id/manage',
+        name: 'SchoolManagePage',
+        component: () => import('@/views/school/SchoolManagePage.vue')
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/Profile.vue')
+      },
+      {
+        // 站内信（按学校隔离，支持筛选）
+        path: 'messages',
+        name: 'MessageCenter',
+        component: () => import('@/views/message/MessageCenter.vue')
+      },
+      {
+        // 好友（按学校隔离，可添加同校用户）
+        path: 'friends',
+        name: 'FriendCenter',
+        component: () => import('@/views/message/FriendCenter.vue')
+      },
+      {
+        // 私信（按学校隔离，非好友也可发，受陌生私信配额约束）
+        path: 'private-messages',
+        name: 'PrivateMessageCenter',
+        component: () => import('@/views/message/PrivateMessageCenter.vue')
       },
       {
         // 管理面板各模块用独立链接：/admin/panel/:tab（tab 省略时回退到首个有权限的模块）

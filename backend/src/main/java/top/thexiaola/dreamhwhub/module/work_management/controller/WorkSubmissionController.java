@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import cn.hutool.json.JSONUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,9 @@ import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
+import top.thexiaola.dreamhwhub.module.work_management.dto.AnswerItem;
 import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.GradeAnswersRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.PageRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
@@ -20,6 +23,8 @@ import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResp
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.security.RequireSensitiveVerification;
+import top.thexiaola.dreamhwhub.support.security.SensitiveOperations;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.util.List;
@@ -41,7 +46,8 @@ public class WorkSubmissionController {
     public ResponseEntity<ApiResponse<WorkSubmissionSubmitResponse>> submitWork(
             @RequestParam(value = "workId") Integer workId,
             @RequestParam(value = "submissionContent", required = false) String submissionContent,
-            @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments) {
+            @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments,
+            @RequestParam(value = "answers", required = false) String answersJson) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             if (workId == null || workId <= 0) {
@@ -63,6 +69,7 @@ public class WorkSubmissionController {
             request.setWorkId(workId);
             request.setSubmissionContent(submissionContent);
             request.setAttachments(attachments);
+            request.setAnswers(parseAnswers(answersJson));
             
             request.validate();
             
@@ -76,6 +83,21 @@ public class WorkSubmissionController {
     }
 
     /**
+     * 解析前端逐题作答 JSON（multipart 表单以字符串字段携带）
+     */
+    private List<AnswerItem> parseAnswers(String answersJson) {
+        if (answersJson == null || answersJson.isBlank()) {
+            return null;
+        }
+        try {
+            return JSONUtil.toList(JSONUtil.parseArray(answersJson), AnswerItem.class);
+        } catch (Exception e) {
+            throw new BusinessException(top.thexiaola.dreamhwhub.enums.BusinessErrorCode.ANSWER_INVALID,
+                    "作答数据格式不正确", null);
+        }
+    }
+
+    /**
      * 更新提交的作业
      */
     @PutMapping(value = "/{submissionId}", consumes = "multipart/form-data")
@@ -83,13 +105,15 @@ public class WorkSubmissionController {
             @PathVariable(value = "submissionId") Integer submissionId,
             @RequestParam(value = "submissionContent", required = false) String submissionContent,
             @RequestParam(value = "attachments", required = false) List<org.springframework.web.multipart.MultipartFile> attachments,
-            @RequestParam(value = "removedAttachmentIds", required = false) List<Integer> removedAttachmentIds) {
+            @RequestParam(value = "removedAttachmentIds", required = false) List<Integer> removedAttachmentIds,
+            @RequestParam(value = "answers", required = false) String answersJson) {
         String ip = LogUtil.getCurrentClientIp();
         try {
             User user = UserUtils.getCurrentUser();
             String userInfo = LogUtil.getUserInfoString(ip, user);
             
-            WorkSubmissionSubmitResponse response = workSubmissionService.updateSubmission(submissionId, submissionContent, attachments, removedAttachmentIds);
+            WorkSubmissionSubmitResponse response = workSubmissionService.updateSubmission(
+                    submissionId, submissionContent, attachments, removedAttachmentIds, parseAnswers(answersJson));
             log.info("User ({}) updated submission, id: {}", userInfo, response.getId());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (BusinessException e) {
@@ -99,9 +123,10 @@ public class WorkSubmissionController {
     }
 
     /**
-     * 删除提交的作业
+     * 删除提交的作业（撤回提交，需身份二次验证）
      */
     @DeleteMapping(value = "/{submissionId}")
+    @RequireSensitiveVerification(value = "撤回提交", key = SensitiveOperations.SUBMISSION_WITHDRAW)
     public ResponseEntity<ApiResponse<Void>> deleteSubmission(@PathVariable(value = "submissionId") Integer submissionId) {
         String ip = LogUtil.getCurrentClientIp();
         try {
@@ -226,6 +251,28 @@ public class WorkSubmissionController {
         WorkSubmissionResponse submission = workSubmissionService.gradeWork(request);
         log.info("User ({}) graded submission, id: {}, score: {}", userInfo, submission.getId(), submission.getScore());
         return ResponseEntity.ok(ApiResponse.success(submission));
+    }
+
+    /**
+     * 逐题评分（教师专用）
+     * <p>
+     * 主观题/附加题手动评分；也可对客观题手动改判覆盖自动分。评分后自动汇总总分。
+     */
+    @PutMapping(value = "/grade-answers")
+    public ResponseEntity<ApiResponse<WorkSubmissionResponse>> gradeAnswers(@Valid @RequestBody GradeAnswersRequest request) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User user = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, user);
+
+            WorkSubmissionResponse submission = workSubmissionService.gradeAnswers(request);
+            log.info("User ({}) graded answers for submission, id: {}, score: {}",
+                    userInfo, submission.getId(), submission.getScore());
+            return ResponseEntity.ok(ApiResponse.success(submission));
+        } catch (BusinessException e) {
+            log.warn("User grade answers failed: {}", e.getMessage());
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
+        }
     }
 
     /**

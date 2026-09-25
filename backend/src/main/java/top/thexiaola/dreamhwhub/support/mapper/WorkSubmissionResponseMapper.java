@@ -31,5 +31,7 @@ public interface WorkSubmissionResponseMapper {
     @Mapping(target = "submitterEmail", ignore = true)  // 提交人邮箱需要从用户表查询
     @Mapping(target = "submitterStudentName", ignore = true)  // 提交人在班级内的姓名取自班级成员记录
     @Mapping(target = "submitterStudentNo", ignore = true)  // 提交人在班级内的学号取自班级成员记录
+    @Mapping(target = "hasQuestions", ignore = true)  // 由服务层按题目表判定
+    @Mapping(target = "answers", ignore = true)  // 逐题作答明细由服务层单独组装
     WorkSubmissionResponse toResponse(WorkSubmission submission, WorkInfo workInfo);
 }

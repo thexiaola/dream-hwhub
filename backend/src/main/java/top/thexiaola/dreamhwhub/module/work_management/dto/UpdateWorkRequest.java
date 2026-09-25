@@ -74,6 +74,22 @@ public class UpdateWorkRequest {
     private List<Integer> removedAttachmentIds;
 
     /**
+     * 结构化题目列表（可选）：非 null 时整体替换该作业的题目；
+     * 传空数组表示清除题目、退回纯文本作业
+     */
+    private List<QuestionItem> questions;
+
+    /**
+     * 类型（可选）：homework-作业，exam-考试；非 null 时更新
+     */
+    private String workType;
+
+    /**
+     * 考试配置（可选）：非 null 时整体覆盖限时与反作弊设置
+     */
+    private ExamConfigDto examConfig;
+
+    /**
      * 自定义校验：XSS防护和时间逻辑校验
      */
     public void validate() {

@@ -23,8 +23,10 @@ import top.thexiaola.dreamhwhub.module.permission.vo.PermissionGroupVO;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -150,31 +152,51 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public List<PermissionGroupVO> listGroupVOs() {
-        return listGroups().stream().map(this::toGroupVO).toList();
+        return toGroupVOs(listGroups());
     }
 
     @Override
     public List<PermissionGroupVO> getUserGroupVOs(Integer userId) {
-        return getUserGroups(userId).stream().map(this::toGroupVO).toList();
+        return toGroupVOs(getUserGroups(userId));
     }
 
     /**
-     * 权限组实体转 VO（附带所含节点与组内用户数）
+     * 批量把权限组实体转为 VO：一次查询取回所有组的节点、一次分组聚合取回各组用户数，
+     * 避免「每个组各查一次节点 + 各数一次用户」的 N+1。
      */
-    private PermissionGroupVO toGroupVO(PermissionGroup group) {
-        PermissionGroupVO vo = new PermissionGroupVO();
-        vo.setId(group.getId());
-        vo.setCode(group.getCode());
-        vo.setName(group.getName());
-        vo.setDescription(group.getDescription());
-        vo.setIsDefault(Boolean.TRUE.equals(group.getIsDefault()));
-        vo.setCreateTime(group.getCreateTime());
-        vo.setNodes(getGroupNodes(group.getId()));
+    private List<PermissionGroupVO> toGroupVOs(List<PermissionGroup> groups) {
+        if (groups.isEmpty()) {
+            return List.of();
+        }
+        List<Integer> groupIds = groups.stream().map(PermissionGroup::getId).toList();
 
+        // 一次取回所有组的节点，按组归并（仅取本批组的行，不额外多读）
+        QueryWrapper<PermissionGroupNode> nodeQuery = new QueryWrapper<>();
+        nodeQuery.in("group_id", groupIds);
+        Map<Integer, Set<String>> nodesByGroup = new HashMap<>();
+        for (PermissionGroupNode node : permissionGroupNodeMapper.selectList(nodeQuery)) {
+            nodesByGroup.computeIfAbsent(node.getGroupId(), k -> new LinkedHashSet<>()).add(node.getNode());
+        }
+
+        // 各组用户数在数据库内聚合：GROUP BY group_id + COUNT(*)
+        Map<Integer, Long> countByGroup = new HashMap<>();
         QueryWrapper<UserPermissionGroup> countQuery = new QueryWrapper<>();
-        countQuery.eq("group_id", group.getId());
-        vo.setUserCount(userPermissionGroupMapper.selectCount(countQuery));
-        return vo;
+        countQuery.in("group_id", groupIds)
+                .select("group_id", "COUNT(*) AS cnt")
+                .groupBy("group_id");
+        for (Map<String, Object> row : userPermissionGroupMapper.selectMaps(countQuery)) {
+            Object groupId = row.get("group_id");
+            Object cnt = row.get("cnt");
+            if (groupId instanceof Number gid && cnt instanceof Number count) {
+                countByGroup.put(gid.intValue(), count.longValue());
+            }
+        }
+
+        return groups.stream()
+                .map(group -> toGroupVO(group,
+                        nodesByGroup.getOrDefault(group.getId(), Set.of()),
+                        countByGroup.getOrDefault(group.getId(), 0L)))
+                .toList();
     }
 
     @Override
@@ -188,7 +210,31 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public PermissionGroupVO getGroupVO(Integer groupId) {
         PermissionGroup group = getGroup(groupId);
-        return group == null ? null : toGroupVO(group);
+        if (group == null) {
+            return null;
+        }
+        return toGroupVO(group, getGroupNodes(groupId), countGroupUsers(groupId));
+    }
+
+    /** 权限组实体 + 已取好的节点与用户数 → VO */
+    private PermissionGroupVO toGroupVO(PermissionGroup group, Set<String> nodes, long userCount) {
+        PermissionGroupVO vo = new PermissionGroupVO();
+        vo.setId(group.getId());
+        vo.setCode(group.getCode());
+        vo.setName(group.getName());
+        vo.setDescription(group.getDescription());
+        vo.setIsDefault(Boolean.TRUE.equals(group.getIsDefault()));
+        vo.setCreateTime(group.getCreateTime());
+        vo.setNodes(nodes);
+        vo.setUserCount(userCount);
+        return vo;
+    }
+
+    /** 单个权限组的用户数（数据库内 COUNT） */
+    private long countGroupUsers(Integer groupId) {
+        QueryWrapper<UserPermissionGroup> countQuery = new QueryWrapper<>();
+        countQuery.eq("group_id", groupId);
+        return userPermissionGroupMapper.selectCount(countQuery);
     }
 
     @Override
@@ -278,11 +324,15 @@ public class PermissionServiceImpl implements PermissionService {
         deleteQuery.eq("group_id", groupId);
         permissionGroupNodeMapper.delete(deleteQuery);
 
-        for (String node : normalized) {
-            PermissionGroupNode entity = new PermissionGroupNode();
-            entity.setGroupId(groupId);
-            entity.setNode(node);
-            permissionGroupNodeMapper.insert(entity);
+        // 批量插入，避免逐条 insert（N 次数据库往返）
+        if (!normalized.isEmpty()) {
+            List<PermissionGroupNode> entities = normalized.stream().map(node -> {
+                PermissionGroupNode entity = new PermissionGroupNode();
+                entity.setGroupId(groupId);
+                entity.setNode(node);
+                return entity;
+            }).toList();
+            permissionGroupNodeMapper.insert(entities);
         }
     }
 
@@ -339,11 +389,15 @@ public class PermissionServiceImpl implements PermissionService {
         deleteQuery.eq("user_id", userId);
         userPermissionGroupMapper.delete(deleteQuery);
 
-        for (Integer groupId : targetGroupIds) {
-            UserPermissionGroup entity = new UserPermissionGroup();
-            entity.setUserId(userId);
-            entity.setGroupId(groupId);
-            userPermissionGroupMapper.insert(entity);
+        // 批量插入，避免逐条 insert
+        if (!targetGroupIds.isEmpty()) {
+            List<UserPermissionGroup> entities = targetGroupIds.stream().map(groupId -> {
+                UserPermissionGroup entity = new UserPermissionGroup();
+                entity.setUserId(userId);
+                entity.setGroupId(groupId);
+                return entity;
+            }).toList();
+            userPermissionGroupMapper.insert(entities);
         }
     }
 
@@ -377,11 +431,15 @@ public class PermissionServiceImpl implements PermissionService {
         deleteQuery.eq("user_id", userId);
         userPermissionNodeMapper.delete(deleteQuery);
 
-        for (String node : normalized) {
-            UserPermissionNode entity = new UserPermissionNode();
-            entity.setUserId(userId);
-            entity.setNode(node);
-            userPermissionNodeMapper.insert(entity);
+        // 批量插入，避免逐条 insert
+        if (!normalized.isEmpty()) {
+            List<UserPermissionNode> entities = normalized.stream().map(node -> {
+                UserPermissionNode entity = new UserPermissionNode();
+                entity.setUserId(userId);
+                entity.setNode(node);
+                return entity;
+            }).toList();
+            userPermissionNodeMapper.insert(entities);
         }
     }
 
@@ -397,12 +455,14 @@ public class PermissionServiceImpl implements PermissionService {
         if (defaultGroups.isEmpty()) {
             return;
         }
-        for (PermissionGroup group : defaultGroups) {
+        // 批量插入，避免逐条 insert
+        List<UserPermissionGroup> entities = defaultGroups.stream().map(group -> {
             UserPermissionGroup entity = new UserPermissionGroup();
             entity.setUserId(userId);
             entity.setGroupId(group.getId());
-            userPermissionGroupMapper.insert(entity);
-        }
+            return entity;
+        }).toList();
+        userPermissionGroupMapper.insert(entities);
         log.info("Applied {} default permission group(s) to user {}", defaultGroups.size(), userId);
     }
 

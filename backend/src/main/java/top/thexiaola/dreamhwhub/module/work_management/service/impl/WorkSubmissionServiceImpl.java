@@ -2,6 +2,7 @@ package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,22 +18,34 @@ import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
 import top.thexiaola.dreamhwhub.module.work_management.dto.BatchDownloadAttachmentsRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.GradeAnswersRequest;
 import top.thexiaola.dreamhwhub.module.work_management.dto.GradeWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.dto.AnswerItem;
 import top.thexiaola.dreamhwhub.module.work_management.dto.SubmitWorkRequest;
+import top.thexiaola.dreamhwhub.module.work_management.constant.QuestionType;
+import top.thexiaola.dreamhwhub.module.work_management.constant.WorkType;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ExamSession;
+import top.thexiaola.dreamhwhub.module.work_management.entity.WorkAnswer;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
+import top.thexiaola.dreamhwhub.module.work_management.entity.WorkQuestion;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmission;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkSubmissionAttachment;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkAnswerMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ExamSessionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionAttachmentMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkSubmissionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.ClassService;
+import top.thexiaola.dreamhwhub.module.work_management.service.WorkQuestionService;
 import top.thexiaola.dreamhwhub.module.work_management.service.WorkSubmissionService;
+import top.thexiaola.dreamhwhub.module.work_management.service.support.AnswerGrader;
 import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.UnsubmittedStudentResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.WorkAnswerVO;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionResponse;
 import top.thexiaola.dreamhwhub.module.work_management.vo.WorkSubmissionSubmitResponse;
 import top.thexiaola.dreamhwhub.support.mapper.WorkSubmissionResponseMapper;
@@ -42,6 +55,7 @@ import top.thexiaola.dreamhwhub.support.validation.FileUploadValidator;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -67,6 +81,10 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private final WorkSubmissionMapper workSubmissionMapper;
     private final WorkMapper workMapper;
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
+    private final WorkAnswerMapper workAnswerMapper;
+    private final ExamSessionMapper examSessionMapper;
+    private final WorkQuestionService workQuestionService;
+    private final AnswerGrader answerGrader;
     private final ClassService classService;
     private final UserMapper userMapper;
     private final UserLookupSupport userLookup;
@@ -234,6 +252,10 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.WORK_ALREADY_SUBMITTED, "您已经提交过该作业", null);
         }
         
+        // 保存逐题作答：客观题提交即自动评判记分，主观题/附加题待老师手动评分
+        saveAnswers(submission, workInfo, request.getAnswers(), null);
+        workSubmissionMapper.updateById(submission);
+
         // 保存附件记录到数据库（更新为真实的submissionId）
         List<WorkSubmissionSubmitResponse.AttachmentInfo> attachmentInfos = null;
         if (!savedAttachments.isEmpty()) {
@@ -258,8 +280,130 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         // 转换为响应VO
         WorkSubmissionSubmitResponse response = submissionSubmitResponseMapper.toSubmitResponse(submission);
         response.setAttachments(attachmentInfos);
-        
+
+        // 考试：交卷后结束会话（记录交卷时刻并清空草稿）
+        if (WorkType.isExam(workInfo.getWorkType())) {
+            finishExamSession(workInfo.getId(), currentUser.getId(), 2);
+        }
+
         return response;
+    }
+
+    /**
+     * 结束考试会话（交卷/超时）。会话不存在时静默跳过（非考试或未开考直接交卷）。
+     *
+     * @param workId    考试 ID
+     * @param studentId 学生 ID
+     * @param status    结束状态：2-已交卷，3-超时自动交卷
+     */
+    private void finishExamSession(Integer workId, Integer studentId, int status) {
+        // 交卷后需把 draft_answers 置空；updateById 会忽略 null 字段，
+        // 故用 UpdateWrapper 显式 set(col, null)
+        UpdateWrapper<ExamSession> update = new UpdateWrapper<>();
+        update.eq("work_id", workId).eq("student_id", studentId)
+                .set("status", status)
+                .set("submit_time", LocalDateTime.now())
+                .set("draft_answers", null)
+                .set("update_time", LocalDateTime.now());
+        examSessionMapper.update(null, update);
+    }
+
+    /**
+     * 保存（或整体替换）某次提交的逐题作答，并对客观题执行自动评判。
+     * <p>
+     * 含题目的作业：为每道题落一条 work_answer；客观题按参考答案自动判定对错并给分，
+     * 主观题/附加题留给老师手动评分。若本次作答全部为客观题，则汇总自动分作为提交总分并直接置为「已批改」；
+     * 只要含主观题，提交保持「已提交」状态待老师评阅。纯文本作业（无题目）走原有逻辑，不做任何处理。
+     *
+     * @param submission   提交实体（insert 后需再次 updateById 才会落库）
+     * @param workInfo     作业信息
+     * @param answers      学生逐题作答（可为空）
+     * @param replaceOld   true 时先清空该提交已有作答（用于修改提交）
+     */
+    private void saveAnswers(WorkSubmission submission, WorkInfo workInfo,
+                             List<AnswerItem> answers, Boolean replaceOld) {
+        Integer workId = workInfo.getId();
+        List<WorkQuestion> questions = workQuestionService.listEntities(workId);
+        if (questions.isEmpty()) {
+            // 纯文本作业：无结构化题目
+            return;
+        }
+
+        // 修改提交场景：先清空旧作答再重建
+        if (Boolean.TRUE.equals(replaceOld)) {
+            QueryWrapper<WorkAnswer> deleteQuery = new QueryWrapper<>();
+            deleteQuery.eq("submission_id", submission.getId());
+            workAnswerMapper.delete(deleteQuery);
+        }
+
+        Map<Integer, Object> studentAnswers = new HashMap<>();
+        if (answers != null) {
+            Set<Integer> validQuestionIds = questions.stream()
+                    .map(WorkQuestion::getId)
+                    .collect(Collectors.toSet());
+            for (AnswerItem item : answers) {
+                if (item == null || item.getQuestionId() == null) {
+                    continue;
+                }
+                if (!validQuestionIds.contains(item.getQuestionId())) {
+                    throw new BusinessException(BusinessErrorCode.ANSWER_INVALID,
+                            "作答包含不属于该作业的题目", null);
+                }
+                studentAnswers.put(item.getQuestionId(), item.getAnswer());
+            }
+        }
+
+        List<WorkAnswer> rows = new ArrayList<>(questions.size());
+        BigDecimal autoTotal = BigDecimal.ZERO;
+        boolean allAutoGradable = true;
+
+        for (WorkQuestion question : questions) {
+            Object rawAnswer = studentAnswers.get(question.getId());
+            WorkAnswer row = new WorkAnswer();
+            row.setSubmissionId(submission.getId());
+            row.setQuestionId(question.getId());
+            row.setAnswer(answerGrader.toJson(rawAnswer));
+
+            if (QuestionType.isAutoGradable(question.getQuestionType())) {
+                AnswerGrader.Result result = answerGrader.grade(question, rawAnswer);
+                row.setGradingType("auto");
+                row.setIsCorrect(result.correct());
+                row.setScore(answerGrader.scoreOf(question, result.correct()));
+                autoTotal = autoTotal.add(row.getScore() == null ? BigDecimal.ZERO : row.getScore());
+                row.setGradeTime(LocalDateTime.now());
+            } else {
+                // 主观题/附加题：待老师手动评分
+                allAutoGradable = false;
+                row.setGradingType(null);
+                row.setIsCorrect(null);
+                row.setScore(null);
+            }
+            rows.add(row);
+        }
+
+        // 清理可能存在的重复作答（修改提交时已清空；新提交为并发防护），再批量插入
+        if (!rows.isEmpty()) {
+            workAnswerMapper.insert(rows);
+        }
+
+        if (allAutoGradable) {
+            // 全部客观题：自动判分即为最终成绩
+            submission.setScore(autoTotal);
+            submission.setStatus(2);
+            submission.setGradeTime(LocalDateTime.now());
+        } else {
+            // 含主观题：提交后等待老师评阅，暂不写总分
+            submission.setStatus(1);
+        }
+    }
+
+    /**
+     * 依据当前作答明细重算提交总分（数据库侧求和），用于老师逐题评分之后。
+     */
+    private void refreshSubmissionTotal(WorkSubmission submission) {
+        BigDecimal total = workAnswerMapper.sumScoreBySubmission(submission.getId());
+        submission.setScore(total == null ? BigDecimal.ZERO : total);
+        submission.setUpdateTime(LocalDateTime.now());
     }
     
     /**
@@ -282,7 +426,8 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     @Transactional(rollbackFor = Exception.class)
     public WorkSubmissionSubmitResponse updateSubmission(Integer submissionId, String submissionContent,
                                                           List<MultipartFile> attachments,
-                                                          List<Integer> removedAttachmentIds) {
+                                                          List<Integer> removedAttachmentIds,
+                                                          List<AnswerItem> answers) {
         // 获取当前用户
         User currentUser = userLookup.requireCurrentUser();
 
@@ -302,9 +447,10 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
             throw new BusinessException(BusinessErrorCode.SUBMISSION_ALREADY_GRADED, "作业已被批改，不能修改", null);
         }
 
+        WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
+
         // 检查是否已过截止时间，学生不能在截止后更新作业（除非被老师打回）
         if (submission.getStatus() != 3) {
-            WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
             if (workInfo != null && workInfo.getDeadline() != null && LocalDateTime.now().isAfter(workInfo.getDeadline())) {
                 throw new BusinessException(BusinessErrorCode.WORK_STATUS_ERROR, "作业已截止，无法修改", null);
             }
@@ -341,10 +487,15 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         }
         submission.setStatus(1); // 重置为已提交状态
         submission.setUpdateTime(LocalDateTime.now());
-
         workSubmissionMapper.updateById(submission);
-        
-        // 4. 构建响应（包含更新后的附件列表）
+
+        // 4. 含题目的作业：整体替换逐题作答并重新自动评判（客观题）
+        if (workInfo != null) {
+            saveAnswers(submission, workInfo, answers, Boolean.TRUE);
+            workSubmissionMapper.updateById(submission);
+        }
+
+        // 5. 构建响应（包含更新后的附件列表）
         WorkSubmissionSubmitResponse response = submissionSubmitResponseMapper.toSubmitResponse(submission);
         List<WorkSubmissionSubmitResponse.AttachmentInfo> attachmentInfos = getSubmissionAttachmentsForSubmitResponse(submissionId);
         response.setAttachments(attachmentInfos);
@@ -614,10 +765,13 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         Map<Integer, SchoolMember> memberMap = loadClassMembers(workInfo.getClassId(), userIds);
         final Map<Integer, User> finalUserMap = userMap;
         final Map<Integer, SchoolMember> finalMemberMap = memberMap;
+        // 该作业是否含题目（一次判定，复用到列表每一项，供前端决定是否展示"逐题评分"入口）
+        final boolean workHasQuestions = workQuestionService.hasQuestions(workInfo.getId());
         List<WorkSubmissionResponse> responses = pagedResult.getRecords().stream()
                 .map(submission -> {
                     WorkSubmissionResponse response = convertToResponseWithCache(submission, workInfo, finalUserMap, finalMemberMap);
                     response.setAttachments(attachmentMap.getOrDefault(submission.getId(), new ArrayList<>()));
+                    response.setHasQuestions(workHasQuestions);
                     return response;
                 })
                 .collect(Collectors.toList());
@@ -672,6 +826,83 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
         return convertToResponse(submission);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public WorkSubmissionResponse gradeAnswers(GradeAnswersRequest request) {
+        // 获取当前用户
+        User currentUser = userLookup.requireCurrentUser();
+
+        // 查询提交记录（排除已软删除的）
+        WorkSubmission submission = workSubmissionMapper.selectById(request.getSubmissionId());
+        if (submission == null || Boolean.TRUE.equals(submission.getIsDeleted())) {
+            throw new BusinessException(BusinessErrorCode.SUBMISSION_NOT_FOUND, "提交记录不存在", null);
+        }
+
+        // 查询作业信息并检查权限（只有班级老师可以批改作业）
+        WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
+        if (workInfo == null || !classService.isTeacher(workInfo.getClassId(), currentUser.getId())) {
+            throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师可以批改作业", null);
+        }
+
+        // 该次提交的全部作答（数据库一次查询）
+        QueryWrapper<WorkAnswer> answerQuery = new QueryWrapper<>();
+        answerQuery.eq("submission_id", submission.getId());
+        List<WorkAnswer> answers = workAnswerMapper.selectList(answerQuery);
+        if (answers.isEmpty()) {
+            throw new BusinessException(BusinessErrorCode.ANSWER_INVALID, "该提交没有逐题作答，无法逐题评分", null);
+        }
+        Map<Integer, WorkAnswer> answerByQuestion = answers.stream()
+                .collect(Collectors.toMap(WorkAnswer::getQuestionId, a -> a));
+
+        // 题目 ID -> 满分与题型（校验评分范围、判定客观题）
+        Map<Integer, BigDecimal> scoreByQuestion = new HashMap<>();
+        Map<Integer, String> typeByQuestion = new HashMap<>();
+        for (WorkQuestion q : workQuestionService.listEntities(workInfo.getId())) {
+            scoreByQuestion.put(q.getId(), q.getScore() == null ? BigDecimal.ZERO : q.getScore());
+            typeByQuestion.put(q.getId(), q.getQuestionType());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        for (GradeAnswersRequest.GradeItem item : request.getItems()) {
+            if (item == null || item.getQuestionId() == null) {
+                continue;
+            }
+            WorkAnswer answer = answerByQuestion.get(item.getQuestionId());
+            if (answer == null) {
+                throw new BusinessException(BusinessErrorCode.ANSWER_INVALID,
+                        "题目不属于该提交：" + item.getQuestionId(), null);
+            }
+            if (item.getScore() == null || item.getScore().compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "分数不能为负", null);
+            }
+            BigDecimal fullScore = scoreByQuestion.getOrDefault(item.getQuestionId(), BigDecimal.ZERO);
+            if (item.getScore().compareTo(fullScore) > 0) {
+                throw new BusinessException(BusinessErrorCode.SCORE_OUT_OF_RANGE,
+                        "本题得分不能超过该题满分", null);
+            }
+
+            // 手动评分（覆盖自动分）；客观题据得分是否等于满分回推对错
+            answer.setScore(item.getScore());
+            answer.setGradingType("manual");
+            answer.setComment(item.getComment());
+            answer.setGraderId(currentUser.getId());
+            answer.setGradeTime(now);
+            if (QuestionType.isObjective(typeByQuestion.get(item.getQuestionId()))) {
+                answer.setIsCorrect(item.getScore().compareTo(fullScore) == 0);
+            }
+            workAnswerMapper.updateById(answer);
+        }
+
+        // 按数据库汇总的逐题得分重算总分，并置为「已批改」
+        refreshSubmissionTotal(submission);
+        submission.setStatus(2);
+        submission.setGradeTime(now);
+        submission.setGraderId(currentUser.getId());
+        workSubmissionMapper.updateById(submission);
+
+        return convertToResponse(submission);
+    }
+
     /**
      * 转换为响应对象（带缓存的作业信息和用户信息）
      */
@@ -710,12 +941,75 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
     private WorkSubmissionResponse convertToResponse(WorkSubmission submission) {
         WorkInfo workInfo = workMapper.selectById(submission.getWorkId());
         WorkSubmissionResponse response = submissionResponseMapper.toResponse(submission, workInfo);
-        
+
         // 加载附件列表
         List<WorkSubmissionResponse.AttachmentInfo> attachments = getSubmissionAttachments(submission.getId());
         response.setAttachments(attachments);
-        
+
+        // 含题目的作业：填充逐题作答明细
+        if (workInfo != null) {
+            boolean hasQuestions = workQuestionService.hasQuestions(submission.getWorkId());
+            response.setHasQuestions(hasQuestions);
+            if (hasQuestions) {
+                User currentUser = userLookup.requireCurrentUser();
+                boolean isTeacher = classService.isTeacher(workInfo.getClassId(), currentUser.getId());
+                response.setAnswers(fillAnswers(submission, isTeacher));
+            }
+        }
+
         return response;
+    }
+
+    /**
+     * 组装某次提交的逐题作答明细。
+     * <p>
+     * 学生侧仅在其提交被批改（status=2）后才可见参考答案与解析；教师侧始终可见。
+     *
+     * @param submission 提交实体
+     * @param isTeacher  查看者是否该班老师
+     * @return 逐题作答明细
+     */
+    private List<WorkAnswerVO> fillAnswers(WorkSubmission submission, boolean isTeacher) {
+        QueryWrapper<WorkAnswer> answerQuery = new QueryWrapper<>();
+        answerQuery.eq("submission_id", submission.getId());
+        List<WorkAnswer> rows = workAnswerMapper.selectList(answerQuery);
+
+        List<WorkQuestion> questions = workQuestionService.listEntities(submission.getWorkId());
+        Map<Integer, WorkQuestion> questionMap = questions.stream()
+                .collect(Collectors.toMap(WorkQuestion::getId, q -> q));
+
+        // 学生且未批改：不下发参考答案与解析
+        boolean revealAnswer = isTeacher || (submission.getStatus() != null && submission.getStatus() == 2);
+
+        List<WorkAnswerVO> result = new ArrayList<>(rows.size());
+        for (WorkAnswer row : rows) {
+            WorkQuestion q = questionMap.get(row.getQuestionId());
+            WorkAnswerVO vo = new WorkAnswerVO();
+            vo.setId(row.getId());
+            vo.setQuestionId(row.getQuestionId());
+            vo.setAnswer(answerGrader.parseJson(row.getAnswer()));
+            vo.setScore(row.getScore());
+            vo.setIsCorrect(row.getIsCorrect());
+            vo.setGradingType(row.getGradingType());
+            vo.setComment(row.getComment());
+            vo.setGradeTime(row.getGradeTime());
+            if (q != null) {
+                vo.setOrderNo(q.getOrderNo());
+                vo.setQuestionType(q.getQuestionType());
+                vo.setQuestionTypeName(QuestionType.nameOf(q.getQuestionType()));
+                vo.setContent(q.getContent());
+                vo.setFullScore(q.getScore());
+                vo.setAutoGradable(QuestionType.isAutoGradable(q.getQuestionType()));
+                if (revealAnswer) {
+                    vo.setCorrectAnswer(answerGrader.parseJson(q.getCorrectAnswer()));
+                    vo.setAnalysis(q.getAnalysis());
+                }
+            }
+            result.add(vo);
+        }
+        // 按题号排序，保证展示顺序与题干一致
+        result.sort(Comparator.comparing(v -> v.getOrderNo() == null ? Integer.MAX_VALUE : v.getOrderNo()));
+        return result;
     }
     
     /**
@@ -724,16 +1018,19 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
      */
     private List<WorkSubmissionResponse.AttachmentInfo> saveSubmissionAttachmentsDirectly(Integer userId, Integer submissionId, List<MultipartFile> files) {
         List<WorkSubmissionResponse.AttachmentInfo> attachmentInfos = new ArrayList<>();
-        
+
         if (CollUtil.isEmpty(files)) {
             return attachmentInfos;
         }
-        
+
+        // 文件需逐个落盘（IO 无法合并），但数据库记录收集后一次性批量插入，避免逐条 insert
+        List<WorkSubmissionAttachment> pending = new ArrayList<>();
+
         for (MultipartFile file : files) {
             if (file == null || file.isEmpty()) {
                 continue;
             }
-            
+
             try {
                 // 1. 获取原始文件名
                 String originalFilename = file.getOriginalFilename();
@@ -761,7 +1058,7 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 // 6. 执行完整的安全检查
                 FileUploadValidator.performFullSecurityCheck(filePath.toString(), fileSize);
                 
-                // 7. 保存到数据库
+                // 7. 暂存待插入的数据库记录（稍后批量插入）
                 WorkSubmissionAttachment attachment = new WorkSubmissionAttachment();
                 attachment.setSubmissionId(submissionId);
                 attachment.setFileName(originalFilename);
@@ -769,20 +1066,8 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                 attachment.setFileSize(fileSize);
                 attachment.setFileType(fileType);
                 attachment.setUploadTime(LocalDateTime.now());
-                workSubmissionAttachmentMapper.insert(attachment);
-                
-                // 8. 构建附件信息
-                WorkSubmissionResponse.AttachmentInfo info = new WorkSubmissionResponse.AttachmentInfo(
-                        attachment.getId(),
-                        attachment.getFileName(),
-                        attachment.getFilePath(),
-                        attachment.getFileSize(),
-                        attachment.getFileType(),
-                        attachment.getUploadTime()
-                );
-                attachmentInfos.add(info);
-                
-                        
+                pending.add(attachment);
+
             } catch (BusinessException e) {
                 throw e;
             } catch (Exception e) {
@@ -791,7 +1076,22 @@ public class WorkSubmissionServiceImpl implements WorkSubmissionService {
                         "文件上传失败，请稍后重试", null);
             }
         }
-        
+
+        // 8. 一次批量插入全部附件记录（MP 会把自增主键回填到实体）
+        if (!pending.isEmpty()) {
+            workSubmissionAttachmentMapper.insert(pending);
+            for (WorkSubmissionAttachment attachment : pending) {
+                attachmentInfos.add(new WorkSubmissionResponse.AttachmentInfo(
+                        attachment.getId(),
+                        attachment.getFileName(),
+                        attachment.getFilePath(),
+                        attachment.getFileSize(),
+                        attachment.getFileType(),
+                        attachment.getUploadTime()
+                ));
+            }
+        }
+
         return attachmentInfos;
     }
     

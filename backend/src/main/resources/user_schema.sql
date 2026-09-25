@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS user (
     is_op BIT(1) NOT NULL DEFAULT 0 COMMENT '是否平台管理员(OP)：1-拥有全部权限，0-普通用户',
     is_banned BIT(1) NOT NULL DEFAULT 0 COMMENT '是否被封禁：0-正常，1-封禁',
     ban_reason VARCHAR(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT '封禁原因',
+    verify_by_password BIT(1) NOT NULL DEFAULT 1 COMMENT '危险操作是否启用密码验证：1-启用，0-关闭',
+    verify_by_email_code BIT(1) NOT NULL DEFAULT 0 COMMENT '危险操作是否启用邮箱验证码验证：1-启用，0-关闭',
     register_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     last_login_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '最后登录时间',
     PRIMARY KEY (id) USING BTREE,

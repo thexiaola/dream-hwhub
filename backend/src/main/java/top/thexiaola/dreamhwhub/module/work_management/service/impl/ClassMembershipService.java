@@ -1,6 +1,7 @@
 package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,21 +56,22 @@ public class ClassMembershipService {
                     "只有班级创建者或平台管理员可以设置课代表", null);
         }
 
-        int successCount = 0;
-        for (Integer studentUserId : studentUserIds) {
-            if (studentUserId.equals(currentUser.getId())) {
-                continue;
-            }
-            QueryWrapper<ClassMember> studentQuery = new QueryWrapper<>();
-            studentQuery.eq("class_id", classId).eq("user_id", studentUserId).eq("role", 0);
-            ClassMember studentMember = classMemberMapper.selectOne(studentQuery);
-            if (studentMember == null) {
-                continue;
-            }
-            studentMember.setRole(1);
-            classMemberMapper.updateById(studentMember);
-            successCount++;
+        // 一次性批量更新：把符合条件的成员角色直接置为 1（课代表），
+        // 取代「逐个 selectOne + updateById」的 N 次往返
+        List<Integer> candidates = studentUserIds.stream()
+                .filter(id -> id != null && !id.equals(currentUser.getId()))
+                .distinct()
+                .toList();
+        if (candidates.isEmpty()) {
+            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "没有符合条件的学生可以被设置为课代表", null);
         }
+
+        UpdateWrapper<ClassMember> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("class_id", classId)
+                .eq("role", 0)
+                .in("user_id", candidates)
+                .set("role", 1);
+        int successCount = classMemberMapper.update(null, updateWrapper);
 
         if (successCount == 0) {
             throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "没有符合条件的学生可以被设置为课代表", null);
@@ -93,34 +95,40 @@ public class ClassMembershipService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有班级老师或管理员可以踢出学生", null);
         }
 
-        int kickedCount = 0;
         boolean isOrdinaryTeacher = classAccessResolver.isOrdinaryTeacher(classId, currentUser.getId());
-        for (Integer studentUserId : studentUserIds) {
-            if (studentUserId.equals(currentUser.getId())) {
-                continue;
-            }
 
-            // 不能踢出班级创建者
-            if (classEntity.getOwnerId().equals(studentUserId)) {
-                continue;
-            }
-
-            QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
-            memberQuery.eq("class_id", classId).eq("user_id", studentUserId);
-            ClassMember member = classMemberMapper.selectOne(memberQuery);
-            if (member == null) {
-                continue;
-            }
-
-            // 普通助理不能踢出其他助理
-            if (isOrdinaryTeacher && !isAdmin && member.getRole() == 1) {
-                continue;
-            }
-
-            workSubmissionCleaner.cleanupClassSubmissions(classId, studentUserId);
-            classMemberMapper.deleteById(member.getId());
-            kickedCount++;
+        // 一次查询取出候选成员，避免在循环里逐个 selectOne（N 次往返）
+        List<Integer> candidates = studentUserIds.stream()
+                .filter(id -> id != null
+                        && !id.equals(currentUser.getId())
+                        && !id.equals(classEntity.getOwnerId()))
+                .distinct()
+                .toList();
+        if (candidates.isEmpty()) {
+            return;
         }
+
+        QueryWrapper<ClassMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("class_id", classId).in("user_id", candidates);
+        List<ClassMember> members = classMemberMapper.selectList(memberQuery);
+
+        // 过滤规则下沉到本次已取回的结果集（仅针对候选人，数据量受入参限制）
+        List<Integer> kickIds = new ArrayList<>();
+        for (ClassMember member : members) {
+            // 普通助理不能踢出其他助理
+            if (isOrdinaryTeacher && !isAdmin && member.getRole() != null && member.getRole() == 1) {
+                continue;
+            }
+            kickIds.add(member.getId());
+        }
+        if (kickIds.isEmpty()) {
+            return;
+        }
+
+        // 批量清理被踢学生的作业提交（一次 SQL 覆盖全部学生），再批量删除成员记录（单条 SQL）
+        List<Integer> kickedUserIds = members.stream().map(ClassMember::getUserId).distinct().toList();
+        workSubmissionCleaner.cleanupClassSubmissions(List.of(classId), kickedUserIds);
+        classMemberMapper.deleteByIds(kickIds);
 
     }
 

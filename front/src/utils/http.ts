@@ -102,32 +102,32 @@ export const get = <T = null>(url: string, params?: Record<string, unknown>): Pr
   return instance.get<ApiResponse<T>>(url, { params }).then(res => res.data)
 }
 
-export const post = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.post<ApiResponse<T>>(url, data, { params }).then(res => res.data)
+export const post = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>, headers?: Record<string, string>): Promise<ApiResponse<T>> => {
+  return instance.post<ApiResponse<T>>(url, data, { params, headers }).then(res => res.data)
 }
 
-export const postForm = <T = null>(url: string, formData: FormData): Promise<ApiResponse<T>> => {
+export const postForm = <T = null>(url: string, formData: FormData, headers?: Record<string, string>): Promise<ApiResponse<T>> => {
   return instance.post<ApiResponse<T>>(url, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data', ...headers }
   }).then(res => res.data)
 }
 
-export const putForm = <T = null>(url: string, formData: FormData): Promise<ApiResponse<T>> => {
+export const putForm = <T = null>(url: string, formData: FormData, headers?: Record<string, string>): Promise<ApiResponse<T>> => {
   return instance.put<ApiResponse<T>>(url, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data', ...headers }
   }).then(res => res.data)
 }
 
-export const put = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.put<ApiResponse<T>>(url, data, { params }).then(res => res.data)
+export const put = <T = null>(url: string, data?: Record<string, unknown>, params?: Record<string, unknown>, headers?: Record<string, string>): Promise<ApiResponse<T>> => {
+  return instance.put<ApiResponse<T>>(url, data, { params, headers }).then(res => res.data)
 }
 
-export const patch = <T = null>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.patch<ApiResponse<T>>(url, data).then(res => res.data)
+export const patch = <T = null>(url: string, data?: Record<string, unknown>, headers?: Record<string, string>): Promise<ApiResponse<T>> => {
+  return instance.patch<ApiResponse<T>>(url, data, { headers }).then(res => res.data)
 }
 
-export const del = <T = null>(url: string, data?: Record<string, unknown> | unknown[], params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
-  return instance.delete<ApiResponse<T>>(url, { data, params }).then(res => res.data)
+export const del = <T = null>(url: string, data?: Record<string, unknown> | unknown[], params?: Record<string, unknown>, headers?: Record<string, string>): Promise<ApiResponse<T>> => {
+  return instance.delete<ApiResponse<T>>(url, { data, params, headers }).then(res => res.data)
 }
 
 export default instance

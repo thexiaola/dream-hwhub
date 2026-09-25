@@ -39,7 +39,6 @@ public class ClassServiceImpl implements ClassService {
     private final WorkSubmissionAttachmentMapper workSubmissionAttachmentMapper;
     private final WorkMapper workMapper;
     private final WorkAttachmentMapper workAttachmentMapper;
-    private final top.thexiaola.dreamhwhub.support.password.PasswordUtil passwordUtil;
     private final SchoolService schoolService;
     private final UserLookupSupport userLookup;
     private final ClassAccessResolver classAccessResolver;
@@ -51,7 +50,7 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void dissolveClass(Integer classId, String account, String password, String confirmText) {
+    public void dissolveClass(Integer classId, String confirmText) {
         User currentUser = userLookup.requireCurrentUser();
 
         ClassInfo classEntity = classInfoMapper.selectById(classId);
@@ -66,19 +65,8 @@ public class ClassServiceImpl implements ClassService {
             throw new BusinessException(BusinessErrorCode.PERMISSION_DENIED, "只有创建者或管理员可以解散班级", null);
         }
 
-        // 账号密码二次校验（校验失败属于用户输入错误而非登录失效，返回 400 避免误触发前端登出）
-        if (StrUtil.isBlank(account) || StrUtil.isBlank(password)) {
-            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号和密码不能为空", null);
-        }
-        QueryWrapper<User> accQuery = new QueryWrapper<>();
-        accQuery.and(q -> q.eq("email", account).or().apply("BINARY username = BINARY {0}", account));
-        User checkUser = userMapper.selectOne(accQuery);
-        if (checkUser == null || !checkUser.getId().equals(currentUser.getId())) {
-            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "账号不属于当前登录用户", null);
-        }
-        if (!passwordUtil.matches(password, checkUser.getPassword())) {
-            throw new BusinessException(BusinessErrorCode.PARAMETER_ERROR, "密码错误", null);
-        }
+        // 身份二次验证（登录密码或邮箱验证码）已由 SensitiveVerificationInterceptor 统一完成，
+        // 此处仅校验确认文案。
 
         // 确认文案校验：我已确认要删除{className}课堂
         String className = classEntity.getClassName();

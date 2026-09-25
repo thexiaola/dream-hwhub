@@ -203,6 +203,7 @@ import { onMounted, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Bell, Copy, Key, RefreshCw, User, UserPlus, Users } from "@lucide/vue";
 import { del, get, post, put } from "@/utils/http";
+import { confirmDangerousOperation } from "@/composables/useSensitiveVerification";
 import { formatDateTime as formatDate } from "@/utils/format";
 import type { ClassMemberInfo, TeacherApprovalInfo } from "@/types/class";
 
@@ -348,20 +349,25 @@ const batchSetAssistantAction = async () => {
 };
 
 const kickStudent = async (userId: number) => {
-  try {
-    await ElMessageBox.confirm("确认踢出该成员？", "踢出成员", {
-      confirmButtonText: "确认",
-      cancelButtonText: "取消",
-    });
-    const result = await del(`/class/${props.classId}/members/batch`, [userId]);
-    if (result.code === 200) {
-      ElMessage.success("已踢出");
-      loadMembers();
-    } else {
-      ElMessage.error(result.message);
-    }
-  } catch {
-    // 用户取消
+  // 踢出成员属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: "踢出成员",
+    message: "确认将该成员踢出班级？其在本班的作业提交将被清理，此操作不可恢复。",
+    confirmText: "确认踢出",
+    operationName: "踢出成员",
+  });
+  if (!headers) return;
+  const result = await del(
+    `/class/${props.classId}/members/batch`,
+    { studentUserIds: [userId] },
+    undefined,
+    headers,
+  );
+  if (result.code === 200) {
+    ElMessage.success("已踢出");
+    loadMembers();
+  } else {
+    ElMessage.error(result.message);
   }
 };
 
@@ -370,22 +376,26 @@ const batchKickStudentsAction = async () => {
     ElMessage.warning("请选择要踢出的学生");
     return;
   }
-  try {
-    await ElMessageBox.confirm(
-      `确认批量踢出 ${selectedStudentIds.value.length} 名成员？`,
-      "批量踢出",
-      { confirmButtonText: "确认", cancelButtonText: "取消" },
-    );
-    const result = await del(`/class/${props.classId}/members/batch`, selectedStudentIds.value);
-    if (result.code === 200) {
-      ElMessage.success(`已踢出 ${selectedStudentIds.value.length} 名成员`);
-      selectedStudentIds.value = [];
-      loadMembers();
-    } else {
-      ElMessage.error(result.message);
-    }
-  } catch {
-    // 用户取消
+  // 踢出成员属高危操作：红色警示框 + 身份二次验证
+  const headers = await confirmDangerousOperation({
+    title: "批量踢出成员",
+    message: `确认批量踢出 ${selectedStudentIds.value.length} 名成员？其在本班的作业提交将被清理，此操作不可恢复。`,
+    confirmText: "确认踢出",
+    operationName: "批量踢出成员",
+  });
+  if (!headers) return;
+  const result = await del(
+    `/class/${props.classId}/members/batch`,
+    { studentUserIds: selectedStudentIds.value },
+    undefined,
+    headers,
+  );
+  if (result.code === 200) {
+    ElMessage.success(`已踢出 ${selectedStudentIds.value.length} 名成员`);
+    selectedStudentIds.value = [];
+    loadMembers();
+  } else {
+    ElMessage.error(result.message);
   }
 };
 
@@ -629,9 +639,9 @@ onMounted(reload);
 .approval-section {
   margin-top: 18px;
   padding: 14px 16px;
-  border: 1px solid rgba(var(--rgb-fg), 0.1);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.1);
   border-radius: 10px;
-  background: rgba(var(--rgb-fg), 0.04);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.04);
 }
 
 .approval-title {
@@ -641,7 +651,7 @@ onMounted(reload);
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.92);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.92);
 }
 
 .approval-item {
@@ -651,7 +661,7 @@ onMounted(reload);
   gap: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(var(--rgb-fg), 0.05);
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);
 }
 
 .approval-item + .approval-item {
@@ -684,19 +694,19 @@ onMounted(reload);
 .approval-text p {
   margin: 0;
   font-size: 13px;
-  color: rgba(var(--rgb-fg), 0.85);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.85);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .approval-text p strong {
-  color: rgba(var(--rgb-fg), 1);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 1);
 }
 
 .approval-text span {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.5);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
 }
 
 .approval-actions {
@@ -862,18 +872,34 @@ onMounted(reload);
 .invite-setting-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(var(--rgb-fg), 0.92);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.92);
 }
 
 .invite-setting-desc {
   font-size: 12px;
-  color: rgba(var(--rgb-fg), 0.55);
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
   line-height: 1.5;
 }
 
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #667eea;
   border-color: #667eea;
+}
+
+@media (max-width: 768px) {
+  /* 工具栏按钮改为多行排布：批量操作出现时按钮总量翻倍，单行放不下 */
+  .student-header {
+    flex-wrap: wrap;
+  }
+
+  .student-header .toolbar-btn {
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  .student-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 560px) {

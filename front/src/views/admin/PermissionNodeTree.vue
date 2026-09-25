@@ -127,5 +127,8 @@ const toggleGroup = (group: PermissionNodeGroup, checked: boolean) => {
 .permission-node-tree :deep(.el-checkbox__label) {
   display: inline-flex;
   align-items: center;
+  /* 窄屏（弹窗全宽后）下节点说明可换行，避免长文案撑出容器 */
+  flex-wrap: wrap;
+  row-gap: 2px;
 }
 </style>

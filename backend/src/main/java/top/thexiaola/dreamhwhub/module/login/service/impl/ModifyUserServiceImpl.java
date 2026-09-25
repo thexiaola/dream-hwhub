@@ -12,11 +12,14 @@ import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
+import top.thexiaola.dreamhwhub.module.login.dto.SecurityVerificationSettings;
+import top.thexiaola.dreamhwhub.module.login.dto.UpdateSecurityVerificationRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.login.service.EmailService;
 import top.thexiaola.dreamhwhub.module.login.service.ModifyUserService;
 import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
+import top.thexiaola.dreamhwhub.support.security.SensitiveOperationVerifier;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 import top.thexiaola.dreamhwhub.support.storage.AvatarStorageService;
 
@@ -30,6 +33,7 @@ public class ModifyUserServiceImpl implements ModifyUserService {
     private final EmailService emailService;
     private final PasswordUtil passwordUtil;
     private final AvatarStorageService avatarStorageService;
+    private final SensitiveOperationVerifier sensitiveOperationVerifier;
 
     @Override
     public User modifyUserInfo(ModifyUserInfoRequest modifyUserInfoRequest) {
@@ -262,5 +266,70 @@ public class ModifyUserServiceImpl implements ModifyUserService {
      */
     private User getUserByAccount(String account) {
         return getUser(account, userMapper);
+    }
+
+    @Override
+    public SecurityVerificationSettings getSecurityVerificationSettings() {
+        User user = UserUtils.getCurrentUser();
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+        User dbUser = userMapper.selectById(user.getId());
+        if (dbUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
+        }
+        SecurityVerificationSettings settings = new SecurityVerificationSettings();
+        // 历史数据可能为 null，按默认值（密码开、邮箱关）处理
+        settings.setVerifyByPassword(!Boolean.FALSE.equals(dbUser.getVerifyByPassword()));
+        settings.setVerifyByEmailCode(Boolean.TRUE.equals(dbUser.getVerifyByEmailCode()));
+        return settings;
+    }
+
+    @Override
+    public SecurityVerificationSettings updateSecurityVerificationSettings(UpdateSecurityVerificationRequest request) {
+        User user = UserUtils.getCurrentUser();
+        if (user == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_LOGGED_IN, "用户未登录", null);
+        }
+        User dbUser = userMapper.selectById(user.getId());
+        if (dbUser == null) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND, "用户不存在", null);
+        }
+        if (request == null || request.getVerifyByPassword() == null || request.getVerifyByEmailCode() == null) {
+            throw new BusinessException(BusinessErrorCode.SECURITY_VERIFICATION_SETTING_INVALID,
+                    "请同时指定密码验证与邮箱验证码验证的开关", null);
+        }
+
+        boolean byPassword = Boolean.TRUE.equals(request.getVerifyByPassword());
+        boolean byEmail = Boolean.TRUE.equals(request.getVerifyByEmailCode());
+
+        // 当前生效的设置（历史数据为 null 时按默认值：密码开、邮箱关）
+        boolean currentByPassword = !Boolean.FALSE.equals(dbUser.getVerifyByPassword());
+        boolean currentByEmail = Boolean.TRUE.equals(dbUser.getVerifyByEmailCode());
+
+        // 开启邮箱验证码验证前，必须已绑定邮箱，否则该方式无法使用。
+        // 先做前置校验，避免用户拿到「验证码错误」这种被误导的提示。
+        if (byEmail && (dbUser.getEmail() == null || dbUser.getEmail().isBlank())) {
+            throw new BusinessException(BusinessErrorCode.SECURITY_VERIFICATION_SETTING_INVALID,
+                    "当前账号未绑定邮箱，无法开启邮箱验证码验证", null);
+        }
+
+        // 本次改动的开关：改动哪个，就必须用哪个方式自身的凭据验证身份
+        boolean passwordChanged = byPassword != currentByPassword;
+        boolean emailChanged = byEmail != currentByEmail;
+        sensitiveOperationVerifier.verifyForSettingChange(dbUser, passwordChanged, request.getPassword(),
+                emailChanged, request.getEmailCode());
+
+        userMapper.update(null, new UpdateWrapper<User>()
+                .eq("id", dbUser.getId())
+                .set("verify_by_password", byPassword)
+                .set("verify_by_email_code", byEmail));
+
+        SecurityVerificationSettings result = new SecurityVerificationSettings();
+        result.setVerifyByPassword(byPassword);
+        result.setVerifyByEmailCode(byEmail);
+        log.info("User {} updated security verification settings: password={}, emailCode={}",
+                dbUser.getUsername(), byPassword, byEmail);
+        return result;
     }
 }

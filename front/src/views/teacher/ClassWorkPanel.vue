@@ -73,18 +73,25 @@
     <el-dialog
       v-model="showCreateWorkDialog"
       title="发布作业"
-      width="600px"
+      width="760px"
+      top="6vh"
       class="dark-dialog create-work-dialog"
     >
       <el-form :model="workForm" label-width="80px">
-        <el-form-item label="作业标题">
-          <el-input v-model="workForm.title" placeholder="请输入作业标题" maxlength="128" />
+        <el-form-item label="类型">
+          <el-radio-group v-model="workForm.workType">
+            <el-radio-button value="homework">作业</el-radio-button>
+            <el-radio-button value="exam">考试</el-radio-button>
+          </el-radio-group>
         </el-form-item>
-        <el-form-item label="作业描述">
+        <el-form-item :label="isExam ? '考试标题' : '作业标题'">
+          <el-input v-model="workForm.title" :placeholder="isExam ? '请输入考试标题' : '请输入作业标题'" maxlength="128" />
+        </el-form-item>
+        <el-form-item :label="isExam ? '考试说明' : '作业描述'">
           <el-input
             v-model="workForm.description"
             type="textarea"
-            placeholder="请输入作业描述"
+            :placeholder="isExam ? '请输入考试说明' : '请输入作业描述'"
             :rows="4"
           />
         </el-form-item>
@@ -107,7 +114,7 @@
             />
           </div>
         </el-form-item>
-        <el-form-item label="作业总分">
+        <el-form-item :label="isExam ? '考试总分' : '作业总分'">
           <el-input-number
             v-model="workForm.totalScore"
             :min="1"
@@ -115,6 +122,12 @@
             :step="1"
             class="total-score-input"
           />
+        </el-form-item>
+        <el-form-item v-if="isExam" label="考试设置">
+          <ExamConfigEditor v-model="examConfig" />
+        </el-form-item>
+        <el-form-item label="题目">
+          <QuestionEditor ref="questionEditorRef" :key="questionEditorKey" />
         </el-form-item>
         <el-form-item label="作业附件">
           <el-upload
@@ -143,20 +156,26 @@
       </el-form>
       <template #footer>
         <el-button @click="showCreateWorkDialog = false">取消</el-button>
-        <el-button type="primary" @click="createWork" :loading="workSubmitting">发布</el-button>
+        <el-button type="primary" @click="createWork" :loading="workSubmitting">
+          {{ isExam ? '发布考试' : '发布作业' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type UploadUserFile } from "element-plus";
 import { Clock, Edit3, Eye, FileText, Paperclip, Star, Trash2, Upload, User, Users } from "@lucide/vue";
 import { del, get, patch, postForm } from "@/utils/http";
 import { formatDateTime as formatDate } from "@/utils/format";
 import type { TeacherWorkInfo } from "@/types/class";
+import type { ExamConfig } from "@/types/work";
+import QuestionEditor from "@/components/work/QuestionEditor.vue";
+import ExamConfigEditor from "@/components/work/ExamConfigEditor.vue";
+import { draftToPayload, validateDraft, type DraftQuestion } from "@/components/work/questionDraft";
 
 const props = defineProps<{
   /** 班级 ID */
@@ -172,6 +191,21 @@ const worksTotal = ref(0);
 
 const showCreateWorkDialog = ref(false);
 const workSubmitting = ref(false);
+const questionEditorRef = ref<InstanceType<typeof QuestionEditor> | null>(null);
+// 通过变更 key 强制重建出题编辑器，确保发布后题目草稿被彻底清空
+const questionEditorKey = ref(0);
+
+/** 默认反作弊配置 */
+const createDefaultExamConfig = (): ExamConfig => ({
+  durationMinutes: null,
+  enabled: false,
+  fontScramble: false,
+  forceFullscreen: false,
+  noCopy: false,
+  detectLeave: false,
+  maxViolations: null,
+  shuffleQuestions: false,
+});
 
 const workForm = ref({
   title: "",
@@ -180,7 +214,13 @@ const workForm = ref({
   totalScore: 100,
   allowLateSubmit: true,
   classId: props.classId,
+  workType: "homework" as "homework" | "exam",
 });
+
+const examConfig = ref<ExamConfig>(createDefaultExamConfig());
+
+/** 当前是否为考试 */
+const isExam = computed(() => workForm.value.workType === "exam");
 
 const workFormDate = ref("");
 const workFormTime = ref("");
@@ -233,10 +273,14 @@ const resetCreateWorkForm = () => {
     totalScore: 100,
     allowLateSubmit: true,
     classId: props.classId,
+    workType: "homework",
   };
+  examConfig.value = createDefaultExamConfig();
   workFormDate.value = "";
   workFormTime.value = "";
   attachmentFiles.value = [];
+  // 通过变更 key 重建编辑器，清空题目草稿
+  questionEditorKey.value++;
 };
 
 /** 布置人标识：班级成员显示姓名，非成员（如管理员）退回用户名。不展示学号 */
@@ -341,6 +385,15 @@ const createWork = async () => {
     ElMessage.warning("请选择截止时间");
     return;
   }
+  // 校验题目
+  const drafts: DraftQuestion[] = questionEditorRef.value?.drafts ?? [];
+  for (let i = 0; i < drafts.length; i++) {
+    const err = validateDraft(drafts[i], i);
+    if (err) {
+      ElMessage.warning(err);
+      return;
+    }
+  }
   workSubmitting.value = true;
   try {
     workForm.value.deadline = deadline;
@@ -351,6 +404,11 @@ const createWork = async () => {
     formData.append("totalScore", String(workForm.value.totalScore));
     formData.append("allowLateSubmit", String(workForm.value.allowLateSubmit));
     formData.append("classId", String(workForm.value.classId));
+    formData.append("workType", workForm.value.workType);
+    if (isExam.value) {
+      formData.append("examConfigJson", JSON.stringify(examConfig.value));
+    }
+    formData.append("questionsJson", JSON.stringify(drafts.map(draftToPayload)));
     if (attachmentFiles.value && attachmentFiles.value.length > 0) {
       for (const fileItem of attachmentFiles.value) {
         if (fileItem.raw) {
@@ -520,5 +578,24 @@ onMounted(loadWorks);
 .deadline-split-wrap :deep(.el-input__wrapper) {
   width: 100% !important;
   min-width: 0 !important;
+}
+
+@media (max-width: 768px) {
+  /* 信息项与操作按钮窄屏下换行，避免单行放不下溢出卡片 */
+  .work-info {
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+
+  .work-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .work-actions .action-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: max-content;
+  }
 }
 </style>

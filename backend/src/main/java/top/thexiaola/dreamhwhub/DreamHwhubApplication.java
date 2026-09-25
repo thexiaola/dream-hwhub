@@ -9,7 +9,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "top.thexiaola.dreamhwhub.module.login.mapper",
         "top.thexiaola.dreamhwhub.module.school.mapper",
         "top.thexiaola.dreamhwhub.module.work_management.mapper",
-        "top.thexiaola.dreamhwhub.module.permission.mapper"
+        "top.thexiaola.dreamhwhub.module.permission.mapper",
+        "top.thexiaola.dreamhwhub.module.message.mapper",
+        "top.thexiaola.dreamhwhub.support.security.mapper"
 })
 public class DreamHwhubApplication {
     static void main(String[] args) {

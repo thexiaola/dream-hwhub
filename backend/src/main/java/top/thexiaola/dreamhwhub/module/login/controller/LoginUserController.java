@@ -10,11 +10,13 @@ import top.thexiaola.dreamhwhub.common.api.ApiResponse;
 import top.thexiaola.dreamhwhub.config.GlobalExceptionHandler;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
+import top.thexiaola.dreamhwhub.module.login.dto.DeleteAccountRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.LoginRequest;
 import top.thexiaola.dreamhwhub.module.login.dto.UserInfoResponse;
 import top.thexiaola.dreamhwhub.module.login.dto.UserResponse;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
+import top.thexiaola.dreamhwhub.module.login.service.AccountDeletionService;
 import top.thexiaola.dreamhwhub.module.login.service.LoginUserService;
 import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.support.jwt.JwtUtil;
@@ -30,6 +32,7 @@ import top.thexiaola.dreamhwhub.support.session.UserUtils;
 @RequiredArgsConstructor
 public class LoginUserController {
     private final LoginUserService loginUserService;
+    private final AccountDeletionService accountDeletionService;
     private final UserMapper userMapper;
     private final top.thexiaola.dreamhwhub.support.mapper.UserMapper userResponseMapper;
     private final JwtUtil jwtUtil;
@@ -94,6 +97,29 @@ public class LoginUserController {
         } catch (Exception e) {
             log.error("User logout failed", e);
             return ResponseEntity.status(500).body(ApiResponse.error(500, "登出失败"));
+        }
+    }
+
+    /**
+     * 注销当前账号（不可逆）
+     * <p>
+     * 须凭登录密码验证账号所有者身份；注销后自动退出全部班级与学校、删除其作业提交，
+     * 并清理好友/私信/站内信/权限等关联数据。JWT 无状态，前端清除本地 Token 即完成登出。
+     */
+    @DeleteMapping("/account")
+    public ResponseEntity<ApiResponse<Void>> deleteMyAccount(@Valid @RequestBody DeleteAccountRequest request) {
+        String ip = LogUtil.getCurrentClientIp();
+        try {
+            User currentUser = UserUtils.getCurrentUser();
+            String userInfo = LogUtil.getUserInfoString(ip, currentUser);
+
+            accountDeletionService.deleteMyAccount(request);
+
+            log.info("User ({}) deleted own account successfully", userInfo);
+            return ResponseEntity.ok(ApiResponse.success(null, "账号已注销"));
+        } catch (BusinessException e) {
+            log.warn("User delete account failed: {}", e.getMessage());
+            return GlobalExceptionHandler.buildBusinessErrorResponse(e);
         }
     }
 

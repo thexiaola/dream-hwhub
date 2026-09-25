@@ -61,4 +61,17 @@ public class UserLookupSupport {
     public boolean hasPermission(User user, String node) {
         return user != null && permissionService.hasPermission(user.getId(), node);
     }
+
+    /**
+     * 判断用户是否为平台管理员（OP）
+     * <p>
+     * 用于「只有平台管理员可执行」的强校验场景：这类操作不能仅凭某个权限节点放行
+     * （节点可被授予他人），必须以平台管理员身份为必要条件，与 {@code setOp} 同一口径。
+     *
+     * @param user 用户对象，可为 null
+     * @return true-是平台管理员
+     */
+    public boolean isPlatformAdmin(User user) {
+        return user != null && permissionService.isOp(user.getId());
+    }
 }

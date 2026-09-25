@@ -62,6 +62,14 @@ public class User implements Serializable {
     @TableField("ban_reason")
     private String banReason;
 
+    // 危险操作是否启用「密码验证」：true-启用，false-关闭
+    @TableField("verify_by_password")
+    private Boolean verifyByPassword = true;
+
+    // 危险操作是否启用「邮箱验证码验证」：true-启用，false-关闭
+    @TableField("verify_by_email_code")
+    private Boolean verifyByEmailCode = false;
+
     // 注册时间
     @TableField("register_time")
     private LocalDateTime registerTime;

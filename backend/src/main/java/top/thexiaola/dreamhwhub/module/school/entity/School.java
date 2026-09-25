@@ -37,6 +37,18 @@ public class School {
     @TableField("auto_approve_class_takeover")
     private Boolean autoApproveClassTakeover;
 
+    /**
+     * 本校向陌生用户发送私信的条数上限；null 表示继承全站默认
+     */
+    @TableField("stranger_message_limit")
+    private Integer strangerMessageLimit;
+
+    /**
+     * 本校陌生私信配额重置小时数；null 表示继承全站默认
+     */
+    @TableField("stranger_message_reset_hours")
+    private Integer strangerMessageResetHours;
+
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

@@ -16,6 +16,8 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.permission.annotation.RequirePermission;
 import top.thexiaola.dreamhwhub.module.permission.constant.PermissionNodes;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.security.RequireSensitiveVerification;
+import top.thexiaola.dreamhwhub.support.security.SensitiveOperations;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 /**
@@ -78,6 +80,7 @@ public class AdminUserController {
      */
     @DeleteMapping("/{userId}")
     @RequirePermission(PermissionNodes.USER_DELETE)
+    @RequireSensitiveVerification(value = "删除用户", key = SensitiveOperations.USER_DELETE)
     public ApiResponse<Void> deleteUser(@PathVariable(value = "userId") Integer userId) {
         User currentUser = UserUtils.getCurrentUser();
         adminUserService.deleteUser(userId);
@@ -115,6 +118,7 @@ public class AdminUserController {
      */
     @PutMapping("/{userId}/ban")
     @RequirePermission(PermissionNodes.USER_BAN)
+    @RequireSensitiveVerification(value = "封禁/解封用户", key = SensitiveOperations.USER_BAN)
     public ApiResponse<AdminUserVO> setBanned(@PathVariable(value = "userId") Integer userId,
             @Valid @RequestBody AdminBanUserRequest request) {
         User currentUser = UserUtils.getCurrentUser();
@@ -129,6 +133,7 @@ public class AdminUserController {
      */
     @PutMapping("/{userId}/op")
     @RequirePermission(PermissionNodes.USER_SET_OP)
+    @RequireSensitiveVerification(value = "设置平台管理员身份", key = SensitiveOperations.USER_SET_OP)
     public ApiResponse<AdminUserVO> setOp(@PathVariable(value = "userId") Integer userId,
             @Valid @RequestBody AdminSetOpRequest request) {
         User currentUser = UserUtils.getCurrentUser();
@@ -156,6 +161,7 @@ public class AdminUserController {
      */
     @PutMapping("/{userId}/groups")
     @RequirePermission(PermissionNodes.PERMISSION_GROUP_ASSIGN)
+    @RequireSensitiveVerification(value = "分配权限组", key = SensitiveOperations.PERMISSION_GROUP_ASSIGN)
     public ApiResponse<UserPermissionDetailVO> setUserGroups(
             @PathVariable(value = "userId") Integer userId,
             @RequestBody AssignGroupsRequest request) {
@@ -171,6 +177,7 @@ public class AdminUserController {
      */
     @PutMapping("/{userId}/nodes")
     @RequirePermission(PermissionNodes.PERMISSION_USER_ASSIGN)
+    @RequireSensitiveVerification(value = "分配权限节点", key = SensitiveOperations.PERMISSION_USER_ASSIGN)
     public ApiResponse<UserPermissionDetailVO> setUserNodes(
             @PathVariable(value = "userId") Integer userId,
             @RequestBody AssignNodesRequest request) {

@@ -90,6 +90,52 @@ public class ClassAccessResolver {
     }
 
     /**
+     * 批量判定多个班级的创建者是否仍具备教师身份（以班级所属学校内的角色为准）。
+     * <p>
+     * 一次按学校批量取回相关成员记录，避免逐班查询；缺少学校/创建者信息时按「仍活跃」处理，
+     * 与 {@link #isOwnerActive(ClassInfo)} 的单班口径一致。
+     *
+     * @param classes 班级列表
+     * @return classId -> 创建者是否仍具教师身份
+     */
+    public Map<Integer, Boolean> loadOwnerActiveMap(Collection<ClassInfo> classes) {
+        Map<Integer, Boolean> result = new HashMap<>();
+        if (classes == null || classes.isEmpty()) {
+            return result;
+        }
+        // 按学校收集需要判定的创建者
+        Map<Integer, Set<Integer>> schoolToOwners = new HashMap<>();
+        for (ClassInfo classInfo : classes) {
+            if (classInfo == null || classInfo.getId() == null) {
+                continue;
+            }
+            if (classInfo.getSchoolId() == null || classInfo.getOwnerId() == null) {
+                result.put(classInfo.getId(), true);
+                continue;
+            }
+            schoolToOwners.computeIfAbsent(classInfo.getSchoolId(), k -> new HashSet<>())
+                    .add(classInfo.getOwnerId());
+        }
+        // 批量取回各校成员身份
+        Map<String, SchoolMember> memberMap = new HashMap<>();
+        for (Map.Entry<Integer, Set<Integer>> entry : schoolToOwners.entrySet()) {
+            for (SchoolMember m : schoolService.getMembersByUserIds(entry.getKey(), entry.getValue()).values()) {
+                memberMap.put(entry.getKey() + ":" + m.getUserId(), m);
+            }
+        }
+        for (ClassInfo classInfo : classes) {
+            if (classInfo == null || classInfo.getId() == null
+                    || classInfo.getSchoolId() == null || classInfo.getOwnerId() == null) {
+                continue;
+            }
+            SchoolMember owner = memberMap.get(classInfo.getSchoolId() + ":" + classInfo.getOwnerId());
+            result.put(classInfo.getId(),
+                    owner != null && owner.getRole() != null && owner.getRole() >= SchoolMemberRole.TEACHER);
+        }
+        return result;
+    }
+
+    /**
      * 校验班级未冻结；已冻结时抛出业务异常（用于入班、邀请等写入路径）
      *
      * @param classInfo 班级信息

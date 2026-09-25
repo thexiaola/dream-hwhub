@@ -87,6 +87,47 @@
             <span v-if="!collapsed" class="side-nav-label">课程</span>
           </button>
           <button
+            :ref="tabRefSetters.messages"
+            class="side-nav-item"
+            :class="{ active: activeTab === 'messages' }"
+            :title="collapsed ? '站内信' : undefined"
+            @click="switchTab('messages')"
+          >
+            <span class="side-nav-icon-wrap">
+              <Mail :size="18" />
+              <!-- 未读角标：收起时贴图标右上角，展开时仍跟随图标 -->
+              <span v-if="messageUnread > 0" class="side-nav-badge">
+                {{ messageUnread > 99 ? '99+' : messageUnread }}
+              </span>
+            </span>
+            <span v-if="!collapsed" class="side-nav-label">站内信</span>
+          </button>
+          <button
+            :ref="tabRefSetters.friends"
+            class="side-nav-item"
+            :class="{ active: activeTab === 'friends' }"
+            :title="collapsed ? '好友' : undefined"
+            @click="switchTab('friends')"
+          >
+            <Users :size="18" />
+            <span v-if="!collapsed" class="side-nav-label">好友</span>
+          </button>
+          <button
+            :ref="tabRefSetters.privateMessages"
+            class="side-nav-item"
+            :class="{ active: activeTab === 'privateMessages' }"
+            :title="collapsed ? '私信' : undefined"
+            @click="switchTab('privateMessages')"
+          >
+            <span class="side-nav-icon-wrap">
+              <MessageCircle :size="18" />
+              <span v-if="friendUnread > 0" class="side-nav-badge">
+                {{ friendUnread > 99 ? '99+' : friendUnread }}
+              </span>
+            </span>
+            <span v-if="!collapsed" class="side-nav-label">私信</span>
+          </button>
+          <button
             :ref="tabRefSetters.school"
             class="side-nav-item"
             :class="{ active: activeTab === 'school' }"
@@ -141,6 +182,40 @@
       </button>
       <button
         class="mobile-tab"
+        :class="{ active: activeTab === 'messages' }"
+        @click="switchTab('messages')"
+      >
+        <span class="mobile-tab-icon-wrap">
+          <Mail :size="22" />
+          <span v-if="messageUnread > 0" class="side-nav-badge">
+            {{ messageUnread > 99 ? '99+' : messageUnread }}
+          </span>
+        </span>
+        <span>站内信</span>
+      </button>
+      <button
+        class="mobile-tab"
+        :class="{ active: activeTab === 'friends' }"
+        @click="switchTab('friends')"
+      >
+        <Users :size="22" />
+        <span>好友</span>
+      </button>
+      <button
+        class="mobile-tab"
+        :class="{ active: activeTab === 'privateMessages' }"
+        @click="switchTab('privateMessages')"
+      >
+        <span class="mobile-tab-icon-wrap">
+          <MessageCircle :size="22" />
+          <span v-if="friendUnread > 0" class="side-nav-badge">
+            {{ friendUnread > 99 ? '99+' : friendUnread }}
+          </span>
+        </span>
+        <span>私信</span>
+      </button>
+      <button
+        class="mobile-tab"
         :class="{ active: activeTab === 'school' }"
         @click="switchTab('school')"
       >
@@ -174,24 +249,33 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { useSchoolStore } from '@/stores/school'
+import { useMessageStore } from '@/stores/message'
+import { useFriendStore } from '@/stores/friend'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useDraggableIndicator } from '@/composables/useDraggableIndicator'
 import {
-  BookOpen, User, ChevronDown, LogOut, Shield, School,
+  BookOpen, User, ChevronDown, LogOut, Shield, School, Mail, Users, MessageCircle,
   ChevronsLeft, ChevronsRight
 } from '@lucide/vue'
 
 // 「课程」合并了原「我听的课」「我教的课」两个入口，具体切换在页面内完成
-type NavTab = 'courses' | 'school' | 'admin'
+type NavTab = 'courses' | 'messages' | 'friends' | 'privateMessages' | 'school' | 'admin'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const schoolStore = useSchoolStore()
+const messageStore = useMessageStore()
+const friendStore = useFriendStore()
 
 const isAdmin = computed(() => userStore.isAdmin)
 const activeTab = ref<NavTab>('courses')
+
+// 站内信未读数：按当前所选学校过滤，角标随学校切换
+const messageUnread = computed(() => messageStore.unreadOf(schoolStore.currentSchoolId))
+// 私信未读数：同样按当前学校过滤
+const friendUnread = computed(() => friendStore.unreadOf(schoolStore.currentSchoolId))
 
 // 侧边栏收起状态：收起后只留图标，为内容区让出宽度
 const collapsed = ref(false)
@@ -231,13 +315,16 @@ const setTabRef = (key: string, el: unknown) => {
 // 固定的 ref 回调，避免模板内联函数在每次渲染时重建
 const tabRefSetters = {
   courses: (el: unknown) => setTabRef('courses', el),
+  messages: (el: unknown) => setTabRef('messages', el),
+  friends: (el: unknown) => setTabRef('friends', el),
+  privateMessages: (el: unknown) => setTabRef('privateMessages', el),
   school: (el: unknown) => setTabRef('school', el),
   admin: (el: unknown) => setTabRef('admin', el)
 }
 
 // 当前可见导航项的视觉顺序，拖拽吸附与命中测试都以此为准
 const tabOrder = computed<NavTab[]>(() => {
-  const keys: NavTab[] = ['courses', 'school']
+  const keys: NavTab[] = ['courses', 'messages', 'friends', 'privateMessages', 'school']
   if (isAdmin.value) keys.push('admin')
   return keys
 })
@@ -252,13 +339,32 @@ const getTabs = () => {
 }
 
 // 各导航项对应的目标路径
-const navPath = (tab: NavTab): string =>
-  tab === 'courses' ? '/courses/student' : tab === 'school' ? '/school' : '/admin/panel'
+const navPath = (tab: NavTab): string => {
+  switch (tab) {
+    case 'courses':
+      return '/courses/student'
+    case 'messages':
+      return '/messages'
+    case 'friends':
+      return '/friends'
+    case 'privateMessages':
+      return '/private-messages'
+    case 'school':
+      return '/school'
+    default:
+      return '/admin/panel'
+  }
+}
 
 // 当前是否已处于该项对应的路由下。
 // 用前缀匹配而非全等：「课程」下含 /courses/student 与 /courses/teacher 两个子页；
-// 管理面板子路由为 /admin/panel/:tab，同样应视为已在该项
-const isOnTab = (tab: NavTab): boolean => route.path === navPath(tab) || route.path.startsWith(`/${tab}`)
+// 管理面板子路由为 /admin/panel/:tab，同样应视为已在该项。
+// 注意「私信 /private-messages」与「站内信 /messages」前缀不同，互不误判。
+const isOnTab = (tab: NavTab): boolean =>
+  route.path === navPath(tab)
+  || route.path.startsWith(`/${tab}`)
+  // 驼峰键（privateMessages）对应的路由是 kebab-case，需单独匹配
+  || route.path.startsWith('/private-messages')
 
 // 点击导航项：写入历史，便于后退
 const switchTab = (tab: NavTab) => {
@@ -331,8 +437,15 @@ onMounted(async () => {
     resizeObserver.observe(navTabsRef.value)
   }
 
-  // 先同步确定高亮，避免等网络请求造成闪烁
-  if (route.path.startsWith('/school')) {
+  // 先同步确定高亮，避免等网络请求造成闪烁。
+  // 注意：/private-messages 与 /messages 前缀不同，须先判私信（更长、更具体的前缀）
+  if (route.path.startsWith('/private-messages')) {
+    activeTab.value = 'privateMessages'
+  } else if (route.path.startsWith('/messages')) {
+    activeTab.value = 'messages'
+  } else if (route.path.startsWith('/friends')) {
+    activeTab.value = 'friends'
+  } else if (route.path.startsWith('/school')) {
     activeTab.value = 'school'
   } else if (route.path.startsWith('/admin')) {
     activeTab.value = 'admin'
@@ -344,6 +457,8 @@ onMounted(async () => {
   // 拉取学校列表：顶部「选择学校」下拉需要它（教职工与学生共用）。
   // 请求在 store 内做了并发去重。
   await schoolStore.fetchMySchools()
+  // 站内信 / 私信未读数：用于侧边栏、底栏角标
+  await Promise.all([messageStore.fetchUnread(), friendStore.fetchUnread()])
 })
 
 onUnmounted(() => {
@@ -578,6 +693,33 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 图标包裹层：为未读角标提供定位上下文 */
+.side-nav-icon-wrap,
+.mobile-tab-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 未读角标：贴图标右上角 */
+.side-nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #f56c6c;
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 500;
+  box-sizing: border-box;
 }
 
 /* 底部：收起 / 展开导航 */

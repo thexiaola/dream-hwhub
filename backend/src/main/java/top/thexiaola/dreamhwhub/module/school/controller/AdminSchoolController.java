@@ -20,6 +20,8 @@ import top.thexiaola.dreamhwhub.module.school.vo.SchoolJoinApplicationResponse;
 import top.thexiaola.dreamhwhub.module.school.vo.SchoolMemberResponse;
 import top.thexiaola.dreamhwhub.module.school.vo.SchoolVO;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
+import top.thexiaola.dreamhwhub.support.security.RequireSensitiveVerification;
+import top.thexiaola.dreamhwhub.support.security.SensitiveOperations;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 /**
@@ -129,10 +131,11 @@ public class AdminSchoolController {
     }
 
     /**
-     * 解散学校（平台管理员），学校下仍有班级时不允许解散
+     * 解散学校（平台管理员），学校下仍有班级时不允许解散（需身份二次验证）
      */
     @DeleteMapping("/{schoolId}")
     @RequirePermission(PermissionNodes.SCHOOL_DISSOLVE)
+    @RequireSensitiveVerification(value = "解散学校", key = SensitiveOperations.SCHOOL_DISSOLVE)
     public ApiResponse<Void> dissolveSchool(@PathVariable(value = "schoolId") Integer schoolId) {
         User currentUser = UserUtils.getCurrentUser();
         schoolService.dissolveSchool(schoolId);
@@ -141,10 +144,11 @@ public class AdminSchoolController {
     }
 
     /**
-     * 指派或取消学校管理员（平台管理员）
+     * 指派或取消学校管理员（平台管理员，需身份二次验证）
      */
     @PutMapping("/{schoolId}/admin")
     @RequirePermission(PermissionNodes.SCHOOL_ADMIN_ASSIGN)
+    @RequireSensitiveVerification(value = "指派学校管理员", key = SensitiveOperations.SCHOOL_ASSIGN_ADMIN)
     public ApiResponse<SchoolMemberResponse> assignSchoolAdmin(
             @PathVariable(value = "schoolId") Integer schoolId,
             @Valid @RequestBody AssignSchoolAdminRequest request) {
