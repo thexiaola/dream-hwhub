@@ -19,6 +19,7 @@ public interface UserMapper {
      */
     @Mapping(target = "token", ignore = true)
     @Mapping(target = "permissions", ignore = true)
+    @Mapping(target = "disabledVerificationOperations", ignore = true)
     UserResponse toUserResponse(User user);
 
     /**
@@ -27,5 +28,6 @@ public interface UserMapper {
      * @return 用户信息响应 DTO
      */
     @Mapping(target = "permissions", ignore = true)
+    @Mapping(target = "disabledVerificationOperations", ignore = true)
     UserInfoResponse toUserInfoResponse(User user);
 }

@@ -28,6 +28,8 @@ export interface UserInfo {
   verifyByPassword?: boolean
   /** 危险操作是否启用「邮箱验证码验证」 */
   verifyByEmailCode?: boolean
+  /** 已被该用户关闭二次验证的敏感操作标识（如 class.dissolve）；未列出者默认需要验证 */
+  disabledVerificationOperations?: string[]
   role: 'teacher' | 'student'
   registerTime?: string
   lastLoginTime?: string
@@ -38,6 +40,20 @@ export interface UserInfo {
 export interface SecurityVerificationSettings {
   verifyByPassword: boolean
   verifyByEmailCode: boolean
+}
+
+/** 单个敏感操作的验证设置（危险操作验证页签） */
+export interface SensitiveOperationSetting {
+  /** 操作标识，如 class.dissolve */
+  key: string
+  /** 操作名称，如 解散班级 */
+  name: string
+  /** 操作说明 */
+  description: string
+  /** 是否要求二次验证（默认 true） */
+  enabled: boolean
+  /** 当前用户是否可用该操作（不可用则前端不展示其开关） */
+  available: boolean
 }
 
 export interface RegisterRequest {

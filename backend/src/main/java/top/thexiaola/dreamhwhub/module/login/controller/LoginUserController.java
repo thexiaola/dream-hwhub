@@ -37,6 +37,7 @@ public class LoginUserController {
     private final top.thexiaola.dreamhwhub.support.mapper.UserMapper userResponseMapper;
     private final JwtUtil jwtUtil;
     private final PermissionService permissionService;
+    private final top.thexiaola.dreamhwhub.support.security.SensitiveOperationSettingsService sensitiveOperationSettingsService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserResponse>> login(HttpServletRequest request,
@@ -47,6 +48,8 @@ public class LoginUserController {
             User user = loginUserService.login(loginRequest, request);
             UserResponse userResponse = userResponseMapper.toUserResponse(user);
             userResponse.setPermissions(permissionService.getPermissionNodes(user.getId()));
+            userResponse.setDisabledVerificationOperations(
+                    sensitiveOperationSettingsService.getDisabledKeys(user.getId()));
 
             // 生成JWT Token并设置到响应中
             String token = jwtUtil.generateToken(user);
@@ -142,6 +145,8 @@ public class LoginUserController {
         }
         UserInfoResponse userInfoResponse = userResponseMapper.toUserInfoResponse(fullUser);
         userInfoResponse.setPermissions(permissionService.getPermissionNodes(fullUser.getId()));
+        userInfoResponse.setDisabledVerificationOperations(
+                sensitiveOperationSettingsService.getDisabledKeys(fullUser.getId()));
         return ResponseEntity.ok(ApiResponse.success(userInfoResponse, "获取用户信息成功"));
     }
 
