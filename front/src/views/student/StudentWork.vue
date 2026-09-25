@@ -396,7 +396,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { get, postForm, putForm, del } from '@/utils/http'
 import instance from '@/utils/http'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadUserFile } from 'element-plus'
 import {
   ArrowLeft,
@@ -416,6 +416,8 @@ import {
   XCircle,
 } from '@lucide/vue'
 import { formatDateTime as formatDate, formatFileSize as formatSize } from '@/utils/format'
+import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
+import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import type { AnswerItem, WorkAnswerVO, WorkQuestionStudentVO } from '@/types/work'
 import { QUESTION_TYPE_LABEL } from '@/types/work'
 
@@ -659,22 +661,17 @@ const withdrawing = ref(false)
 
 const withdrawSubmission = async () => {
   if (!mySubmission.value) return
-  try {
-    await ElMessageBox.confirm(
-      '撤回后本次提交内容与附件将被删除，需要重新提交。确认撤回？',
-      '撤回提交',
-      {
-        confirmButtonText: '确认撤回',
-        cancelButtonText: '取消',
-        type: 'warning',
-        customClass: 'danger-warning-message-box',
-      },
-    )
-  } catch {
-    return
-  }
+  // 撤回提交属高危操作：红色警示框 + 身份二次验证（用户可为该操作单独关闭验证）
+  const headers = await confirmDangerousOperation({
+    title: '撤回提交',
+    message: '撤回后本次提交内容与附件将被删除，需要重新提交。确认撤回？',
+    confirmText: '确认撤回',
+    operationName: '撤回提交',
+    operationKey: SensitiveOperationKeys.SUBMISSION_WITHDRAW,
+  })
+  if (!headers) return
   withdrawing.value = true
-  const result = await del<void>(`/submissions/${mySubmission.value.id}`)
+  const result = await del<void>(`/submissions/${mySubmission.value.id}`, undefined, undefined, headers)
   withdrawing.value = false
   if (result.code === 200) {
     ElMessage.success('已撤回提交')

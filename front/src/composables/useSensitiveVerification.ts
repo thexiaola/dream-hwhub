@@ -38,6 +38,21 @@ const resolveAvailableMethods = (): VerifyMethod[] => {
   return methods
 }
 
+/**
+ * 判断该操作是否已被用户单独关闭二次验证。
+ * 关闭时前端跳过弹窗（后端拦截器同样会跳过），返回 true。
+ * 传入多个操作标识时，仅当**全部**都被关闭才视为可跳过（复合操作需整体一致）。
+ */
+const isOperationVerificationDisabled = (operationKey?: string | string[]): boolean => {
+  if (!operationKey) return false
+  const keys = Array.isArray(operationKey) ? operationKey : [operationKey]
+  if (keys.length === 0) return false
+  const userStore = useUserStore()
+  const disabled = userStore.userInfo?.disabledVerificationOperations
+  if (!Array.isArray(disabled)) return false
+  return keys.every(key => disabled.includes(key))
+}
+
 let resolver: ((headers: VerifyHeaders | null) => void) | null = null
 let timer: number | null = null
 
@@ -64,10 +79,17 @@ const startCountdown = (seconds: number) => {
  * 打开身份验证弹窗（或在无需验证时直接放行），等待用户输入凭据。
  * 校验通过的请求头通过 resolve 返回；用户取消时 resolve(null)。
  *
- * @param opName 操作名称，用于弹窗提示（如「解散班级」）
+ * @param opName       操作名称，用于弹窗提示（如「解散班级」）
+ * @param operationKey 操作标识（如 class.dissolve）；该操作被用户单独关闭验证时直接放行。
+ *                     传入数组表示复合操作：仅当全部标识都被关闭才跳过。
  * @returns 通过验证时的请求头（无需验证时为空对象）；取消时为 null
  */
-export const requireSensitiveVerification = (opName = ''): Promise<VerifyHeaders | null> => {
+export const requireSensitiveVerification = (opName = '', operationKey?: string | string[]): Promise<VerifyHeaders | null> => {
+  // 该操作已被用户单独关闭二次验证：跳过弹窗（后端同样会跳过）
+  if (isOperationVerificationDisabled(operationKey)) {
+    return Promise.resolve({})
+  }
+
   const methods = resolveAvailableMethods()
 
   // 两种方式都关闭：危险操作验证已关闭，无需验证，直接放行
@@ -163,6 +185,8 @@ export const useSensitiveVerificationState = () => ({
  * @param options.confirmText     确认按钮文案，默认「确认继续」
  * @param options.cancelText      取消按钮文案，默认「取消」
  * @param options.operationName   身份验证弹窗中展示的操作名，默认取 title
+ * @param options.operationKey    操作标识（如 class.dissolve）；该操作被用户单独关闭验证时跳过验证步骤。
+ *                                传入数组表示复合操作：仅当全部标识都被关闭才跳过。
  * @returns 通过身份验证时的请求头；用户取消任一步骤时为 null
  */
 export const confirmDangerousOperation = async (options: {
@@ -171,6 +195,7 @@ export const confirmDangerousOperation = async (options: {
   confirmText?: string
   cancelText?: string
   operationName?: string
+  operationKey?: string | string[]
 }): Promise<VerifyHeaders | null> => {
   try {
     await ElMessageBox.confirm(options.message, options.title, {
@@ -186,5 +211,5 @@ export const confirmDangerousOperation = async (options: {
     // 用户取消
     return null
   }
-  return requireSensitiveVerification(options.operationName || options.title)
+  return requireSensitiveVerification(options.operationName || options.title, options.operationKey)
 }

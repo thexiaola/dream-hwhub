@@ -483,6 +483,7 @@ import { useUserStore } from '@/stores/user'
 import { useDraggableIndicator } from '@/composables/useDraggableIndicator'
 import { useConfirmBeforeApprove } from '@/composables/useConfirmBeforeApprove'
 import { confirmDangerousOperation, requireSensitiveVerification } from '@/composables/useSensitiveVerification'
+import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import SlideSegmented from '@/components/SlideSegmented.vue'
 import type { PageResult } from '@/types'
 import type { School as SchoolInfo } from '@/types/school'
@@ -1119,7 +1120,7 @@ const doDissolveClass = async () => {
   const classId = pendingDissolve.value.classId
   const confirmText = `我已确认要删除${pendingDissolve.value.className ?? ''}课堂`
   // 解散课堂属敏感操作，需身份二次验证（登录密码或邮箱验证码）
-  const headers = await requireSensitiveVerification('解散课堂')
+  const headers = await requireSensitiveVerification('解散课堂', SensitiveOperationKeys.CLASS_DISSOLVE)
   if (!headers) {
     clearDangerInputs()
     return
@@ -1152,6 +1153,7 @@ const kickStudentFromAdmin = async (classId: number, userId: number) => {
     message: '确认将该学生踢出班级？其在本班的作业提交将被清理，此操作不可恢复。',
     confirmText: '确认踢出',
     operationName: '踢出学生',
+    operationKey: SensitiveOperationKeys.CLASS_KICK_MEMBER,
   })
   if (!headers) return
   const result = await del(`/class/${classId}/members/batch`, { studentUserIds: [userId] }, undefined, headers)
@@ -1174,6 +1176,7 @@ const batchKickFromAdmin = async (classId: number) => {
     message: `确认批量踢出 ${selectedAdminKickIds.value.length} 名学生？其在本班的作业提交将被清理，此操作不可恢复。`,
     confirmText: '确认踢出',
     operationName: '批量踢出学生',
+    operationKey: SensitiveOperationKeys.CLASS_KICK_MEMBER,
   })
   if (!headers) return
   const result = await del(`/class/${classId}/members/batch`, { studentUserIds: selectedAdminKickIds.value }, undefined, headers)

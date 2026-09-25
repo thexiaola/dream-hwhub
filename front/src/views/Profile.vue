@@ -260,6 +260,41 @@
                 <el-button :disabled="securitySubmitting" @click="loadSecurity">重置</el-button>
               </el-form-item>
             </el-form>
+
+            <!-- ===== 按操作设置是否需要二次验证（仅展示你有权限执行的操作） ===== -->
+            <el-divider content-position="left">按操作设置</el-divider>
+            <p class="sv-ops-tip">
+              下面列出你当前可执行的危险操作，可分别关闭某些操作的二次验证；
+              未列出的操作对你不可用（例如你不是老师时就没有「解散班级」）。
+            </p>
+            <div v-loading="securityLoading" class="sv-ops">
+              <div v-if="securityOps.length === 0" class="sv-ops-empty">
+                当前账号没有可配置的危险操作
+              </div>
+              <div
+                v-for="op in securityOps"
+                :key="op.key"
+                class="sv-op-row"
+              >
+                <div class="sv-op-info">
+                  <span class="sv-op-name">{{ op.name }}</span>
+                  <span class="sv-op-desc">{{ op.description }}</span>
+                </div>
+                <el-switch
+                  v-model="op.enabled"
+                  :disabled="securitySubmitting"
+                />
+              </div>
+            </div>
+            <el-form v-if="securityOps.length > 0" class="profile-form">
+              <el-form-item>
+                <el-button type="primary" :loading="securitySubmitting" @click="submitOperations">
+                  <Save :size="14" />
+                  &nbsp;保存操作验证设置
+                </el-button>
+                <el-button :disabled="securitySubmitting" @click="loadSecurityOperations">重置</el-button>
+              </el-form-item>
+            </el-form>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -470,7 +505,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import type { SecurityVerificationSettings, UserInfo } from '@/types'
+import type { SecurityVerificationSettings, SensitiveOperationSetting, UserInfo } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { get, put, post, postForm, del } from '@/utils/http'
@@ -1146,8 +1181,85 @@ const confirmSecurityChange = async () => {
   }
 }
 
+// ===== 按操作设置是否需要二次验证（仅展示用户有权限执行的操作） =====
+const securityOps = ref<SensitiveOperationSetting[]>([])
+/** 已保存的操作开关，用于判断是否改动 */
+const savedOpsEnabled = reactive<Record<string, boolean>>({})
+
+const loadSecurityOperations = async () => {
+  try {
+    const res = await get<SensitiveOperationSetting[]>('/users/sensitive-operations')
+    if (res.code === 200 && res.data) {
+      // 只保留可用的操作（后端已过滤，这里再兜底一次）
+      const available = res.data.filter(op => op.available)
+      securityOps.value = available.map(op => ({ ...op }))
+      available.forEach(op => {
+        savedOpsEnabled[op.key] = op.enabled
+      })
+    }
+  } catch {
+    /* 静默：操作列表加载失败不影响验证方式设置 */
+  }
+}
+
+/** 保存按操作设置：仅提交改动的操作 */
+const submitOperations = async () => {
+  const changed = securityOps.value.filter(op => op.enabled !== savedOpsEnabled[op.key])
+  if (changed.length === 0) {
+    ElMessage.info('操作验证设置未改动')
+    return
+  }
+  const disabledNames = changed.filter(op => !op.enabled).map(op => op.name)
+  try {
+    await ElMessageBox.confirm(
+      disabledNames.length > 0
+        ? `确认关闭以下操作的二次验证：${disabledNames.join('、')}？关闭后执行这些操作将不再验证身份。`
+        : '确认更新这些操作的二次验证设置？',
+      '修改操作验证设置',
+      {
+        confirmButtonText: '确认修改',
+        cancelButtonText: '取消',
+        type: 'warning',
+        customClass: 'danger-warning-message-box',
+        closeOnClickModal: false,
+      },
+    )
+  } catch {
+    return
+  }
+  securitySubmitting.value = true
+  try {
+    const res = await put<SensitiveOperationSetting[]>('/users/sensitive-operations', {
+      settings: changed.map(op => ({ key: op.key, enabled: op.enabled })),
+    })
+    if (res.code === 200) {
+      if (res.data) {
+        const available = res.data.filter(op => op.available)
+        securityOps.value = available.map(op => ({ ...op }))
+        available.forEach(op => {
+          savedOpsEnabled[op.key] = op.enabled
+        })
+      } else {
+        changed.forEach(op => {
+          savedOpsEnabled[op.key] = op.enabled
+        })
+      }
+      ElMessage.success('操作验证设置已更新')
+      // 同步到全局用户信息，使危险操作弹窗立即按新设置跳过/弹出验证
+      await userStore.refreshUserInfo()
+    } else {
+      ElMessage.error(res.message || '保存失败')
+    }
+  } catch {
+    ElMessage.error('保存失败，请稍后重试')
+  } finally {
+    securitySubmitting.value = false
+  }
+}
+
 onMounted(() => {
   loadSecurity()
+  loadSecurityOperations()
 })
 
 onBeforeUnmount(() => {
@@ -1472,6 +1584,70 @@ onBeforeUnmount(() => {
   margin-left: 12px;
   font-size: 12px;
   color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+/* ===== 按操作设置：逐操作开关列表 ===== */
+.security-verification .sv-ops-tip {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.55);
+}
+
+.sv-ops {
+  display: flex;
+  flex-direction: column;
+}
+
+.sv-ops-empty {
+  padding: 16px 0;
+  font-size: 13px;
+  text-align: center;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.45);
+}
+
+.sv-op-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.03);
+  border: 1px solid rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.08);
+}
+
+.sv-op-row + .sv-op-row {
+  margin-top: 8px;
+}
+
+.sv-op-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sv-op-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.9);
+}
+
+.sv-op-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.5);
+}
+
+.sv-op-row :deep(.el-switch) {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .sv-op-row {
+    align-items: flex-start;
+  }
 }
 
 .code-row {

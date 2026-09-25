@@ -96,6 +96,7 @@ import { ElMessage } from 'element-plus'
 import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
+import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import PermissionNodeTree from './PermissionNodeTree.vue'
 import { Plus } from '@lucide/vue'
 import type { PermissionGroup, PermissionNodeGroup } from '@/types/admin'
@@ -225,6 +226,7 @@ const removeGroup = async (row: PermissionGroup) => {
     message: `确认删除权限组「${row.name}」？组内用户将失去该组带来的权限，此操作不可恢复。`,
     confirmText: '确认删除',
     operationName: '删除权限组',
+    operationKey: SensitiveOperationKeys.PERMISSION_GROUP_DELETE,
   })
   if (!headers) return
   const result = await del(`/admin/permissions/groups/${row.id}`, undefined, undefined, headers)
@@ -256,6 +258,7 @@ const submitNodes = async () => {
     message: `确认更新权限组「${nodesDialog.groupName}」的权限节点？变更立即对组内用户生效。`,
     confirmText: '确认更新',
     operationName: '设置权限组节点',
+    operationKey: SensitiveOperationKeys.PERMISSION_GROUP_SET_NODES,
   })
   if (!headers) return
   nodesDialog.submitting = true

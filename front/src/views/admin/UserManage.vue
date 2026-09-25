@@ -204,6 +204,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, postForm } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import { confirmDangerousOperation, requireSensitiveVerification } from '@/composables/useSensitiveVerification'
+import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import { invalidateAvatarCache } from '@/utils/attachment'
 import UserAvatar from '@/components/UserAvatar.vue'
 import PermissionNodeTree from './PermissionNodeTree.vue'
@@ -505,6 +506,7 @@ const removeUser = async (row: AdminUser) => {
     message: `确认删除用户「${row.username}」？该操作不可恢复。`,
     confirmText: '确认删除',
     operationName: '删除用户',
+    operationKey: SensitiveOperationKeys.USER_DELETE,
   })
   if (!headers) return
   const result = await del(`/admin/users/${row.id}`, undefined, undefined, headers)
@@ -524,6 +526,7 @@ const toggleBan = async (row: AdminUser) => {
       message: `确认解封用户「${row.username}」？解封后该账号可重新登录。`,
       confirmText: '确认解封',
       operationName: '解封用户',
+      operationKey: SensitiveOperationKeys.USER_BAN,
     })
     if (!headers) return
     const result = await put<AdminUser>(`/admin/users/${row.id}/ban`, { banned: false }, undefined, headers)
@@ -556,7 +559,7 @@ const toggleBan = async (row: AdminUser) => {
     return
   }
   // 封禁属高危操作，需身份二次验证
-  const headers = await requireSensitiveVerification('封禁用户')
+  const headers = await requireSensitiveVerification('封禁用户', SensitiveOperationKeys.USER_BAN)
   if (!headers) return
   const result = await put<AdminUser>(`/admin/users/${row.id}/ban`, { banned: true, reason }, undefined, headers)
   if (result.code === 200) {
@@ -577,6 +580,7 @@ const toggleOp = async (row: AdminUser) => {
       : `确认取消「${row.username}」的平台管理员身份？`,
     confirmText: '确认',
     operationName: next ? '设为平台管理员' : '取消平台管理员',
+    operationKey: SensitiveOperationKeys.USER_SET_OP,
   })
   if (!headers) return
   const result = await put<AdminUser>(`/admin/users/${row.id}/op`, { isOp: next }, undefined, headers)
@@ -618,11 +622,13 @@ const openPermission = async (row: AdminUser) => {
 
 const submitPermission = async () => {
   // 分配权限组/节点属高危操作：红色警示框 + 身份二次验证（同一次验证头复用于两次请求）
+  // 仅当「分配权限组」和「分配权限节点」两个操作都被关闭验证时才跳过
   const headers = await confirmDangerousOperation({
     title: '分配权限',
     message: `确认为「${permDialog.username}」更新权限组与授权节点？权限变更立即生效，请确认无误。`,
     confirmText: '确认更新',
     operationName: '分配权限',
+    operationKey: [SensitiveOperationKeys.PERMISSION_GROUP_ASSIGN, SensitiveOperationKeys.PERMISSION_USER_ASSIGN],
   })
   if (!headers) return
   permDialog.submitting = true

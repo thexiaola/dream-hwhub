@@ -1,80 +1,125 @@
 # Dream HWHub - 梦学簿
 
-Dream HWHub（梦学簿）是一个基于 Spring Boot 的现代化作业管理系统，采用**模块化分层架构**设计，提供安全可靠的用户认证和作业管理功能。
+Dream HWHub（梦学簿）是一个面向学校场景的现代化作业管理系统，采用**前后端分离 + 模块化分层架构**。
+
+- **后端**（`backend/`）：Spring Boot 4 + MyBatis-Plus + MySQL，提供 REST API
+- **前端**（`front/`）：Vue 3 + TypeScript + Vite + Element Plus，单页应用
+
+系统覆盖用户认证、学校与班级组织、作业与考试、题目与评分、好友私信、权限后台与敏感操作二次验证等完整能力。
 
 ## 项目架构
 
-本项目采用清晰的模块化设计，主要包含以下模块：
+### 后端模块（`backend/src/main/java/top/thexiaola/dreamhwhub/`）
 
-### 核心模块
-- **common**: 公共模块
-  - `api`: API统一响应封装
-  - `context`: 用户上下文管理
-  
-- **support**: 支撑模块（技术工具）
-  - `encryption`: AES加密工具
-  - `validation`: 文件上传验证
-  - `logging`: 日志工具
-  - `session`: 会话管理和用户工具
-  
-- **config**: 配置层
-  - `security`: 安全配置（拦截器）
-  - `infrastructure`: 基础设施配置（数据库、邮件、日志）
-  - `exception`: 全局异常处理
+**公共与支撑**
 
-### 业务模块
-- **module/login**: 用户认证模块
-  - 用户注册、登录、密码找回
-  - 邮箱验证码服务
-  - 用户信息管理
-  
-- **module/work_management**: 课堂管理模块
-  - 班级管理（创建、加入、邀请码、所有权转让）
-  - 作业管理（发布、更新、删除、附件）
-  - 作业提交（提交、批改、统计、分页查询）
+- `common`：通用能力
+  - `api`：统一响应封装（`ApiResponse`）
+- `config`：配置层
+  - `security`：`AuthInterceptor`（JWT 认证）、`PermissionInterceptor`（权限节点校验）、`CsrfFilter`（CSRF 校验）
+  - `DatabaseInitializer`：启动时自动建表 / 同步字段
+  - `GlobalExceptionHandler`：全局异常处理
+  - `LogSystem` / `MailConfig` / `MybatisPlusConfig` / `MyMetaObjectHandler` / `WebConfig`
+- `support`：技术支撑
+  - `jwt`：令牌生成与解析
+  - `password`：BCrypt 密码加密
+  - `security`：敏感操作二次验证（注解、拦截器、校验器、操作注册表、按用户设置）
+  - `session`：当前用户上下文（`UserUtils`）
+  - `storage`：头像等文件存储
+  - `validation`：文件上传校验、XSS 校验
+  - `logging`：日志工具
+- `enums` / `exception`：业务错误码与业务异常
+
+**业务模块**
+
+- `module/login`：注册、登录、找回密码、资料与头像、改密改邮、账号注销、邮箱验证码、敏感操作验证设置
+- `module/school`：学校、学校成员（学工号 / 姓名 / 老师·学生·学校管理员角色）、加入申请
+- `module/work_management`：班级、成员与邀请、作业、结构化题目与作答、考试与反作弊、作业提交与批改
+- `module/permission`：权限节点注册表、权限组、用户-组 / 用户-节点绑定
+- `module/admin`：后台用户管理
+- `module/message`：站内信、好友私信、陌生消息配额与消息策略
+- `module/file_management`：文件下载
+
+### 前端结构（`front/src/`）
+
+- `views/`：页面（登录注册、课程、学校、个人中心、消息、好友私信、管理面板等）
+- `components/`：通用组件（如身份验证弹窗 `SensitiveVerifyDialog`）
+- `composables/`：可复用逻辑（如 `useSensitiveVerification`）
+- `stores/`：Pinia 状态（`user` / `school` / `message` / `friend`）
+- `router/`：路由与登录守卫
+- `utils/`：HTTP 封装（自动附加 JWT 与 CSRF Token）、格式化工具
 
 ## 功能特性
 
-- **用户认证系统**：完整的用户注册、登录流程，采用Session会话管理
-- **邮箱验证码**：集成邮件服务，提供安全的验证码验证机制
-- **权限管理**：LuckPerms 风格的权限节点 + 权限组授权，支持细粒度管理权限与平台管理员（OP）机制
-- **会话管理**：智能Session管理，支持用户状态跟踪和并发登录控制
-- **模块化架构**：清晰的业务模块划分，遵循分层设计理念
-- **数据库集成**：使用 MyBatis-Plus ORM框架，支持自动建表
-- **配置管理**：敏感信息外部化配置，支持多环境部署
-- **日志系统**：自定义滚动策略，支持完整的操作追踪
-- **班级管理功能**：
-  - 创建班级：创建者可直接建班并自动成为班级老师
-  - 创建者（OWNER）：班级创建者，拥有最高权限
-  - 班级助理（ASSISTANT）：由创建者设置，协助管理班级
-  - 学生（STUDENT）：普通班级成员
-  - 支持邀请码加入、所有权转让、成员管理等功能
-  - 学生可邀请其他用户加入班级（需老师审核），邀请记录存储被邀请人ID和姓名
-  - **25位邀请码**：采用大小写字母+数字组合，安全性提升10^35倍
-- **管理员后台**：用户管理（新增/编辑/删除/封禁/设置平台管理员）、权限组与权限节点管理
-- **分页查询**：所有列表接口支持MyBatisPlus分页，提升大数据量性能
-- **完整API文档**：详细的接口说明请参考 [ApiList.md](ApiList.md)
-- **优化的响应结构**：提交作业和更新作业的响应不包含批改字段，查询时才返回完整信息
-- **灵活的批改机制**：教师可以重新批改、打回学生修改、或恢复被打回的作业
+### 用户与认证
+- 注册、登录、邮箱验证码、找回密码
+- 个人资料与头像管理、修改密码、换绑邮箱
+- **账号注销**：凭登录密码验证所有者身份，自动退出全部班级与学校、软删作业提交并清理关联数据
+- JWT 认证 + CSRF 防护；请求鉴权会回库确认账号仍存在且未被封禁
+
+### 学校与班级
+- **学校**：创建、加入申请与审核、成员管理（角色：学校管理员 / 老师 / 学生）、学工号与姓名
+- **班级**：创建、邀请码加入、加入申请审核、成员管理、课代表（助理老师）、所有权转让
+- **25 位邀请码**：大小写字母 + 数字，安全强度显著提升
+- **班级接管**：班级创建者失去教师身份时班级冻结，本校其他老师可申请接管（学校级可配置自动同意）
+- **独立学校管理页**：学校管理员可从多个入口进入整页 `/school/:id/manage` 进行管理
+
+### 作业、题目与考试
+- **作业**：发布、更新、删除、附件、截止时间、分页查询
+- **结构化题目**：单选 / 多选 / 判断 / 填空 / 主观 / 附加；客观题提交即自动评判，主观与附加题由老师手动评分，支持参考答案与解析
+- **考试**：与作业共用表与评分链路（`work_type` 区分），支持反作弊：
+  - 字体映射（打乱字体池 + 服务端打乱文本，防复制搜题）
+  - 强制全屏答题、切屏 / 离开页面检测计数、禁止复制、限时
+  - 违规达到设定次数后强制交卷
+- **批改**：教师可重新批改、打回修改、恢复被打回作业；提交与更新响应不含批改字段，查询时才返回完整信息
+
+### 消息与社交
+- 站内信、好友（按学校隔离）、私信
+- 未加好友可发私信，陌生消息有默认配额（可被平台 / 校管调整）
+
+### 权限与后台
+- LuckPerms 风格权限节点 + 权限组，平台管理员（OP）拥有全部节点
+- 管理面板：用户管理、权限组与节点、学校管理、消息策略
+- 前端页签 / 按钮按权限显隐，后端强制校验
+
+### 安全
+- **敏感操作二次验证**：解散班级、退出 / 解散学校、踢出成员、转让班级、撤回提交，以及平台管理员的高危 / 权限类操作
+  - 验证方式由**用户自选**：登录密码与 / 或邮箱验证码（可组合为四种模式）
+  - 用户可**逐个操作**关闭 / 开启二次验证；仅展示本人有权限执行的操作
+  - 失去操作权限时对应开关自动隐藏并重置为默认（启用验证）
+  - 高危操作统一「红色警示框 + 身份验证」成对出现
 
 ## 技术栈
 
-- **核心框架**：Spring Boot 4.0.3
-- **架构模式**：模块化分层架构（Controller-Service-Mapper）
-- **ORM框架**：MyBatis-Plus 3.5.15
+### 后端
+- **核心框架**：Spring Boot 4.1.1
+- **架构模式**：模块化分层（Controller–Service–Mapper）
+- **ORM**：MyBatis-Plus 3.5.16（含 `mybatis-plus-jsqlparser`）
 - **数据库**：MySQL 9.5.0
-- **认证机制**：Session 会话管理
-- **邮件服务**：Spring Boot Mail Starter
-- **日志系统**：Logback + 自定义滚动策略
-- **构建工具**：Gradle 9.3.0
-- **Java版本**：Java 25
+- **认证**：JWT（jjwt 0.12.6）
+- **密码**：BCrypt（Spring Security Crypto）
+- **邮件**：Spring Boot Mail Starter
+- **工具库**：Hutool 5.8.44、MapStruct
+- **日志**：Logback + 自定义滚动策略
+- **构建**：Gradle 9.5.0
+- **Java**：JDK 26
+
+### 前端
+- **框架**：Vue 3.5 `<script setup>` + TypeScript
+- **构建**：Vite 8
+- **UI**：Element Plus 2.14
+- **状态**：Pinia 3
+- **路由**：Vue Router 5
+- **图标**：Lucide（`@lucide/vue`）
+- **HTTP**：Axios（统一拦截器附加 JWT 与 CSRF Token）
 
 ## 开发环境要求
 
-- **Java**: JDK 25 或更高版本
-- **数据库**: MySQL 9.5.0 或兼容版本
-- **构建工具**: Gradle 9.3.0 或更高版本
-- **操作系统**: Linux/macOS/Windows (推荐Linux)
+- **Java**：JDK 26 或更高版本
+- **数据库**：MySQL 9.5.0 或兼容版本
+- **Node.js**：支持 Vite 8 的版本（建议 Node 20+）
+- **构建工具**：Gradle 9.5.0 或更高版本（或使用仓库内 `gradlew`）
+- **操作系统**：Linux / macOS / Windows（推荐 Linux）
 
 ## 快速开始
 
@@ -85,22 +130,17 @@ git clone https://gitee.com/thexiaola/dream-hwhub.git
 cd dream-hwhub
 ```
 
-### 2. 数据库配置
+### 2. 后端配置与启动
 
-确保 MySQL 服务正在运行，项目支持两种数据库配置方式：
+#### 2.1 数据库
 
-#### 方式一：自动建表（推荐）
-项目启动时会自动创建所需的数据库表，无需手动执行SQL脚本。
-
-#### 方式二：手动建表
-如需手动初始化数据库，可以执行：
+确保 MySQL 服务正在运行。项目**启动时自动建表并同步字段与索引**，无需手动执行 SQL。如需手动初始化：
 
 ```bash
-mysql -u root -p < src/main/resources/user_schema.sql
+mysql -u root -p < backend/src/main/resources/user_schema.sql
 ```
 
-#### 数据库连接配置
-修改 `src/main/resources/application.properties` 文件中的数据库连接信息：
+修改 `backend/src/main/resources/application.properties` 中的连接信息：
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/dream_hwhub?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true
@@ -108,21 +148,15 @@ spring.datasource.username=root
 spring.datasource.password=your_password
 ```
 
-### 3. 邮件服务配置
+#### 2.2 邮件服务
 
-项目采用安全的配置管理方式，邮件配置文件已加入 `.gitignore` 保护：
+邮件配置文件已加入 `.gitignore` 保护，从示例复制后填写：
 
-#### 3.1 配置文件准备
 ```bash
-# 从示例文件复制配置模板
-cp src/main/resources/mail-config.properties.example src/main/resources/mail-config.properties
+cp backend/src/main/resources/mail-config.properties.example backend/src/main/resources/mail-config.properties
 ```
 
-#### 3.2 填写邮件配置
-编辑 `src/main/resources/mail-config.properties` 文件，填入真实的邮件配置：
-
 ```properties
-# 邮件服务器配置
 spring.mail.host=smtp.qq.com
 spring.mail.port=465
 spring.mail.username=your-email@qq.com
@@ -132,219 +166,127 @@ spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.ssl.enable=true
 ```
 
-#### 3.3 配置说明
-- `spring.mail.host`: 邮件服务器SMTP地址
-- `spring.mail.port`: SMTP端口（QQ邮箱建议使用465）
-- `spring.mail.username`: 发件人邮箱账号
-- `spring.mail.password`: 邮箱授权码（非登录密码）
-- 配置文件 `mail-config.properties` 已被 `.gitignore` 忽略，确保敏感信息安全
+- `spring.mail.password` 为邮箱授权码（非登录密码）
 
-### 4. 启动应用
+#### 2.3 启动后端
 
 ```bash
+cd backend
 ./gradlew bootRun
 ```
 
-应用将在 `http://localhost:8080` 上运行。
+后端将在 `http://localhost:35010` 上运行（端口见 `application.properties` 的 `server.port`）。
+
+### 3. 前端配置与启动
+
+```bash
+cd front
+npm install
+npm run dev      # 开发服务器：http://localhost:5173
+```
+
+前端开发服务器已将 `/api` 代理到 `http://localhost:35010`（见 `front/vite.config.ts`）。
+
+生产构建：
+
+```bash
+npm run build    # 产物输出到 front/dist
+```
 
 ## 详细 API 文档
 
-完整的 API 接口文档请参考 [ApiList.md](ApiList.md)。
+完整的 API 接口文档请参考 [backend/ApiList.md](backend/ApiList.md)。
 
 ## 项目结构
 
 ```
 .
-├── src/
-│   ├── main/
-│   │   ├── java/top/thexiaola/dreamhwhub/
-│   │   │   ├── common/                          # 公共模块
-│   │   │   │   ├── api/                         # API统一响应
-│   │   │   │   │   └── ApiResponse.java
-│   │   │   │   └── context/                     # 上下文管理
-│   │   │   │       └── UserContext.java
-│   │   │   ├── config/                          # 配置层
-│   │   │   │   ├── security/                    # 安全配置
-│   │   │   │   │   └── AuthInterceptor.java
-│   │   │   │   ├── DatabaseInitializer.java     # 数据库初始化
-│   │   │   │   ├── GlobalExceptionHandler.java  # 全局异常处理
-│   │   │   │   ├── LogSystem.java               # 日志系统配置
-│   │   │   │   ├── MailConfig.java              # 邮件服务配置
-│   │   │   │   └── WebConfig.java               # Web配置
-│   │   │   ├── support/                         # 支撑模块（技术工具）
-│   │   │   │   ├── encryption/                  # 加密工具
-│   │   │   │   │   └── AESEncryptionUtil.java
-│   │   │   │   ├── validation/                  # 验证工具
-│   │   │   │   │   └── FileUploadValidator.java
-│   │   │   │   ├── logging/                     # 日志工具
-│   │   │   │   │   └── LogUtil.java
-│   │   │   │   └── session/                     # 会话管理
-│   │   │   │       ├── SessionManager.java
-│   │   │   │       └── UserUtils.java
-│   │   │   ├── module/                          # 业务模块
-│   │   │   │   ├── login/                       # 用户认证模块
-│   │   │   │   │   ├── controller/              # 控制器层
-│   │   │   │   │   │   ├── LoginUserController.java
-│   │   │   │   │   │   ├── ModifyUserController.java
-│   │   │   │   │   │   ├── RegisterController.java
-│   │   │   │   │   │   └── RetrieveUserController.java
-│   │   │   │   │   ├── dto/                     # 数据传输对象
-│   │   │   │   │   │   ├── EmailCodeRequest.java
-│   │   │   │   │   │   ├── LoginRequest.java
-│   │   │   │   │   │   ├── ModifyEmailRequest.java
-│   │   │   │   │   │   ├── ModifyPasswordRequest.java
-│   │   │   │   │   │   ├── ModifyUserInfoRequest.java
-│   │   │   │   │   │   ├── RegisterRequest.java
-│   │   │   │   │   │   ├── RetrievePasswordCodeRequest.java
-│   │   │   │   │   │   ├── RetrievePasswordModifyRequest.java
-│   │   │   │   │   │   ├── SendModifyCodeRequest.java
-│   │   │   │   │   │   └── UserResponse.java
-│   │   │   │   │   ├── entity/                  # 实体类
-│   │   │   │   │   │   └── User.java
-│   │   │   │   │   ├── mapper/                  # 数据访问层
-│   │   │   │   │   │   └── UserMapper.java
-│   │   │   │   │   └── service/                 # 服务层
-│   │   │   │   │       ├── EmailService.java
-│   │   │   │   │       ├── LoginUserService.java
-│   │   │   │   │       ├── ModifyUserService.java
-│   │   │   │   │       ├── RegisterUserService.java
-│   │   │   │   │       └── impl/                # 服务实现
-│   │   │   │   │           ├── EmailServiceImpl.java
-│   │   │   │   │           ├── LoginUserServiceImpl.java
-│   │   │   │   │           ├── ModifyUserServiceImpl.java
-│   │   │   │   │           └── RegisterUserServiceImpl.java
-│   │   │   │   └── work_management/             # 课堂管理模块
-│   │   │   │       ├── controller/              # 控制器层
-│   │   │   │       │   ├── ClassController.java
-│   │   │   │       │   ├── WorkController.java
-│   │   │   │       │   └── WorkSubmissionController.java
-│   │   │   │       ├── dto/                     # 请求DTO
-│   │   │   │       │   ├── ApproveJoinClassRequest.java
-│   │   │   │       │   ├── CreateClassRequest.java
-│   │   │   │       │   ├── CreateWorkRequest.java
-│   │   │   │       │   ├── GradeWorkRequest.java
-│   │   │   │       │   ├── JoinClassRequest.java
-│   │   │   │       │   ├── RespondInvitationRequest.java
-│   │   │   │       │   ├── SubmitWorkRequest.java
-│   │   │   │       │   └── UpdateWorkRequest.java
-│   │   │   │       ├── entity/                  # 实体类
-│   │   │   │       │   ├── ClassCreateApplication.java
-│   │   │   │       │   ├── ClassInfo.java
-│   │   │   │       │   ├── ClassInvitation.java
-│   │   │   │       │   ├── ClassInviteApplication.java
-│   │   │   │       │   ├── ClassJoinApplication.java
-│   │   │   │       │   ├── ClassMember.java
-│   │   │   │       │   ├── WorkAttachment.java
-│   │   │   │       │   ├── WorkInfo.java
-│   │   │   │       │   ├── WorkSubmission.java
-│   │   │   │       │   └── WorkSubmissionAttachment.java
-│   │   │   │       ├── mapper/                  # 数据访问层
-│   │   │   │       │   ├── ClassCreateApplicationMapper.java
-│   │   │   │       │   ├── ClassInfoMapper.java
-│   │   │   │       │   ├── ClassInvitationMapper.java
-│   │   │   │       │   ├── ClassInviteApplicationMapper.java
-│   │   │   │       │   ├── ClassJoinApplicationMapper.java
-│   │   │   │       │   ├── ClassMemberMapper.java
-│   │   │   │       │   ├── WorkAttachmentMapper.java
-│   │   │   │       │   ├── WorkMapper.java
-│   │   │   │       │   ├── WorkSubmissionAttachmentMapper.java
-│   │   │   │       │   └── WorkSubmissionMapper.java
-│   │   │   │       ├── service/                 # 服务层
-│   │   │   │       │   ├── ClassService.java
-│   │   │   │       │   ├── WorkService.java
-│   │   │   │       │   ├── WorkSubmissionService.java
-│   │   │   │       │   └── impl/                # 服务实现
-│   │   │   │       │       ├── ClassServiceImpl.java
-│   │   │   │       │       ├── WorkServiceImpl.java
-│   │   │   │       │       └── WorkSubmissionServiceImpl.java
-│   │   │   │       └── vo/                      # 响应VO
-│   │   │   │           ├── ClassDetailResponse.java
-│   │   │   │           ├── ClassMemberResponse.java
-│   │   │   │           ├── CreateClassApplicationResponse.java
-│   │   │   │           ├── InvitationResponse.java
-│   │   │   │           ├── JoinClassApplicationResponse.java
-│   │   │   │           ├── MemberCheckResponse.java
-│   │   │   │           ├── WorkResponse.java
-│   │   │   │           └── WorkSubmissionResponse.java
-│   │   │   ├── enums/                           # 枚举类
-│   │   │   │   └── BusinessErrorCode.java
-│   │   │   ├── exception/                       # 异常类
-│   │   │   │   └── BusinessException.java
-│   │   │   └── DreamHwhubApplication.java       # 主应用启动类
-│   │   └── resources/                           # 资源文件
-│   │       ├── application.properties           # 应用主配置
-│   │       ├── logback-spring.xml               # 日志配置
-│   │       ├── mail-config.properties.example   # 邮件配置示例
-│   │       ├── password-key.properties.example  # 密钥配置示例
-│   │       ├── user_schema.sql                  # 用户与登录相关表
-│   │       ├── school_schema.sql                # 学校、学校成员与加入申请
-│   │       ├── class_schema.sql                 # 班级、成员、邀请与加入申请
-│   │       ├── work_schema.sql                  # 作业、附件与作业提交
-│   │       └── permission_schema.sql            # 权限组与权限节点
-│   └── test/                                    # 测试代码
-│       └── java/top/thexiaola/dreamhwhub/
-│           └── DreamHwhubApplicationTests.java  # 应用测试类
-├── build.gradle                                 # Gradle构建配置
-├── settings.gradle                              # Gradle设置
-├── gradlew                                      # Gradle包装器(Linux)
-├── gradlew.bat                                  # Gradle包装器(Windows)
-├── .gitignore                                   # Git忽略配置
-├── LICENSE                                      # 许可证文件
-├── README.md                                    # 项目说明文档
-└── ApiList.md                                   # API接口文档
-```
-
-## 邮件服务配置
-
-项目集成了邮件服务，用于发送验证码。配置文件采用安全管理模式：
-
-### 配置文件结构
-```
-src/main/resources/
-├── mail-config.properties            # 本地配置文件（Git跟踪）
-├── mail-config.properties.example    # 示例配置文件（Git忽略）
-├── application.properties            # 主配置文件
-└── logback-spring.xml               # 日志配置文件
-```
-
-### 配置项说明
-```properties
-# SMTP服务器配置
-spring.mail.host=smtp.qq.com        # 邮件服务器地址
-spring.mail.port=465                # 端口号
-spring.mail.username=xxx@qq.com     # 发件人邮箱
-spring.mail.password=xxxxxx         # 邮箱授权码
-spring.mail.properties.mail.from.nickname=发信人昵称  # 发件人显示名称
+├── backend/                                    # Spring Boot 后端
+│   ├── src/main/java/top/thexiaola/dreamhwhub/
+│   │   ├── common/                             # 通用（统一响应）
+│   │   ├── config/                            # 配置层
+│   │   │   ├── security/                       # 认证 / 权限 / CSRF 拦截
+│   │   │   ├── DatabaseInitializer.java        # 自动建表与字段同步
+│   │   │   ├── GlobalExceptionHandler.java     # 全局异常处理
+│   │   │   ├── LogSystem.java                  # 日志系统配置
+│   │   │   ├── MailConfig.java                 # 邮件服务配置
+│   │   │   ├── MybatisPlusConfig.java          # MyBatis-Plus 配置
+│   │   │   ├── MyMetaObjectHandler.java        # 自动填充
+│   │   │   └── WebConfig.java                  # Web 配置
+│   │   ├── support/                            # 技术支撑
+│   │   │   ├── jwt/                            # JWT 工具
+│   │   │   ├── password/                       # BCrypt 密码工具
+│   │   │   ├── security/                       # 敏感操作二次验证
+│   │   │   ├── session/                        # 会话 / 用户上下文
+│   │   │   ├── storage/                        # 文件存储
+│   │   │   ├── validation/                     # 上传 / XSS 校验
+│   │   │   ├── logging/                        # 日志工具
+│   │   │   └── mapper/                         # 对象映射（MapStruct）
+│   │   ├── module/                             # 业务模块
+│   │   │   ├── login/                          # 注册登录、资料、安全设置
+│   │   │   ├── school/                         # 学校与成员
+│   │   │   ├── work_management/                # 班级、作业、题目、考试
+│   │   │   ├── permission/                     # 权限节点与权限组
+│   │   │   ├── admin/                          # 后台用户管理
+│   │   │   ├── message/                        # 站内信、好友私信
+│   │   │   └── file_management/                # 文件下载
+│   │   ├── enums/                              # 业务错误码
+│   │   ├── exception/                          # 业务异常
+│   │   └── DreamHwhubApplication.java          # 主启动类
+│   ├── src/main/resources/
+│   │   ├── application.properties              # 应用主配置
+│   │   ├── logback-spring.xml                  # 日志配置
+│   │   ├── mail-config.properties.example      # 邮件配置示例
+│   │   ├── exam-font/                          # 考试字体映射池
+│   │   ├── user_schema.sql                     # 用户表
+│   │   ├── school_schema.sql                   # 学校 / 成员 / 加入申请
+│   │   ├── class_schema.sql                    # 班级 / 成员 / 邀请 / 接管
+│   │   ├── work_schema.sql                     # 作业 / 题目 / 作答 / 考试
+│   │   ├── permission_schema.sql               # 权限组与权限节点
+│   │   ├── message_schema.sql                  # 站内信
+│   │   ├── friend_schema.sql                   # 好友 / 私信 / 配额 / 策略
+│   │   └── sensitive_operation_schema.sql      # 敏感操作验证设置
+│   └── ApiList.md                              # 后端 API 文档
+├── front/                                      # Vue 3 前端
+│   ├── src/
+│   │   ├── views/                              # 页面
+│   │   ├── components/                         # 组件
+│   │   ├── composables/                        # 组合式逻辑
+│   │   ├── stores/                             # Pinia 状态
+│   │   ├── router/                             # 路由
+│   │   ├── types/                              # TS 类型
+│   │   └── utils/                              # HTTP / 格式化工具
+│   ├── vite.config.ts                          # Vite 配置（含 /api 代理）
+│   └── package.json
+├── attachments/                                # 上传附件存储
+├── LICENSE                                     # 许可证
+└── README.md                                   # 项目说明
 ```
 
 ## 数据库管理
 
 ### 自动建表（推荐）
-项目启动时会自动创建所需的数据库表，无需手动执行SQL脚本。
 
-### 手动建表
-如需手动初始化数据库结构：
+项目启动时由 `DatabaseInitializer` 自动创建表并同步字段与索引，无需手动执行脚本。建表脚本按模块拆分在 `backend/src/main/resources/` 下，并在 `application.properties` 的 `spring.sql.init.schema-locations` 中统一登记：
 
-```bash
-mysql -u root -p < src/main/resources/user_schema.sql
-```
+- `user_schema.sql`：`user` 表 —— 用户基本信息（用户名、邮箱、手机号、头像、BCrypt 密码、平台管理员 `is_op`、封禁状态、危险操作验证方式开关），用户名 / 邮箱唯一
+- `school_schema.sql`：`school` / `school_member` / `school_join_application` —— 学校、成员（学工号与姓名、角色）与加入申请
+- `class_schema.sql`：`class_info` / `class_member` / `class_invitation` / `class_user_invitation` / `class_teacher_approval` / `class_join_application` / `class_takeover_application` —— 班级、成员、邀请、审核与接管
+- `work_schema.sql`：`work_info` / `work_attachment` / `work_submission` / `work_submission_attachment` / `work_question` / `work_answer` / `exam_session` / `exam_violation` —— 作业、附件、提交、结构化题目与作答、考试会话与违规记录
+- `permission_schema.sql`：`permission_group` / `permission_group_node` / `user_permission_group` / `user_permission_node` —— 权限组、组-节点绑定、用户-组绑定、用户直接节点
+- `message_schema.sql`：`site_message` —— 站内信
+- `friend_schema.sql`：`user_friend` / `private_message` / `stranger_message_quota` / `message_policy` —— 好友、私信、陌生消息配额与消息策略
+- `sensitive_operation_schema.sql`：`user_sensitive_operation` —— 用户级「按操作」的二次验证设置（仅存被关闭的操作）
 
-### 数据库表结构
-建表脚本按模块拆分在 `src/main/resources/` 下，启动时自动创建并同步字段与索引：
-- `user_schema.sql`：`user` 表，存储用户基本信息（学号、用户名、邮箱、加密密码、是否平台管理员 OP `is_op`），学号/用户名/邮箱均唯一
-- `school_schema.sql`：`school` / `school_member` / `school_join_application` 表，学校、学校成员（学工号与姓名、老师/学生/学校管理员角色）与加入申请
-- `class_schema.sql`：`class_info` / `class_member` 及邀请、审核、加入申请相关表，班级与成员关系
-- `work_schema.sql`：`work_info` / `work_attachment` / `work_submission` / `work_submission_attachment` 表，作业、附件与提交
-- `permission_schema.sql`：`permission_group` / `permission_group_node` / `user_permission_group` / `user_permission_node` 表，权限组、组-节点绑定、用户-组绑定与用户直接权限节点
-- 支持 UTF-8 字符集，确保中文内容正确存储
+- 统一使用 UTF-8 字符集，确保中文内容正确存储
 
 ## 权限体系与管理员后台
 
 ### 权限模型（LuckPerms 风格）
 
-- **权限节点**：由后端内置注册表定义（`PermissionRegistry`），命名形如 `user:add`、`permission:group:assign`、`class:dissolve`。每个后台操作对应一个权限节点，节点不支持运行时新增，避免出现无效节点。
-- **权限组**：一组权限节点的集合（表 `permission_group`），可标记为「默认组」，新注册用户自动加入。
-- **直接授权**：除权限组外，也可以直接为单个用户授予权限节点。
+- **权限节点**：由后端内置注册表定义（`PermissionNodes` / `PermissionRegistry`），命名形如 `user:add`、`permission:group:assign`、`class:dissolve`、`school:dissolve`。节点不支持运行时新增，避免无效节点。
+- **权限组**：一组权限节点的集合，可标记为「默认组」，新注册用户自动加入。
+- **直接授权**：也可直接为单个用户授予权限节点。
 - **平台管理员（OP）**：`user.is_op = 1` 的用户拥有全部权限节点，不受权限组限制。
 
 用户最终权限 = OP（全部节点）或 用户直接节点 ∪ 所属权限组节点。
@@ -354,12 +296,12 @@ mysql -u root -p < src/main/resources/user_schema.sql
 - 非平台管理员**只能授予自己已拥有的权限节点**：配置权限组节点、授予用户节点、为用户分配权限组时均会校验，避免通过编辑权限组自我提权。
 - **平台管理员身份只能由平台管理员授予或取消**，且不能作用于自己。
 - **不能修改自己的权限组与平台管理员身份**，也不能删除自己的账号。
-- 请求鉴权会回库确认账号仍然存在且未被封禁，账号被删除或封禁后原 Token 立即失效。
-- 后端由 `PermissionInterceptor` 对 `/api/admin/**` 强制校验权限节点；前端页签/按钮显隐仅作体验优化，不作为安全边界。
+- 请求鉴权会回库确认账号仍存在且未被封禁，账号被删除或封禁后原 Token 立即失效。
+- 后端由 `PermissionInterceptor` 对 `/api/admin/**` 强制校验权限节点；前端页签 / 按钮显隐仅作体验优化，不作为安全边界。
 
 ### 管理员引导
 
-- 平台首次部署（系统内还没有其他用户）时，**第一个注册的用户会自动成为平台管理员（OP）**，随后即可在管理面板中为用户与权限组做配置。
+- 平台首次部署（系统内还没有其他用户）时，**第一个注册的用户会自动成为平台管理员（OP）**，随后即可在管理面板中配置用户与权限组。
 - 也可以直接指定 OP：
 
   ```sql
@@ -372,15 +314,55 @@ mysql -u root -p < src/main/resources/user_schema.sql
 
 - **用户管理**：新增 / 编辑 / 删除用户、封禁解封、设置或取消平台管理员、为用户分配权限
 - **权限组**：创建 / 编辑 / 删除权限组，为权限组勾选权限节点
+- **学校管理**：查看、创建、修改、解散学校，指派 / 取消学校管理员
 - **班级管理 / 加入申请**：跨班级管理能力由 `class:*` 权限节点控制
+- **消息策略**：配置陌生消息配额等
 
-接口清单详见 [ApiList.md](ApiList.md) 第 5 章。
+接口清单详见 [backend/ApiList.md](backend/ApiList.md)。
+
+## 安全与认证
+
+### JWT 认证
+
+系统采用基于 Token 的 JWT 认证：
+
+- **登录**：校验账号密码后签发 JWT，前端保存在本地并在后续请求头 `Authorization: Bearer <token>` 中携带
+- **校验**：`AuthInterceptor` 解析并校验 Token，回库确认账号状态，将当前用户写入请求属性
+- **公开接口**：登录、注册、获取注册验证码、找回密码发送 / 重置等，无需登录
+- **统一响应**：未认证请求返回 401 与标准错误格式
+
+### CSRF 防护
+
+- 登录后，写操作（POST / PUT / DELETE / PATCH）需携带 CSRF Token
+- 前端 `http.ts` 拦截器基于 Token 自动生成 `X-CSRF-Token`；后端 `CsrfFilter` 在认证之前校验
+
+### 密码安全
+
+- **BCrypt** 哈希存储（`support/password/PasswordUtil`），不可逆，抗彩虹表
+- 密码字段仅允许写入、禁止序列化输出，且不进入 `toString`
+
+### 验证码机制
+
+- 邮箱验证码有效期 10 分钟（可配置）
+- 发送冷却时间（可配置），防止暴力破解与滥用
+- 集成邮件服务，支持多种邮箱提供商
+
+### 敏感操作二次验证
+
+高危操作（解散班级、退出 / 解散学校、踢出成员、转让班级、撤回提交，以及平台管理员的高危 / 权限类操作）在执行前要求再次验证身份：
+
+- **验证方式**：登录密码与 / 或邮箱验证码，由用户在「个人中心 → 危险操作验证」自行开关，组合出四种模式
+- **按操作设置**：用户可逐个操作开启 / 关闭二次验证；只展示本人当前有权限执行的操作
+- **权限联动**：用户失去某操作权限（如老师资格被取消）时，对应开关自动隐藏并重置为默认（启用验证）
+- **统一交互**：所有高危操作统一「红色警示框 + 身份验证」成对出现
+- **接口约定**：二次验证失败返回 400（错误码 6100–6105），绝不返回 401，避免前端把「密码输错」误判为登录过期
 
 ## 日志系统
 
-项目采用自定义日志滚动策略，支持智能化日志管理：
+项目采用自定义日志滚动策略：
 
 ### 日志文件命名
+
 ```
 logs/log_{日期}_{启动次数}_{文件序号}.log
 ```
@@ -388,117 +370,57 @@ logs/log_{日期}_{启动次数}_{文件序号}.log
 **示例**：`logs/log_20260223_1_1.log`
 
 ### 滚动策略
+
 - **时间滚动**：每日自动切换到新日期文件
-- **大小滚动**：单文件超过50MB时自动滚动
+- **大小滚动**：单文件超过 50MB 时自动滚动
 - **启动检测**：应用重启时自动递增启动次数
 
 ### 特性
-- 支持异步日志处理，提升性能
+
+- 异步日志处理，提升性能
 - 控制台彩色日志显示
 - 完整的操作追踪记录
 - 自动清理过期日志文件
-
-## 认证与安全
-
-### Session认证机制
-系统采用传统的Session会话管理进行用户身份认证：
-
-- **会话存储**: 基于HttpSession的服务器端存储
-- **状态管理**: SessionManager统一管理用户会话状态
-- **权限验证**: AuthInterceptor 拦截器完成登录认证，PermissionInterceptor 按 `@RequirePermission` 注解校验权限节点
-- **安全性**: 支持会话超时检测和并发登录控制
-
-#### Session管理特性
-- **会话跟踪**: 自动跟踪用户登录状态
-- **并发控制**: 防止同一账号多地同时登录
-- **会话清理**: 自动清理过期会话
-- **内存优化**: 高效的会话存储和回收机制
-
-#### 拦截器配置
-- **保护路径**: `/api/**` 下的所有接口
-- **公开接口**: 注册、登录、验证码发送、检查接口等
-- **统一响应**: 未认证请求返回 401 状态码和标准错误格式
-
-### 密码安全
-- **AES-256-GCM加密**: 使用行业标准的对称加密算法
-- **Base64编码**: 便于数据库存储的字符串格式
-- **字段长度**: VARCHAR(255)合理分配存储空间
-
-### 验证码机制
-- 邮箱验证码有效期 10 分钟（可配置）
-- 发送冷却时间 60 秒（可配置）
-- 防止暴力破解和重复注册
-- 集成邮件服务，支持多种邮箱提供商
-
-### 安全特性
-
-- **密码加密**: AES-256-GCM 算法加密 + Base64 编码存储（VARCHAR(255)）
-- **会话管理**: 基于 Session 的用户状态管理，支持并发登录控制
-- **权限拦截**: AuthInterceptor 完成 JWT 认证，PermissionInterceptor 按 `@RequirePermission` 注解校验权限节点
-- **验证码保护**: 10 分钟有效期，60 秒冷却时间，防止滥用
-- **重复注册防护**: 数据库唯一约束（学号、用户名、邮箱）+ 业务层验证
-- **权限控制**: LuckPerms 风格的权限节点 + 权限组授权，平台管理员（OP）拥有全部权限节点
-
-### 会话管理API
-
-系统提供以下Session相关的工具方法（位于 `support.session` 包）：
-
-```java
-import top.thexiaola.dreamhwhub.support.session.UserUtils;
-
-// 获取当前登录用户
-User currentUser = UserUtils.getCurrentUser();
-
-// 检查用户是否已登录
-boolean isLoggedIn = UserUtils.isLoggedIn();
-
-// 获取当前用户ID
-Integer userId = UserUtils.getCurrentUserId();
-
-// 获取客户端IP地址
-String clientIp = UserUtils.getClientIpAddress();
-```
 
 ## 故障排除
 
 ### 常见问题
 
-1. **Session丢失问题**
-   - 检查浏览器Cookie设置是否启用
-   - 确认服务器Session超时配置
-   - 验证负载均衡环境下Session共享配置
+1. **登录 Token 失效 / 401**
+   - 确认已登录且 Token 未过期
+   - 账号被删除或封禁后原 Token 会立即失效，需重新登录
 
-2. **权限验证失败**
-   - 确认用户已成功登录
-   - 检查AuthInterceptor配置的拦截路径
-   - 验证Session中用户信息完整性
+2. **CSRF 校验失败（写操作被拒）**
+   - 确认请求头携带了 `X-CSRF-Token`
+   - 前端通过 `utils/http.ts` 自动生成，直接调接口时需自行附带
 
-3. **并发登录异常**
-   - 查看SessionManager的日志记录
-   - 检查用户会话状态一致性
-   - 确认Session清理机制正常工作
+3. **权限验证失败**
+   - 确认用户已登录且拥有对应权限节点
+   - 平台管理员（OP）拥有全部节点，可直接放行
 
 4. **数据库连接失败**
-   - 检查MySQL服务是否运行
-   - 验证数据库连接配置
-   - 确认数据库用户权限
+   - 检查 MySQL 服务是否运行
+   - 验证 `application.properties` 中的连接配置与账号权限
 
 5. **邮件发送失败**
-   - 检查邮件配置文件是否存在
-   - 验证SMTP服务器配置
-   - 确认邮箱授权码正确性
+   - 检查 `mail-config.properties` 是否存在
+   - 验证 SMTP 配置与邮箱授权码正确性
 
 6. **端口占用问题**
+
    ```bash
-   # 查找占用8080端口的进程
-   lsof -i :8080
-   # 强制终止进程
+   # 后端默认端口 35010，前端开发端口 5173
+   lsof -i :35010
    kill -9 <PID>
    ```
 
-7. **启动失败**
-   - 检查Java版本是否符合要求
-   - 验证所有必需的配置文件是否存在
+7. **前端请求 404 / 跨域**
+   - 确认后端已在 `35010` 运行
+   - 确认 `front/vite.config.ts` 中 `/api` 代理指向正确
+
+8. **启动失败**
+   - 检查 Java 版本是否符合要求（JDK 26+）
+   - 验证必需的配置文件是否存在
    - 查看详细错误日志
 
 ## 许可证

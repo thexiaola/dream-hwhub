@@ -49,6 +49,9 @@ class LoginUserControllerTest {
     @MockitoBean
     private PermissionService permissionService;
 
+    @MockitoBean
+    private top.thexiaola.dreamhwhub.support.security.SensitiveOperationSettingsService sensitiveOperationSettingsService;
+
     private ObjectMapper objectMapper;
 
     @BeforeEach

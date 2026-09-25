@@ -23,6 +23,7 @@ import top.thexiaola.dreamhwhub.support.security.vo.SensitiveOperationSettingVO;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -68,13 +69,21 @@ public class SensitiveOperationSettingsService {
 
     /**
      * 判断某操作对该用户是否仍需二次验证
+     * <p>
+     * 与 {@link #listSettings} 同一口径：该操作对用户**已不可用**时（如老师资格被取消后
+     * 的班级操作），即便库中还残留关闭行，也一律按默认「需要验证」处理——从而确保
+     * 「失去权限 = 重置为默认（启用验证）」在**执行点**即生效，而不依赖用户再次打开设置页。
      *
      * @param userId 用户 ID
      * @param key    操作标识
-     * @return true-需要验证（默认）；false-用户已关闭
+     * @return true-需要验证（默认）；false-用户已关闭且该操作仍对其可用
      */
     public boolean isVerificationRequired(Integer userId, String key) {
         if (key == null || !SensitiveOperations.exists(key)) {
+            return true;
+        }
+        // 操作对该用户不再可用：忽略残留关闭行，按默认（需要验证）处理
+        if (!isAvailable(userId, key)) {
             return true;
         }
         return !getDisabledKeys(userId).contains(key);
@@ -176,17 +185,17 @@ public class SensitiveOperationSettingsService {
             return false;
         }
         return switch (key) {
-            // 解散班级：拥有解散权限，或自己创建了班级
+            // 解散班级：拥有解散权限，或自己创建了仍可管理的（未冻结）班级
             case SensitiveOperations.CLASS_DISSOLVE ->
-                    hasNode(userId, PermissionNodes.CLASS_DISSOLVE) || ownsAnyClass(userId);
-            // 踢出成员：拥有踢出权限，或担任某班老师/创建者
+                    hasNode(userId, PermissionNodes.CLASS_DISSOLVE) || ownsActiveClass(userId);
+            // 踢出成员：拥有踢出权限，或担任某班老师/仍可管理的班级创建者
             case SensitiveOperations.CLASS_KICK_MEMBER ->
                     hasNode(userId, PermissionNodes.CLASS_MEMBER_KICK)
-                            || ownsAnyClass(userId) || isTeacherInAnyClass(userId);
+                            || ownsActiveClass(userId) || isTeacherInAnyClass(userId);
             // 退出班级：是某个（非自己创建的）班级的成员
             case SensitiveOperations.CLASS_LEAVE -> isMemberOfAnyClass(userId);
-            // 转让班级：自己创建了班级
-            case SensitiveOperations.CLASS_TRANSFER -> ownsAnyClass(userId);
+            // 转让班级：自己创建了仍可管理的（未冻结）班级
+            case SensitiveOperations.CLASS_TRANSFER -> ownsActiveClass(userId);
             // 退出学校：是某个学校的（非管理员）成员
             case SensitiveOperations.SCHOOL_LEAVE -> isMemberOfAnySchool(userId);
             // 解散学校
@@ -215,6 +224,43 @@ public class SensitiveOperationSettingsService {
 
     private boolean hasNode(Integer userId, String node) {
         return permissionService.hasPermission(userId, node);
+    }
+
+    /**
+     * 用户是否创建了至少一个「仍可管理」的班级。
+     * <p>
+     * 与 {@code ClassAccessResolver.isClassFrozen} 同口径：创建者必须是平台管理员，
+     * 或在班级所属学校仍持有老师及以上的身份；否则班级视为已冻结，原创建者不再能管理，
+     * 相应的「解散班级 / 踢出成员 / 转让班级」等开关应对其隐藏。
+     */
+    private boolean ownsActiveClass(Integer userId) {
+        QueryWrapper<ClassInfo> query = new QueryWrapper<>();
+        query.eq("owner_id", userId).select("id", "school_id");
+        List<ClassInfo> owned = classInfoMapper.selectList(query);
+        if (owned.isEmpty()) {
+            return false;
+        }
+        // 平台管理员持有的班级不因学校身份变化而冻结
+        if (permissionService.isOp(userId)) {
+            return true;
+        }
+        // 未关联学校的班级按可管理处理（与单班判定一致）
+        List<Integer> schoolIds = owned.stream()
+                .map(ClassInfo::getSchoolId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (schoolIds.size() < owned.size()) {
+            return true;
+        }
+        // 只要在任一所属学校仍具老师及以上身份，即视为仍可管理
+        QueryWrapper<SchoolMember> memberQuery = new QueryWrapper<>();
+        memberQuery.eq("user_id", userId)
+                .in("school_id", schoolIds)
+                .ge("role", SchoolMemberRole.TEACHER)
+                .select("id")
+                .last("LIMIT 1");
+        return schoolMemberMapper.selectCount(memberQuery) > 0;
     }
 
     /** 用户是否创建了至少一个班级 */

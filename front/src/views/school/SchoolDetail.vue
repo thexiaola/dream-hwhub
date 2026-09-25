@@ -113,6 +113,7 @@ import { ElMessage } from 'element-plus'
 import { ArrowRight, Settings } from '@lucide/vue'
 import { del, get, post } from '@/utils/http'
 import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
+import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import { SCHOOL_ROLE_ADMIN, type SchoolDetail, type SchoolJoinApplication } from '@/types/school'
 
 const route = useRoute()
@@ -192,6 +193,7 @@ const leaveSchool = async () => {
     message: `确认退出「${school.value?.schoolName ?? ''}」？退出后你将失去该校的成员身份，需要重新申请加入。`,
     confirmText: '确认退出',
     operationName: '退出学校',
+    operationKey: SensitiveOperationKeys.SCHOOL_LEAVE,
   })
   if (!headers) return
   const result = await del(`/school/${schoolId}/membership`, undefined, undefined, headers)

@@ -158,7 +158,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { get, post, del } from '@/utils/http'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
+import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import { ArrowLeft, User, Users, Calendar, Clock, FileText, Star, UserPlus, LogOut } from '@lucide/vue'
 import { formatDateTime as formatDate } from '@/utils/format'
 import type { CourseInfo } from '@/types/class'
@@ -224,22 +226,17 @@ const leaving = ref(false)
 
 const leaveClassAction = async () => {
   if (!course.value) return
-  try {
-    await ElMessageBox.confirm(
-      `确定退出班级"${course.value.className}"吗？退出后你在该班级的所有作业提交和附件将被删除，且无法恢复。`,
-      '退出班级',
-      {
-        confirmButtonText: '确认退出',
-        cancelButtonText: '取消',
-        type: 'warning',
-        customClass: 'danger-warning-message-box',
-      },
-    )
-  } catch {
-    return
-  }
+  // 退出班级属高危操作：红色警示框 + 身份二次验证（用户可为该操作单独关闭验证）
+  const headers = await confirmDangerousOperation({
+    title: '退出班级',
+    message: `确定退出班级"${course.value.className}"吗？退出后你在该班级的所有作业提交和附件将被删除，且无法恢复。`,
+    confirmText: '确认退出',
+    operationName: '退出班级',
+    operationKey: SensitiveOperationKeys.CLASS_LEAVE,
+  })
+  if (!headers) return
   leaving.value = true
-  const result = await del<void>(`/class/${route.params.id}/members/me`)
+  const result = await del<void>(`/class/${route.params.id}/members/me`, undefined, undefined, headers)
   leaving.value = false
   if (result.code === 200) {
     ElMessage.success(result.message || '已退出班级')

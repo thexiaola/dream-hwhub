@@ -149,6 +149,7 @@ import { Plus, School } from '@lucide/vue'
 import { del, get, post, put } from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import { confirmDangerousOperation } from '@/composables/useSensitiveVerification'
+import { SensitiveOperationKeys } from '@/constants/sensitiveOperations'
 import type { PageResult } from '@/types'
 import type { School as SchoolInfo, SchoolDetail } from '@/types/school'
 import { formatDateOnly as formatDate } from '@/utils/format'
@@ -259,6 +260,7 @@ const dissolve = async (school: SchoolInfo) => {
     message: `解散「${school.schoolName}」后，该校的成员关系、加入申请等数据将被永久清除，此操作不可恢复。确定继续？`,
     confirmText: '确定解散',
     operationName: '解散学校',
+    operationKey: SensitiveOperationKeys.SCHOOL_DISSOLVE,
   })
   if (!headers) return
   const result = await del(`/admin/schools/${school.id}`, undefined, undefined, headers)
@@ -302,6 +304,7 @@ const submitAdmin = async () => {
       : `确认取消「${adminDialog.userAccount.trim()}」的学校管理员身份？`,
     confirmText: '确认',
     operationName: adminDialog.assigned ? '指派学校管理员' : '取消学校管理员',
+    operationKey: SensitiveOperationKeys.SCHOOL_ASSIGN_ADMIN,
   })
   if (!headers) return
   adminDialog.submitting = true

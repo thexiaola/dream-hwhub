@@ -204,6 +204,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { Bell, Copy, Key, RefreshCw, User, UserPlus, Users } from "@lucide/vue";
 import { del, get, post, put } from "@/utils/http";
 import { confirmDangerousOperation } from "@/composables/useSensitiveVerification";
+import { SensitiveOperationKeys } from "@/constants/sensitiveOperations";
 import { formatDateTime as formatDate } from "@/utils/format";
 import type { ClassMemberInfo, TeacherApprovalInfo } from "@/types/class";
 
@@ -355,6 +356,7 @@ const kickStudent = async (userId: number) => {
     message: "确认将该成员踢出班级？其在本班的作业提交将被清理，此操作不可恢复。",
     confirmText: "确认踢出",
     operationName: "踢出成员",
+    operationKey: SensitiveOperationKeys.CLASS_KICK_MEMBER,
   });
   if (!headers) return;
   const result = await del(
@@ -382,6 +384,7 @@ const batchKickStudentsAction = async () => {
     message: `确认批量踢出 ${selectedStudentIds.value.length} 名成员？其在本班的作业提交将被清理，此操作不可恢复。`,
     confirmText: "确认踢出",
     operationName: "批量踢出成员",
+    operationKey: SensitiveOperationKeys.CLASS_KICK_MEMBER,
   });
   if (!headers) return;
   const result = await del(
@@ -400,21 +403,16 @@ const batchKickStudentsAction = async () => {
 };
 
 const transferOwnershipAction = async (userId: number, userName: string) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定将班级"${props.className}"转让给 ${userName} 吗？转让后你将变成该班级的课代表，且无法撤销。`,
-      "转让班级",
-      {
-        confirmButtonText: "确认转让",
-        cancelButtonText: "取消",
-        type: "warning",
-        customClass: "danger-warning-message-box",
-      },
-    );
-  } catch {
-    return;
-  }
-  const result = await put(`/class/${props.classId}/owner`, { newOwnerId: userId });
+  // 转让班级属高危操作：红色警示框 + 身份二次验证（用户可为该操作单独关闭验证）
+  const headers = await confirmDangerousOperation({
+    title: "转让班级",
+    message: `确定将班级"${props.className}"转让给 ${userName} 吗？转让后你将变成该班级的课代表，且无法撤销。`,
+    confirmText: "确认转让",
+    operationName: "转让班级",
+    operationKey: SensitiveOperationKeys.CLASS_TRANSFER,
+  });
+  if (!headers) return;
+  const result = await put(`/class/${props.classId}/owner`, { newOwnerId: userId }, undefined, headers);
   if (result.code === 200) {
     ElMessage.success(result.message || "班级所有权转让成功");
     emit("ownership-transferred");

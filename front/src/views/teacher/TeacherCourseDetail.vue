@@ -187,6 +187,7 @@ import {
 import { del, get, post } from "@/utils/http";
 import { useUserStore } from "@/stores/user";
 import { requireSensitiveVerification } from "@/composables/useSensitiveVerification";
+import { SensitiveOperationKeys } from "@/constants/sensitiveOperations";
 import ClassWorkPanel from "./ClassWorkPanel.vue";
 import ClassMemberPanel from "./ClassMemberPanel.vue";
 import type { CourseInfo } from "@/types/class";
@@ -284,7 +285,7 @@ const confirmTextDialogNext = async () => {
     return;
   }
   showDangerConfirmTextDialog.value = false;
-  const headers = await requireSensitiveVerification("解散课堂");
+  const headers = await requireSensitiveVerification("解散课堂", SensitiveOperationKeys.CLASS_DISSOLVE);
   if (!headers) {
     // 用户取消身份验证，回到初始状态
     clearDangerInputs();

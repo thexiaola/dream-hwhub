@@ -1,24 +1,38 @@
-# Work Management API 接口文档
+# Dream HWHub API 接口文档
+
+梦学簿作业管理系统后端 REST API 文档。后端基于 Spring Boot 4 + MyBatis-Plus，统一前缀 `/api`。
 
 ## 项目架构
 
-本项目采用模块化设计，主要包含以下模块：
+后端采用模块化分层设计（Controller–Service–Mapper），主要包含：
 
-- **common**: 公共模块（API响应、上下文管理等）
-- **support**: 支撑模块（加密、验证、日志、会话管理）
-- **config**: 配置层（安全配置、基础设施配置、异常处理）
-- **module/user**: 用户模块（登录、注册、用户管理）
-- **module/work_management**: 课堂管理模块（班级、作业、提交）
+- **common**：公共模块（统一响应封装等）
+- **support**：技术支撑（JWT、密码、敏感操作验证、会话、文件存储、上传校验、日志、对象映射）
+- **config**：配置层（认证 / 权限 / CSRF 拦截器、数据库初始化、异常处理、邮件、日志）
+- **module/login**：用户认证与账号（注册、登录、找回密码、资料与头像、安全验证设置）
+- **module/school**：学校、学校成员与加入申请
+- **module/work_management**：班级、作业、结构化题目、考试、作业提交
+- **module/permission**：权限节点、权限组与用户授权
+- **module/admin**：后台用户管理
+- **module/message**：站内信、好友私信、消息策略
+- **module/file_management**：文件下载
 
 ---
 
 ## 目录
 
-- [1. 用户认证接口 (User Authentication)](#1-用户认证接口-user-authentication)
-- [2. 作业管理接口 (WorkController)](#2-作业管理接口-workcontroller)
-- [3. 班级管理接口 (ClassController)](#3-班级管理接口-classcontroller)
-- [4. 作业提交接口 (WorkSubmissionController)](#4-作业提交接口-worksubmissioncontroller)
-- [5. 管理员后台接口 (AdminController)](#5-管理员后台接口-admincontroller)
+- [通用说明](#通用说明)
+- [1. 用户认证与账号（LoginUser / Register / Retrieve）](#1-用户认证与账号loginuserregisterretrieve)
+- [2. 资料与安全验证设置（ModifyUser / SensitiveVerification / SensitiveOperationSettings）](#2-资料与安全验证设置modifyusersensitiveverificationsensitiveoperationsettings)
+- [3. 学校（SchoolController）](#3-学校schoolcontroller)
+- [4. 班级（ClassController）](#4-班级classcontroller)
+- [5. 作业与题目（WorkController / WorkQuestionController）](#5-作业与题目workcontrollerworkquestioncontroller)
+- [6. 作业提交（WorkSubmissionController）](#6-作业提交worksubmissioncontroller)
+- [7. 考试（ExamController）](#7-考试examcontroller)
+- [8. 消息（SiteMessage / PrivateMessage / Friend / MessagePolicy）](#8-消息sitemessageprivatemessagefriendmessagepolicy)
+- [9. 管理员后台（AdminUser / AdminPermission / AdminSchool）](#9-管理员后台adminuseradminpermissionadminschool)
+- [10. 文件（FileController）](#10-文件filecontroller)
+- [附录](#附录)
 
 ---
 
@@ -26,108 +40,174 @@
 
 ### 认证方式
 
-所有接口均需要登录认证，使用 **JWT Token** 进行身份验证。
+除公开接口外，所有接口需登录认证，采用 **JWT Token**。
 
-**请求头要求**:
+**请求头要求**：
 
-- `Authorization`: `Bearer <jwt_token>` - JWT认证Token（所有接口必需）
-- `X-CSRF-Token`: `<csrf_token>` - CSRF防护Token（POST/PUT/DELETE/PATCH请求必需）
+- `Authorization`: `Bearer <jwt_token>` — 所有需认证接口必需
+- `X-CSRF-Token`: `<csrf_token>` — 写操作（POST / PUT / DELETE / PATCH）必需
 
-**获取Token流程**:
+**获取 Token 流程**：
 
-1. 调用登录接口 `/api/auth/login` 获取 JWT Token
-2. 基于 JWT Token 生成 CSRF Token（使用 HMAC-SHA256 算法）
-3. 后续请求在 Header 中携带这两个 Token
+1. 调用 `POST /api/users/login` 获取 JWT Token
+2. 基于 JWT Token 生成 CSRF Token（HMAC-SHA256 + Base64URL 去填充）
+3. 后续请求在 Header 中携带两个 Token
 
-**CSRF Token 生成示例**（前端）:
+**CSRF Token 生成示例**（前端）：
 
 ```javascript
-// 使用 HMAC-SHA256 生成 CSRF Token
-function generateCsrfToken(jwtToken) {
-  return CryptoJS.HmacSHA256(jwtToken, jwtSecret).toString(CryptoJS.enc.Base64);
+// 使用 HMAC-SHA256 对 JWT 计算签名，Base64URL 编码并去除填充
+async function generateCsrfToken(jwtToken) {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(JWT_SECRET),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(jwtToken));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 ```
 
-**请求示例**:
+**公开接口**（无需登录）：
 
-```javascript
-axios.get("/api/works/list", {
-  headers: {
-    Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "X-CSRF-Token": "dGhpcyBpcyBhIGNzcmYgdG9rZW4...",
-  },
-});
-```
+- `POST /api/users/register`、`POST /api/users/getregcode`
+- `POST /api/users/login`
+- `POST /api/users/retrieve/sendcode`、`PUT /api/users/retrieve/resetpassword`
+
+### 敏感操作二次验证
+
+以下操作在执行前需进行身份二次验证（凭据通过请求头携带）。**是否有该操作权限、以及是否开启验证由用户设置决定**；若用户已关闭某操作的验证，则无需携带凭据。
+
+**验证请求头**（二选一，取决于用户设置）：
+
+- 登录密码：`X-Verify-Method: password` + `X-Verify-Password: <登录密码>`
+- 邮箱验证码：`X-Verify-Method: email_code` + `X-Verify-Code: <验证码>`
+
+**受保护的操作**：
+
+| 操作 | 接口 |
+| ---- | ---- |
+| 解散班级 | `DELETE /api/class/{classId}` |
+| 踢出班级成员 | `DELETE /api/class/{classId}/members/batch` |
+| 退出班级 | `DELETE /api/class/{classId}/members/me` |
+| 转让班级 | `PUT /api/class/{classId}/owner` |
+| 退出学校 | `DELETE /api/school/{schoolId}/membership` |
+| 解散学校 | `DELETE /api/admin/schools/{schoolId}` |
+| 指派学校管理员 | `PUT /api/admin/schools/{schoolId}/admin` |
+| 删除权限组 | `DELETE /api/admin/permissions/groups/{groupId}` |
+| 设置权限组节点 | `PUT /api/admin/permissions/groups/{groupId}/nodes` |
+| 分配权限组 | `PUT /api/admin/users/{userId}/groups` |
+| 分配权限节点 | `PUT /api/admin/users/{userId}/nodes` |
+| 删除用户 | `DELETE /api/admin/users/{userId}` |
+| 封禁/解封用户 | `PUT /api/admin/users/{userId}/ban` |
+| 设置平台管理员身份 | `PUT /api/admin/users/{userId}/op` |
+| 撤回提交 | `DELETE /api/submissions/{submissionId}` |
+
+**约定**：二次验证失败一律返回 **HTTP 400**（错误码 6100–6105），**绝不返回 401**，避免前端把「凭据输错」误判为登录过期。
 
 ### 响应格式
 
-所有接口统一返回 JSON 格式：
+所有接口统一返回 JSON：
 
-**成功响应**:
+**成功响应**：
+
+```json
+{ "code": 200, "message": "成功", "data": {} }
+```
+
+**失败响应**：
+
+```json
+{ "code": 400, "message": "错误信息", "data": null }
+```
+
+> 说明：业务错误码通过 `code` 字段表达；HTTP 状态码通常为 200（业务失败）或 400/401/403/500（鉴权与异常）。以 `code` 为准判断业务结果。
+
+### 分页参数
+
+多数列表接口支持 `/api/works` 与 `/api/submissions` 使用 `PageRequest`：
+
+| 字段 | 类型 | 默认 | 说明 |
+| ---- | ---- | ---- | ---- |
+| pageNum | Integer | 1 | 页码（从 1 开始） |
+| pageSize | Integer | 20 | 每页条数 |
+| keyword | String | - | 关键字（部分接口支持） |
+
+分页响应结构：
 
 ```json
 {
   "code": 200,
   "message": "成功",
-  "data": {}
+  "data": {
+    "records": [],
+    "total": 100,
+    "size": 20,
+    "current": 1
+  }
 }
 ```
 
-**失败响应**:
+### 完整错误码
 
-```json
-{
-  "code": 400,
-  "message": "错误信息",
-  "data": null
-}
-```
-
-### 常见错误码
-
-- `200`: 成功
-- `400`: 请求参数错误或业务逻辑错误
-- `401`: 未登录或登录已过期
-- `500`: 服务器内部错误
+| code | 含义 |
+| ---- | ---- |
+| 0 | 操作成功 |
+| 1001 / 1002 / 1003 | 验证码无效 / 已过期 / 不存在 |
+| 2002 / 2003 / 2004 | 用户名已被占用 / 邮箱已被占用 / 注册失败 |
+| 3001 / 3002 / 3003 / 3004 | 用户不存在 / 账号或密码错误 / 用户已被封禁 / 用户未登录 |
+| 3005 | 账号注销受阻（仍持有需先解除的身份） |
+| 4001 / 4003 / 4004 | 邮件发送失败 / 邮件服务器未配置 / 邮件发送失败 |
+| 5000 / 5001 | 系统错误 / 数据库操作失败 |
+| 6003 / 6004 / 6005 | 新邮箱不能与原邮箱相同 / 原密码错误 / 新密码不能与原密码相同 |
+| 6100 | 该操作需要验证身份，请提供登录密码或邮箱验证码 |
+| 6101 | 身份验证失败，请检查登录密码或邮箱验证码 |
+| 6102 | 不支持的身份验证方式 |
+| 6103 | 该验证方式已被关闭，请使用其他方式 |
+| 6104 | 安全验证设置不合法 |
+| 6105 | 该操作对你的账号不可用，无法配置其验证开关 |
+| 7001 / 7002 / 7003 | 作业不存在 / 作业状态错误 / 已经提交过该作业 |
+| 7004 / 7005 / 7006 | 提交记录不存在 / 作业已被批改不能修改 / 分数超过作业总分 |
+| 7007 / 7008 / 7009 | 题目不存在 / 题型不合法 / 作答不完整或与题目不匹配 |
+| 7010 / 7011 / 7012 / 7013 / 7014 / 7015 | 考试不存在 / 考试尚未开始 / 考试已结束 / 考试时间已到 / 考试状态不允许该操作 / 违规类型不合法 |
+| 8001 / 8002 / 8003 / 8004 / 8005 | 文件上传失败 / 不允许的文件类型 / 文件大小超过限制 / 文件可能包含病毒 / 非法的文件路径 |
+| 8501 / 8502 / 8503 / 8504 / 8505 | 班级不存在 / 班级已解散 / 你已经在该班级中 / 你不是该班级的成员 / 创建者不能退出班级 |
+| 8506 / 8507 / 8508 / 8509 | 该学号在班级中已被占用 / 班级已冻结（老师失去身份）/ 该班级当前无需接管 / 你已提交过接管申请 |
+| 8601 / 8602 / 8603 / 8604 / 8605 | 学校不存在 / 学校名称已被占用 / 你已经在该学校中 / 你不是该学校的成员 / 该学工号在该学校已被占用 |
+| 8606 / 8607 | 学校下仍存在班级 / 只有学校老师才能创建班级 |
+| 8701 / 8702 / 8703 / 8704 / 8705 | 只能添加同校好友 / 不能添加自己 / 你们已经是好友 / 已存在待处理的好友申请 / 好友关系不存在 |
+| 8706 / 8707 / 8708 | 只能给同校用户发私信 / 陌生用户私信条数已达上限 / 不能给自己发送私信 |
+| 9001 / 9002 / 9003 / 9004 / 9005 | 权限不足 / 缺少必要参数 / 参数错误 / 已有待处理的申请 / 已经是班级成员 |
 
 ---
 
-## 1. 用户认证接口 (User Authentication)
+## 1. 用户认证与账号（LoginUser / Register / Retrieve）
 
-**基础路径**: `/api/users`
+**基础路径**：`/api/users`
 
 ### 1.1 用户注册
 
-**接口地址**: `POST /api/users/register`
+**接口地址**：`POST /api/users/register`（公开）
 
-**请求头**:
-
-- Content-Type: application/json
-- **无需登录认证**（公开接口）
-
-**请求体**:
+**请求体**：
 
 ```json
 {
   "username": "张三",
-  "userNo": "2024001",
   "email": "zhangsan@example.com",
-  "password": "Password@123",
-  "code": "123456"
+  "emailCode": "123456",
+  "password": "Password@123"
 }
 ```
 
-**字段说明**:
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| username | String | 是 | 用户名，最长 64 字符 |
+| email | String | 是 | 邮箱地址 |
+| emailCode | String | 是 | 邮箱验证码 |
+| password | String | 是 | 密码，8–32 位，需包含大小写字母和数字 |
 
-| 字段     | 类型   | 必填 | 说明                                 |
-| -------- | ------ | ---- | ------------------------------------ |
-| username | String | 是   | 用户名，最长 64 字符                 |
-| userNo   | String | 是   | 学号/工号，最长 32 字符              |
-| email    | String | 是   | 邮箱地址                             |
-| password | String | 是   | 密码，8-32位，需包含大小写字母和数字 |
-| code     | String | 是   | 邮箱验证码                           |
-
-**成功响应 (200)**:
+**成功响应 (200)**：
 
 ```json
 {
@@ -136,119 +216,57 @@ axios.get("/api/works/list", {
   "data": {
     "id": 1001,
     "username": "张三",
-    "userNo": "2024001",
     "email": "zhangsan@example.com",
     "isOp": false,
     "permissions": [],
-    "createTime": "2026-05-07T10:00:00"
+    "verifyByPassword": true,
+    "verifyByEmailCode": false,
+    "disabledVerificationOperations": []
   }
 }
 ```
 
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "验证码错误或已过期",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “用户名不能为空”
-- “学号/工号不能为空”
-- “邮箱格式不正确”
-- “密码不符合要求”
-- “验证码不能为空”
-- “验证码错误或已过期”
-- “该学号/工号已被注册”
-- “该邮箱已被注册”
+**可能的错误信息**：用户名不能为空 / 邮箱格式不正确 / 密码不符合要求 / 验证码错误或已过期 / 用户名已被占用 / 邮箱已被占用。
 
 ---
 
 ### 1.2 发送注册验证码
 
-**接口地址**: `POST /api/users/getregcode`
+**接口地址**：`POST /api/users/getregcode`（公开）
 
-**请求头**:
-
-- Content-Type: application/json
-- **无需登录认证**（公开接口）
-
-**请求体**:
+**请求体**：
 
 ```json
-{
-  "email": "zhangsan@example.com",
-  "userNo": "2024001",
-  "username": "张三"
-}
+{ "username": "张三", "email": "zhangsan@example.com" }
 ```
 
-**字段说明**:
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| username | String | 是 | 用户名 |
+| email | String | 是 | 邮箱地址 |
 
-| 字段     | 类型   | 必填 | 说明      |
-| -------- | ------ | ---- | --------- |
-| email    | String | 是   | 邮箱地址  |
-| userNo   | String | 是   | 学号/工号 |
-| username | String | 是   | 用户名    |
+**成功响应**：`{ "code": 200, "message": "验证码已发送", "data": null }`
 
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "验证码发送成功",
-  "data": null
-}
-```
-
-**注意**:
-
-- 验证码有效期为 5 分钟
-- 同一邮箱 60 秒内只能发送一次验证码
-- 验证码为 6 位数字
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "该邮箱已被注册",
-  "data": null
-}
-```
+**注意**：验证码为 6 位数字，有效期 10 分钟；同一邮箱 60 秒内仅可发送一次（冷却时间可配置）。
 
 ---
 
 ### 1.3 用户登录
 
-**接口地址**: `POST /api/users/login`
+**接口地址**：`POST /api/users/login`（公开）
 
-**请求头**:
-
-- Content-Type: application/json
-- **无需登录认证**（公开接口）
-
-**请求体**:
+**请求体**：
 
 ```json
-{
-  "account": "2024001",
-  "password": "Password@123"
-}
+{ "account": "zhangsan@example.com", "password": "Password@123" }
 ```
 
-**字段说明**:
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| account | String | 是 | 用户名或邮箱 |
+| password | String | 是 | 密码 |
 
-| 字段     | 类型   | 必填 | 说明                    |
-| -------- | ------ | ---- | ----------------------- |
-| account  | String | 是   | 账号（学号/工号或邮箱） |
-| password | String | 是   | 密码                    |
-
-**成功响应 (200)**:
+**成功响应 (200)**：
 
 ```json
 {
@@ -257,4088 +275,1176 @@ axios.get("/api/works/list", {
   "data": {
     "id": 1001,
     "username": "张三",
-    "userNo": "2024001",
     "email": "zhangsan@example.com",
+    "phone": "13800000000",
+    "avatar": null,
     "isOp": false,
-    "permissions": [],
+    "permissions": ["class:update"],
+    "verifyByPassword": true,
+    "verifyByEmailCode": false,
+    "disabledVerificationOperations": [],
+    "isBanned": false,
+    "registerTime": "2026-05-07T10:00:00",
+    "lastLoginTime": "2026-05-08T09:00:00",
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
 
-**响应字段说明**:
+**失败**：账号或密码错误返回 HTTP 400 + `code: 3002`；账号被封禁返回 HTTP 403 + `code: 3003`（含封禁原因）。
 
-| 字段        | 类型            | 说明                                     |
-| ----------- | --------------- | ---------------------------------------- |
-| id          | Integer         | 用户 ID                                  |
-| username    | String          | 用户名                                   |
-| userNo      | String          | 学号/工号                                |
-| email       | String          | 邮箱                                     |
-| isOp        | Boolean         | 是否为平台管理员（OP，拥有全部权限节点） |
-| permissions | Array\<String\> | 生效的权限节点列表（OP 为全部节点）      |
-| token       | String          | JWT Token（用于后续请求）                |
-
-**注意**:
-
-- 登录成功后会返回 JWT Token
-- 后续请求需要在 Header 中携带该 Token
-- Token 有效期为 24 小时
-
-**失败响应**:
-
-```json
-{
-  "code": 401,
-  "message": "账号或密码错误",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “账号或密码错误”（统一提示，不区分具体原因）
-- “账号已被禁用”（403 Forbidden）
+> `permissions` 为该用户生效的权限节点（OP 返回全部节点）；`disabledVerificationOperations` 为已关闭二次验证的操作标识数组。
 
 ---
 
 ### 1.4 用户登出
 
-**接口地址**: `POST /api/users/logout`
+**接口地址**：`POST /api/users/logout`
 
-**请求头**:
-
-- Authorization: Bearer <jwt_token>
-- X-CSRF-Token: <csrf_token>
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "登出成功",
-  "data": null
-}
-```
-
-**注意**:
-
-- 需要登录认证
-- 登出后 Token 将失效
+**成功响应**：`{ "code": 200, "message": "登出成功", "data": null }`
 
 ---
 
-### 1.5 修改用户信息
+### 1.5 注销账号（不可逆）
 
-**接口地址**: `PUT /api/users/modify/info`
+**接口地址**：`DELETE /api/users/account`
 
-**请求头**:
+凭登录密码验证账号所有者身份；成功后自动退出全部班级与学校、软删除其作业提交，并清理好友 / 私信 / 站内信 / 权限等关联数据。
 
-- Content-Type: application/json
-- Authorization: Bearer <jwt_token>
-- X-CSRF-Token: <csrf_token>
-
-**请求体**:
+**请求体**：
 
 ```json
-{
-  "username": "李四"
-}
+{ "password": "Password@123" }
 ```
 
-**字段说明**:
+**注意**：平台管理员（OP）、学校管理员、班级创建者不可注销（返回 `code: 3005`），需先解除相应身份。
 
-| 字段     | 类型   | 必填 | 说明       |
-| -------- | ------ | ---- | ---------- |
-| username | String | 是   | 新的用户名 |
+---
 
-**成功响应 (200)**:
+### 1.6 获取当前登录用户信息
+
+**接口地址**：`GET /api/users/info`
+
+**成功响应**：同登录响应的 `data`，但不含 `token`。
+
+---
+
+### 1.7 发送找回密码验证码
+
+**接口地址**：`POST /api/users/retrieve/sendcode`（公开）
+
+**请求体**：`{ "account": "zhangsan@example.com" }`（用户名或邮箱）
+
+---
+
+### 1.8 重置密码
+
+**接口地址**：`PUT /api/users/retrieve/resetpassword`（公开）
+
+**请求体**：
 
 ```json
-{
-  "code": 200,
-  "message": "信息修改成功",
-  "data": {
-    "id": 1001,
-    "username": "李四",
-    "userNo": "2024001",
-    "email": "zhangsan@example.com",
-    "isOp": false,
-    "permissions": []
-  }
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "用户名长度不能超过 64 位",
-  "data": null
-}
+{ "account": "zhangsan@example.com", "code": "123456", "newPassword": "NewPass@123" }
 ```
 
 ---
 
-### 1.6 修改邮箱（换绑）
+## 2. 资料与安全验证设置（ModifyUser / SensitiveVerification / SensitiveOperationSettings）
 
-**接口地址**: `PUT /api/users/modify/email`
+**基础路径**：`/api/users/modify`、`/api/users/sensitive-verification`、`/api/users/sensitive-operations`
 
-**请求头**:
+### 2.1 修改用户信息
 
-- Content-Type: application/json
-- Authorization: Bearer <jwt_token>
-- X-CSRF-Token: <csrf_token>
+**接口地址**：`PUT /api/users/modify/info`
 
-**请求体**:
-
-```json
-{
-  "oldEmailCode": "123456",
-  "newEmail": "lisi@example.com",
-  "newEmailCode": "654321"
-}
-```
-
-**字段说明**:
-
-| 字段         | 类型   | 必填 | 说明         |
-| ------------ | ------ | ---- | ------------ |
-| oldEmailCode | String | 是   | 旧邮箱验证码 |
-| newEmail     | String | 是   | 新邮箱地址   |
-| newEmailCode | String | 是   | 新邮箱验证码 |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "邮箱修改成功",
-  "data": {
-    "id": 1001,
-    "username": "张三",
-    "userNo": "2024001",
-    "email": "lisi@example.com",
-    "isOp": false,
-    "permissions": []
-  }
-}
-```
-
-**注意**:
-
-- 需要先获取旧邮箱和新邮箱的验证码
-- 两个验证码都正确才能完成换绑
+**请求体**：`{ "username": "李四", "phone": "13900000000" }`（手机号留空表示删除）
 
 ---
 
-### 1.7 发送旧邮箱验证码
+### 2.2 上传头像 / 清除头像
 
-**接口地址**: `POST /api/users/modify/getmodifycode/before`
+- `POST /api/users/modify/avatar`：`multipart/form-data`，字段 `file`
+- `DELETE /api/users/modify/avatar`
 
-**请求头**:
-
-- Authorization: Bearer <jwt_token>
-- X-CSRF-Token: <csrf_token>
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "验证码已发送",
-  "data": null
-}
-```
-
-**注意**:
-
-- 向当前用户的旧邮箱发送验证码
-- 用于验证用户身份
+响应为更新后的用户信息（`UserResponse`）。
 
 ---
 
-### 1.8 发送新邮箱验证码
+### 2.3 修改邮箱（换绑）
 
-**接口地址**: `POST /api/users/modify/getmodifycode/after`
+**接口地址**：`PUT /api/users/modify/email`
 
-**请求头**:
-
-- Content-Type: application/json
-- Authorization: Bearer <jwt_token>
-- X-CSRF-Token: <csrf_token>
-
-**请求体**:
+**请求体**：
 
 ```json
-{
-  "newEmail": "lisi@example.com"
-}
+{ "beforeCode": "111111", "newEmail": "new@example.com", "afterCode": "222222" }
 ```
 
-**字段说明**:
-
-| 字段     | 类型   | 必填 | 说明       |
-| -------- | ------ | ---- | ---------- |
-| newEmail | String | 是   | 新邮箱地址 |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "验证码已发送",
-  "data": null
-}
-```
-
-**注意**:
-
-- 向新邮箱发送验证码
-- 用于验证新邮箱的有效性
+| 字段 | 说明 |
+| ---- | ---- |
+| beforeCode | 原邮箱验证码 |
+| newEmail | 新邮箱 |
+| afterCode | 新邮箱验证码 |
 
 ---
 
-### 1.9 修改密码
+### 2.4 发送换绑验证码
 
-**接口地址**: `PUT /api/users/modify/password`
+- `POST /api/users/modify/getmodifycode/before`：向**原邮箱**发送（无请求体）
+- `POST /api/users/modify/getmodifycode/after`：向**新邮箱**发送，请求体 `{ "newEmail": "new@example.com" }`
 
-**请求头**:
+响应：`data` 为冷却秒数（Integer）。
 
-- Content-Type: application/json
-- Authorization: Bearer <jwt_token>
-- X-CSRF-Token: <csrf_token>
+---
 
-**请求体**:
+### 2.5 修改密码
 
-```json
-{
-  "oldPassword": "OldPass@123",
-  "newPassword": "NewPass@456"
-}
-```
+**接口地址**：`PUT /api/users/modify/password`
 
-**字段说明**:
+**请求体**：`{ "oldPassword": "OldPass@1", "newPassword": "NewPass@2" }`
 
-| 字段        | 类型   | 必填 | 说明                                   |
-| ----------- | ------ | ---- | -------------------------------------- |
-| oldPassword | String | 是   | 旧密码                                 |
-| newPassword | String | 是   | 新密码，8-32位，需包含大小写字母和数字 |
+---
 
-**成功响应 (200)**:
+### 2.6 查询危险操作安全验证设置
+
+**接口地址**：`GET /api/users/modify/security-verification`
+
+**成功响应**：
 
 ```json
-{
-  "code": 200,
-  "message": "密码修改成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "旧密码错误",
-  "data": null
-}
+{ "code": 200, "message": "成功", "data": { "verifyByPassword": true, "verifyByEmailCode": false } }
 ```
 
 ---
 
-### 1.10 发送找回密码验证码
+### 2.7 更新危险操作安全验证设置
 
-**接口地址**: `POST /api/users/retrieve/sendcode`
+**接口地址**：`PUT /api/users/modify/security-verification`
 
-**请求头**:
+变更本身是危险操作：**每个被改动的开关都必须用该方式自身的凭据验证身份**——改动密码验证需携带登录密码；改动邮箱验证码验证需携带邮箱验证码；两者都改动则两者都需提供。
 
-- Content-Type: application/json
-- **无需登录认证**（公开接口）
-
-**请求体**:
+**请求体**：
 
 ```json
 {
-  "account": "2024001"
+  "verifyByPassword": true,
+  "verifyByEmailCode": true,
+  "password": "Password@123",
+  "emailCode": "123456"
 }
 ```
 
-**字段说明**:
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| verifyByPassword | Boolean | 是 | 目标：是否启用密码验证 |
+| verifyByEmailCode | Boolean | 是 | 目标：是否启用邮箱验证码验证 |
+| password | String | 条件 | 改动了「密码验证」开关时必填 |
+| emailCode | String | 条件 | 改动了「邮箱验证码验证」开关时必填 |
 
-| 字段    | 类型   | 必填 | 说明                    |
-| ------- | ------ | ---- | ----------------------- |
-| account | String | 是   | 账号（学号/工号或邮箱） |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "验证码已发送",
-  "data": null
-}
-```
-
-**注意**:
-
-- 向用户注册的邮箱发送验证码
-- 用于找回密码流程
+**四种组合**：都关 → 不验证；仅邮箱 → 只邮箱验证码；仅密码 → 只密码；都开 → 任选其一。
 
 ---
 
-### 1.11 重置密码
+### 2.8 发送敏感操作身份验证码
 
-**接口地址**: `PUT /api/users/retrieve/resetpassword`
+**接口地址**：`POST /api/users/sensitive-verification/code`
 
-**请求头**:
-
-- Content-Type: application/json
-- **无需登录认证**（公开接口）
-
-**请求体**:
-
-```json
-{
-  "account": "2024001",
-  "code": "123456",
-  "newPassword": "NewPass@123"
-}
-```
-
-**字段说明**:
-
-| 字段        | 类型   | 必填 | 说明                                   |
-| ----------- | ------ | ---- | -------------------------------------- |
-| account     | String | 是   | 账号（学号/工号或邮箱）                |
-| code        | String | 是   | 验证码                                 |
-| newPassword | String | 是   | 新密码，8-32位，需包含大小写字母和数字 |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "密码重置成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "验证码错误或已过期",
-  "data": null
-}
-```
-
-**注意**:
-
-- 验证码有效期为 5 分钟
-- 重置成功后可以使用新密码登录
+向当前用户绑定邮箱发送验证码（供危险操作二次验证使用）。响应 `data` 为冷却秒数。
 
 ---
 
-## 2. 作业管理接口 (WorkController)
+### 2.9 查询可配置的敏感操作
 
-**基础路径**: `/api/works`
+**接口地址**：`GET /api/users/sensitive-operations`
 
-### 4.1 创建作业
+返回**仅当前用户可用**（有权限执行）的操作列表。
 
-**接口地址**: `POST /api/works/`
-
-**请求头**:
-
-- Content-Type: multipart/form-data
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求参数** (multipart/form-data):
-
-| 参数            | 类型    | 必填 | 说明                                                      |
-| --------------- | ------- | ---- | --------------------------------------------------------- |
-| title           | String  | 是   | 作业标题，最长 128 字符，不能包含换行符、制表符等特殊字符 |
-| description     | String  | 是   | 作业描述，不能包含制表符等特殊字符                        |
-| deadline        | String  | 是   | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss                     |
-| totalScore      | Integer | 是   | 作业总分，默认 100                                        |
-| classId         | Integer | 是   | 所属班级 ID                                               |
-| publishTime     | String  | 否   | 发布时间，格式：yyyy-MM-dd'T'HH:mm:ss（不填则即时发布）   |
-| allowLateSubmit | Boolean | 否   | 是否允许逾期提交，默认 true                               |
-| attachments     | File[]  | 否   | 附件文件列表（支持多文件上传）                            |
-
-**请求示例**:
-
-```
-POST /api/works/
-Content-Type: multipart/form-data
-
-title: 第一次作业
-description: 请完成第一章习题
-deadline: 2026-04-15T23:59:59
-totalScore: 100
-classId: 1
-publishTime: 2026-04-09T10:00:00
-allowLateSubmit: true
-attachments: [file1.pdf, file2.doc]
-```
-
-**成功响应 (200)**:
+**成功响应**：
 
 ```json
 {
   "code": 200,
   "message": "成功",
-  "data": {
-    "id": 1,
-    "title": "作业标题",
-    "description": "作业描述",
-    "publisherId": 1001,
-    "publisherName": "张三",
-    "classId": 1,
-    "className": "计算机科学2024级1班",
-    "deadline": "2026-04-15T23:59:59",
-    "totalScore": 100,
-    "allowLateSubmit": true,
-    "publishTime": "2026-04-09T10:00:00",
-    "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-09T10:00:00"
-  }
+  "data": [
+    { "key": "class.dissolve", "name": "解散班级", "description": "解散你创建或有权管理的班级，数据不可恢复", "enabled": true, "available": true },
+    { "key": "class.kick_member", "name": "踢出班级成员", "description": "将成员移出你管理的班级并清理其作业提交", "enabled": true, "available": true }
+  ]
 }
 ```
 
-**响应字段说明**:
+| 字段 | 说明 |
+| ---- | ---- |
+| key | 操作标识（稳定，与后端 `SensitiveOperations` 对应） |
+| name / description | 名称与说明 |
+| enabled | 是否需要二次验证（默认 true） |
+| available | 当前用户是否可用（不可用则不展示开关） |
 
-| 字段            | 类型          | 说明             |
-| --------------- | ------------- | ---------------- |
-| id              | Integer       | 作业 ID          |
-| title           | String        | 作业标题         |
-| description     | String        | 作业描述         |
-| publisherId     | Integer       | 发布人 ID        |
-| publisherName   | String        | 发布人用户名     |
-| classId         | Integer       | 所属班级 ID      |
-| className       | String        | 班级名称         |
-| deadline        | LocalDateTime | 截止时间         |
-| totalScore      | Integer       | 作业总分         |
-| allowLateSubmit | Boolean       | 是否允许逾期提交 |
-| publishTime     | LocalDateTime | 发布时间         |
-| createTime      | LocalDateTime | 创建时间         |
-| updateTime      | LocalDateTime | 更新时间         |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "作业标题不能为空",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “作业标题不能为空”
-- “作业标题长度不能超过 128 位”
-- “作业描述不能为空”
-- “截止时间不能为空”
-- “作业总分不能为空”
-- “所属班级 ID 不能为空”
-- “发布时间不能是过去的时间”
-- “只有班级老师可以发布作业”
-- “文件上传失败：xxx”
-
-**注意**:
-
-- **即时发布**：如果不填写`publishTime`，系统会自动使用当前时间作为发布时间，作业立即对学生可见
-- **未来时间发布**：可以设置未来的发布时间，实现作业的预发布功能
-- **禁止过去时间**：不允许设置过去的时间作为发布时间，会返回400错误
-- **直接上传附件**：通过 `attachments` 参数直接上传文件，无需预先调用文件上传接口
-- **文件安全检查**：系统会对上传的文件进行病毒扫描、文件类型白名单验证等安全检查
-- **文件大小限制**：默认单个文件最大 50MB（由业务层控制，不同场景可能不同）
-- **文件存储位置**：`uploads/works/` 目录
-- **XSS防护**：系统会自动检测并拒绝包含脚本标签、事件处理器等XSS攻击代码的输入
-- **数值范围限制**：作业总分必须在1-1000之间，防止异常值
-- **时间逻辑校验**：截止时间不能早于发布时间，确保业务逻辑合理性
+**全部操作标识**：`class.dissolve`、`class.kick_member`、`class.leave`、`class.transfer`、`school.leave`、`school.dissolve`、`school.assign_admin`、`permission.group.delete`、`permission.group.set_nodes`、`permission.group.assign`、`permission.user.assign`、`user.delete`、`user.ban`、`user.set_op`、`submission.withdraw`。
 
 ---
 
-### 4.2 更新作业
+### 2.10 更新敏感操作验证开关
 
-**接口地址**: `PUT /api/works/{workId}`
+**接口地址**：`PUT /api/users/sensitive-operations`
 
-**请求头**:
+逐项设置哪些操作需要二次验证（仅提交改动的项）。后端会校验每个操作对当前用户是否可用，不可用或未登记返回 `code: 6105`。
 
-- Content-Type: multipart/form-data
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求参数** (multipart/form-data):
-
-| 参数                 | 类型      | 必填 | 说明                                  |
-| -------------------- | --------- | ---- | ------------------------------------- |
-| id                   | Integer   | 是   | 作业 ID                               |
-| title                | String    | 是   | 作业标题，最长 128 字符               |
-| description          | String    | 是   | 作业描述，最长 1024 字符              |
-| deadline             | String    | 是   | 截止时间，格式：yyyy-MM-dd'T'HH:mm:ss |
-| totalScore           | Integer   | 是   | 作业总分（无学生提交时可修改）        |
-| allowLateSubmit      | Boolean   | 否   | 是否允许逾期提交                      |
-| publishTime          | String    | 否   | 发布时间（仅未发布的作业可修改）      |
-| attachments          | File[]    | 否   | 新增的附件文件列表                    |
-| removedAttachmentIds | Integer[] | 否   | 要删除的附件ID列表                    |
-
-**请求示例**:
-
-```
-PUT /api/works/1
-Content-Type: multipart/form-data
-
-id: 1
-title: 更新后的作业标题
-description: 更新后的作业描述
-deadline: 2026-04-20T23:59:59
-totalScore: 100
-attachments: [newfile.pdf]
-removedAttachmentIds: [1, 2]
-```
-
-**注意**:
-
-- **班级老师权限**：班级创建者和班级助理都可以修改该班级的任何作业（无论谁发布的）
-- 已发布作业(status=1)不允许修改publishTime，只能修改其他字段
-- **当没有学生提交作业时，允许修改totalScore**；有提交记录后禁止修改，保护数据一致性
-- **支持附件增量更新**：可以通过`removedAttachmentIds`删除指定附件，通过`attachments`添加新附件
-- **不会导致数据丢失**：修改附件不会影响学生的提交记录
-- **直接上传附件**：新增附件通过 `attachments` 参数直接上传文件
-
-**成功响应 (200)**:
+**请求体**：
 
 ```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "title": "更新后的作业标题",
-    "description": "更新后的作业描述",
-    "publisherId": 1001,
-    "publisherName": "张三",
-    "classId": 1,
-    "className": "计算机科学2024级1班",
-    "deadline": "2026-04-20T23:59:59",
-    "totalScore": 100,
-    "allowLateSubmit": true,
-    "publishTime": "2026-04-09T10:00:00",
-    "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-09T11:00:00"
-  }
-}
+{ "settings": [ { "key": "class.dissolve", "enabled": false } ] }
 ```
 
-**响应字段说明**:
-
-| 字段            | 类型          | 说明             |
-| --------------- | ------------- | ---------------- |
-| id              | Integer       | 作业 ID          |
-| title           | String        | 作业标题         |
-| description     | String        | 作业描述         |
-| publisherId     | Integer       | 发布人 ID        |
-| publisherName   | String        | 发布人用户名     |
-| classId         | Integer       | 所属班级 ID      |
-| className       | String        | 班级名称         |
-| deadline        | LocalDateTime | 截止时间         |
-| totalScore      | Integer       | 作业总分         |
-| allowLateSubmit | Boolean       | 是否允许逾期提交 |
-| publishTime     | LocalDateTime | 发布时间         |
-| createTime      | LocalDateTime | 创建时间         |
-| updateTime      | LocalDateTime | 更新时间         |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "作业不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "作业 ID 不能为空"
-- "作业标题不能为空"
-- "作业描述不能为空"
-- "截止时间不能为空"
-- "作业总分不能为空"
-- "已发布的作业不能修改发布时间"
-- "已有学生提交作业，无法修改总分"
-- "作业不存在"
-- "只有班级老师可以修改作业"
-- "文件上传失败：xxx"
+**响应**：更新后的完整操作列表（同 2.9）。
 
 ---
 
-### 4.3 删除作业
+## 3. 学校（SchoolController）
 
-**接口地址**: `DELETE /api/works/{workId}`
+**基础路径**：`/api/school`
 
-**请求参数**:
+### 3.1 查询学校列表（分页）
 
-| 参数   | 类型    | 必填 | 说明    |
-| ------ | ------- | ---- | ------- |
-| workId | Integer | 是   | 作业 ID |
+**接口地址**：`GET /api/school/list`
 
-**请求示例**: `DELETE /api/works/1`
+| 参数 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| keyword | String | 否 | 学校名称关键字 |
+| pageNum | Integer | 否 | 页码，默认 1 |
+| pageSize | Integer | 否 | 每页条数，默认 10 |
 
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "作业不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "作业不存在"
-- "用户无权限删除此作业"
-
-**注意**:
-
-- **允许删除任何状态的作业**（包括已发布、已结束）
-- **班级老师权限**：班级创建者和班级助理都可以删除该班级的任何作业（无论谁发布的）
-- **级联清理机制**：删除作业时会自动清理所有关联数据
-  - 删除学生提交的所有附件文件
-  - 删除提交附件记录
-  - 删除所有提交记录
-  - 删除作业本身的附件文件和记录
-- **防止资源浪费**：自动释放服务器存储空间，避免孤儿数据
+响应：`Page<SchoolVO>`。`SchoolVO` 字段：`id`、`schoolName`、`description`、`allowJoinWithoutApproval`、`autoApproveClassTakeover`、`memberCount`、`createTime`。
 
 ---
 
-### 4.4 查询作业详情
+### 3.2 查询我加入的学校
 
-**接口地址**: `GET /api/works/{workId}`
+**接口地址**：`GET /api/school/mine`
 
-**请求参数**:
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| minRoleCode | Integer | 角色下限（如 1 表示只要老师及以上） |
+| keyword | String | 学校名称关键字 |
 
-| 参数   | 类型    | 必填 | 说明    |
-| ------ | ------- | ---- | ------- |
-| workId | Integer | 是   | 作业 ID |
+响应：`List<SchoolDetailResponse>`。
 
-**请求示例**: `GET /api/works/1`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "title": "作业标题",
-    "description": "作业描述",
-    "publisherId": 1001,
-    "publisherName": "张三",
-    "classId": 1,
-    "className": "计算机科学2024级1班",
-    "deadline": "2026-04-15T23:59:59",
-    "totalScore": 100,
-    "allowLateSubmit": true,
-    "publishTime": "2026-04-09T10:00:00",
-    "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-09T10:00:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段            | 类型          | 说明             |
-| --------------- | ------------- | ---------------- |
-| id              | Integer       | 作业 ID          |
-| title           | String        | 作业标题         |
-| description     | String        | 作业描述         |
-| publisherId     | Integer       | 发布人 ID        |
-| publisherName   | String        | 发布人用户名     |
-| classId         | Integer       | 所属班级 ID      |
-| className       | String        | 班级名称         |
-| deadline        | LocalDateTime | 截止时间         |
-| totalScore      | Integer       | 作业总分         |
-| allowLateSubmit | Boolean       | 是否允许逾期提交 |
-| publishTime     | LocalDateTime | 发布时间         |
-| createTime      | LocalDateTime | 创建时间         |
-| updateTime      | LocalDateTime | 更新时间         |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "作业不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "作业不存在"
+`SchoolDetailResponse` 字段：`id`、`schoolName`、`description`、`allowJoinWithoutApproval`、`autoApproveClassTakeover`、`memberCount`、`adminCount`、`teacherCount`、`studentCount`、`classCount`、`createTime`、`member`、`myRoleCode`、`myRole`、`myStaffNo`、`myRealName`、`myApplicationStatus`、`pendingApplicationCount`、`myApplicationComment`。
 
 ---
 
-### 4.5 查询作业列表（分页）
+### 3.3 查询学校详情
 
-**接口地址**: `GET /api/works/`
+**接口地址**：`GET /api/school/{schoolId}` → `SchoolDetailResponse`
 
-**请求参数**:
+---
 
-| 参数            | 类型    | 必填 | 说明                                         |
-| --------------- | ------- | ---- | -------------------------------------------- |
-| publisherUserNo | String  | 否   | 发布人学号/工号筛选                          |
-| status          | Integer | 否   | 作业状态筛选（0-未发布，1-已发布，2-已结束） |
-| pageNum         | Integer | 否   | 页码，默认1                                  |
-| pageSize        | Integer | 否   | 每页大小，默认20，最大300                    |
+### 3.4 申请加入学校
 
-**请求示例**:
+**接口地址**：`POST /api/school/{schoolId}/join`
 
-- `GET /api/works/list`
-- `GET /api/works/list?publisherUserNo=2021001&status=1`
-- `GET /api/works/list?pageNum=1&pageSize=20`
+**请求体**：`{ "realName": "张三", "staffNo": "2024001" }`
 
-**成功响应 (200)**:
+响应：`SchoolJoinApplicationResponse`（含 `status`，若学校免审核则直接为已加入）。
 
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "records": [
-      {
-        "id": 1,
-        "title": "重要作业（置顶）",
-        "description": "作业描述",
-        "publisherId": 1001,
-        "publisherName": "张三",
-        "classId": 1,
-        "className": "计算机科学2024级1班",
-        "deadline": "2026-04-15T23:59:59",
-        "totalScore": 100,
-        "allowLateSubmit": true,
-        "isPinned": true,
-        "publishTime": "2026-04-09T10:00:00",
-        "status": 1,
-        "createTime": "2026-04-09T10:00:00",
-        "updateTime": "2026-04-09T10:00:00",
-        "attachments": [
-          {
-            "id": 1,
-            "fileName": "example.pdf",
-            "filePath": "/uploads/works/example.pdf",
-            "fileSize": 1024000,
-            "fileType": "application/pdf",
-            "uploadTime": "2026-04-09T10:00:00"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "普通作业",
-        "description": "作业描述",
-        "publisherId": 1001,
-        "publisherName": "张三",
-        "classId": 1,
-        "className": "计算机科学2024级1班",
-        "deadline": "2026-04-20T23:59:59",
-        "totalScore": 100,
-        "allowLateSubmit": true,
-        "isPinned": false,
-        "publishTime": "2026-04-08T10:00:00",
-        "status": 1,
-        "createTime": "2026-04-08T10:00:00",
-        "updateTime": "2026-04-08T10:00:00",
-        "attachments": []
-      }
-    ],
-    "total": 15,
-    "size": 20,
-    "current": 1,
-    "pages": 1
-  }
-}
-```
+---
 
-**响应字段说明**:
+### 3.5 查询我的加入申请
 
-| 字段    | 类型  | 说明         |
-| ------- | ----- | ------------ |
-| records | Array | 作业列表数据 |
-| total   | Long  | 总记录数     |
-| size    | Long  | 每页大小     |
-| current | Long  | 当前页码     |
-| pages   | Long  | 总页数       |
+**接口地址**：`GET /api/school/{schoolId}/my-application` → `SchoolJoinApplicationResponse`
 
-**records内部字段说明**:
+---
 
-| 字段                     | 类型          | 说明                                 |
-| ------------------------ | ------------- | ------------------------------------ |
-| id                       | Integer       | 作业 ID                              |
-| title                    | String        | 作业标题                             |
-| description              | String        | 作业描述                             |
-| publisherId              | Integer       | 发布人 ID                            |
-| publisherName            | String        | 发布人用户名                         |
-| classId                  | Integer       | 所属班级 ID                          |
-| className                | String        | 班级名称                             |
-| deadline                 | LocalDateTime | 截止时间                             |
-| totalScore               | Integer       | 作业总分                             |
-| allowLateSubmit          | Boolean       | 是否允许逾期提交                     |
-| **isPinned**             | **Boolean**   | **是否置顶**                         |
-| publishTime              | LocalDateTime | 发布时间                             |
-| status                   | Integer       | 作业状态(0-未发布,1-已发布,2-已结束) |
-| createTime               | LocalDateTime | 创建时间                             |
-| updateTime               | LocalDateTime | 更新时间                             |
-| attachments              | List          | 附件列表                             |
-| attachments[].id         | Integer       | 附件 ID                              |
-| attachments[].fileName   | String        | 文件名                               |
-| attachments[].filePath   | String        | 文件路径                             |
-| attachments[].fileSize   | Long          | 文件大小(字节)                       |
-| attachments[].fileType   | String        | 文件类型(MIME)                       |
-| attachments[].uploadTime | LocalDateTime | 上传时间                             |
+### 3.6 查询加入申请列表
 
-**排序规则**:
+**接口地址**：`GET /api/school/{schoolId}/applications`（学校管理员）
 
-1. **第一优先级**：`is_pinned` 降序（置顶的作业在前）
-2. **第二优先级**：`create_time` 降序（新创建的作业在前）
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| status | Integer | 申请状态筛选 |
+| pageNum / pageSize | Integer | 分页 |
 
-**注意**:
+响应：`Page<SchoolJoinApplicationResponse>`（字段：`id`、`schoolId`、`schoolName`、`applicantId`、`applicantUsername`、`applicantName`、`applicantNo`、`status`、`reviewerId`、`reviewerName`、`reviewComment`、`createTime`、`reviewTime`）。
 
-- 置顶作业会自动排在非置顶作业之前
-- 同级别（都是置顶或都不置顶）按创建时间倒序排列
-- 前端可以根据 `isPinned` 字段显示置顶标识（如 📌 图标）
-- **分页安全限制**：系统强制限制每页最大300条记录，防止大数据量查询导致内存溢出
+---
 
-**失败响应**:
+### 3.7 审核加入申请
+
+**接口地址**：`PUT /api/school/{schoolId}/applications/approve`
+
+**请求体**：
 
 ```json
-{
-  "code": 400,
-  "message": "查询失败",
-  "data": null
-}
+{ "applicationId": 1, "approved": true, "comment": "欢迎" }
 ```
 
 ---
 
-### 4.6 置顶/取消置顶作业
+### 3.8 批量审核加入申请
 
-**接口地址**: `PATCH /api/works/{workId}/pin`
+**接口地址**：`PUT /api/school/{schoolId}/applications/batch-approve`
 
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
-
-**权限要求**: 只有班级老师（包括创建者和班级助理）可以调用此接口
-
-**请求体**:
+**请求体**：
 
 ```json
-{
-  "workId": 1,
-  "isPinned": true
-}
+{ "applicationIds": [1, 2], "approved": true, "comment": "" }
 ```
 
-**字段说明**:
-
-| 字段     | 类型    | 必填 | 说明                                |
-| -------- | ------- | ---- | ----------------------------------- |
-| workId   | Integer | 是   | 作业 ID                             |
-| isPinned | Boolean | 是   | 是否置顶：true-置顶，false-取消置顶 |
-
-**请求示例**:
-
-```bash
-# 置顶作业
-curl -X PATCH http://localhost:8080/api/works/1/pin \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
-  -d '{"workId": 1, "isPinned": true}'
-
-# 取消置顶
-curl -X PATCH http://localhost:8080/api/works/1/pin \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
-  -d '{"workId": 1, "isPinned": false}'
-```
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "操作成功",
-  "data": {
-    "id": 1,
-    "title": "第三次实验报告",
-    "description": "请完成数据结构实验三",
-    "publisherId": 1001,
-    "classId": 1,
-    "deadline": "2026-05-20T23:59:59",
-    "totalScore": 100,
-    "allowLateSubmit": true,
-    "isPinned": true,
-    "publishTime": "2026-05-07T10:00:00",
-    "createTime": "2026-05-07T10:00:00",
-    "updateTime": "2026-05-07T15:30:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段            | 类型          | 说明             |
-| --------------- | ------------- | ---------------- |
-| id              | Integer       | 作业 ID          |
-| title           | String        | 作业标题         |
-| description     | String        | 作业描述         |
-| publisherId     | Integer       | 发布人 ID        |
-| classId         | Integer       | 所属班级 ID      |
-| deadline        | LocalDateTime | 截止时间         |
-| totalScore      | Integer       | 作业总分         |
-| allowLateSubmit | Boolean       | 是否允许逾期提交 |
-| **isPinned**    | **Boolean**   | **是否置顶**     |
-| publishTime     | LocalDateTime | 发布时间         |
-| createTime      | LocalDateTime | 创建时间         |
-| updateTime      | LocalDateTime | 更新时间         |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "只有班级老师可以置顶作业",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “用户未登录”
-- “作业不存在”
-- “只有班级老师可以置顶作业”
-- “更新作业置顶状态失败”
-
-**注意**:
-
-- **权限限制**：只有班级老师（创建者或班级助理）可以置顶作业
-- **实时更新**：置顶状态的修改会立即生效
-- **排序规则**：查询作业列表时，置顶作业会自动排在前面
-- **状态无关**：置顶功能与作业状态（未发布/已发布/已结束）无关
-- **事务保护**：置顶操作在事务中执行，确保数据一致性
-- **前端集成**：可以根据 `isPinned` 字段显示置顶标识（如 📌 图标）
+响应：`BatchReviewResult`（`handled`、`skipped`）。
 
 ---
 
-## 3. 班级管理接口 (ClassController)
+### 3.9 查询学校成员
 
-**基础路径**: `/api/class`
+**接口地址**：`GET /api/school/{schoolId}/members`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| keyword | String | 姓名 / 学工号关键字 |
+| pageNum / pageSize | Integer | 分页 |
+
+响应：`Page<SchoolMemberResponse>`（字段：`id`、`schoolId`、`userId`、`username`、`realName`、`staffNo`、`roleCode`、`role`、`joinTime`）。
+
+---
+
+### 3.10 设置成员角色
+
+**接口地址**：`PUT /api/school/{schoolId}/members/role`（学校管理员）
+
+**请求体**：`{ "userId": 1002, "role": 1 }`（1-老师，0-学生；学校管理员由平台管理员指派）。
+
+> 老师降级为学生时，会级联把其在本校各班级中的角色同步为普通成员。
+
+---
+
+### 3.11 修改成员身份信息
+
+**接口地址**：`PUT /api/school/{schoolId}/members/identity`
+
+**请求体**：`{ "userId": 1002, "realName": "张三", "staffNo": "2024002" }`
+
+---
+
+### 3.12 移出成员
+
+**接口地址**：`DELETE /api/school/{schoolId}/members/{userId}`（学校管理员）
+
+---
+
+### 3.13 退出学校 ⚠️ 需二次验证
+
+**接口地址**：`DELETE /api/school/{schoolId}/membership`
+
+操作标识：`school.leave`。学校管理员需先被取消管理员身份后才能退出。
+
+---
+
+### 3.14 设置加入审核
+
+**接口地址**：`PUT /api/school/{schoolId}/join-approval`
+
+**请求体**：`{ "allowJoinWithoutApproval": true }`
+
+---
+
+### 3.15 设置班级接管自动同意
+
+**接口地址**：`PUT /api/school/{schoolId}/class-takeover-approval`
+
+**请求体**：`{ "autoApproveClassTakeover": true }`
+
+---
+
+## 4. 班级（ClassController）
+
+**基础路径**：`/api/class`
 
 ### 4.1 创建班级
 
-**接口地址**: `POST /api/class/create`
+**接口地址**：`POST /api/class/create`
 
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求体**:
+**请求体**：
 
 ```json
-{
-  "className": "计算机科学2024级1班",
-  "description": "计算机科学与技术专业2024级1班"
-}
+{ "schoolId": 1, "className": "高一(1)班", "description": "说明" }
 ```
 
-**字段说明**:
-
-| 字段        | 类型   | 必填 | 说明                                                     |
-| ----------- | ------ | ---- | -------------------------------------------------------- |
-| className   | String | 是   | 班级名称，最长 64 字符，不能包含换行符、制表符等特殊字符 |
-| description | String | 否   | 班级描述，最长 512 字符，不能包含制表符等特殊字符        |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "课程创建成功",
-  "data": {
-    "id": 12,
-    "className": "计算机科学2024级1班",
-    "ownerId": 1001,
-    "ownerName": "TheXiaoLa",
-    "userRole": "创建者",
-    "memberCount": 1,
-    "teacherCount": 1,
-    "studentCount": 0,
-    "description": "计算机科学与技术专业2024级1班",
-    "allowStudentInvite": true,
-    "createTime": "2026-04-09T10:00:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段               | 类型          | 说明                             |
-| ------------------ | ------------- | -------------------------------- |
-| id                 | Integer       | 班级 ID                          |
-| className          | String        | 班级名称                         |
-| ownerId            | Integer       | 班级所有者（创建者）ID           |
-| ownerName          | String        | 班级所有者用户名                 |
-| userRole           | String        | 当前用户在该班级的角色（创建者） |
-| memberCount        | Long          | 成员总数                         |
-| teacherCount       | Long          | 教师数量                         |
-| studentCount       | Long          | 学生数量                         |
-| description        | String        | 班级描述                         |
-| allowStudentInvite | Boolean       | 是否允许学生邀请同学加入         |
-| createTime         | LocalDateTime | 创建时间                         |
-
-**注意**:
-
-- 调用成功即创建班级，创建者自动成为班级老师（创建者）
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "班级名称不能为空",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "班级名称不能为空"
-- "班级名称长度不能超过 64 位"
-- "班级名称不能包含特殊字符（换行符、制表符等）"
-- "班级描述长度不能超过 512 位"
-- "班级描述不能包含特殊字符（制表符等）"
+响应：`ClassDetailResponse`。创建者自动成为班级管理员（老师）。仅学校老师可创建（否则 `code: 8607`）。
 
 ---
 
 ### 4.2 提交加入班级申请
 
-**接口地址**: `POST /api/class/{classId}/applications/join`
+**接口地址**：`POST /api/class/{classId}/applications/join`
 
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求体**:
-
-```json
-{
-  "classId": 1
-}
-```
-
-**字段说明**:
-
-| 字段    | 类型    | 必填 | 说明    |
-| ------- | ------- | ---- | ------- |
-| classId | Integer | 是   | 班级 ID |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "加入班级的申请已提交，待审核",
-  "data": {
-    "id": 2,
-    "classId": 1,
-    "applicantId": 1002,
-    "status": 0,
-    "createTime": "2026-04-09T10:00:00",
-    "className": "计算机科学2024级1班",
-    "applicantName": "zhangsan"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段              | 类型          | 说明                                 |
-| ----------------- | ------------- | ------------------------------------ |
-| id                | Integer       | 申请 ID                              |
-| classId           | Integer       | 申请的班级 ID                        |
-| applicantId       | Integer       | 申请人 ID                            |
-| status            | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| createTime        | LocalDateTime | 申请时间                             |
-| **className**     | **String**    | **申请的班级名称**                   |
-| **applicantName** | **String**    | **申请人用户名**                     |
-
-**注意**:
-
-- 加入申请老师和管理员都可审核
-- 审核通过后申请人以`学生`身份加入班级
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "班级不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "班级 ID 不能为空"
-- "班级不存在"
-- "您已经是该班级成员"
-- "已有待审核的加入申请"
+响应：`JoinClassApplicationResponse`。
 
 ---
 
-### 4.3 退出班级
+### 4.3 退出班级 ⚠️ 需二次验证
 
-**接口地址**: `DELETE /api/class/{classId}/members/me`
+**接口地址**：`DELETE /api/class/{classId}/members/me`
 
-**请求参数**:
-
-| 参数    | 类型    | 必填 | 说明    |
-| ------- | ------- | ---- | ------- |
-| classId | Integer | 是   | 班级 ID |
-
-**请求示例**: `DELETE /api/class/1/members/me`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "已成功退出“计算机科学2024级1班”班级",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "您不是该班级成员",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "您不是该班级成员"
-- "班级创建者不能退出班级"
-
-**注意**:
-
-- **级联清理机制**：退出班级时会自动清理该学生在该班级的所有作业提交数据（软删除）
-  - 软删除学生提交的所有附件记录（is_deleted = true）
-  - 软删除所有提交记录（is_deleted = true）
-  - 物理删除学生提交的附件文件
-- **数据可恢复**：软删除保留数据完整性，便于审计和恢复
+操作标识：`class.leave`。创建者不能退出（需先转让或解散，否则 `code: 8505`）。
 
 ---
 
-### 4.4 解散班级
+### 4.4 解散班级 ⚠️ 需二次验证
 
-**接口地址**: `DELETE /api/class/{classId}`
+**接口地址**：`DELETE /api/class/{classId}`
 
-**请求参数**:
+操作标识：`class.dissolve`。创建者或拥有 `class:dissolve` 权限者可执行。
 
-| 参数    | 类型    | 必填 | 说明    |
-| ------- | ------- | ---- | ------- |
-| classId | Integer | 是   | 班级 ID |
-
-**请求示例**: `DELETE /api/class/1`
-
-**成功响应 (200)**:
+**请求体**（确认文案，必须精确匹配「我已确认要删除{className}课堂」）：
 
 ```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
+{ "confirmText": "我已确认要删除高一(1)班课堂" }
 ```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "只有班级创建者可以解散班级",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "班级不存在"
-- "只有班级创建者可以解散班级"
-
-**注意**:
-
-- **完整级联删除机制**：解散班级时会永久删除该班级下的所有相关数据（按顺序执行）
-  1. 硬删除所有作业提交附件记录（WorkSubmissionAttachment）
-  2. 硬删除所有作业提交记录（WorkSubmission）
-  3. 硬删除所有作业附件记录（WorkAttachment）
-  4. 硬删除所有作业信息记录（WorkInfo）
-  5. 硬删除所有班级成员记录（ClassMember）
-  6. 删除所有班级邀请记录（ClassInvitation）
-  7. 删除所有班级加入申请记录（ClassJoinApplication）
-  8. 删除所有班级邀请申请记录（ClassInviteApplication）
-  9. 最后删除班级信息（ClassInfo）
-- **不可恢复**：此操作不可逆，请谨慎使用
 
 ---
 
 ### 4.5 更新班级信息
 
-**接口地址**: `PUT /api/class/{classId}`
+**接口地址**：`PUT /api/class/{classId}`
 
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
-
-**权限要求**: 只有班级老师（包括创建者和班级助理）可以调用此接口
-
-**请求体**:
-
-```json
-{
-  "classId": 1,
-  "className": "计算机科学2024级1班",
-  "description": "这是班级的描述信息"
-}
-```
-
-**字段说明**:
-
-| 字段        | 类型    | 必填 | 说明                  |
-| ----------- | ------- | ---- | --------------------- |
-| classId     | Integer | 是   | 班级 ID               |
-| className   | String  | 是   | 班级名称，最长100字符 |
-| description | String  | 否   | 班级描述，最长500字符 |
-
-**请求示例**:
-
-```bash
-curl -X PUT http://localhost:8080/api/class/1 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
-  -d '{
-    "classId": 1,
-    "className": "软件工程2024级2班",
-    "description": "更新后的班级描述"
-  }'
-```
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "班级信息更新成功",
-  "data": {
-    "id": 1,
-    "className": "软件工程2024级2班",
-    "description": "更新后的班级描述",
-    "ownerId": 1001,
-    "inviteCode": "ABC123DEF456GHI789JKL012MN",
-    "approvalStatus": 1,
-    "adminRemark": null,
-    "createTime": "2026-04-01T10:00:00",
-    "updateTime": "2026-05-07T15:30:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段           | 类型          | 说明                                     |
-| -------------- | ------------- | ---------------------------------------- |
-| id             | Integer       | 班级 ID                                  |
-| className      | String        | 班级名称                                 |
-| description    | String        | 班级描述                                 |
-| ownerId        | Integer       | 班级创建者ID                             |
-| inviteCode     | String        | 班级邀请码（25位随机码）                 |
-| approvalStatus | Integer       | 审核状态（0-待审核，1-已通过，2-已拒绝） |
-| adminRemark    | String        | 管理员审核备注                           |
-| createTime     | LocalDateTime | 创建时间                                 |
-| updateTime     | LocalDateTime | 更新时间                                 |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "只有班级老师或助理可以修改班级信息",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “班级 ID 不能为空”
-- “班级名称不能为空”
-- “班级名称长度不能超过 100 位”
-- “班级描述长度不能超过 500 位”
-- “班级不存在”
-- “只有班级老师或助理可以修改班级信息”
-- “更新班级信息失败”
-
-**注意**:
-
-- **权限控制**：只有班级老师（创建者或班级助理）可以修改班级信息
-- **字段限制**：
-  - 班级名称最多100字符
-  - 班级描述最多500字符
-- **不可修改的字段**：
-  - 班级ID、创建者ID、邀请码
-  - 审核状态、管理员备注、创建时间
-- **自动更新**：`updateTime` 字段会自动更新为当前时间
-- **事务保护**：更新操作在事务中执行，确保数据一致性
+**请求体**：`{ "classId": 1, "className": "高一(2)班", "description": "新说明" }`
 
 ---
 
 ### 4.6 获取班级详情
 
-**接口地址**: `GET /api/class/{classId}`
+**接口地址**：`GET /api/class/{classId}` → `ClassDetailResponse`
 
-**请求参数**:
-
-| 参数    | 类型    | 必填 | 说明    |
-| ------- | ------- | ---- | ------- |
-| classId | Integer | 是   | 班级 ID |
-
-**请求示例**: `GET /api/class/1`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "className": "计算机科学2024级1班",
-    "ownerId": 1001,
-    "ownerName": "zhangsan",
-    "userRole": "创建者",
-    "memberCount": 50,
-    "teacherCount": 2,
-    "studentCount": 48
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段         | 类型    | 说明                                     |
-| ------------ | ------- | ---------------------------------------- |
-| id           | Integer | 班级 ID                                  |
-| className    | String  | 班级名称                                 |
-| ownerId      | Integer | 班级所有者 ID                            |
-| ownerName    | String  | 班级所有者用户名                         |
-| userRole     | String  | 用户在该班级的角色(创建者/班级助理/学生) |
-| memberCount  | Long    | 成员总数                                 |
-| teacherCount | Long    | 教师数量                                 |
-| studentCount | Long    | 学生数量                                 |
-
-**角色说明**:
-
-- `创建者`: 班级创建者，拥有最高权限（可解散班级、管理班级助理）
-- `班级助理`: 由创建者设置，拥有教师权限但不能解散班级或降级其他班级助理
-- `学生`: 普通学生
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "班级不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "班级不存在"
-- "您不是该班级成员"
+字段：`id`、`className`、`schoolId`、`schoolName`、`ownerId`、`ownerName`、`userRole`、`userRoleCode`、`memberCount`、`teacherCount`、`studentCount`、`description`、`allowStudentInvite`、`createTime`、`frozen`、`ownerActive`、`canTakeover`、`takeoverPending`、`takeoverAutoApprove`。
 
 ---
 
 ### 4.7 获取我加入的班级列表（分页）
 
-**接口地址**: `GET /api/class/mine`
+**接口地址**：`GET /api/class/mine`
 
-**请求参数**:
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| pageNum / pageSize | Integer | 分页 |
+| schoolId | Integer | 按学校筛选 |
+| roleCode | Integer | 按班级角色筛选 |
+| excludeOwner | Boolean | 是否排除我创建的班级 |
 
-| 参数     | 类型    | 必填 | 说明                      |
-| -------- | ------- | ---- | ------------------------- |
-| pageNum  | Integer | 否   | 页码，默认1               |
-| pageSize | Integer | 否   | 每页大小，默认20，最大300 |
+---
 
-**请求示例**:
+### 4.8 管理员获取可管理班级列表（分页）
 
-- `GET /api/class/mine`
-- `GET /api/class/mine?pageNum=1&pageSize=10`
+**接口地址**：`GET /api/class/manage`（需班级管理权限）
 
-**成功响应 (200)**:
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| pageNum / pageSize | Integer | 分页 |
+| schoolId | Integer | 按学校筛选 |
+
+---
+
+### 4.9 获取班级成员列表（分页）
+
+**接口地址**：`GET /api/class/{classId}/members`
+
+响应：`Page<ClassMemberResponse>`（字段：`id`、`userId`、`userName`、`studentName`、`studentNo`、`role`、`roleCode`、`joinTime`）。
+
+---
+
+### 4.10 检查用户是否在指定班级中
+
+**接口地址**：`GET /api/class/{classId}/membership` → `MemberCheckResponse`（`isMember`、`roleCode`、`roleName`）
+
+---
+
+### 4.11 获取加入班级申请列表
+
+**接口地址**：`GET /api/class/applications/join/list`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| classId | Integer | 按班级筛选 |
+| status | Integer | 状态筛选 |
+| pageNum / pageSize | Integer | 分页 |
+
+---
+
+### 4.12 审核加入班级申请
+
+**接口地址**：`PUT /api/class/applications/join/approve`
+
+**请求体**：`{ "applicationId": 1, "approved": true, "comment": "欢迎" }`
+
+---
+
+### 4.13 批量设置课代表
+
+**接口地址**：`PUT /api/class/{classId}/assistants/batch`
+
+**请求体**：`{ "studentUserIds": [1002, 1003] }`
+
+---
+
+### 4.14 批量踢出学生 ⚠️ 需二次验证
+
+**接口地址**：`DELETE /api/class/{classId}/members/batch`
+
+操作标识：`class.kick_member`。
+
+**请求体**：
 
 ```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "records": [
-      {
-        "id": 1,
-        "className": "计算机科学2024级1班",
-        "ownerId": 1001,
-        "ownerName": "zhangsan",
-        "userRole": "学生",
-        "memberCount": 50,
-        "teacherCount": 2,
-        "studentCount": 48
-      },
-      {
-        "id": 2,
-        "className": "软件工程2024级1班",
-        "ownerId": 1003,
-        "ownerName": "lisi",
-        "userRole": "班级助理",
-        "memberCount": 45,
-        "teacherCount": 1,
-        "studentCount": 44
-      }
-    ],
-    "total": 2,
-    "size": 10,
-    "current": 1,
-    "pages": 1
+{ "studentUserIds": [1002, 1003] }
+```
+
+---
+
+### 4.15 取消课代表权限
+
+**接口地址**：`DELETE /api/class/{classId}/assistants/{teacherUserId}`（仅创建者或平台管理员）
+
+---
+
+### 4.16 设置学生邀请设置
+
+**接口地址**：`PUT /api/class/{classId}/invite-settings`
+
+**请求体**：`{ "allowStudentInvite": true }`
+
+---
+
+### 4.17 邀请用户加入班级
+
+**接口地址**：`POST /api/class/{classId}/invitations`
+
+**请求体**：`{ "userAccount": "lisi" }`
+
+---
+
+### 4.18 响应邀请
+
+**接口地址**：`PUT /api/class/invitations/{invitationId}` → `{ "invitationId": 1, "accepted": true }`
+
+---
+
+### 4.19 审核教师邀请
+
+**接口地址**：`PUT /api/class/invitations/{applicationId}/approval`
+
+**请求体**：`{ "applicationId": 1, "approved": true, "comment": "" }`
+
+---
+
+### 4.20 获取待审核邀请列表
+
+**接口地址**：`GET /api/class/{classId}/invitations/pending` → `List<TeacherApprovalResponse>`
+
+---
+
+### 4.21 教师邀请用户（需用户同意）
+
+**接口地址**：`POST /api/class/{classId}/invitations/teacher`
+
+**请求体**：`{ "userAccount": "lisi" }` → `InvitationResponse`
+
+---
+
+### 4.22 获取我收到的邀请列表
+
+**接口地址**：`GET /api/class/my-invitations?status=<可选>`
+
+### 4.23 获取我收到的用户邀请列表
+
+**接口地址**：`GET /api/class/my-user-invitations`
+
+### 4.24 响应邀请
+
+**接口地址**：`PUT /api/class/respond-invitation`
+
+**请求体**：`{ "invitationId": 1, "accepted": true }`
+
+---
+
+### 4.25 获取班级邀请码
+
+**接口地址**：`GET /api/class/{classId}/invite-code` → `data` 为 25 位邀请码字符串
+
+### 4.26 重置班级邀请码
+
+**接口地址**：`POST /api/class/{classId}/invite-code/reset` → 新邀请码
+
+---
+
+### 4.27 通过邀请码加入班级
+
+**接口地址**：`POST /api/class/join-by-code`
+
+**请求体**：`{ "inviteCode": "Ab3...", "schoolId": 1 }`
+
+---
+
+### 4.28 转让班级所有权 ⚠️ 需二次验证
+
+**接口地址**：`PUT /api/class/{classId}/owner`
+
+操作标识：`class.transfer`。仅创建者可执行。
+
+**请求体**：`{ "newOwnerId": 1002 }`
+
+---
+
+### 4.29 申请接管班级
+
+**接口地址**：`POST /api/class/{classId}/takeover` → `ClassTakeoverResponse`
+
+### 4.30 查询我的接管申请
+
+**接口地址**：`GET /api/class/{classId}/takeover/mine`
+
+### 4.31 我学校可接管的班级
+
+**接口地址**：`GET /api/class/takeover/available` → `List<ClassTakeoverResponse>`
+
+### 4.32 学校内班级接管申请列表
+
+**接口地址**：`GET /api/class/takeover/school/{schoolId}?status=<可选>`
+
+### 4.33 审核接管申请
+
+**接口地址**：`PUT /api/class/takeover/{applicationId}/approve`
+
+**请求体**：`{ "approved": true, "comment": "" }`
+
+---
+
+## 5. 作业与题目（WorkController / WorkQuestionController）
+
+**基础路径**：`/api/works`
+
+### 5.1 创建作业
+
+**接口地址**：`POST /api/works`（`multipart/form-data`）
+
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| title | String | 是 | 标题 |
+| description | String | 否 | 说明 |
+| deadline | DateTime | 否 | 截止时间 |
+| totalScore | Integer | 否 | 总分，默认 100 |
+| allowLateSubmit | Boolean | 否 | 是否允许迟交，默认 true |
+| classId | Integer | 是 | 所属班级 |
+| attachments | File[] | 否 | 附件 |
+| questionsJson | String | 否 | 结构化题目 JSON（见下） |
+| examConfigJson | String | 否 | 考试配置 JSON（设置后即为考试） |
+
+**`questionsJson` 题目项结构**：
+
+```json
+[
+  {
+    "questionType": "single",
+    "content": "1+1=?",
+    "options": [{ "key": "A", "text": "1" }, { "key": "B", "text": "2" }],
+    "correctAnswer": "B",
+    "score": 10,
+    "analysis": "算术"
   }
-}
+]
 ```
 
-**响应字段说明**:
+题型 `questionType`：`single`（单选）、`multiple`（多选）、`judge`（判断）、`fill`（填空）、`subjective`（主观）、`extra`（附加）。
 
-| 字段    | 类型  | 说明         |
-| ------- | ----- | ------------ |
-| records | Array | 班级列表数据 |
-| total   | Long  | 总记录数     |
-| size    | Long  | 每页大小     |
-| current | Long  | 当前页码     |
-| pages   | Long  | 总页数       |
-
-**records内部字段说明**:
-
-| 字段         | 类型    | 说明                                     |
-| ------------ | ------- | ---------------------------------------- |
-| id           | Integer | 班级 ID                                  |
-| className    | String  | 班级名称                                 |
-| ownerId      | Integer | 班级所有者 ID                            |
-| ownerName    | String  | 班级所有者用户名                         |
-| userRole     | String  | 用户在该班级的角色(创建者/班级助理/学生) |
-| memberCount  | Long    | 成员总数                                 |
-| teacherCount | Long    | 教师数量                                 |
-| studentCount | Long    | 学生数量                                 |
-
-````
-
-**失败响应**:
+**`examConfigJson` 考试配置**：
 
 ```json
 {
-  "code": 401,
-  "message": "用户未登录",
-  "data": null
+  "enabled": true,
+  "durationMinutes": 60,
+  "fontScramble": true,
+  "forceFullscreen": true,
+  "noCopy": true,
+  "detectLeave": true,
+  "maxViolations": 3,
+  "shuffleQuestions": false
 }
-````
+```
+
+响应：`WorkResponse`。
 
 ---
 
-### 4.8 获取班级成员列表（分页）
+### 5.2 更新作业
 
-**接口地址**: `GET /api/class/{classId}/members`
+**接口地址**：`PUT /api/works/{workId}`（`multipart/form-data`）
 
-**请求参数**:
+参数同创建，另加：
 
-| 参数     | 类型    | 必填 | 说明                              |
-| -------- | ------- | ---- | --------------------------------- |
-| classId  | Integer | 是   | 班级 ID                           |
-| pageNum  | Integer | 否   | 页码，默认1，必须大于等于1        |
-| pageSize | Integer | 否   | 每页大小，默认20，必须在1-300之间 |
-
-**请求示例**:
-
-- `GET /api/class/1/members`
-- `GET /api/class/1/members?pageNum=1&pageSize=20`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "records": [
-      {
-        "id": 1,
-        "userId": 1001,
-        "userName": "张三",
-        "userNo": "2021001",
-        "role": "创建者",
-        "joinTime": "2026-04-01T10:00:00"
-      },
-      {
-        "id": 2,
-        "userId": 1002,
-        "userName": "王五",
-        "userNo": "2024001",
-        "role": "学生",
-        "joinTime": "2026-04-02T10:00:00"
-      }
-    ],
-    "total": 2,
-    "size": 20,
-    "current": 1,
-    "pages": 1
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段    | 类型  | 说明         |
-| ------- | ----- | ------------ |
-| records | Array | 成员列表数据 |
-| total   | Long  | 总记录数     |
-| size    | Long  | 每页大小     |
-| current | Long  | 当前页码     |
-| pages   | Long  | 总页数       |
-
-**records内部字段说明**:
-
-| 字段     | 类型          | 说明                       |
-| -------- | ------------- | -------------------------- |
-| id       | Integer       | 成员 ID                    |
-| userId   | Integer       | 用户 ID                    |
-| userName | String        | 用户姓名                   |
-| userNo   | String        | 学号/工号                  |
-| role     | String        | 角色(创建者/班级助理/学生) |
-| joinTime | LocalDateTime | 加入时间                   |
-
-**角色说明**:
-
-- `创建者`: 班级创建者
-- `班级助理`: 班级助理
-- `学生`: 普通学生
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "每页大小不能超过300",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "班级不存在"
-- "您不是该班级成员"
-- "每页大小不能超过300" - pageSize 超出限制
-- "页码必须大于等于1" - pageNum 小于1
-
----
-
-### 4.9 检查用户是否在指定班级中
-
-**接口地址**: `GET /api/class/{classId}/membership`
-
-**请求参数**:
-
-| 参数    | 类型    | 必填 | 说明    |
-| ------- | ------- | ---- | ------- |
-| classId | Integer | 是   | 班级 ID |
-
-**请求示例**: `GET /api/class/1/membership`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "isMember": true,
-    "roleCode": 1,
-    "roleName": "创建者"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段     | 类型    | 说明                                                                    |
-| -------- | ------- | ----------------------------------------------------------------------- |
-| isMember | Boolean | 是否是班级成员                                                          |
-| roleCode | Integer | 角色代码（用于前端权限判断）：1-创建者，2-班级助理，3-学生，null-非成员 |
-| roleName | String  | 角色名称（用于展示）：创建者/班级助理/学生，非成员时为 null             |
-
-**角色代码说明**:
-
-- `1`: 创建者（班级创建者，拥有最高权限）
-- `2`: 班级助理（协助管理班级）
-- `3`: 学生（普通班级成员）
-- `null`: 非班级成员
-
-**管理权限规则（权限节点）**:
-
-平台采用 LuckPerms 风格的**权限节点**控制管理操作：权限节点由后端内置注册表定义（不支持运行时新增节点），通过「权限组」或直接授予的方式分配给用户；平台管理员（OP，`isOp = true`）拥有全部权限节点。
-
-班级管理相关权限节点：
-
-| 权限节点             | 说明         |
-| -------------------- | ------------ |
-| `class:view_all`     | 查看全部班级 |
-| `class:update`       | 管理任意班级 |
-| `class:dissolve`     | 解散任意班级 |
-| `class:member:kick`  | 踢出班级成员 |
-| `class:approve_join` | 审批加入申请 |
-| `class:teacher:add`  | 添加班级老师 |
-
-拥有以上任意节点的用户，在班级语境中等同于「管理员」，可跨班级执行对应的管理操作。
-
-**使用建议**:
-
-- **前端权限判断**: 使用 `roleCode` 进行条件判断，例如 `if (roleCode === 1) { /* 显示创建者专属功能 */ }`
-- **界面展示**: 使用 `roleName` 显示给用户，例如 "您的角色：创建者"
-- **优势**: `roleCode` 为固定整数值，不受中文文案修改影响，保证前端逻辑稳定性
-
-**非成员响应**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "isMember": false,
-    "roleCode": null,
-    "roleName": null
-  }
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 401,
-  "message": "用户未登录",
-  "data": null
-}
-```
-
----
-
-### 4.10 获取加入班级申请列表（老师和管理员专用）
-
-**接口地址**: `GET /api/class/applications/join/list`
-
-**请求参数**:
-
-| 参数     | 类型    | 必填 | 说明                                     |
-| -------- | ------- | ---- | ---------------------------------------- |
-| classId  | Integer | 否   | 班级 ID 筛选                             |
-| status   | Integer | 否   | 状态筛选（0-待审核，1-已通过，2-已拒绝） |
-| pageNum  | Integer | 否   | 页码，默认1                              |
-| pageSize | Integer | 否   | 每页大小，默认20，最大300                |
-
-**请求示例**:
-
-- `GET /api/class/applications/join/list`
-- `GET /api/class/applications/join/list?classId=1&status=0`
-- `GET /api/class/applications/join/list?pageNum=1&pageSize=20`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "查询加入申请列表成功",
-  "data": {
-    "records": [
-      {
-        "id": 2,
-        "classId": 1,
-        "applicantId": 1002,
-        "status": 0,
-        "reviewerId": null,
-        "reviewTime": null,
-        "reviewComment": null,
-        "createTime": "2026-04-09T10:00:00"
-      }
-    ],
-    "total": 1,
-    "size": 20,
-    "current": 1,
-    "pages": 1
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段    | 类型  | 说明         |
-| ------- | ----- | ------------ |
-| records | Array | 申请列表数据 |
-| total   | Long  | 总记录数     |
-| size    | Long  | 每页大小     |
-| current | Long  | 当前页码     |
-| pages   | Long  | 总页数       |
-
-**records内部字段说明**:
-
-| 字段          | 类型          | 说明                                 |
-| ------------- | ------------- | ------------------------------------ |
-| id            | Integer       | 申请 ID                              |
-| classId       | Integer       | 申请加入的班级 ID                    |
-| applicantId   | Integer       | 申请人 ID                            |
-| status        | Integer       | 申请状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId    | Integer       | 审核人 ID                            |
-| reviewTime    | LocalDateTime | 审核时间                             |
-| reviewComment | String        | 审核意见                             |
-| createTime    | LocalDateTime | 申请时间                             |
-
-**注意**:
-
-- **管理员**: `classId` 为空时返回所有班级的申请，提供 `classId` 时只返回指定班级的申请
-- **老师/班级助理**: `classId` 为空时返回自己担任老师的所有班级的申请，提供 `classId` 时只返回该班级的申请（需验证是该班老师）
-- **学生**: 无权限访问此接口
-- 如果没有担任老师的班级，返回空列表（total=0）
-- 按创建时间 `createTime` 倒序排列
-
----
-
-### 4.11 审核加入班级申请（老师和管理员专用）
-
-**接口地址**: `PUT /api/class/applications/join/approve`
-
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求体**:
-
-```json
-{
-  "applicationId": 2,
-  "approved": true,
-  "comment": "同意加入"
-}
-```
-
-**字段说明**:
-
-| 字段          | 类型    | 必填 | 说明                            |
-| ------------- | ------- | ---- | ------------------------------- |
-| applicationId | Integer | 是   | 申请 ID                         |
-| approved      | Boolean | 是   | 是否通过(true-通过，false-拒绝) |
-| comment       | String  | 否   | 审核意见，最长 500 字符         |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**注意**:
-
-- 管理员可审核任何班级的申请
-- 老师只能审核自己所在班级的申请
-- 审核通过后申请人以`学生`身份加入班级
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "该申请已处理",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "只有管理员或班级老师可以审核加入申请"
-- "申请不存在"
-- "该申请已处理"
-
----
-
-### 4.12 设置学生为班级助理（老师专用）
-
-**接口地址**: `PUT /api/class/{classId}/assistants`
-
-**请求参数**:
-
-| 参数          | 类型    | 必填 | 说明        | 位置 |
-| ------------- | ------- | ---- | ----------- | ---- |
-| classId       | Integer | 是   | 班级 ID     | path |
-| studentUserId | Integer | 是   | 学生用户 ID | body |
-
-**请求体 (JSON)**:
-
-```json
-{
-  "studentUserId": 1002
-}
-```
-
-**请求示例**: `PUT /api/class/1/assistants`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "该用户不是班级学生",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "您没有权限执行此操作"
-- "该用户不是班级学生"
-- "用户不存在"
-
----
-
-### 4.13 将学生踢出班级（老师/班级助理专用）
-
-**接口地址**: `DELETE /api/class/{classId}/members/{studentUserId}`
-
-**请求参数**:
-
-| 参数          | 类型    | 必填 | 说明        |
-| ------------- | ------- | ---- | ----------- |
-| classId       | Integer | 是   | 班级 ID     |
-| studentUserId | Integer | 是   | 学生用户 ID |
-
-**请求示例**: `DELETE /api/class/1/members/1002`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "该用户不是班级学生",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "您没有权限执行此操作"
-- "该用户不是班级学生"
-- "不能移除班级创建者"
-
-**注意**:
-
-- **硬删除成员记录**：踢出学生时会从班级中移除该学生的成员记录
-- **级联软清理机制**：踢出学生时会自动软删除该学生在该班级的所有作业提交数据
-  - 软删除学生提交的所有附件记录（is_deleted = true）
-  - 软删除所有提交记录（is_deleted = true）
-  - **保留附件文件**：不物理删除文件，保留完整的作业历史
-- **数据可恢复**：作业提交数据和文件都保留，便于审计和恢复
-
----
-
-### 4.14 取消班级助理权限（降级为学生，仅创建者可用）
-
-**接口地址**: `DELETE /api/class/{classId}/assistants/{teacherUserId}`
-
-**请求参数**:
-
-| 参数          | 类型    | 必填 | 说明            |
-| ------------- | ------- | ---- | --------------- |
-| classId       | Integer | 是   | 班级 ID         |
-| teacherUserId | Integer | 是   | 班级助理用户 ID |
-
-**请求示例**: `DELETE /api/class/1/assistants/1002`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "只有班级创建者可以执行此操作",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "只有班级创建者可以执行此操作"
-- "该用户不是班级助理"
-
----
-
-### 4.15 学生邀请用户加入班级（需要用户确认和教师审核）
-
-**接口地址**: `POST /api/class/{classId}/invitations`
-
-**请求参数**:
-
-| 参数        | 类型    | 必填 | 说明             | 位置 |
-| ----------- | ------- | ---- | ---------------- | ---- |
-| classId     | Integer | 是   | 班级 ID          | path |
-| userAccount | String  | 是   | 被邀请用户的账号 | body |
-
-**请求体 (JSON)**:
-
-```json
-{
-  "userAccount": "2024002"
-}
-```
-
-**请求示例**: `POST /api/class/1/invitations`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "邀请已发送，待用户确认",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "用户不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "只有班级内的学生才能提交邀请申请"
-- "用户不存在"
-- "该用户已经在班级中"
-- "已有待确认的邀请"
-
-**注意**:
-
-- 学生发起邀请后，需要被邀请用户先确认同意
-- 被邀请用户同意后，系统会创建教师审核记录
-- 教师或助理审核通过后，被邀请用户才正式加入班级
-- 整个流程：**学生发起 → 用户确认 → 教师审核 → 加入班级**
-- **重复邀请处理**：如果对同一用户已有待确认的邀请，系统会自动删除旧邀请（包括关联的教师审核记录），然后创建新邀请
-
----
-
-### 4.16 被邀请用户响应邀请（同意/拒绝）
-
-**接口地址**: `PUT /api/class/invitations/{invitationId}`
-
-**请求参数**:
-
-| 参数         | 类型    | 必填 | 说明                            | 位置 |
-| ------------ | ------- | ---- | ------------------------------- | ---- |
-| invitationId | Integer | 是   | 邀请 ID                         | path |
-| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) | body |
-
-**请求体 (JSON)**:
-
-```json
-{
-  "accepted": true
-}
-```
-
-**请求示例**: `PUT /api/class/invitations/1`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**注意**:
-
-- 只能响应发给自己的邀请
-- 如果同意，系统会创建教师审核记录，等待教师或助理审核
-- 如果拒绝，流程结束
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "该邀请已处理",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “只能响应发给自己的邀请”
-- “该邀请已处理”
-
----
-
-### 4.17 教师或助理审核邀请申请
-
-**接口地址**: `PUT /api/class/invitations/{applicationId}/approval`
-
-**请求头**:
-
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求体**:
-
-```json
-{
-  "applicationId": 1,
-  "approved": true,
-  "comment": "同意加入"
-}
-```
-
-**字段说明**:
-
-| 字段          | 类型    | 必填 | 说明                              |
-| ------------- | ------- | ---- | --------------------------------- |
-| applicationId | Integer | 是   | 审核 ID                           |
-| approved      | Boolean | 是   | 审核结果（true-通过，false-拒绝） |
-| comment       | String  | 否   | 审核意见，最长 256 字符           |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "审核记录不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “审核结果不能为空”
-- “审核意见长度不能超过 256 位”
-- “审核意见不能包含特殊字符（制表符等）”
-- “审核记录不存在”
-- “只有班级老师或助理可以审核邀请申请”
-- “该申请已处理”
-
-**注意**:
-
-- 只有班级老师或助理可以审核
-- 审核通过后，被邀请用户正式以**学生**身份加入班级
-- 审核拒绝后，流程结束
-
----
-
-### 4.18 获取待教师审核的邀请列表（班级老师/助理专用）
-
-**接口地址**: `GET /api/class/{classId}/invitations/pending`
-
-**请求参数**:
-
-| 参数    | 类型    | 必填 | 说明    |
-| ------- | ------- | ---- | ------- |
-| classId | Integer | 是   | 班级 ID |
-
-**请求示例**: `GET /api/class/1/invitations/pending`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 1,
-      "classId": 1,
-      "className": "计算机科学2024级1班",
-      "invitationId": 5,
-      "inviteeId": 1003,
-      "inviteeUsername": "李四",
-      "status": 0,
-      "reviewerId": null,
-      "reviewerUsername": null,
-      "reviewTime": null,
-      "reviewComment": null,
-      "createTime": "2026-04-29T10:00:00"
-    }
-  ]
-}
-```
-
-**响应字段说明**:
-
-| 字段             | 类型          | 说明                                     |
-| ---------------- | ------------- | ---------------------------------------- |
-| id               | Integer       | 审核 ID                                  |
-| classId          | Integer       | 班级 ID                                  |
-| className        | String        | 班级名称                                 |
-| invitationId     | Integer       | 关联的用户邀请 ID                        |
-| inviteeId        | Integer       | 被邀请人 ID                              |
-| inviteeUsername  | String        | 被邀请人用户名                           |
-| status           | Integer       | 教师审核状态(0-待审核,1-已通过,2-已拒绝) |
-| reviewerId       | Integer       | 审核人 ID                                |
-| reviewerUsername | String        | 审核人用户名                             |
-| reviewTime       | LocalDateTime | 审核时间                                 |
-| reviewComment    | String        | 审核意见                                 |
-| createTime       | LocalDateTime | 创建时间                                 |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "只有班级老师或助理可以查看待审核邀请",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “只有班级老师或助理可以查看待审核邀请”
-
----
-
-### 班级邀请流程说明
-
-系统提供**两种不同的邀请机制**，分别适用于不同场景：
-
-#### 方式一：教师直接邀请（推荐）
-
-**适用场景**: 教师主动邀请学生、助教等加入班级
-
-**流程**: 教师发起 → 发送邀请 → 被邀请人同意 → **直接加入班级**
-
-1. 教师调用 `2.20 教师邀请用户加入班级` 接口
-2. 系统创建邀请记录（使用 `class_invitation` 表）并发送给被邀请人
-3. 被邀请人调用 `2.21 获取我收到的邀请列表` 查看邀请
-4. 被邀请人调用 `2.22 响应邀请` 同意或拒绝
-5. **同意后自动以学生身份加入班级**（无需二次审核）
-
-**特点**:
-
-- 单向确认机制：只需被邀请人同意
-- 流程简单快速
-- 适合教师主动邀请已知人员
-
----
-
-#### 方式二：学生邀请（需双向确认）
-
-**适用场景**: 班级学生邀请同学加入，需要被邀请人先同意，再由老师审核把关
-
-**流程**: 学生发起 → 用户确认 → 教师审核 → 加入班级
-
-1. 学生调用 `2.16 学生邀请用户加入班级` 接口
-2. 系统创建用户邀请记录（使用 `class_user_invitation` 表），状态为待用户确认
-3. 被邀请人收到邀请后，调用 `2.17 被邀请用户响应邀请` 同意或拒绝
-4. 如果同意，系统创建教师审核记录（使用 `class_teacher_approval` 表），状态为待教师审核
-5. 老师或助理调用 `2.19 获取待教师审核的邀请列表` 查看申请
-6. 老师或助理调用 `2.18 教师或助理审核邀请申请` 通过或拒绝
-7. **审核通过后，被邀请人自动以学生身份加入班级**
-
-**特点**:
-
-- **双向确认机制**：需要被邀请人和教师双方确认
-- 流程更加严格，保障各方知情权
-- 适合学生邀请同学，避免未经授权的加入
-
----
-
-### 两种机制的对比
-
-| 特性           | 教师邀请           | 学生邀请                                           |
-| -------------- | ------------------ | -------------------------------------------------- |
-| **发起者**     | 教师/管理员        | 班级学生                                           |
-| **使用的表**   | `class_invitation` | `class_user_invitation` + `class_teacher_approval` |
-| **确认次数**   | 1次（被邀请人）    | 2次（被邀请人 + 教师）                             |
-| **审核环节**   | 无                 | 有（教师或助理审核）                               |
-| **适用场景**   | 教师主动邀请       | 学生邀请同学                                       |
-| **流程复杂度** | 简单               | 复杂                                               |
-| **安全性**     | 中等               | 高                                                 |
-
-**注意**:
-
-- 所有邀请均需要被邀请人最终确认，保障用户知情权
-- 教师邀请和学生邀请是**完全独立的两个流程**，使用不同的数据表和接口
-- 被邀请人可以查看邀请详情（班级名称、邀请人等）后再决定
-
----
-
-### 4.19 教师邀请用户加入班级（需用户同意）
-
-**接口地址**: `POST /api/class/{classId}/invitations/teacher`
-
-**请求参数**:
-
-| 参数        | 类型    | 必填 | 说明             | 位置 |
-| ----------- | ------- | ---- | ---------------- | ---- |
-| classId     | Integer | 是   | 班级 ID          | path |
-| userAccount | String  | 是   | 被邀请用户的账号 | body |
-
-**请求体 (JSON)**:
-
-```json
-{
-  "userAccount": "2024001"
-}
-```
-
-**请求示例**: `POST /api/class/1/invitations/teacher`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "邀请已发送，等待用户响应",
-  "data": {
-    "id": 1,
-    "classId": 1,
-    "inviterId": 1001,
-    "inviteeUserId": 1002,
-    "status": 0,
-    "responseTime": null,
-    "createTime": "2026-04-09T10:00:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段          | 类型          | 说明                                 |
-| ------------- | ------------- | ------------------------------------ |
-| id            | Integer       | 邀请 ID                              |
-| classId       | Integer       | 班级 ID                              |
-| inviterId     | Integer       | 邀请人 ID(教师)                      |
-| inviteeUserId | Integer       | 被邀请人 ID                          |
-| status        | Integer       | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
-| responseTime  | LocalDateTime | 响应时间                             |
-| createTime    | LocalDateTime | 邀请时间                             |
-
-**注意**:
-
-- **只有老师或管理员可以发送邀请**
-- **重复邀请会自动替换**：如果对该用户已有待处理邀请，会先删除旧邀请再创建新邀请
-- **用户同意后直接加入班级**，无需教师两次审核
-- 此接口使用 `class_invitation` 表，与学生邀请的 `class_user_invitation` 表不同
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "已发送过邀请，请等待用户响应",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "只有老师或管理员可以邀请用户加入班级"
-- "用户不存在"
-- "该用户已经在班级中"
-- "已发送过邀请，请等待用户响应"
-
----
-
-### 4.20 获取我收到的邀请列表
-
-**接口地址**: `GET /api/class/my-invitations`
-
-**请求参数**:
-
-| 参数   | 类型    | 必填 | 说明                                     |
-| ------ | ------- | ---- | ---------------------------------------- |
-| status | Integer | 否   | 状态筛选（0-待处理，1-已同意，2-已拒绝） |
-
-**请求示例**:
-
-- `GET /api/class/my-invitations`
-- `GET /api/class/my-invitations?status=0`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 1,
-      "classId": 1,
-      "className": "计算机科学2024级1班",
-      "inviterId": 1001,
-      "inviterName": "张老师",
-      "inviteeUserId": 1002,
-      "status": 0,
-      "responseTime": null,
-      "createTime": "2026-04-09T10:00:00"
-    }
-  ]
-}
-```
-
-**响应字段说明**:
-
-| 字段          | 类型          | 说明                                 |
-| ------------- | ------------- | ------------------------------------ |
-| id            | Integer       | 邀请 ID                              |
-| classId       | Integer       | 班级 ID                              |
-| className     | String        | 班级名称                             |
-| inviterId     | Integer       | 邀请人 ID                            |
-| inviterName   | String        | 邀请人姓名                           |
-| inviteeUserId | Integer       | 被邀请人 ID                          |
-| status        | Integer       | 邀请状态(0-待处理,1-已同意,2-已拒绝) |
-| responseTime  | LocalDateTime | 响应时间                             |
-| createTime    | LocalDateTime | 邀请时间                             |
-
-**注意**:
-
-- 只能查看自己的邀请
-- 按更新时间倒序排列
-- 包含班级名称和邀请人姓名，方便用户决策
-
-**失败响应**:
-
-```json
-{
-  "code": 401,
-  "message": "用户未登录",
-  "data": null
-}
-```
-
----
-
-### 4.21 响应邀请（同意/拒绝）
-
-**接口地址**: `PUT /api/class/respond-invitation`
-
-**请求参数**:
-
-| 参数         | 类型    | 必填 | 说明                            | 位置 |
-| ------------ | ------- | ---- | ------------------------------- | ---- |
-| invitationId | Integer | 是   | 邀请 ID                         | body |
-| accepted     | Boolean | 是   | 是否同意(true-同意，false-拒绝) | body |
-
-**请求体 (JSON)**:
-
-```json
-{
-  "invitationId": 1,
-  "accepted": true
-}
-```
-
-**请求示例**: `PUT /api/class/respond-invitation`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**注意**:
-
-- 只能响应发给自己的邀请
-- 同意则自动以`学生`身份加入班级
-- 拒绝则标记为已拒绝
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "该邀请已处理",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “只能响应发给自己的邀请”
-- “该邀请已处理”
-
----
-
-### 4.22 生成/刷新班级邀请码（教师专用）
-
-**接口地址**: `POST /api/class/{classId}/invite-code`
-
-**请求参数**:
-
-| 参数    | 类型    | 必填 | 说明    |
-| ------- | ------- | ---- | ------- |
-| classId | Integer | 是   | 班级 ID |
-
-**请求示例**: `POST /api/class/1/invite-code`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "邀请码生成成功",
-  "data": "A3f9K2mN7pQ1xR5tY8wZ4bC6d"
-}
-```
-
-**响应字段说明**:
-
-| 字段 | 类型   | 说明                              |
-| ---- | ------ | --------------------------------- |
-| data | String | 25位随机邀请码（大小写字母+数字） |
-
-**注意**:
-
-- 只有老师可以生成邀请码
-- 每次调用会生成新的邀请码，旧码失效
-- 邀请码有效期直到下次刷新
-- 学生可通过`2.23`接口使用邀请码加入班级
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "只有老师可以生成邀请码",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "用户未登录"
-- "班级不存在"
-- "只有老师可以生成邀请码"
-
----
-
-### 4.23 通过邀请码加入班级
-
-**接口地址**: `POST /api/class/join-by-code`
-
-**请求参数**:
-
-| 参数       | 类型   | 必填 | 说明       | 位置 |
-| ---------- | ------ | ---- | ---------- | ---- |
-| inviteCode | String | 是   | 25位邀请码 | body |
-
-**请求体 (JSON)**:
-
-```json
-{
-  "inviteCode": "A3f9K2mN7pQ1xR5tY8wZ4bC6d"
-}
-```
-
-**请求示例**: `POST /api/class/join-by-code`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "classId": 1,
-    "applicantId": 1002,
-    "status": 1,
-    "reviewerId": 1002,
-    "reviewTime": "2026-04-09T10:00:00",
-    "reviewComment": null,
-    "createTime": "2026-04-09T10:00:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段          | 类型          | 说明                  |
-| ------------- | ------------- | --------------------- |
-| id            | Integer       | 申请 ID（虚拟记录）   |
-| classId       | Integer       | 班级 ID               |
-| applicantId   | Integer       | 申请人 ID             |
-| status        | Integer       | 审核状态(1-已通过)    |
-| reviewerId    | Integer       | 审核人 ID（自动审核） |
-| reviewTime    | LocalDateTime | 审核时间              |
-| reviewComment | String        | 审核意见              |
-| createTime    | LocalDateTime | 申请时间              |
-
-**注意**:
-
-- **邀请码加入免审批**：通过正确邀请码加入的用户，直接以学生身份入班，无需老师审核
-- `status`固定返回`1`（已通过），表示立即生效
-- 邀请码由教师通过`2.23`接口生成
-- 不能重复加入同一班级
-- 已是班级成员不能再次加入
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "邀请码失效",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “用户未登录”
-- “邀请码不能为空”
-- “邀请码失效”
-- "您已经是该班级成员"
-- "您已有待审核的加入申请"
-
----
-
-### 4.24 转让班级所有权（仅创建者）
-
-**接口地址**: `PUT /api/class/{classId}/owner`
-
-**请求参数**:
-
-| 参数       | 类型    | 必填 | 说明        | 位置 |
-| ---------- | ------- | ---- | ----------- | ---- |
-| classId    | Integer | 是   | 班级 ID     | path |
-| newOwnerId | Integer | 是   | 新所有者 ID | body |
-
-**请求体 (JSON)**:
-
-```json
-{
-  "newOwnerId": 1003
-}
-```
-
-**请求示例**: `PUT /api/class/1/owner`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "班级所有权转让成功",
-  "data": null
-}
-```
-
-**注意**:
-
-- 只有`创建者`可以转让所有权
-- 新所有者必须是班级现有成员
-- 转让后原`创建者`自动降级为`班级助理`
-- 新所有者自动升级为`创建者`并拥有最高权限
-- 不能转让给自己
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "只有班级所有者可以转让所有权",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "用户未登录"
-- "班级不存在"
-- "只有班级所有者可以转让所有权"
-- "新所有者必须是班级成员"
-- "不能转让给自己"
-
----
-
-## 4. 作业提交接口 (WorkSubmissionController)
-
-**基础路径**: `/api/submissions`
-
-### 4.1 提交作业
-
-**接口地址**: `POST /api/submissions/`
-
-**请求头**:
-
-- Content-Type: multipart/form-data
-- 需要登录认证（JWT Token + CSRF Token）
-
-**请求参数** (multipart/form-data):
-
-| 参数              | 类型    | 必填 | 说明                           |
-| ----------------- | ------- | ---- | ------------------------------ |
-| workId            | Integer | 是   | 作业 ID                        |
-| submissionContent | String  | 否   | 提交内容/文本描述              |
-| attachments       | File[]  | 否   | 附件文件列表（支持多文件上传） |
-
-**请求示例**:
-
-```
-POST /api/submissions/
-Content-Type: multipart/form-data
-
-workId: 1
-submissionContent: 这是我的作业内容
-attachments: [file1.pdf, file2.docx]
-```
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "workId": 1,
-    "classId": 1,
-    "submitterId": 1002,
-    "submissionContent": "这是我的作业内容",
-    "status": 1,
-    "isLate": false,
-    "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-09T10:00:00",
-    "attachments": [
-      {
-        "id": 1,
-        "fileName": "homework.pdf",
-        "filePath": "/path/to/file",
-        "fileSize": 102400,
-        "fileType": "application/pdf",
-        "uploadTime": "2026-04-09T10:00:00"
-      }
-    ]
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段              | 类型          | 说明                                 |
-| ----------------- | ------------- | ------------------------------------ |
-| id                | Integer       | 提交 ID                              |
-| workId            | Integer       | 作业 ID                              |
-| classId           | Integer       | 所属班级 ID                          |
-| submitterId       | Integer       | 提交人 ID                            |
-| submissionContent | String        | 提交内容/文本描述                    |
-| status            | Integer       | 提交状态(1-已提交,2-已批改,3-已打回) |
-| isLate            | Boolean       | 是否逾期提交(true-逾期,false-按时)   |
-| createTime        | LocalDateTime | 创建时间                             |
-| updateTime        | LocalDateTime | 更新时间                             |
-| attachments       | Array         | 附件列表（如果有上传）               |
-
-**注意**: 提交作业的响应不包含批改相关字段（score、comment、gradeTime、graderId），这些字段仅在查询时返回。
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "作业不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "作业 ID 不能为空"
-- "作业不存在"
-- "只有班级学生可以提交作业"
-- "作业未发布或已结束"
-- "您已经提交过该作业"
-- "作业已截止，不允许逾期提交"
-- "文件上传失败：xxx"
-
-**注意**:
-
-- **支持逾期提交**：即使超过截止时间，学生仍然可以提交作业
-- 系统会自动标记逾期提交（`isLate: true`），教师可以看到哪些学生是迟交的
-- 教师可以根据实际情况决定是否扣减“迟交分”
-- **直接上传附件**：通过 `attachments` 参数直接上传文件，无需预先调用文件上传接口
-- **文件安全检查**：系统会对上传的文件进行病毒扫描、文件类型白名单验证等安全检查
-- **文件存储位置**：`uploads/submissions/` 目录
-
----
-
-### 4.2 更新提交的作业
-
-**接口地址**: `PUT /api/submissions/{submissionId}`
-
-**请求参数**:
-
-| 参数              | 类型    | 必填 | 说明             |
-| ----------------- | ------- | ---- | ---------------- |
-| submissionId      | Integer | 是   | 提交 ID          |
-| submissionContent | String  | 是   | 更新后的提交内容 |
-
-**请求示例**: `PUT /api/submissions/1?submissionContent=更新后的作业内容`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "workId": 1,
-    "classId": 1,
-    "submitterId": 1002,
-    "submissionContent": "更新后的作业内容",
-    "status": 1,
-    "isLate": false,
-    "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-09T11:00:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段              | 类型          | 说明                                 |
-| ----------------- | ------------- | ------------------------------------ |
-| id                | Integer       | 提交 ID                              |
-| workId            | Integer       | 作业 ID                              |
-| classId           | Integer       | 所属班级 ID                          |
-| submitterId       | Integer       | 提交人 ID                            |
-| submissionContent | String        | 提交内容/文本描述                    |
-| status            | Integer       | 提交状态(1-已提交,2-已批改,3-已打回) |
-| isLate            | Boolean       | 是否逾期提交                         |
-| createTime        | LocalDateTime | 创建时间                             |
-| updateTime        | LocalDateTime | 更新时间                             |
-
-**注意**: 更新作业的响应不包含批改相关字段（score、comment、gradeTime、graderId）。
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "提交记录不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “提交记录不存在”
-- “您无权修改此提交”
-- “作业已被批改，不能修改”
-- “作业已截止，无法修改”
-
-**注意**:
-
-- 学生只能在作业截止时间之前更新自己的提交
-- **老师打回的作业可以修改**：如果老师批改时选择“打回”，学生可以再次修改（不受截止时间限制）
-- 被打回的作业修改后，状态重置为“已提交”
-- 正常批改的作业（未打回）不允许学生修改
-
----
-
-### 4.3 删除提交的作业
-
-**接口地址**: `DELETE /api/submissions/{submissionId}`
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| submissionId | Integer | 是 | 提交 ID |
-
-**请求示例**: `DELETE /api/submissions/1`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-```
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "提交记录不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "提交记录不存在"
-- "您无权删除此提交"
-- "作业已被批改，无法删除"
-- "已过截止时间的作业不能删除"
-
-**注意**:
-
-- 学生在作业截止时间后不能删除自己的提交，防止误操作导致0分
-- 教师依然可以删除任何学生的提交
-
----
-
-### 4.4 查询提交详情
-
-**接口地址**: `GET /api/submissions/{submissionId}`
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| submissionId | Integer | 是 | 提交 ID |
-
-**请求示例**: `GET /api/submissions/1`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "workId": 1,
-    "classId": 1,
-    "submitterId": 1002,
-    "submissionContent": "作业内容",
-    "score": 90.5,
-    "comment": "完成得很好",
-    "gradeTime": "2026-04-10T10:00:00",
-    "graderId": 1001,
-    "status": 2,
-    "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-10T10:00:00"
-  }
-}
-```
-
-**响应字段说明**:
 | 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 提交 ID |
-| workId | Integer | 作业 ID |
-| classId | Integer | 所属班级 ID |
-| submitterId | Integer | 提交人 ID |
-| submissionContent | String | 提交内容/文本描述 |
-| score | BigDecimal | 提交分数 |
-| comment | String | 批改人评语 |
-| gradeTime | LocalDateTime | 批改时间 |
-| graderId | Integer | 批改人 ID |
-| status | Integer | 提交状态(1-已提交,2-已批改) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "提交记录不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "提交记录不存在"
-- "您无权查看此提交"
+| ---- | ---- | ---- |
+| removedAttachmentIds | Integer[] | 需删除的附件 ID |
+| publishTime | DateTime | 发布时间 |
+| questionsProvided | Boolean | 是否提交了题目字段（用于区分「未改动」与「清空」） |
+| examConfigProvided | Boolean | 是否提交了考试配置 |
 
 ---
 
-### 4.5 查询当前用户的提交列表
+### 5.3 删除作业
 
-**接口地址**: `GET /api/submissions/student/list`
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| workId | Integer | 否 | 作业 ID 筛选（可选） |
-
-**请求示例**:
-
-- `GET /api/submissions/student/list` - 查询当前用户的所有提交
-- `GET /api/submissions/student/list?workId=1` - 查询当前用户在指定作业的提交
-
-**功能说明**:
-
-- 查询当前登录用户（学生）的作业提交记录
-- 支持按作业 ID 筛选特定作业的提交
-- 返回结果按更新时间倒序排列
-- 包含完整的提交信息和附件列表
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 1,
-      "workId": 1,
-      "workTitle": "第一次作业",
-      "submitterId": 1002,
-      "submissionContent": "作业内容",
-      "score": 90.5,
-      "comment": "完成得很好",
-      "gradeTime": "2026-04-10T10:00:00",
-      "graderId": 1001,
-      "status": 2,
-      "createTime": "2026-04-09T10:00:00",
-      "updateTime": "2026-04-10T10:00:00",
-      "attachments": [
-        {
-          "id": 1,
-          "fileName": "homework.pdf",
-          "filePath": "/uploads/submissions/homework.pdf",
-          "fileSize": 512000,
-          "fileType": "application/pdf",
-          "uploadTime": "2026-04-09T10:00:00"
-        }
-      ]
-    }
-  ]
-}
-```
-
-**响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 提交 ID |
-| workId | Integer | 作业 ID |
-| workTitle | String | 作业标题 |
-| submitterId | Integer | 提交人 ID |
-| submissionContent | String | 提交内容/文本描述 |
-| score | BigDecimal | 提交分数 |
-| comment | String | 批改人评语 |
-| gradeTime | LocalDateTime | 批改时间 |
-| graderId | Integer | 批改人 ID |
-| status | Integer | 提交状态(1-已提交,2-已批改) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
-| attachments | List | 附件列表 |
-| attachments[].id | Integer | 附件 ID |
-| attachments[].fileName | String | 文件名 |
-| attachments[].filePath | String | 文件路径 |
-| attachments[].fileSize | Long | 文件大小(字节) |
-| attachments[].fileType | String | 文件类型(MIME) |
-| attachments[].uploadTime | LocalDateTime | 上传时间 |
-
-**失败响应**:
-
-```json
-{
-  "code": 401,
-  "message": "用户未登录",
-  "data": null
-}
-```
+**接口地址**：`DELETE /api/works/{workId}`
 
 ---
 
-### 4.6 查询某次作业的所有提交（教师专用，分页）
+### 5.4 查询作业详情
 
-**接口地址**: `GET /api/submissions/work/list`
+**接口地址**：`GET /api/works/{workId}` → `WorkResponse`
 
-**请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
+`WorkResponse` 字段：`id`、`title`、`description`、`publisherId`、`publisherName`、`publisherStudentName`、`classId`、`className`、`deadline`、`totalScore`、`publishTime`、`status`、`isOverdue`、`isPinned`、`createTime`、`updateTime`、`attachments`、`submittedCount`、`hasQuestions`、`workType`、`examDurationMinutes`、`antiCheatEnabled`、`antiCheatFont`、`antiCheatFullscreen`、`antiCheatNoCopy`。
+
+---
+
+### 5.5 查询作业列表（分页）
+
+**接口地址**：`GET /api/works`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| status | Integer | 状态筛选 |
+| classId | Integer | 按班级筛选 |
+| pageNum / pageSize | Integer | 分页 |
+
+---
+
+### 5.6 置顶 / 取消置顶
+
+**接口地址**：`PATCH /api/works/{workId}/pin`
+
+**请求体**：`{ "workId": 1, "isPinned": true }`
+
+---
+
+### 5.7 获取作业题目
+
+**接口地址**：`GET /api/works/{workId}/questions`
+
+- 教师或已批改后：返回含参考答案与解析的完整题目（`WorkQuestionVO`）
+- 学生答题中：返回不含答案的题目（`WorkQuestionStudentVO`）
+
+---
+
+## 6. 作业提交（WorkSubmissionController）
+
+**基础路径**：`/api/submissions`
+
+### 6.1 提交作业
+
+**接口地址**：`POST /api/submissions`（`multipart/form-data`）
+
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
 | workId | Integer | 是 | 作业 ID |
-| pageNum | Integer | 否 | 页码，默认1 |
-| pageSize | Integer | 否 | 每页大小，默认20，最大300 |
+| submissionContent | String | 否 | 文本内容 |
+| attachments | File[] | 否 | 附件 |
+| answers | String | 否 | 结构化作答 JSON：`[{"questionId":1,"answer":"B"}]` |
 
-**请求示例**: `GET /api/submissions/work/list?workId=1&pageNum=1&pageSize=20`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "records": [
-      {
-        "id": 1,
-        "workId": 1,
-        "workTitle": "第一次作业",
-        "submitterId": 1002,
-        "submissionContent": "作业内容",
-        "score": 90.5,
-        "comment": "完成得很好",
-        "gradeTime": "2026-04-10T10:00:00",
-        "graderId": 1001,
-        "status": 2,
-        "createTime": "2026-04-09T10:00:00",
-        "updateTime": "2026-04-10T10:00:00",
-        "attachments": []
-      },
-      {
-        "id": 2,
-        "workId": 1,
-        "workTitle": "第一次作业",
-        "submitterId": 1003,
-        "submissionContent": "另一个学生的作业",
-        "score": null,
-        "comment": null,
-        "gradeTime": null,
-        "graderId": null,
-        "status": 1,
-        "createTime": "2026-04-09T11:00:00",
-        "updateTime": "2026-04-09T11:00:00",
-        "attachments": []
-      }
-    ],
-    "total": 45,
-    "size": 20,
-    "current": 1,
-    "pages": 3
-  }
-}
-```
-
-**响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| records | List | 提交记录列表 |
-| total | Long | 总记录数 |
-| size | Long | 每页大小 |
-| current | Long | 当前页码 |
-| pages | Long | 总页数 |
-
-**records 内部字段**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 提交 ID |
-| workId | Integer | 作业 ID |
-| workTitle | String | 作业标题 |
-| submitterId | Integer | 提交人 ID |
-| submissionContent | String | 提交内容/文本描述 |
-| score | BigDecimal | 提交分数(未批改时为null) |
-| comment | String | 批改人评语(未批改时为null) |
-| gradeTime | LocalDateTime | 批改时间(未批改时为null) |
-| graderId | Integer | 批改人 ID(未批改时为null) |
-| status | Integer | 提交状态(1-已提交,2-已批改) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
-| attachments | List | 附件列表 |
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "您没有权限查看此作业",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "您没有权限查看此作业"
+响应：`WorkSubmissionSubmitResponse`。
 
 ---
 
-### 4.7 查询某次作业的已交名单（教师专用）
+### 6.2 更新提交的作业
 
-**接口地址**: `GET /api/submissions/work/submitted`
+**接口地址**：`PUT /api/submissions/{submissionId}`（`multipart/form-data`）
 
-**请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| workId | Integer | 是 | 作业 ID |
-
-**请求示例**: `GET /api/submissions/work/submitted?workId=1`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 1,
-      "workId": 1,
-      "workTitle": "第一次作业",
-      "submitterId": 1002,
-      "submissionContent": "作业内容",
-      "score": 90.5,
-      "comment": "完成得很好",
-      "gradeTime": "2026-04-10T10:00:00",
-      "graderId": 1001,
-      "status": 2,
-      "createTime": "2026-04-09T10:00:00",
-      "updateTime": "2026-04-10T10:00:00",
-      "attachments": []
-    }
-  ]
-}
-```
-
-**响应字段说明**:
 | 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 提交 ID |
-| workId | Integer | 作业 ID |
-| workTitle | String | 作业标题 |
-| submitterId | Integer | 提交人 ID |
-| submissionContent | String | 提交内容/文本描述 |
-| score | BigDecimal | 提交分数(未批改时为null) |
-| comment | String | 批改人评语(未批改时为null) |
-| gradeTime | LocalDateTime | 批改时间(未批改时为null) |
-| graderId | Integer | 批改人 ID(未批改时为null) |
-| status | Integer | 提交状态(1-已提交,2-已批改) |
-| createTime | LocalDateTime | 创建时间 |
-| updateTime | LocalDateTime | 更新时间 |
-| attachments | List | 附件列表 |
-
-**注意**:
-
-- 此接口返回已提交学生的完整提交记录
-- 按更新时间倒序排列
-- 只有班级老师可以调用此接口
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "您没有权限查看此作业",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "您没有权限查看此作业"
-- "作业不存在"
+| ---- | ---- | ---- |
+| submissionContent | String | 文本内容 |
+| attachments | File[] | 新增附件 |
+| removedAttachmentIds | Integer[] | 需删除的附件 ID |
+| answers | String | 结构化作答 JSON |
 
 ---
 
-### 4.8 查询某次作业的未交名单（教师专用）
+### 6.3 撤回提交 ⚠️ 需二次验证
 
-**接口地址**: `GET /api/submissions/work/unsubmitted`
+**接口地址**：`DELETE /api/submissions/{submissionId}`
 
-**请求参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| workId | Integer | 是 | 作业 ID |
-
-**请求示例**: `GET /api/submissions/work/unsubmitted?workId=1`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 1003,
-      "username": "张三",
-      "userNo": "2024001",
-      "email": "zhangsan@example.com"
-    },
-    {
-      "id": 1004,
-      "username": "李四",
-      "userNo": "2024002",
-      "email": "lisi@example.com"
-    }
-  ]
-}
-```
-
-**响应字段说明**:
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | Integer | 学生 ID |
-| username | String | 学生姓名 |
-| userNo | String | 学生学号 |
-| email | String | 学生邮箱 |
-
-**注意**:
-
-- 此接口直接返回未提交作业的学生列表（User对象）
-- **后端使用MyBatisPlus QueryWrapper自动计算**：查询班级所有学生，过滤已提交学生，返回差集
-- 只返回`学生`角色的成员，不包括`创建者`和`班级助理`
-- 只有班级老师可以调用此接口
-- **前端零计算**：直接展示返回数据，无需手动对比或过滤
-- **实现位置**：`WorkSubmissionServiceImpl.getUnsubmittedStudents()`
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "您没有权限查看此作业",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "您没有权限查看此作业"
-- "作业不存在"
+操作标识：`submission.withdraw`。学生只能删除自己的提交，且不能删除已过截止时间的；教师可删除任意提交。
 
 ---
 
-### 4.9 批改作业（教师专用）
+### 6.4 查询提交详情
 
-**接口地址**: `PUT /api/submissions/grade`
+**接口地址**：`GET /api/submissions/{submissionId}` → `WorkSubmissionResponse`
 
-**请求头**:
+字段含：`id`、`workId`、`workTitle`、`submitterId`、`submissionContent`、`score`、`comment`、`gradeTime`、`graderId`、`graderName`、`submitterName`、`submitterStudentName`、`submitterStudentNo`、`status`、`isLate`、`attachments`、`hasQuestions`、`answers`。
 
-- Content-Type: application/json
-- 需要登录认证（JWT Token + CSRF Token）
+---
 
-**请求体**:
+### 6.5 查询当前用户的提交列表
+
+**接口地址**：`GET /api/submissions/student/list?workId=<可选>` → `List<WorkSubmissionResponse>`
+
+---
+
+### 6.6 查询某次作业的所有提交（教师，分页）
+
+**接口地址**：`GET /api/submissions/work/list?workId={id}&pageNum&pageSize`
+
+### 6.7 查询已交名单（教师）
+
+**接口地址**：`GET /api/submissions/work/submitted?workId={id}`
+
+### 6.8 查询未交名单（教师）
+
+**接口地址**：`GET /api/submissions/work/unsubmitted?workId={id}` → `List<UnsubmittedStudentResponse>`
+
+---
+
+### 6.9 批改作业（教师）
+
+**接口地址**：`PUT /api/submissions/grade`
+
+**请求体**：
+
+```json
+{ "submissionId": 1, "score": 85, "comment": "不错", "isReturned": false }
+```
+
+| 字段 | 说明 |
+| ---- | ---- |
+| score | 总分 |
+| comment | 评语 |
+| isReturned | 是否打回重做（true 则要求学生修改） |
+
+---
+
+### 6.10 按题批改（教师）
+
+**接口地址**：`PUT /api/submissions/grade-answers`
+
+**请求体**：
 
 ```json
 {
   "submissionId": 1,
-  "score": 90.5,
-  "comment": "完成得很好，继续保持！",
-  "isReturned": false
+  "items": [ { "questionId": 1, "score": 8, "comment": "步骤不全" } ]
 }
 ```
-
-**字段说明**:
-| 字段 | 类型 | 必填 | 说明 |
-| ------------ | ---------- | ---- | ------------------------------------------ |
-| submissionId | Integer | 是 | 提交 ID |
-| score | BigDecimal | 是 | 分数，范围 0-作业总分 |
-| comment | String | 是 | 批改人评语，不能包含制表符等特殊字符 |
-| isReturned | Boolean | 否 | 是否打回（true-打回让学生修改，false-正常批改），默认false |
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 1,
-    "workId": 1,
-    "classId": 1,
-    "submitterId": 1002,
-    "submissionContent": "作业内容",
-    "score": 90.5,
-    "comment": "完成得很好，继续保持！",
-    "gradeTime": "2026-04-10T10:00:00",
-    "graderId": 1001,
-    "status": 2,
-    "createTime": "2026-04-09T10:00:00",
-    "updateTime": "2026-04-10T10:00:00"
-  }
-}
-```
-
-**响应字段说明**:
-
-| 字段              | 类型          | 说明                                 |
-| ----------------- | ------------- | ------------------------------------ |
-| id                | Integer       | 提交 ID                              |
-| workId            | Integer       | 作业 ID                              |
-| classId           | Integer       | 所属班级 ID                          |
-| submitterId       | Integer       | 提交人 ID                            |
-| submissionContent | String        | 提交内容/文本描述                    |
-| score             | BigDecimal    | 提交分数                             |
-| comment           | String        | 批改人评语                           |
-| gradeTime         | LocalDateTime | 批改时间                             |
-| graderId          | Integer       | 批改人 ID                            |
-| status            | Integer       | 提交状态(1-已提交,2-已批改,3-已打回) |
-| createTime        | LocalDateTime | 创建时间                             |
-| updateTime        | LocalDateTime | 更新时间                             |
-
-**注意**:
-
-- 当`isReturned=true`时，status为3（已打回），学生可以再次修改作业
-- 当`isReturned=false`时，status为2（已批改），学生不能修改
-
-**失败响应**:
-
-```json
-{
-  "code": 400,
-  "message": "提交记录不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- "提交 ID 不能为空"
-- "分数不能为空"
-- "分数不能小于 0"
-- "分数超过作业总分"（动态校验：不能超过作业的totalScore，而非固定100分）
-- "评语不能为空"
-- "评语不能包含特殊字符（制表符等）"
-- "提交记录不存在"
-- "您没有权限批改此作业"
-
-**注意**:
-
-- **支持重新批改**：教师可以多次批改同一份作业，修改分数和评语
-- **支持状态转换**：
-  - 已批改 → 已批改：修改分数和评语，保持status=2
-  - 已批改 → 已打回：设置`isReturned=true`，将status改为3，学生可以再次修改
-  - 已打回 → 已批改：设置`isReturned=false`，将status改为2，恢复正常批改状态
-- **分数动态校验**：上限为作业的`totalScore`字段值，不再硬编码限制为100分
-- 例如：作业总分为150分时，学生可获得0-150分的评分
 
 ---
 
-### 4.10 批量下载作业附件（教师专用）
+### 6.11 批量下载作业附件（教师）
 
-**接口地址**: `POST /api/submissions/batch-download`
+**接口地址**：`POST /api/submissions/batch-download`（返回 `application/zip`）
 
-**请求头**:
-
-- Content-Type: application/json
-- Response-Type: application/zip
-- 需要登录认证（JWT Token + CSRF Token）
-
-**权限要求**: 只有班级老师可以调用此接口
-
-**请求体**:
+**请求体**：
 
 ```json
 {
   "workId": 1,
   "fileNameFormat": "{username}-{userNo}_{originalFileName}",
-  "gradedOnly": null,
-  "lateOnly": null
-}
-```
-
-**字段说明**:
-
-| 参数           | 类型    | 必填 | 说明                                                           |
-| -------------- | ------- | ---- | -------------------------------------------------------------- |
-| workId         | Integer | 是   | 作业ID                                                         |
-| fileNameFormat | String  | 否   | 文件名格式模板，默认：`{username}-{userNo}_{originalFileName}` |
-| gradedOnly     | Boolean | 否   | 是否只下载已批改的作业（null-全部，true-已批改，false-未批改） |
-| lateOnly       | Boolean | 否   | 是否只下载逾期提交的作业（null-全部，true-逾期，false-按时）   |
-
-**文件名格式变量**:
-
-支持的变量占位符：
-
-- `{username}` - 用户名
-- `{userNo}` - 学号/工号
-- `{idName}` - 身份证姓名
-- `{workTitle}` - 作业标题
-- `{submissionId}` - 提交ID
-- `{originalFileName}` - 原始文件名
-
-**文件名格式示例**:
-
-1. **默认格式**: `{username}-{userNo}_{originalFileName}`
-   - 结果: `张三-2024001_实验报告.pdf`
-
-2. **包含作业标题**: `{username}-{userNo}_{workTitle}`
-   - 结果: `张三-2024001_第3次实验报告.pdf`
-
-3. **使用身份证姓名**: `{idName}-{userNo}_{originalFileName}`
-   - 结果: `张三丰-2024001_实验报告.pdf`
-
-4. **自定义格式**: `{userNo}_{username}_{originalFileName}`
-   - 结果: `2024001_张三_实验报告.pdf`
-
-**响应**:
-
-成功时直接返回ZIP文件流，浏览器会自动下载。
-
-**ZIP文件结构示例**:
-
-```
-第3次实验报告_作业附件.zip
-├── 张三-2024001/
-│   ├── 张三-2024001_实验报告.pdf
-│   └── 张三-2024001_代码.java
-├── 李四-2024002/
-│   └── 李四-2024002_实验报告.docx
-└── 王五-2024003/
-    ├── 王五-2024003_实验报告.pdf
-    └── 王五-2024003_截图.png
-```
-
-**请求示例**:
-
-```bash
-curl -X POST http://localhost:8080/api/submissions/batch-download \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "X-CSRF-Token: YOUR_CSRF_TOKEN" \
-  -d '{
-    "workId": 1,
-    "fileNameFormat": "{username}-{userNo}_{workTitle}",
-    "gradedOnly": false
-  }' \
-  --output 作业附件.zip
-```
-
-**JavaScript (Fetch API)**:
-
-```javascript
-fetch("/api/submissions/batch-download", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer " + token,
-    "X-CSRF-Token": csrfToken,
-  },
-  body: JSON.stringify({
-    workId: 1,
-    fileNameFormat: "{username}-{userNo}_{workTitle}",
-    gradedOnly: null,
-    lateOnly: null,
-  }),
-})
-  .then((response) => response.blob())
-  .then((blob) => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "作业附件.zip";
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  })
-  .catch((error) => console.error("Download failed:", error));
-```
-
-**错误响应**:
-
-```json
-{
-  "code": 400,
-  "message": "作业不存在",
-  "data": null
-}
-```
-
-**可能的错误信息**:
-
-- “用户未登录”
-- “作业不存在”
-- “只有班级老师可以批量下载作业附件”
-- “没有找到符合条件的作业提交”
-- “该作业没有附件”
-
-**注意**:
-
-1. **权限控制**: 只有班级老师（包括创建者和班级助理）可以批量下载作业附件
-2. **文件命名**: 系统会自动清理文件名中的非法字符（如 `\ / : * ? " < > |`）
-3. **重复处理**: 如果同一学生有多个同名文件，系统会自动添加数字后缀避免冲突
-4. **筛选功能**: 可以通过 `gradedOnly` 和 `lateOnly` 参数筛选特定类型的提交
-5. **ZIP结构**: 每个学生的附件会放在以 `用户名-学号` 命名的子目录中
-6. **大文件处理**: 建议前端显示加载状态，因为打包大量文件可能需要较长时间
-
-**典型使用场景**:
-
-### 场景1: 下载所有学生的作业附件
-
-```json
-{
-  "workId": 1,
-  "fileNameFormat": "{username}-{userNo}_{originalFileName}"
-}
-```
-
-### 场景2: 只下载已批改的作业
-
-```json
-{
-  "workId": 1,
-  "fileNameFormat": "{username}-{userNo}_{workTitle}",
-  "gradedOnly": true
-}
-```
-
-### 场景3: 只下载逾期提交的作业
-
-```json
-{
-  "workId": 1,
-  "fileNameFormat": "{idName}-{userNo}_{originalFileName}",
-  "lateOnly": true
-}
-```
-
-### 场景4: 按学号排序的简洁命名
-
-```json
-{
-  "workId": 1,
-  "fileNameFormat": "{userNo}_{originalFileName}"
+  "gradedOnly": false,
+  "lateOnly": false
 }
 ```
 
 ---
 
-## 5. 管理员后台接口 (AdminController)
+## 7. 考试（ExamController）
 
-**基础路径**: `/api/admin`
+**基础路径**：`/api/exams`
 
-> 所有接口均需登录并携带 JWT Token + CSRF Token。每个接口要求对应的**权限节点**，不满足时返回 `403`（`权限不足，缺少所需权限节点`）。
-> 平台管理员（OP，`isOp = true`）拥有全部权限节点，恒定放行。
+考试与作业共用数据表，仅 `work_type` 区分；反作弊配置在创建 / 更新作业时通过 `examConfigJson` 设置。
 
-### 5.1 权限节点清单
+### 7.1 进入考试
 
-权限节点由后端内置注册表定义（`PermissionRegistry`），不支持运行时新增，避免出现无效节点。管理操作与节点的对应关系如下：
+**接口地址**：`POST /api/exams/{workId}/enter`
 
-**用户管理**
+首次进入会创建考试会话。响应 `ExamEnterResponse`：
 
-| 权限节点      | 说明                             |
-| ------------- | -------------------------------- |
-| `user:view`   | 查看用户列表与详情               |
-| `user:add`    | 在后台新增用户                   |
-| `user:edit`   | 修改用户资料                     |
-| `user:delete` | 删除用户账号及其数据             |
-| `user:ban`    | 封禁或解封用户                   |
-| `user:setop`  | 授予或取消用户的平台管理员（OP） |
+字段含 `workId`、`title`、`description`、`totalScore`、`status`、`durationMinutes`、`startTime`、`endTime`、`remainingSeconds`、`submitted`、`antiCheatEnabled`、`antiCheatFont`、`antiCheatFullscreen`、`antiCheatNoCopy`、`antiCheatDetectLeave`、`antiCheatMaxViolations`、`violationCount`、`fontSeed`、`questions`、`draftAnswers`。
 
-**权限管理**
+---
 
-| 权限节点                  | 说明                     |
-| ------------------------- | ------------------------ |
-| `permission:view`         | 查看权限节点与权限组     |
-| `permission:group:add`    | 创建权限组               |
-| `permission:group:edit`   | 修改权限组信息与所含节点 |
-| `permission:group:delete` | 删除权限组               |
-| `permission:group:assign` | 为用户分配权限组         |
-| `permission:user:assign`  | 为用户单独授予权限节点   |
+### 7.2 上报违规
 
-**班级管理**（用于班级模块的跨班级管理操作）
+**接口地址**：`POST /api/exams/{workId}/violations`
 
-| 权限节点             | 说明         |
-| -------------------- | ------------ |
-| `class:view_all`     | 查看全部班级 |
-| `class:update`       | 管理任意班级 |
-| `class:dissolve`     | 解散任意班级 |
-| `class:member:kick`  | 踢出班级成员 |
-| `class:approve_join` | 审批加入申请 |
-| `class:teacher:add`  | 添加班级老师 |
+**请求体**：
 
-### 5.2 用户管理
+```json
+{ "type": "visibility_hidden", "detail": "切出页面" }
+```
 
-#### 5.2.1 检索用户列表
+合法 `type`：`fullscreen_exit`（退出全屏）、`visibility_hidden`（切出页面）、`window_blur`（窗口失焦）、`copy`、`cut`、`paste`。
 
-**接口地址**: `POST /api/admin/users/search`
+响应 `data` 为 Boolean，表示是否因违规达上限而需强制交卷。
 
-**所需权限节点**: `user:view`
+---
 
-**说明**: 采用可提交多行条件的策略；每行指定字段、匹配方式与内容，行间用「并且」或「或者」连接。**连续的「并且」归为一组，组间用「或者」**，即 `(a AND b) OR (c AND d)`。筛选与排序均在数据库完成。
+### 7.3 保存作答草稿
 
-**请求参数**:
+**接口地址**：`PUT /api/exams/{workId}/draft`
 
-| 参数       | 类型    | 必填 | 说明                                     |
-| ---------- | ------- | ---- | ---------------------------------------- |
-| conditions | Array   | 否   | 条件行列表，最多 10 行；为空表示不加筛选 |
-| pageNum    | Integer | 否   | 页码，默认 1                             |
-| pageSize   | Integer | 否   | 每页大小，默认 10                        |
+**请求体**：`{ "draft": "<作答草稿 JSON 字符串>" }`
 
-`conditions` 中每行：
+---
 
-| 字段      | 类型   | 必填 | 说明                                                                   |
-| --------- | ------ | ---- | ---------------------------------------------------------------------- |
-| field     | String | 是   | `username` / `email` / `school` / `staffNo` / `realName` / `className` |
-| matchType | String | 否   | `contains`-模糊（默认） / `equals`-精确                                |
-| value     | String | 是   | 搜索内容，最长 100 位                                                  |
-| connector | String | 否   | `and`-并且（默认） / `or`-或者；第一行忽略该值                         |
+### 7.4 查询违规记录（教师）
 
-请求示例：
+**接口地址**：`GET /api/exams/{workId}/violations` → `List<ExamViolationVO>`
+
+字段：`id`、`sessionId`、`workId`、`studentId`、`studentName`、`studentRealName`、`studentNo`、`type`、`typeName`、`detail`、`occurTime`。
+
+---
+
+### 7.5 下载考试字体
+
+**接口地址**：`GET /api/exams/font/{seed}.woff2`
+
+用于字体映射反作弊：前端按 `fontSeed` 下载打乱后的字体，防止复制搜题。
+
+---
+
+## 8. 消息（SiteMessage / PrivateMessage / Friend / MessagePolicy）
+
+### 8.1 站内信
+
+**基础路径**：`/api/messages`
+
+| 方法 | 路径 | 说明 |
+| ---- | ---- | ---- |
+| GET | `/api/messages` | 我的站内信（分页）。参数：`pageNum`、`pageSize`、`schoolId`、`type`、`isRead`、`keyword` |
+| GET | `/api/messages/unread-count` | 按学校统计未读数 |
+| PUT | `/api/messages/{messageId}/read` | 标记单条已读 |
+| PUT | `/api/messages/read-all?schoolId=<可选>` | 全部已读 |
+
+`SiteMessageResponse`：`id`、`schoolId`、`schoolName`、`type`、`title`、`content`、`classId`、`className`、`workId`、`isRead`、`readTime`、`createTime`。
+
+---
+
+### 8.2 私信
+
+**基础路径**：`/api/private-messages`
+
+| 方法 | 路径 | 说明 |
+| ---- | ---- | ---- |
+| GET | `/api/private-messages/conversations?schoolId={id}` | 会话列表 |
+| GET | `/api/private-messages?schoolId&peerId&pageNum&pageSize` | 与某人的消息（分页） |
+| POST | `/api/private-messages` | 发送私信 |
+| PUT | `/api/private-messages/read?schoolId&peerId` | 标记会话已读 |
+| GET | `/api/private-messages/unread-count` | 按学校统计未读数 |
+
+**发送请求体**：`{ "schoolId": 1, "receiverId": 1002, "content": "你好" }`
+
+`ConversationInfo`：`schoolId`、`schoolName`、`peerId`、`peerUsername`、`peerAvatar`、`peerRealName`、`peerStaffNo`、`peerRole`、`friend`、`lastContent`、`lastTime`、`unreadCount`。
+
+`PrivateMessageInfo`：`id`、`schoolId`、`senderId`、`receiverId`、`content`、`isRead`、`createTime`、`mine`。
+
+---
+
+### 8.3 好友
+
+**基础路径**：`/api/friends`
+
+| 方法 | 路径 | 说明 |
+| ---- | ---- | ---- |
+| GET | `/api/friends?schoolId={id}` | 好友列表 |
+| GET | `/api/friends/requests?schoolId={id}` | 待处理好友申请 |
+| GET | `/api/friends/search?schoolId&keyword` | 可添加用户搜索 |
+| POST | `/api/friends/requests` | 发起好友申请 |
+| PUT | `/api/friends/requests` | 响应好友申请 |
+| DELETE | `/api/friends/{relationId}` | 删除好友 |
+
+**发起申请**：`{ "schoolId": 1, "targetUserId": 1002 }`
+**响应申请**：`{ "relationId": 1, "accepted": true }`
+
+> 好友按学校隔离，只能添加同一学校内的用户。
+
+---
+
+### 8.4 消息策略
+
+**基础路径**：`/api/message-policy`
+
+| 方法 | 路径 | 权限 | 说明 |
+| ---- | ---- | ---- | ---- |
+| GET | `/api/message-policy` | 平台管理员 | 查询全局策略 |
+| PUT | `/api/message-policy` | 平台管理员 | 更新全局策略 |
+| GET | `/api/message-policy/school/{schoolId}` | 学校管理员 | 查询学校覆盖策略 |
+| PUT | `/api/message-policy/school/{schoolId}` | 学校管理员 | 更新学校覆盖策略 |
+
+**请求体**：`{ "strangerLimit": 3, "resetHours": 24 }`（陌生用户私信条数与重置周期）
+
+`MessagePolicyInfo`：`strangerLimit`、`resetHours`、`schoolOverridden`、`globalStrangerLimit`、`globalResetHours`。
+
+---
+
+## 9. 管理员后台（AdminUser / AdminPermission / AdminSchool）
+
+> 所有 `/api/admin/**` 接口由 `PermissionInterceptor` 强制校验权限节点；平台管理员（OP）拥有全部节点。
+
+### 9.1 用户管理
+
+**基础路径**：`/api/admin/users`
+
+| 方法 | 路径 | 权限节点 | 说明 |
+| ---- | ---- | ---- | ---- |
+| POST | `/api/admin/users/search` | `user:view` | 检索用户（分页） |
+| POST | `/api/admin/users` | `user:add` | 新增用户 |
+| PUT | `/api/admin/users/{userId}` | `user:edit` | 编辑用户 |
+| DELETE | `/api/admin/users/{userId}` | `user:delete` | 删除用户 ⚠️ 二次验证 |
+| POST | `/api/admin/users/{userId}/avatar` | `user:edit` | 上传用户头像（multipart） |
+| DELETE | `/api/admin/users/{userId}/avatar` | `user:edit` | 清除用户头像 |
+| PUT | `/api/admin/users/{userId}/ban` | `user:ban` | 封禁 / 解封 ⚠️ 二次验证 |
+| PUT | `/api/admin/users/{userId}/op` | `user:setop` | 设置 / 取消平台管理员 ⚠️ 二次验证 |
+| GET | `/api/admin/users/{userId}/permissions` | `user:view` 或 `permission:view` | 查询用户权限明细 |
+| PUT | `/api/admin/users/{userId}/groups` | `permission:group:assign` | 分配权限组 ⚠️ 二次验证 |
+| PUT | `/api/admin/users/{userId}/nodes` | `permission:user:assign` | 分配权限节点 ⚠️ 二次验证 |
+
+**检索用户请求体**：
 
 ```json
 {
   "conditions": [
-    { "field": "username", "matchType": "contains", "value": "the" },
-    {
-      "field": "school",
-      "matchType": "equals",
-      "value": "第一中学",
-      "connector": "and"
-    },
-    {
-      "field": "realName",
-      "matchType": "contains",
-      "value": "张",
-      "connector": "or"
-    }
-  ],
-  "pageNum": 1,
-  "pageSize": 10
-}
-```
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "records": [
-      {
-        "id": 1001,
-        "userNo": "2024001",
-        "username": "TheXiaoLa",
-        "idName": "张三",
-        "email": "zhangsan@example.com",
-        "phone": "13800000000",
-        "isOp": false,
-        "isBanned": false,
-        "banReason": null,
-        "groupNames": ["班级管理员"],
-        "permissions": ["class:view_all", "user:view"],
-        "registerTime": "2026-05-07T10:00:00",
-        "lastLoginTime": "2026-05-08T09:00:00"
-      }
-    ],
-    "total": 1,
-    "size": 10,
-    "current": 1,
-    "pages": 1
-  }
-}
-```
-
-#### 5.2.2 新增用户
-
-**接口地址**: `POST /api/admin/users`
-
-**所需权限节点**: `user:add`
-
-**请求体**:
-
-```json
-{
-  "userNo": "2024002",
-  "username": "lisi",
-  "idName": "李四",
-  "email": "lisi@example.com",
-  "phone": "13900000000",
-  "password": "123456"
-}
-```
-
-**字段说明**:
-
-| 字段     | 类型   | 必填 | 说明                                              |
-| -------- | ------ | ---- | ------------------------------------------------- |
-| userNo   | String | 是   | 学号/工号，仅数字，最长 24 位                     |
-| username | String | 是   | 用户名，3-16 位字母/数字/下划线，不区分大小写唯一 |
-| idName   | String | 否   | 姓名，最长 32 位                                  |
-| email    | String | 是   | 邮箱，最长 64 位，唯一                            |
-| phone    | String | 否   | 手机号，最长 20 位                                |
-| password | String | 是   | 初始密码，4-48 位                                 |
-
-**注意**:
-
-- 新增用户会自动加入所有「默认权限组」
-
-#### 5.2.3 编辑用户
-
-**接口地址**: `PUT /api/admin/users/{userId}`
-
-**所需权限节点**: `user:edit`
-
-**请求体**: 同新增用户，但所有字段均可选；`password` 非空时重置密码。
-
-#### 5.2.4 删除用户
-
-**接口地址**: `DELETE /api/admin/users/{userId}`
-
-**所需权限节点**: `user:delete`
-
-**注意**:
-
-- 不能删除当前登录的账号
-- 不能删除平台管理员（需先取消其 OP 身份）
-- 若该用户仍是班级创建者，需先转让或解散其班级
-- 删除时会同时清理其权限绑定、班级成员关系及相关的邀请/申请记录
-
-#### 5.2.5 封禁 / 解封用户
-
-**接口地址**: `PUT /api/admin/users/{userId}/ban`
-
-**所需权限节点**: `user:ban`
-
-**请求体**:
-
-```json
-{
-  "banned": true,
-  "reason": "违反平台规定"
-}
-```
-
-#### 5.2.6 设置 / 取消平台管理员（OP）
-
-**接口地址**: `PUT /api/admin/users/{userId}/op`
-
-**所需权限节点**: `user:setop`
-
-**请求体**:
-
-```json
-{
-  "isOp": true
-}
-```
-
-**注意**:
-
-- 只有平台管理员（OP）可以授予或取消平台管理员身份
-- 不能修改自己的平台管理员身份
-
-#### 5.2.7 查询用户权限明细
-
-**接口地址**: `GET /api/admin/users/{userId}/permissions`
-
-**所需权限节点**: `user:view` 或 `permission:view`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "userId": 1001,
-    "username": "TheXiaoLa",
-    "isOp": false,
-    "groups": [
-      {
-        "id": 2,
-        "code": "class-admin",
-        "name": "班级管理员",
-        "isDefault": false,
-        "nodes": ["class:view_all"],
-        "userCount": 3
-      }
-    ],
-    "directNodes": ["user:view"],
-    "permissions": ["class:view_all", "user:view"]
-  }
-}
-```
-
-#### 5.2.8 分配用户权限组
-
-**接口地址**: `PUT /api/admin/users/{userId}/groups`
-
-**所需权限节点**: `permission:group:assign`
-
-**请求体**（覆盖式，传入即为最终归属）:
-
-```json
-{
-  "groupIds": [2, 3]
-}
-```
-
-**注意**:
-
-- 覆盖式：传入即为最终归属
-- 不能修改自己的权限组
-- 非平台管理员只能分配自己已拥有其全部权限节点的权限组
-
-#### 5.2.9 分配用户直接权限节点
-
-**接口地址**: `PUT /api/admin/users/{userId}/nodes`
-
-**所需权限节点**: `permission:user:assign`
-
-**请求体**（覆盖式，未注册的节点会被拒绝）:
-
-```json
-{
-  "nodes": ["user:view"]
-}
-```
-
-**注意**:
-
-- 未注册的节点会被拒绝
-- 非平台管理员只能授予自己已拥有的权限节点（防止越权提权）
-
-### 5.3 权限组管理
-
-#### 5.3.1 查询权限节点树
-
-**接口地址**: `GET /api/admin/permissions/nodes`
-
-**所需权限节点**: `permission:view`
-
-**成功响应 (200)**:
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "key": "user",
-      "name": "用户管理",
-      "nodes": [
-        {
-          "node": "user:view",
-          "name": "查看用户",
-          "description": "查看用户列表与详情"
-        }
-      ]
-    }
+    { "field": "username", "matchType": "contains", "value": "张", "connector": "and" }
   ]
 }
 ```
 
-#### 5.3.2 查询权限组列表
+`matchType`：`contains` / `equals` / `startsWith` 等；`connector`：`and` / `or`。
 
-**接口地址**: `GET /api/admin/permissions/groups`
+**新增 / 编辑用户请求体**：`{ "username": "张三", "email": "a@b.com", "phone": "138...", "password": "Pass@123" }`
 
-**所需权限节点**: `permission:view`
+**封禁请求体**：`{ "banned": true, "reason": "违规" }`
+**设置 OP 请求体**：`{ "isOp": true }`
+**分配权限组**：`{ "groupIds": [1, 2] }`
+**分配权限节点**：`{ "nodes": ["class:dissolve"] }`
 
-**成功响应 (200)**:
+`AdminUserVO`：`id`、`username`、`email`、`phone`、`avatar`、`isOp`、`isBanned`、`banReason`、`groupNames`、`permissions`、`registerTime`、`lastLoginTime`。
 
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 2,
-      "code": "class-admin",
-      "name": "班级管理员",
-      "description": "可管理全部班级",
-      "isDefault": false,
-      "nodes": ["class:view_all", "class:dissolve"],
-      "userCount": 3,
-      "createTime": "2026-05-07T10:00:00"
-    }
-  ]
-}
-```
+`UserPermissionDetailVO`：`userId`、`username`、`isOp`、`groups`、`directNodes`、`permissions`。
 
-#### 5.3.3 创建权限组
+---
 
-**接口地址**: `POST /api/admin/permissions/groups`
+### 9.2 权限组管理
 
-**所需权限节点**: `permission:group:add`
+**基础路径**：`/api/admin/permissions`
 
-**请求体**:
+| 方法 | 路径 | 权限节点 | 说明 |
+| ---- | ---- | ---- | ---- |
+| GET | `/api/admin/permissions/nodes` | `permission:view` | 权限节点分组树 |
+| GET | `/api/admin/permissions/groups` | `permission:view` | 权限组列表 |
+| POST | `/api/admin/permissions/groups` | `permission:group:add` | 创建权限组 |
+| PUT | `/api/admin/permissions/groups/{groupId}` | `permission:group:edit` | 编辑权限组 |
+| DELETE | `/api/admin/permissions/groups/{groupId}` | `permission:group:delete` | 删除权限组 ⚠️ 二次验证 |
+| PUT | `/api/admin/permissions/groups/{groupId}/nodes` | `permission:group:edit` | 配置权限组节点 ⚠️ 二次验证 |
 
-```json
-{
-  "code": "class-admin",
-  "name": "班级管理员",
-  "description": "可管理全部班级",
-  "isDefault": false
-}
-```
+**创建 / 编辑权限组请求体**：`{ "code": "class-admin", "name": "班级管理员", "description": "", "isDefault": false }`
 
-| 字段        | 类型    | 必填 | 说明                                                              |
-| ----------- | ------- | ---- | ----------------------------------------------------------------- |
-| code        | String  | 是   | 权限组标识，字母开头，仅字母/数字/下划线/连字符，最长 64 位，唯一 |
-| name        | String  | 是   | 权限组名称，最长 64 位                                            |
-| description | String  | 否   | 描述，最长 255 位                                                 |
-| isDefault   | Boolean | 否   | 是否为新注册用户的默认组                                          |
+**配置节点请求体**：`{ "nodes": ["class:update", "class:member:kick"] }`
 
-#### 5.3.4 编辑权限组
+`PermissionGroupVO`：`id`、`code`、`name`、`description`、`isDefault`、`nodes`、`userCount`、`createTime`。
 
-**接口地址**: `PUT /api/admin/permissions/groups/{groupId}`
+**权限节点清单**（按分组）：
 
-**所需权限节点**: `permission:group:edit`
+| 分组 | 节点 |
+| ---- | ---- |
+| 用户管理 | `user:view`、`user:add`、`user:edit`、`user:delete`、`user:ban`、`user:setop` |
+| 权限管理 | `permission:view`、`permission:group:add`、`permission:group:edit`、`permission:group:delete`、`permission:group:assign`、`permission:user:assign` |
+| 班级管理 | `class:view_all`、`class:create`、`class:update`、`class:dissolve`、`class:member:kick`、`class:approve_join`、`class:teacher:add` |
+| 学校管理 | `school:view_all`、`school:create`、`school:update`、`school:dissolve`、`school:admin:assign` |
 
-**请求体**: `name`、`description`、`isDefault`（`code` 创建后不可修改）
+---
 
-#### 5.3.5 删除权限组
+### 9.3 学校管理
 
-**接口地址**: `DELETE /api/admin/permissions/groups/{groupId}`
+**基础路径**：`/api/admin/schools`
 
-**所需权限节点**: `permission:group:delete`
+| 方法 | 路径 | 权限节点 | 说明 |
+| ---- | ---- | ---- | ---- |
+| GET | `/api/admin/schools` | `school:view_all` | 学校列表（分页） |
+| GET | `/api/admin/schools/applications` | `school:view_all` | 全平台加入申请（分页） |
+| PUT | `/api/admin/schools/applications/batch-approve` | `school:update` | 批量审核加入申请 |
+| GET | `/api/admin/schools/{schoolId}` | `school:view_all` | 学校详情 |
+| POST | `/api/admin/schools` | `school:create` | 创建学校 |
+| PUT | `/api/admin/schools/{schoolId}` | `school:update` | 修改学校 |
+| DELETE | `/api/admin/schools/{schoolId}` | `school:dissolve` | 解散学校 ⚠️ 二次验证 |
+| PUT | `/api/admin/schools/{schoolId}/admin` | `school:admin:assign` | 指派 / 取消学校管理员 ⚠️ 二次验证 |
 
-**注意**: 删除后组内用户将失去该组带来的权限；组-节点绑定与用户-组绑定会一并清理。
+**创建学校请求体**：`{ "schoolName": "第一中学", "description": "", "allowJoinWithoutApproval": false }`
+**修改学校请求体**：`{ "schoolName": "第一中学", "description": "新说明" }`
+**指派学校管理员请求体**：`{ "userAccount": "lisi", "assigned": true, "staffNo": "T001", "realName": "李四" }`
+**批量审核请求体**：`{ "applicationIds": [1, 2], "approved": true, "comment": "" }`
 
-#### 5.3.6 配置权限组节点
+---
 
-**接口地址**: `PUT /api/admin/permissions/groups/{groupId}/nodes`
+## 10. 文件（FileController）
 
-**所需权限节点**: `permission:group:edit`
+**基础路径**：`/api/files`
 
-**请求体**（覆盖式，未注册的节点会被拒绝）:
+### 10.1 下载文件
 
-```json
-{
-  "nodes": ["class:view_all", "class:dissolve"]
-}
-```
+**接口地址**：`GET /api/files/download`
 
-**注意**: 非平台管理员只能授予自己已拥有的权限节点（防止越权提权）。
+| 参数 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| path | String | 是 | 文件相对路径 |
+| fileName | String | 否 | 下载时的文件名 |
+| inline | Boolean | 否 | 是否内联展示（默认 false，即作为附件下载） |
+
+响应：文件二进制流（`Resource`）。
 
 ---
 
 ## 附录
 
-### 状态码说明
+### 作业状态（WorkInfo.status）
 
-#### 作业状态 (WorkInfo.status)
+| 值 | 含义 |
+| ---- | ---- |
+| 0 | 草稿 |
+| 1 | 已发布 |
+| 2 | 已截止 / 已结束 |
 
-- `0`: 未发布
-- `1`: 已发布
-- `2`: 已结束
+### 提交状态（WorkSubmission.status）
 
-#### 申请状态 (ClassApplication.status / ClassInviteApplication.status)
+| 值 | 含义 |
+| ---- | ---- |
+| 1 | 已提交 |
+| 2 | 已批改 |
+| 3 | 已打回（需重新提交） |
 
-- `0`: 待审核
-- `1`: 已通过
-- `2`: 已拒绝
+### 申请状态（学校 / 班级加入申请）
 
-#### 提交状态 (WorkSubmission.status)
+| 值 | 含义 |
+| ---- | ---- |
+| 0 | 待审核 |
+| 1 | 已通过 |
+| 2 | 已拒绝 |
 
-- `1`: 已提交（学生已提交，待批改，学生可以修改）
-- `2`: 已批改（教师已完成评分，学生不能修改）
-- `3`: 已打回（教师打回让学生修改，学生可以再次修改）
+### 学校成员角色
 
-**注意**:
+| 值 | 含义 |
+| ---- | ---- |
+| 0 | 学生 |
+| 1 | 老师 |
+| 2 | 学校管理员 |
 
-- **不存在“未提交”状态（0）**：未交作业的学生在数据库中没有对应的 Submission 记录
-- **后端直接计算未交学生**：调用 `GET /api/submissions/work/unsubmitted` 接口即可获取未交学生列表，无需前端手动计算
-- **使用MyBatisPlus实现**：通过QueryWrapper查询并过滤，符合项目规范
-- **支持逾期提交**：超过deadline后仍然允许提交，系统会标记`isLate: true`
-- **逾期标记字段**：`isLate`字段标识是否为逾期提交，教师可以看到哪些学生迟交
+### 班级成员角色（ClassMember.role）
 
-#### 角色类型
-
-- `1`: `创建者` - 班级创建者，拥有最高权限（可删除班级、管理班级助理）
-- `2`: `班级助理` - 由创建者设置，拥有教师权限但不能删除班级或降级其他班级助理
-- `3`: `学生` - 普通班级成员
+| 值 | 含义 |
+| ---- | ---- |
+| 0 | 学生（学校老师获得的班级管理权限显示为「课代表」） |
+| 1 | 老师 / 课代表（班级管理员） |
 
 ### 时间格式
 
-所有时间字段均采用 ISO 8601 格式：`yyyy-MM-dd'T'HH:mm:ss`
-
-时区：GMT+8（中国标准时间）
+- 日期时间：`yyyy-MM-ddTHH:mm:ss`（ISO-8601，时区 GMT+8），如 `2026-05-07T10:00:00`
+- 仅日期：`yyyy-MM-dd`
 
 ### 注意事项
 
-1. 所有接口均需要进行身份验证，未登录用户将返回 401 错误
-2. 部分接口需要特定权限（如教师权限、班级创建者权限等）
-3. **作业相关接口使用 multipart/form-data 格式**，直接上传文件，无需预先调用文件上传接口
-   - 创建作业：`POST /api/works/create`
-   - 更新作业：`PUT /api/works/update`
-   - 提交作业：`POST /api/submissions/submit`
-4. 日期时间参数需使用 ISO 8601 格式
-5. **所有数值型 ID 在请求参数中直接使用 Integer 类型**（不再使用字符串）
+1. 所有写操作（POST / PUT / DELETE / PATCH）需携带 `X-CSRF-Token`。
+2. 二次验证失败返回 **400**（错误码 6100–6105），不会返回 401。
+3. 平台管理员（OP）拥有全部权限节点，`PermissionInterceptor` 对其直接放行。
+4. 请求鉴权会回库确认账号仍存在且未被封禁，账号被删除或封禁后原 Token 立即失效。
+5. 前端页签 / 按钮显隐仅作体验优化，不作为安全边界。
