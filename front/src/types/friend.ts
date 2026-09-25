@@ -82,11 +82,3 @@ export interface MessagePolicyInfo {
   /** 全站默认重置小时数 */
   globalResetHours: number
 }
-
-/** 关系状态文案 */
-export const FRIEND_RELATION_TEXT: Record<FriendRelation, string> = {
-  none: '添加好友',
-  pending_out: '已申请',
-  pending_in: '待我处理',
-  friend: '已是好友'
-}

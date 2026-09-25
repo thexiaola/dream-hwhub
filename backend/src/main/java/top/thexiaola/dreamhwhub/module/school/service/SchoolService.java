@@ -1,21 +1,9 @@
 package top.thexiaola.dreamhwhub.module.school.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.thexiaola.dreamhwhub.module.school.dto.ApproveSchoolJoinRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.BatchApproveSchoolJoinRequest;
-import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
-import top.thexiaola.dreamhwhub.module.school.dto.AssignSchoolAdminRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.CreateSchoolRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.JoinSchoolRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.SetSchoolJoinApprovalRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberIdentityRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberRoleRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.*;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolDetailResponse;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolJoinApplicationResponse;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolMemberResponse;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolVO;
+import top.thexiaola.dreamhwhub.module.school.vo.*;
 
 import java.util.Collection;
 import java.util.List;

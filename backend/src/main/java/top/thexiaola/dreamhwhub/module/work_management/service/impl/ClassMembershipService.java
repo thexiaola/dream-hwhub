@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
@@ -11,13 +12,15 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.permission.constant.PermissionNodes;
 import top.thexiaola.dreamhwhub.module.school.constant.SchoolMemberRole;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
-import top.thexiaola.dreamhwhub.module.work_management.entity.*;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
 import top.thexiaola.dreamhwhub.module.work_management.service.support.WorkSubmissionCleaner;
-import top.thexiaola.dreamhwhub.module.work_management.vo.*;
 import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
-import java.util.*;
-import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 班级成员服务

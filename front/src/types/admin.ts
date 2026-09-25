@@ -37,15 +37,6 @@ export interface AdminUser {
   lastLoginTime?: string
 }
 
-export interface UserPermissionDetail {
-  userId: number
-  username: string
-  isOp: boolean
-  groups: PermissionGroup[]
-  directNodes: string[]
-  permissions: string[]
-}
-
 export interface AdminUserForm {
   username: string
   email: string

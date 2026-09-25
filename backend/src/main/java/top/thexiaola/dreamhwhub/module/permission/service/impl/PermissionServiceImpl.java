@@ -22,12 +22,7 @@ import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.module.permission.vo.PermissionGroupVO;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 权限服务实现类

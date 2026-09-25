@@ -10,11 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * 反作弊字体映射注册表
@@ -77,13 +73,6 @@ public class ExamFontRegistry {
      */
     public List<Integer> seeds() {
         return new ArrayList<>(seedToMapping.keySet());
-    }
-
-    /**
-     * 是否存在指定种子
-     */
-    public boolean hasSeed(Integer seed) {
-        return seed != null && seedToMapping.containsKey(seed);
     }
 
     /**

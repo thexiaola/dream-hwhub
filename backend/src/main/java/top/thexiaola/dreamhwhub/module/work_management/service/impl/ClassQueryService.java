@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
@@ -11,13 +12,18 @@ import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.permission.constant.PermissionNodes;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
-import top.thexiaola.dreamhwhub.module.work_management.entity.*;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
-import top.thexiaola.dreamhwhub.module.work_management.vo.*;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassTakeoverApplication;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassTakeoverApplicationMapper;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassDetailResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.ClassMemberResponse;
 import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
+
 import java.util.*;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Component;
 
 /**
  * 班级查询服务

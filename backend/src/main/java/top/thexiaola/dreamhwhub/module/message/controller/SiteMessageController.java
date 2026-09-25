@@ -1,5 +1,6 @@
 package top.thexiaola.dreamhwhub.module.message.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +12,6 @@ import top.thexiaola.dreamhwhub.module.message.service.SiteMessageService;
 import top.thexiaola.dreamhwhub.module.message.vo.SiteMessageResponse;
 import top.thexiaola.dreamhwhub.support.logging.LogUtil;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
-
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import java.util.List;
 

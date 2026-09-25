@@ -3,6 +3,7 @@ package top.thexiaola.dreamhwhub.module.work_management.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
@@ -12,11 +13,12 @@ import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
 import top.thexiaola.dreamhwhub.module.school.constant.SchoolMemberRole;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
-import top.thexiaola.dreamhwhub.module.work_management.entity.*;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
-import top.thexiaola.dreamhwhub.module.work_management.vo.*;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
+import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
+
 import java.util.*;
-import org.springframework.stereotype.Component;
 
 /**
  * 班级访问解析器
@@ -319,6 +321,21 @@ public class ClassAccessResolver {
             return Collections.emptyMap();
         }
         return schoolService.getMembersByUserIds(classInfo.getSchoolId(), userIds);
+    }
+
+    /**
+     * 按班级 ID 批量加载成员的学校内身份（姓名/学工号），返回以用户 ID 为键的映射。
+     * 班级不存在或未关联学校、或用户集合为空时返回空映射。
+     *
+     * @param classId 班级 ID
+     * @param userIds 用户 ID 集合
+     * @return 用户 ID 到学校成员记录的映射
+     */
+    public Map<Integer, SchoolMember> loadSchoolMembersByClassId(Integer classId, Collection<Integer> userIds) {
+        if (classId == null || userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return loadSchoolMembers(classInfoMapper.selectById(classId), userIds);
     }
 
     /**

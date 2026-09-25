@@ -12,15 +12,12 @@ import top.thexiaola.dreamhwhub.exception.BusinessException;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
-import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
 import top.thexiaola.dreamhwhub.module.work_management.constant.ExamViolationType;
 import top.thexiaola.dreamhwhub.module.work_management.constant.WorkType;
 import top.thexiaola.dreamhwhub.module.work_management.dto.ReportViolationRequest;
-import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ExamSession;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ExamViolation;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkInfo;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ExamSessionMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.ExamViolationMapper;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.WorkMapper;
@@ -52,9 +49,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
     private final ExamViolationMapper examViolationMapper;
     private final WorkQuestionService workQuestionService;
     private final ClassService classService;
-    private final ClassInfoMapper classInfoMapper;
+    private final ClassAccessResolver classAccessResolver;
     private final UserMapper userMapper;
-    private final SchoolService schoolService;
     private final ExamFontRegistry examFontRegistry;
     private final ExamContentScrambler examContentScrambler;
     private final UserLookupSupport userLookup;
@@ -208,7 +204,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         QueryWrapper<User> userQuery = new QueryWrapper<>();
         userQuery.select("id", "username").in("id", studentIds);
         userMapper.selectList(userQuery).forEach(u -> userMap.put(u.getId(), u));
-        Map<Integer, SchoolMember> memberMap = loadClassMembers(work.getClassId(), studentIds);
+        Map<Integer, SchoolMember> memberMap = classAccessResolver.loadSchoolMembersByClassId(work.getClassId(), studentIds);
 
         List<ExamViolationVO> result = new ArrayList<>(violations.size());
         for (ExamViolation v : violations) {
@@ -298,16 +294,5 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             }
         }
         return questions;
-    }
-
-    private Map<Integer, SchoolMember> loadClassMembers(Integer classId, Collection<Integer> userIds) {
-        if (classId == null || userIds == null || userIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        ClassInfo classInfo = classInfoMapper.selectById(classId);
-        if (classInfo == null || classInfo.getSchoolId() == null) {
-            return Collections.emptyMap();
-        }
-        return schoolService.getMembersByUserIds(classInfo.getSchoolId(), userIds);
     }
 }

@@ -21,6 +21,3 @@ export const SensitiveOperationKeys = {
   USER_SET_OP: 'user.set_op',
   SUBMISSION_WITHDRAW: 'submission.withdraw',
 } as const
-
-export type SensitiveOperationKey =
-  (typeof SensitiveOperationKeys)[keyof typeof SensitiveOperationKeys]

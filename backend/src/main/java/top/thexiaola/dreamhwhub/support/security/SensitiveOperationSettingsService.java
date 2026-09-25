@@ -263,13 +263,6 @@ public class SensitiveOperationSettingsService {
         return schoolMemberMapper.selectCount(memberQuery) > 0;
     }
 
-    /** 用户是否创建了至少一个班级 */
-    private boolean ownsAnyClass(Integer userId) {
-        QueryWrapper<ClassInfo> query = new QueryWrapper<>();
-        query.eq("owner_id", userId).select("id").last("LIMIT 1");
-        return classInfoMapper.selectCount(query) > 0;
-    }
-
     /** 用户是否在至少一个班级中担任老师（班级成员 role=1） */
     private boolean isTeacherInAnyClass(Integer userId) {
         QueryWrapper<ClassMember> query = new QueryWrapper<>();

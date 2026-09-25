@@ -73,3 +73,10 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// 提供 `gradle run` 作为 `bootRun` 的别名（Spring Boot 默认任务名为 bootRun）
+tasks.register('run') {
+    group = 'application'
+    description = 'Runs this project as a Spring Boot application (alias of bootRun).'
+    dependsOn tasks.named('bootRun')
+}

@@ -24,7 +24,6 @@ import top.thexiaola.dreamhwhub.module.permission.entity.UserPermissionNode;
 import top.thexiaola.dreamhwhub.module.permission.mapper.UserPermissionGroupMapper;
 import top.thexiaola.dreamhwhub.module.permission.mapper.UserPermissionNodeMapper;
 import top.thexiaola.dreamhwhub.module.school.constant.SchoolMemberRole;
-import top.thexiaola.dreamhwhub.module.school.entity.School;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolJoinApplication;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.mapper.SchoolJoinApplicationMapper;

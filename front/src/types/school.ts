@@ -65,4 +65,3 @@ export interface SchoolJoinApplication {
 /** 学校成员角色代码：2-学校管理员，1-老师，0-学生 */
 export const SCHOOL_ROLE_ADMIN = 2
 export const SCHOOL_ROLE_TEACHER = 1
-export const SCHOOL_ROLE_STUDENT = 0

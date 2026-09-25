@@ -572,44 +572,6 @@ body {
   background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.3);
 }
 
-.gradient-text {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.glass-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-}
-
-.btn-primary {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
-  border: none;
-  color: var(--fg-on-accent);
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-}
-
 input:not(.el-input__inner):not(.el-textarea__inner),
 textarea:not(.el-input__inner):not(.el-textarea__inner) {
   background: rgba(var(--r-fg), var(--g-fg), var(--b-fg), 0.05);

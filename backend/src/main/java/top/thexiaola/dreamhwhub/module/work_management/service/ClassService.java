@@ -2,7 +2,6 @@ package top.thexiaola.dreamhwhub.module.work_management.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
-import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
 import top.thexiaola.dreamhwhub.module.work_management.vo.*;
 
 import java.util.List;

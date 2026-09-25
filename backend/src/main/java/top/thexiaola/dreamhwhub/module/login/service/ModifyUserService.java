@@ -1,13 +1,8 @@
 package top.thexiaola.dreamhwhub.module.login.service;
 
-import top.thexiaola.dreamhwhub.module.login.dto.ModifyEmailRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.ModifyPasswordRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.ModifyUserInfoRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.RetrievePasswordModifyRequest;
-import top.thexiaola.dreamhwhub.module.login.dto.SecurityVerificationSettings;
-import top.thexiaola.dreamhwhub.module.login.dto.UpdateSecurityVerificationRequest;
-import top.thexiaola.dreamhwhub.module.login.entity.User;
 import org.springframework.web.multipart.MultipartFile;
+import top.thexiaola.dreamhwhub.module.login.dto.*;
+import top.thexiaola.dreamhwhub.module.login.entity.User;
 
 public interface ModifyUserService {
     /**

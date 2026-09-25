@@ -17,24 +17,14 @@ import top.thexiaola.dreamhwhub.module.admin.dto.AdminUserSearchRequest;
 import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.permission.service.PermissionService;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInfoMapper;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassInvitationMapper;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassJoinApplicationMapper;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassMemberMapper;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassTeacherApprovalMapper;
-import top.thexiaola.dreamhwhub.module.work_management.mapper.ClassUserInvitationMapper;
+import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
 import top.thexiaola.dreamhwhub.support.password.PasswordUtil;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * 管理员用户检索的条件翻译测试：断言拼出的 SQL 片段与参数占位数量

@@ -9,7 +9,10 @@ import top.thexiaola.dreamhwhub.module.work_management.constant.QuestionType;
 import top.thexiaola.dreamhwhub.module.work_management.entity.WorkQuestion;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * 客观题自动评判器

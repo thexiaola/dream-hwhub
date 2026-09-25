@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import top.thexiaola.dreamhwhub.enums.BusinessErrorCode;
 import top.thexiaola.dreamhwhub.exception.BusinessException;
@@ -16,12 +17,16 @@ import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
 import top.thexiaola.dreamhwhub.module.work_management.entity.*;
 import top.thexiaola.dreamhwhub.module.work_management.mapper.*;
-import top.thexiaola.dreamhwhub.module.work_management.vo.*;
+import top.thexiaola.dreamhwhub.module.work_management.vo.InvitationResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.JoinClassApplicationResponse;
+import top.thexiaola.dreamhwhub.module.work_management.vo.TeacherApprovalResponse;
 import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
+
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Component;
 
 /**
  * 班级加入服务

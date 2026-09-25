@@ -14,17 +14,7 @@ import top.thexiaola.dreamhwhub.module.login.entity.User;
 import top.thexiaola.dreamhwhub.module.login.mapper.UserMapper;
 import top.thexiaola.dreamhwhub.module.permission.constant.PermissionNodes;
 import top.thexiaola.dreamhwhub.module.school.constant.SchoolMemberRole;
-import top.thexiaola.dreamhwhub.module.school.dto.ApproveSchoolJoinRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.BatchApproveSchoolJoinRequest;
-import top.thexiaola.dreamhwhub.module.school.vo.BatchReviewResult;
-import top.thexiaola.dreamhwhub.module.school.dto.AssignSchoolAdminRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.CreateSchoolRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.JoinSchoolRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.SetClassTakeoverApprovalRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.SetSchoolJoinApprovalRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberIdentityRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolMemberRoleRequest;
-import top.thexiaola.dreamhwhub.module.school.dto.UpdateSchoolRequest;
+import top.thexiaola.dreamhwhub.module.school.dto.*;
 import top.thexiaola.dreamhwhub.module.school.entity.School;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolJoinApplication;
 import top.thexiaola.dreamhwhub.module.school.entity.SchoolMember;
@@ -32,10 +22,7 @@ import top.thexiaola.dreamhwhub.module.school.mapper.SchoolJoinApplicationMapper
 import top.thexiaola.dreamhwhub.module.school.mapper.SchoolMapper;
 import top.thexiaola.dreamhwhub.module.school.mapper.SchoolMemberMapper;
 import top.thexiaola.dreamhwhub.module.school.service.SchoolService;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolDetailResponse;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolJoinApplicationResponse;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolMemberResponse;
-import top.thexiaola.dreamhwhub.module.school.vo.SchoolVO;
+import top.thexiaola.dreamhwhub.module.school.vo.*;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassInfo;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassJoinApplication;
 import top.thexiaola.dreamhwhub.module.work_management.entity.ClassMember;
@@ -49,16 +36,7 @@ import top.thexiaola.dreamhwhub.support.session.UserLookupSupport;
 import top.thexiaola.dreamhwhub.support.session.UserUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**

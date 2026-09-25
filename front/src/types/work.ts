@@ -85,9 +85,6 @@ export interface WorkAnswerVO {
   gradeTime?: string | null
 }
 
-/** 任务类型：作业 / 考试 */
-export type WorkType = 'homework' | 'exam'
-
 /** 考试反作弊与限时配置 */
 export interface ExamConfig {
   /** 考试时长（分钟）；为空表示仅以截止时间为准 */
